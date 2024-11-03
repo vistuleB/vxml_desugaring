@@ -1,6 +1,7 @@
 import infrastructure
 import gleam/result
 import desurageres/add_attributes_desugarer.{add_attributes_desugarer}
+import desurageres/break_up_text_nodes_by_double_dollars_desugarer.{break_up_text_nodes_by_double_dollars_desugarer}
 import desurageres/helpers/add_attributes_helpers.{Attribute, AddAttributesExtraArgs}
 
 import gleam/io
@@ -18,7 +19,8 @@ fn pre_desugar(vxmls: List(VXML), file_path: String) -> Result(VXML, infrastruct
 
 pub fn desuger(vxmls: List(VXML), path) {
       use res <- result.try(pre_desugar(vxmls, path))
-      use res <- result.try(add_attributes_desugarer(res, AddAttributesExtraArgs(to: ["Section", "Item"], attributes: [Attribute("label", "test")]))) 
+      use res <- result.try(add_attributes_desugarer(res, AddAttributesExtraArgs(to: ["Section", "Item"], attributes: [Attribute("label", "test")])))
+      use res <- result.try(break_up_text_nodes_by_double_dollars_desugarer(res))
 
       Ok([res])
 }
