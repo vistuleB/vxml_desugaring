@@ -1,5 +1,5 @@
 import vxml_parser.{type VXML, T, V, type BlamedAttribute as BlamedAttributeType, BlamedAttribute}
-import infastucture.{type  DesugaringError}
+import infrastructure.{type  DesugaringError}
 import gleam/list
 
 pub type Attribute {
