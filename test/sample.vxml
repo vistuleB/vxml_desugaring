@@ -9,6 +9,10 @@
         "math $Math$"
     <>
         "Follow up"
+    <> WriterlyBlurb
+        <>
+            "it's my life"
+            "it's now or never"
 
     <> Exercises
         <> Exercise

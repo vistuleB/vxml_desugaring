@@ -93,7 +93,7 @@ fn text_else_tag(
 pub fn break_up_text_by_double_dollars_transform(
   node: VXML,
   _: List(VXML),
-  _,
+  _: Nil,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     V(_, _, _, _) -> Ok([node])
