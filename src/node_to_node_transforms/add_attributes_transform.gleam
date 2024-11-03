@@ -12,7 +12,7 @@ pub type AddAttributesExtraArgs {
 
 pub fn add_attributes_transform(
   vxml: VXML,
-  _,
+  _: List(VXML),
   extra: AddAttributesExtraArgs,
 ) -> Result(VXML, DesugaringError) {
   case vxml {

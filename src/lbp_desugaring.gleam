@@ -38,7 +38,7 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
     AddAttributesExtraArgs(["Section", "Item"], [Attribute("label", "test")])
 
   get_root(vxmls, path)
-  |> result.then(remove_writerly_blurb_tags_round_text_nodes_desugarer(_))
+  |> result.then(remove_writerly_blurb_tags_around_text_nodes_desugarer(_))
   |> result.then(add_attributes_desugarer(_, extra_1))
   |> result.then(break_up_text_by_double_dollars_desugarer(_))
 }
