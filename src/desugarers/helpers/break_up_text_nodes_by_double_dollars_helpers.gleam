@@ -1,8 +1,10 @@
-import vxml_parser.{type VXML, T, V, type BlamedContent, BlamedContent, type Blame}
-import infrastructure.{type  DesugaringError}
 import gleam/list
-import gleam/string
 import gleam/pair
+import gleam/string
+import infrastructure.{type DesugaringError}
+import vxml_parser.{
+  type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
+}
 
 fn alternating_list_insert(ze_list: List(a), ze_thing: a) -> List(a) {
   case ze_list {
@@ -92,14 +94,14 @@ pub fn text_else_tag(
 pub fn break_up_text_nodes_by_double_dollars(
   node: VXML,
   _: List(VXML),
-  _
+  _,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     V(_, _, _, _) -> Ok([node])
     T(_, lines) -> {
       lines
       |> list.map(break_line_by_double_dollars)
-      |> list.concat
+      |> list.flatten
       |> regroup_either_or_1st_argument
       |> list.map(text_else_tag(_, "DoubleDollar"))
       |> Ok

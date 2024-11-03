@@ -1,45 +1,59 @@
-import infrastructure
-import gleam/result
-import desurageres/add_attributes_desugarer.{add_attributes_desugarer}
-import desurageres/break_up_text_nodes_by_double_dollars_desugarer.{break_up_text_nodes_by_double_dollars_desugarer}
-import desurageres/helpers/add_attributes_helpers.{Attribute, AddAttributesExtraArgs}
-
+import desugarers/add_attributes_desugarer.{add_attributes_desugarer}
+import desugarers/break_up_text_nodes_by_double_dollars_desugarer.{
+  break_up_text_nodes_by_double_dollars_desugarer,
+}
+import desugarers/helpers/add_attributes_helpers.{
+  type AddAttributesExtraArgs, AddAttributesExtraArgs, Attribute,
+}
 import gleam/io
+import gleam/list
+import gleam/result
 import gleam/string
+import infrastructure.{type DesugaringError, DesugaringError}
 import vxml_parser.{type VXML}
 
 const ins = string.inspect
 
-fn pre_desugar(vxmls: List(VXML), file_path: String) -> Result(VXML, infrastructure.DesugaringError) {
+fn get_root(vxmls: List(VXML), path: String) -> Result(VXML, DesugaringError) {
   case vxmls {
-    [one] -> Ok(one)
-    _ ->  Error(infrastructure.DesugaringError(blame: vxml_parser.Blame(file_path, 0, []) , message: "Input should be inside one root"))
+    [root] -> Ok(root)
+    _ ->
+      Error(DesugaringError(
+        blame: vxml_parser.Blame("", 0, []),
+        message: "found "
+          <> ins(list.length)
+          <> " != 1 root-level nodes in "
+          <> path,
+      ))
   }
 }
 
-pub fn desuger(vxmls: List(VXML), path) {
-      use res <- result.try(pre_desugar(vxmls, path))
-      use res <- result.try(add_attributes_desugarer(res, AddAttributesExtraArgs(to: ["Section", "Item"], attributes: [Attribute("label", "test")])))
-      use res <- result.try(break_up_text_nodes_by_double_dollars_desugarer(res))
+pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
+  let extra_1 =
+    AddAttributesExtraArgs(["Section", "Item"], [Attribute("label", "test")])
 
-      Ok([res])
+  get_root(vxmls, path)
+  |> result.then(add_attributes_desugarer(_, extra_1))
+  |> result.then(break_up_text_nodes_by_double_dollars_desugarer(_))
 }
 
 pub fn main() {
-
   let path = "test/sample.vxml"
 
   case vxml_parser.parse_file(path, "sample", False) {
     Ok(vxmls) -> {
-      case desuger(vxmls, path) {
+      case desugar(vxmls, path) {
         Ok(desugared) -> {
-          vxml_parser.debug_print_vxmls("(add attribute desugarer)", desugared)
+          vxml_parser.debug_print_vxmls("(add attribute desugarer)", [desugared])
         }
-        Error(err) -> {
-          io.println("there was a desugaring error: " <> ins(err))
+
+        Error(e) -> {
+          io.println("there was a desugaring error: " <> ins(e))
         }
       }
     }
-    Error(e) -> io.println("there was an error: " <> ins(e))
+
+    Error(e) ->
+      io.println("there was a parsing error for " <> path <> ": " <> ins(e))
   }
 }

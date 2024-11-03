@@ -1,4 +1,3 @@
-
 <> Section
     bool vec[test]
     <>
@@ -20,3 +19,11 @@
                 <> Item
                 <> Item
                 <> Item
+            <>
+                "some math $$"
+                "a - 2 = 3$$"
+                "more text"
+            <>
+                "math that ends text $$"
+                "a - 5 = 16"
+                "$$"
