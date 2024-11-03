@@ -1,11 +1,11 @@
 import desurageres/helpers/add_attributes_helpers.{type AddAttributesExtraArgs,add_attributes}
 import vxml_parser.{type VXML}
-import infrastructure.{type  DesugaringError, depth_first_node_to_node_desugarer_many}
+import infrastructure.{type  DesugaringError, depth_first_node_to_node_desugarer}
 
-pub fn add_attributes_desugarer_many(vxmls: List(VXML), extra: AddAttributesExtraArgs) -> Result(List(VXML), DesugaringError) 
+pub fn add_attributes_desugarer(vxml: VXML, extra: AddAttributesExtraArgs) -> Result(VXML, DesugaringError) 
 {
-  depth_first_node_to_node_desugarer_many(
-    vxmls,
+  depth_first_node_to_node_desugarer(
+    vxml,
     add_attributes,
     extra
   )
