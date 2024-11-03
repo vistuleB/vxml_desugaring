@@ -1,0 +1,21 @@
+<> Section
+    bool vec[test]
+    <>
+        "lorem lorem"
+        "lorem lorem lorem"
+    <> Image
+        src images
+    <>
+        "math $Math$"
+    <>
+        "Follow up"
+
+    <> Exercises
+        <> Exercise
+            <>
+                "Exercise Content"
+            <> Grid
+                cols 3
+                <> Item
+                <> Item
+                <> Item
