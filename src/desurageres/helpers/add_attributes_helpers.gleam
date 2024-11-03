@@ -1,5 +1,5 @@
 import vxml_parser.{type VXML, T, V, type BlamedAttribute as BlamedAttributeType, BlamedAttribute}
-import helpers.{type  DesugaringError, depth_first_node_to_node_desugarer_many}
+import infastucture.{type  DesugaringError}
 import gleam/list
 
 pub type Attribute {
@@ -21,7 +21,7 @@ fn add(existing_attributes: List(BlamedAttributeType), new_attributes: List(Attr
   }
 }
 
-fn add_attributes(vxml: VXML, _, extra: AddAttributesExtraArgs) -> Result(VXML, DesugaringError) {
+pub fn add_attributes(vxml: VXML, _, extra: AddAttributesExtraArgs) -> Result(VXML, DesugaringError) {
 
   case vxml {
     T(_, _) -> Ok(vxml) 
@@ -36,13 +36,4 @@ fn add_attributes(vxml: VXML, _, extra: AddAttributesExtraArgs) -> Result(VXML, 
       
     }
   }
-}
-
-pub fn add_attributes_desugarer_many(vxmls: List(VXML), extra: AddAttributesExtraArgs) -> Result(List(VXML), DesugaringError) 
-{
-  depth_first_node_to_node_desugarer_many(
-    vxmls,
-    add_attributes,
-    extra
-  )
 }

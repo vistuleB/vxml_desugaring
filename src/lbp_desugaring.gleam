@@ -1,4 +1,6 @@
-import add_attributes
+import desurageres/add_attributes_desugarer.{add_attributes_desugarer_many}
+import desurageres/helpers/add_attributes_helpers.{Attribute, AddAttributesExtraArgs}
+
 import gleam/io
 import gleam/string
 import vxml_parser
@@ -12,7 +14,7 @@ pub fn main() {
   case vxml_parser.parse_file(path, "sample", False) {
     Ok(vxmls) -> {
 
-      let result = add_attributes.add_attributes_desugarer_many(vxmls, add_attributes.AddAttributesExtraArgs(to: ["Section", "Item"], attributes: [add_attributes.Attribute("label", "test")]))
+      let result = add_attributes_desugarer_many(vxmls, AddAttributesExtraArgs(to: ["Section", "Item"], attributes: [Attribute("label", "test")]))
 
       case result {
         Ok(desugared) -> {
