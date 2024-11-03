@@ -1,15 +1,17 @@
-import desugarers/add_attributes_desugarer.{add_attributes_desugarer}
-import desugarers/break_up_text_nodes_by_double_dollars_desugarer.{
-  break_up_text_nodes_by_double_dollars_desugarer,
-}
-import desugarers/helpers/add_attributes_helpers.{
-  type AddAttributesExtraArgs, AddAttributesExtraArgs, Attribute,
-}
 import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
 import infrastructure.{type DesugaringError, DesugaringError}
+import node_to_node_desugarers/add_attributes_desugarer.{
+  add_attributes_desugarer,
+}
+import node_to_node_transforms/add_attributes_transform.{
+  type AddAttributesExtraArgs, AddAttributesExtraArgs, Attribute,
+}
+import node_to_nodes_desugarers/break_up_text_by_double_dollars_desugarer.{
+  break_up_text_by_double_dollars_desugarer,
+}
 import vxml_parser.{type VXML}
 
 const ins = string.inspect
@@ -34,7 +36,7 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
 
   get_root(vxmls, path)
   |> result.then(add_attributes_desugarer(_, extra_1))
-  |> result.then(break_up_text_nodes_by_double_dollars_desugarer(_))
+  |> result.then(break_up_text_by_double_dollars_desugarer(_))
 }
 
 pub fn main() {

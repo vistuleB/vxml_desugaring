@@ -10,7 +10,7 @@ pub type AddAttributesExtraArgs {
   AddAttributesExtraArgs(to: List(String), attributes: List(Attribute))
 }
 
-pub fn add_attributes(
+pub fn add_attributes_transform(
   vxml: VXML,
   _,
   extra: AddAttributesExtraArgs,

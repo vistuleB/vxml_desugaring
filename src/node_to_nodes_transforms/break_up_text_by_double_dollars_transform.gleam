@@ -18,7 +18,7 @@ fn alternating_list_insert(ze_list: List(a), ze_thing: a) -> List(a) {
   }
 }
 
-pub type EitherOr(a, b) {
+type EitherOr(a, b) {
   Either(a)
   Or(b)
 }
@@ -28,7 +28,6 @@ fn break_line_by_double_dollars(
 ) -> List(EitherOr(BlamedContent, Blame)) {
   let BlamedContent(blame, content) = line
   string.split(content, "$$")
-  // |> list.filter(fn(s) { !string.is_empty(s) })
   |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
   |> alternating_list_insert(Or(blame))
   |> list.filter(fn(thing) {
@@ -71,14 +70,14 @@ fn regroup_either_or_1st_argument_internal(
   }
 }
 
-pub fn regroup_either_or_1st_argument(
+fn regroup_either_or_1st_argument(
   ze_list: List(EitherOr(a, b)),
 ) -> List(EitherOr(List(a), b)) {
   regroup_either_or_1st_argument_internal(ze_list)
   |> pair.second
 }
 
-pub fn text_else_tag(
+fn text_else_tag(
   thing: EitherOr(List(BlamedContent), Blame),
   tag_name: String,
 ) -> VXML {
@@ -91,7 +90,7 @@ pub fn text_else_tag(
   }
 }
 
-pub fn break_up_text_nodes_by_double_dollars(
+pub fn break_up_text_by_double_dollars_transform(
   node: VXML,
   _: List(VXML),
   _,
