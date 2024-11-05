@@ -13,8 +13,12 @@ import node_to_node_transforms/add_attributes_transform.{
   type AddAttributesExtraArgs, AddAttributesExtraArgs, Attribute,
 }
 import node_to_nodes_desugarers/break_up_text_by_double_dollars_desugarer.{
-  break_up_text_by_double_dollars_desugarer,
+  break_up_text_by_double_dollars_desugarer
 }
+import node_to_node_desugarers/repalce_double_dollar_pairs_with_mathblock_desugarer.{
+  repalce_double_dollar_pairs_with_mathblock_desugarer
+}
+
 import vxml_parser.{type VXML}
 
 const ins = string.inspect
@@ -41,6 +45,7 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
   |> result.then(remove_writerly_blurb_tags_around_text_nodes_desugarer(_))
   |> result.then(add_attributes_desugarer(_, extra_1))
   |> result.then(break_up_text_by_double_dollars_desugarer(_))
+  |> result.then(repalce_double_dollar_pairs_with_mathblock_desugarer(_))
 }
 
 pub fn main() {

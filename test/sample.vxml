@@ -21,13 +21,16 @@
             <> Grid
                 cols 3
                 <> Item
+                    <> 
+                        "$$ test shiit"
                 <> Item
                 <> Item
             <>
                 "some math $$"
                 "a - 2 = 3$$"
-                "more text"
+                "more text$$"
             <>
                 "math that ends text $$"
                 "a - 5 = 16"
                 "$$"
+            
