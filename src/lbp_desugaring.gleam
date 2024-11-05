@@ -25,6 +25,7 @@ import node_to_nodes_desugarers/wrap_elements_by_blankline_desugarer.{
   wrap_elements_by_blankline_desugarer
 }
 import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{WrapByBlankLineExtraArgs}
+import node_to_node_desugarers/split_vertical_chunks_desugarer.{split_vertical_chunks_desugarer}
 
 import vxml_parser.{type VXML}
 
@@ -49,7 +50,7 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
     AddAttributesExtraArgs(["Section", "Item"], [Attribute("label", "test")])
 
   let extra_2 =
-    WrapByBlankLineExtraArgs(tags: ["MathBlock", "Image", "Table"])
+    WrapByBlankLineExtraArgs(tags: ["MathBlock", "Image", "Table", "Exercises"])
 
   get_root(vxmls, path)
   |> result.then(remove_writerly_blurb_tags_around_text_nodes_desugarer(_))
@@ -57,6 +58,7 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
   |> result.then(break_up_text_by_double_dollars_desugarer(_))
   |> result.then(repalce_double_dollar_pairs_with_mathblock_desugarer(_))
   |> result.then(wrap_elements_by_blankline_desugarer(_, extra_2))
+  |> result.then(split_vertical_chunks_desugarer(_))
 
 }
 
