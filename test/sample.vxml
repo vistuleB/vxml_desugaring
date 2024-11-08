@@ -1,8 +1,11 @@
 <> Section
     bool vec[test]
     <>
-        "lorem lorem"
-        "lorem lorem lorem"
+        "one two"
+        "three __four__ five"
+    <>
+        "extra"
+
     <> Image
         src images
     <>
@@ -28,9 +31,9 @@
             <>
                 "some math $$"
                 "a - 2 = 3$$"
-                "more text$$"
+                "more text"
             <>
-                "math that ends text $$"
+                "math that ends _|text|_ $$"
                 "a - 5 = 16"
                 "$$"
             
