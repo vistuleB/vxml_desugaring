@@ -5,9 +5,17 @@
         "three __four__ five"
     <>
         "extra"
-
+        "extra"
+    <> BlankLine
+    <> BlankLine
+    <> BlankLine
+    <> BlankLine
     <> Image
         src images
+    <> BlankLine
+    <> BlankLine
+    <> BlankLine
+    <> BlankLine
     <>
         "math $Math$"
     <>
@@ -25,7 +33,7 @@
                 cols 3
                 <> Item
                     <> 
-                        "$$ test shiit"
+                        "$$ test shiit$$"
                 <> Item
                 <> Item
             <>
@@ -35,5 +43,7 @@
             <>
                 "math that ends _|text|_ $$"
                 "a - 5 = 16"
+            <> BlankLine
+            <>
                 "$$"
             

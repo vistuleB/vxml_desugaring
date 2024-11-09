@@ -1,5 +1,3 @@
-
-
 import gleam/io
 import gleam/list
 import gleam/result
@@ -8,30 +6,37 @@ import infrastructure.{type DesugaringError, DesugaringError}
 import node_to_node_desugarers/add_attributes_desugarer.{
   add_attributes_desugarer,
 }
+import node_to_node_desugarers/pair_double_dollars_together_desugarer.{
+  pair_double_dollars_together_desugarer,
+}
+import node_to_node_desugarers/remove_vertical_chunks_around_single_children_desugarer.{
+  remove_vertical_chunks_around_single_children_desugarer,
+}
 import node_to_node_desugarers/remove_writerly_blurb_tags_around_text_nodes_desugarer.{
   remove_writerly_blurb_tags_around_text_nodes_desugarer,
+}
+import node_to_node_desugarers/split_vertical_chunks_desugarer.{
+  split_vertical_chunks_desugarer,
 }
 import node_to_node_transforms/add_attributes_transform.{
   type AddAttributesExtraArgs, AddAttributesExtraArgs, Attribute,
 }
 import node_to_nodes_desugarers/break_up_text_by_double_dollars_desugarer.{
-  break_up_text_by_double_dollars_desugarer
-}
-import node_to_node_desugarers/repalce_double_dollar_pairs_with_mathblock_desugarer.{
-  repalce_double_dollar_pairs_with_mathblock_desugarer
-}
-
-import node_to_nodes_desugarers/wrap_elements_by_blankline_desugarer.{
-  wrap_elements_by_blankline_desugarer
-}
-import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{WrapByBlankLineExtraArgs}
-import node_to_node_desugarers/split_vertical_chunks_desugarer.{split_vertical_chunks_desugarer}
-import node_to_nodes_transforms/split_delimiters_chunks_transform.{
-  SplitDelimitersChunksExtraArgs
+  break_up_text_by_double_dollars_desugarer,
 }
 import node_to_nodes_desugarers/split_delimiters_chunks_desugarer.{
-  split_delimiters_chunks_desugarer
+  split_delimiters_chunks_desugarer,
 }
+import node_to_nodes_desugarers/wrap_elements_by_blankline_desugarer.{
+  wrap_elements_by_blankline_desugarer,
+}
+import node_to_nodes_transforms/split_delimiters_chunks_transform.{
+  SplitDelimitersChunksExtraArgs,
+}
+import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{
+  WrapByBlankLineExtraArgs,
+}
+
 import vxml_parser.{type VXML}
 
 const ins = string.inspect
@@ -56,22 +61,31 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
 
   let extra_2 =
     WrapByBlankLineExtraArgs(tags: ["MathBlock", "Image", "Table", "Exercises"])
-  
+
   let extra_3 =
-    SplitDelimitersChunksExtraArgs(open_delimiter: "__", close_delimiter: "__", tag_name: "CentralItalicDisplay")
+    SplitDelimitersChunksExtraArgs(
+      open_delimiter: "__",
+      close_delimiter: "__",
+      tag_name: "CentralItalicDisplay",
+    )
 
   let extra_4 =
-    SplitDelimitersChunksExtraArgs(open_delimiter: "_|", close_delimiter: "|_", tag_name: "CentralDisplay")
+    SplitDelimitersChunksExtraArgs(
+      open_delimiter: "_|",
+      close_delimiter: "|_",
+      tag_name: "CentralDisplay",
+    )
 
   get_root(vxmls, path)
   |> result.then(remove_writerly_blurb_tags_around_text_nodes_desugarer(_))
   |> result.then(add_attributes_desugarer(_, extra_1))
   |> result.then(break_up_text_by_double_dollars_desugarer(_))
-  |> result.then(repalce_double_dollar_pairs_with_mathblock_desugarer(_))
+  |> result.then(pair_double_dollars_together_desugarer(_))
   |> result.then(wrap_elements_by_blankline_desugarer(_, extra_2))
   |> result.then(split_vertical_chunks_desugarer(_))
-  |> result.then(split_delimiters_chunks_desugarer(_,extra_3))
-  |> result.then(split_delimiters_chunks_desugarer(_,extra_4))
+  |> result.then(remove_vertical_chunks_around_single_children_desugarer(_))
+  |> result.then(split_delimiters_chunks_desugarer(_, extra_3))
+  |> result.then(split_delimiters_chunks_desugarer(_, extra_4))
 }
 
 pub fn main() {
