@@ -19,11 +19,7 @@ pub fn wrap_elements_by_blankline_transform(
           let blank_line =
             V(blame: blame, tag: "BlankLine", attributes: [], children: [])
 
-          Ok(
-            [blank_line]
-            |> list.append([node])
-            |> list.append([blank_line]),
-          )
+          Ok([blank_line, node, blank_line])
         }
         False -> Ok([node])
       }
