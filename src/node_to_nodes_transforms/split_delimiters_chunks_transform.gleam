@@ -26,7 +26,7 @@ fn look_for_closing_delimiter(
       case cropped == first.content {
         True -> {
           let #(output, rest) = look_for_closing_delimiter(rest, extra, output)
-          #(list.append([first], output), rest)
+          #([first, ..output], rest)
         }
         False -> {
           let before_closing_del =
@@ -40,10 +40,7 @@ fn look_for_closing_delimiter(
             list.append(output, [
               BlamedContent(blame: first.blame, content: before_closing_del),
             ]),
-            list.append(
-              [BlamedContent(blame: first.blame, content: after_closing_del)],
-              rest,
-            ),
+            [BlamedContent(blame: first.blame, content: after_closing_del), ..rest],
           )
         }
       }
@@ -69,10 +66,7 @@ fn split_blamed_contents_by_delimiter(
         string.starts_with(first.content, extra.open_delimiter)
       {
         True, False -> {
-          list.append(
-            [DelimiterSurrounding([first])],
-            split_blamed_contents_by_delimiter(rest, extra),
-          )
+          [DelimiterSurrounding([first]), ..split_blamed_contents_by_delimiter(rest, extra)]
         }
         _, _ -> {
           // check closing
@@ -126,7 +120,7 @@ fn append_until_delimiter(
           #(list.append(output, [T(blame, list)]), rest)
         }
         DelimiterContent(_) -> {
-          #(output, list.append([first], rest))
+          #(output, [first, ..rest])
         }
       }
     }
@@ -149,16 +143,13 @@ fn map_splits_to_vxml(
             [] -> []
             output -> {
               let normal_chunk = V(blame, "VerticalChunk", [], output)
-              list.append(
-                [normal_chunk],
-                map_splits_to_vxml(blame, rest, extra),
-              )
+              [normal_chunk, ..map_splits_to_vxml(blame, rest, extra)]
             }
           }
         }
         DelimiterContent(list) -> {
           let normal_chunk = V(blame, extra.tag_name, [], [T(blame, list)])
-          list.append([normal_chunk], map_splits_to_vxml(blame, rest, extra))
+          [normal_chunk, ..map_splits_to_vxml(blame, rest, extra)]
         }
       }
     }
@@ -189,7 +180,7 @@ fn split_chunk_children(node: VXML, children: List(VXML), extra) -> List(VXML) {
           list.append([node], split_chunk_children(node, rest, extra))
         T(blame, _) -> {
           let #(flatten, rest) =
-            flatten_chunk_contents(list.append([first], rest))
+            flatten_chunk_contents([first, ..rest])
 
           split_blamed_contents_by_delimiter(flatten, extra)
           |> map_splits_to_vxml(blame, _, extra)
