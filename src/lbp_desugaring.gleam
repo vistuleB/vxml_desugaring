@@ -33,6 +33,10 @@ import node_to_nodes_desugarers/split_delimiters_chunks_desugarer.{
 import node_to_nodes_desugarers/wrap_elements_by_blankline_desugarer.{
   wrap_elements_by_blankline_desugarer,
 }
+import node_to_nodes_desugarers/split_content_by_low_level_delimiters_desugarer.{
+  split_content_by_low_level_delimiters_desugarer
+}
+
 import node_to_nodes_transforms/split_delimiters_chunks_transform.{
   SplitDelimitersChunksExtraArgs,
 }
@@ -87,6 +91,7 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
   |> result.then(remove_vertical_chunks_around_single_children_desugarer(_))
   |> result.then(split_delimiters_chunks_desugarer(_, extra_3))
   |> result.then(split_delimiters_chunks_desugarer(_, extra_4))
+  |> result.then(split_content_by_low_level_delimiters_desugarer(_))
 }
 
 pub fn main() {
