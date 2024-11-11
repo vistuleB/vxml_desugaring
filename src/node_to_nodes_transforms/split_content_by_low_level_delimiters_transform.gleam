@@ -2,7 +2,7 @@ import gleam/option
 import gleam/list
 import gleam/string
 import infrastructure.{type DesugaringError}
-import writerly_parser.{
+import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
 
