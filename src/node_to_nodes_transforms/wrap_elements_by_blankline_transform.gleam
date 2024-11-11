@@ -1,6 +1,6 @@
 import gleam/list
 import infrastructure.{type DesugaringError}
-import vxml_parser.{type VXML, T, V}
+import writerly_parser.{type VXML, T, V}
 
 pub type WrapByBlankLineExtraArgs {
   WrapByBlankLineExtraArgs(tags: List(String))

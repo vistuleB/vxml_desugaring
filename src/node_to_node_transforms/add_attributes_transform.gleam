@@ -1,6 +1,6 @@
 import gleam/list
 import infrastructure.{type DesugaringError}
-import vxml_parser.{type VXML, BlamedAttribute, T, V}
+import writerly_parser.{type VXML, BlamedAttribute, T, V}
 
 pub type Attribute {
   Attribute(key: String, value: String)

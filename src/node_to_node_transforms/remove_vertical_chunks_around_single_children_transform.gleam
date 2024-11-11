@@ -1,5 +1,5 @@
 import infrastructure.{type DesugaringError, DesugaringError}
-import vxml_parser.{type VXML, T, V}
+import writerly_parser.{type VXML, T, V}
 
 pub fn remove_vertical_chunks_around_single_children_transform(
   node: VXML,

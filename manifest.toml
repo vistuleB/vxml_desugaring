@@ -9,10 +9,13 @@ packages = [
   { name = "shellout", version = "1.6.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "shellout", source = "hex", outer_checksum = "E2FCD18957F0E9F67E1F497FC9FF57393392F8A9BAEAEA4779541DE7A68DD7E0" },
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
   { name = "vxml_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "simplifile"], source = "local", path = "../vxml_parser" },
+  { name = "writerly_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "simplifile"], source = "local", path = "../writerly_parser" },
 ]
 
 [requirements]
 gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 leptos_emitter = { path = "../leptos_emitter" }
+simplifile = { version = ">= 2.2.0 and < 3.0.0" }
 vxml_parser = { path = "../vxml_parser" }
+writerly_parser = { path = "../writerly_parser" }

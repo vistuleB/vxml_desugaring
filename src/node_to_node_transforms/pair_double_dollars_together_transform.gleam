@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import infrastructure.{type DesugaringError, DesugaringError}
-import vxml_parser.{type Blame, type VXML, T, V}
+import writerly_parser.{type Blame, type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
   case x {

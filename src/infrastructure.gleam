@@ -1,5 +1,5 @@
 import gleam/list
-import vxml_parser.{type Blame, type VXML, T, V}
+import writerly_parser.{type Blame, type VXML, T, V}
 
 pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
