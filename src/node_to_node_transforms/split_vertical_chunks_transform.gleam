@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import infrastructure.{type DesugaringError}
-import writerly_parser.{type Blame, type VXML, T, V}
+import vxml_parser.{type Blame, type VXML, T, V}
 
 fn is_blank_line(vxml: VXML) -> #(Bool, Blame) {
   case vxml {

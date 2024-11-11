@@ -1,5 +1,5 @@
 import infrastructure.{type DesugaringError, DesugaringError}
-import writerly_parser.{type VXML, T, V}
+import vxml_parser.{type VXML, T, V}
 
 pub fn remove_writerly_blurb_tags_around_text_nodes_transform(
   node: VXML,

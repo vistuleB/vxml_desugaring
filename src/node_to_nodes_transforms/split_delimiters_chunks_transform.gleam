@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/string
 import infrastructure.{type DesugaringError}
-import writerly_parser.{
+import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
 
@@ -41,7 +41,10 @@ fn look_for_closing_delimiter(
             list.append(output, [
               BlamedContent(blame: first.blame, content: before_closing_del),
             ]),
-            [BlamedContent(blame: first.blame, content: after_closing_del), ..rest],
+            [
+              BlamedContent(blame: first.blame, content: after_closing_del),
+              ..rest
+            ],
           )
         }
       }
@@ -67,7 +70,10 @@ fn split_blamed_contents_by_delimiter(
         string.starts_with(first.content, extra.open_delimiter)
       {
         True, False -> {
-          [DelimiterSurrounding([first]), ..split_blamed_contents_by_delimiter(rest, extra)]
+          [
+            DelimiterSurrounding([first]),
+            ..split_blamed_contents_by_delimiter(rest, extra)
+          ]
         }
         _, _ -> {
           // check closing
@@ -163,8 +169,8 @@ fn flatten_chunk_contents(children) -> #(List(BlamedContent), List(VXML)) {
     [first, ..rest] -> {
       case first {
         V(_, _, _, _) -> {
-            #([], [first, ..rest])
-          }
+          #([], [first, ..rest])
+        }
         T(_, contents) -> {
           let #(res, rest) = flatten_chunk_contents(rest)
           #(list.append(contents, res), rest)
@@ -179,21 +185,27 @@ fn split_chunk_children(node: VXML, children: List(VXML), extra) -> List(VXML) {
     [] -> []
     [first, ..rest] -> {
       case first {
-        V(_, _, _, _) ->{
+        V(_, _, _, _) -> {
           [node]
         }
         T(blame, _) -> {
-          let #(flatten, rest) =
-          flatten_chunk_contents([first, ..rest])
-          let mapped_vxml = split_blamed_contents_by_delimiter(flatten, extra)
-                              |> map_splits_to_vxml(blame, _, extra)
+          let #(flatten, rest) = flatten_chunk_contents([first, ..rest])
+          let mapped_vxml =
+            split_blamed_contents_by_delimiter(flatten, extra)
+            |> map_splits_to_vxml(blame, _, extra)
 
           case rest {
             [] -> mapped_vxml
             [first, ..rest] -> {
               case first {
                 V(_, _, _, _) -> mapped_vxml |> list.append([first, ..rest])
-                T(_, _) ->  mapped_vxml |> list.append(split_chunk_children(node, [first, ..rest], extra))
+                T(_, _) ->
+                  mapped_vxml
+                  |> list.append(split_chunk_children(
+                    node,
+                    [first, ..rest],
+                    extra,
+                  ))
               }
             }
           }
@@ -212,8 +224,7 @@ pub fn split_delimiters_chunks_transform(
     T(_, _) -> Ok([node])
     V(_, tag, _, children) -> {
       case tag == "VerticalChunk" {
-        False ->
-          Ok([node])
+        False -> Ok([node])
         True -> {
           children
           |> split_chunk_children(node, _, extra)
