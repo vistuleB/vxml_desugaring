@@ -1,11 +1,9 @@
-import simplifile
-import merge_content.{merge_content}
 import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
-import writerly_parser.{writerlys_to_vxmls, parse_string, type VXML} 
 import infrastructure.{type DesugaringError, DesugaringError}
+
 import node_to_node_desugarers/add_attributes_desugarer.{
   add_attributes_desugarer,
 }
@@ -39,6 +37,8 @@ import node_to_nodes_transforms/split_delimiters_chunks_transform.{
 import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{
   WrapByBlankLineExtraArgs,
 }
+import vxml_parser.{type VXML, Blame}
+import writerly_parser
 
 const ins = string.inspect
 
@@ -47,7 +47,7 @@ fn get_root(vxmls: List(VXML), path: String) -> Result(VXML, DesugaringError) {
     [root] -> Ok(root)
     _ ->
       Error(DesugaringError(
-        blame: writerly_parser.Blame("", 0, []),
+        blame: Blame("", 0, []),
         message: "found "
           <> ins(list.length)
           <> " != 1 root-level nodes in "
@@ -90,38 +90,16 @@ pub fn desugar(vxmls: List(VXML), path) -> Result(VXML, DesugaringError) {
 }
 
 pub fn main() {
-  let path = "test/sample.vxml"
-  let assert Ok(merged_content) = merge_content(["test/content"], "", -1)
+  let path = "test/content"
 
-  let assert Ok(_) = simplifile.write("test/output.emu", merged_content)
-  let assert Ok(file) = simplifile.read("test/output.emu")
-  let assert Ok(writerlys) = parse_string(file, "test/output.emu", True)
-  
-  let vxmls = writerlys_to_vxmls(writerlys)
+  let assert Ok(assembled) = writerly_parser.assemble_blamed_lines(path)
+  let assert Ok(writerlys) =
+    writerly_parser.parse_blamed_lines(assembled, False)
+  let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
+
   case desugar(vxmls, path) {
-    Ok(desugared) -> {
-      writerly_parser.debug_print_vxmls("(add attribute desugarer)", [desugared])
-    }
-
-    Error(e) -> {
-      io.println("there was a desugaring error: " <> ins(e))
-    }
+    Ok(desugared) ->
+      vxml_parser.debug_print_vxml("(add attribute desugarer)", desugared)
+    Error(err) -> io.println("there was a desugaring error: " <> ins(err))
   }
-
-  // case writerly_parser.parse_file(path, "sample", False) {
-  //   Ok(vxmls) -> {
-  //     case desugar(vxmls, path) {
-  //       Ok(desugared) -> {
-  //         writerly_parser.debug_print_vxmls("(add attribute desugarer)", [desugared])
-  //       }
-
-  //       Error(e) -> {
-  //         io.println("there was a desugaring error: " <> ins(e))
-  //       }
-  //     }
-  //   }
-
-  //   Error(e) ->
-  //     io.println("there was a parsing error for " <> path <> ": " <> ins(e))
-  // }
 }

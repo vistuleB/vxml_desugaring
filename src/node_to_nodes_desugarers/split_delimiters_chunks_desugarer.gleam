@@ -1,12 +1,12 @@
 import infrastructure.{type DesugaringError, depth_first_node_to_nodes_desugarer}
 import node_to_nodes_transforms/split_delimiters_chunks_transform.{
-  split_delimiters_chunks_transform, type SplitDelimitersChunksExtraArgs
+  type SplitDelimitersChunksExtraArgs, split_delimiters_chunks_transform,
 }
-import writerly_parser.{type VXML}
+import vxml_parser.{type VXML}
 
 pub fn split_delimiters_chunks_desugarer(
   vxml: VXML,
-  extra: SplitDelimitersChunksExtraArgs
+  extra: SplitDelimitersChunksExtraArgs,
 ) -> Result(VXML, DesugaringError) {
   depth_first_node_to_nodes_desugarer(
     vxml,
