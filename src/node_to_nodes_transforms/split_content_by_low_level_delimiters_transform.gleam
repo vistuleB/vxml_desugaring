@@ -1,5 +1,4 @@
 import gleam/int
-import gleam/order
 import gleam/result
 import gleam/option
 import gleam/list
@@ -27,7 +26,7 @@ fn look_for_closing_delimiter(str: String, delimiter: Delimiter) -> #(Bool, Stri
       }
 }
 
-fn look_for_opening_delimiter(str: String, delimiters: List(Delimiter), dels_to_ignore: List(Delimiter)) -> #(option.Option(Delimiter), String, String) {
+fn look_for_opening_delimiter(str: String, dels_to_ignore: List(Delimiter)) -> #(option.Option(Delimiter), String, String) {
   let delimiters_to_search = delimiters |> list.filter(fn(d) { ! list.contains(dels_to_ignore, d) })
 
   // we need to find first delimiter in the string
@@ -45,7 +44,7 @@ fn look_for_opening_delimiter(str: String, delimiters: List(Delimiter), dels_to_
         Ok(#(_, found_del)) -> {
           let cropped = str |> string.crop(found_del.symbol)
             case cropped == str, string.starts_with(str, found_del.symbol) {
-              True, False -> look_for_opening_delimiter(str, delimiters, [found_del, ..dels_to_ignore])
+              True, False -> look_for_opening_delimiter(str, [found_del, ..dels_to_ignore])
               _, _ -> {
                 let rest_of_str = cropped |> string.drop_left(1)
                 let before_del_str = cropped |> string.length() |> string.drop_right(str, _)
@@ -61,7 +60,7 @@ fn append_until_delimiter(contents: List(BlamedContent), output: List(BlamedCont
     case contents {
       [] -> #(output, [])
       [first, ..rest] -> {
-        let #(del, _, _) = look_for_opening_delimiter(first.content, delimiters, dels_to_ignore)
+        let #(del, _, _) = look_for_opening_delimiter(first.content, dels_to_ignore)
         case del {
           option.None -> {
               let #(output, rest) = append_until_delimiter(rest, list.append(output, [first]), dels_to_ignore)
@@ -81,7 +80,7 @@ fn split_delimiters(blame: Blame, contents: List(BlamedContent), dels_to_ignore:
     [] -> Ok([])
     [first, ..rest] -> {
 
-      let #(del, before_del_str, rest_of_str) = look_for_opening_delimiter(first.content, delimiters, dels_to_ignore)
+      let #(del, before_del_str, rest_of_str) = look_for_opening_delimiter(first.content, dels_to_ignore)
 
       case del {
         option.None -> {
