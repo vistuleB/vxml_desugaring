@@ -142,11 +142,19 @@ fn split_delimiters(blame: Blame, contents: List(BlamedContent), dels_to_ignore:
               False, False -> split_delimiters(blame, contents, [del, ..dels_to_ignore])
               True, True -> {
                   use rest <- result.try(split_delimiters(blame, rest, dels_to_ignore))
-                  Ok([T(first.blame, [blamed_line_for_string_before_delimiter]), new_element, ..rest])
+
+                  case string.is_empty(before_del_str){
+                      True -> Ok([new_element, ..rest])
+                      False ->  Ok([T(first.blame, [blamed_line_for_string_before_delimiter]), new_element, ..rest])
+                  } 
               }
               True, False -> {
                   use rest <- result.try(split_delimiters(blame, [blamed_line_for_rest_of_string, ..rest], dels_to_ignore))
-                  Ok([T(first.blame, [blamed_line_for_string_before_delimiter]), new_element, ..rest])
+
+                  case string.is_empty(before_del_str){
+                      True -> Ok([new_element, ..rest])
+                      False ->  Ok([T(first.blame, [blamed_line_for_string_before_delimiter]), new_element, ..rest])
+                  }   
               }
             }
         }
