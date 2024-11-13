@@ -9,29 +9,45 @@ import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
 
-type Delimiter {
-  Delimiter(symbol: String, tag: String, can_nest: Bool)
+type IgnoreWhen {
+  IgnoreWhen(before: List(String), after: List(String))
 }
 
-const delimiters = [Delimiter("*", "b", True), Delimiter("_", "i", True), Delimiter("$", "Math", False) ]
+type Delimiter {
+  Delimiter(symbol: String, tag: String, can_nest: Bool, ignore_when: IgnoreWhen)
+}
+
+const delimiters = [
+  Delimiter("*", "b", True, IgnoreWhen(
+    before: ["(", "[", "{", "*", " ", "\\"],
+    after: [ ")", "]", "}", "*", " ", ]
+   )),
+  Delimiter("_", "i", True, IgnoreWhen(
+    before: ["(", "[", "{", " ","\\"],
+    after: [")", "]", "}", " ", ]
+    )), 
+  Delimiter("$", "Math", False, IgnoreWhen(["\\"], [])) 
+]
 
 fn look_for_closing_delimiter(str: String, delimiter: Delimiter) -> #(Bool, String, String) {
       let cropped = str |> string.crop(delimiter.symbol)
       let before_del_str = cropped |> string.length() |> string.drop_right(str, _)
-      case cropped == str || is_escaped(before_del_str) {
+      let rest_of_str = cropped |> string.drop_left(1)
+
+      case cropped == str || is_escaped(delimiter, before_del_str, rest_of_str) {
         True -> #(False, "", str)
         False -> {
           let content = cropped |> string.length() |> string.drop_right(str, _)
-          let rest_of_str = cropped |> string.drop_left(1)
           #(True, content, rest_of_str)
         }
       }
 }
 
-fn is_escaped(before_del_str: String) -> Bool {
-  case string.last(before_del_str) {
-    Ok(last) -> last == "\\"
-    Error(_) -> False
+fn is_escaped(del: Delimiter, before_del_str: String, rest_str: String) -> Bool {
+  case string.last(before_del_str), string.first(rest_str) {
+    Ok(before), _ -> del.ignore_when.before |> list.contains(before)
+    _, Ok(after) -> del.ignore_when.after |> list.contains(after)
+    _, _ -> False
   }
 }
 
@@ -59,7 +75,7 @@ fn look_for_opening_delimiter(str: String, dels_to_ignore: List(Delimiter)) -> #
                 let rest_of_str = cropped |> string.drop_left(1)
                 let before_del_str = cropped |> string.length() |> string.drop_right(str, _)
 
-                case is_escaped(before_del_str) {
+                case is_escaped(found_del, before_del_str, rest_of_str) {
                   True -> {
 
                     let #(next_found_del, next_before_del_str, rest_of_str) = look_for_opening_delimiter(rest_of_str, dels_to_ignore)
