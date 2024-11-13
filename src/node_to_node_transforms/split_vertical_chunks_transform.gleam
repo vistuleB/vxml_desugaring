@@ -7,7 +7,7 @@ fn is_blank_line(vxml: VXML) -> #(Bool, Blame) {
   case vxml {
     T(blame, _) -> #(False, blame)
     V(blame, tag, _, _) ->
-      case tag == "BlankLine" {
+      case tag == "WriterlyBlankLine" {
         True -> #(True, blame)
         False -> #(False, blame)
       }
