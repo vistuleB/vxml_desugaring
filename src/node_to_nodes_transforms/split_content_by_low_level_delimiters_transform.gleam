@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/int
 import gleam/result
 import gleam/option
@@ -16,7 +17,8 @@ const delimiters = [Delimiter("*", "b", True), Delimiter("_", "i", True), Delimi
 
 fn look_for_closing_delimiter(str: String, delimiter: Delimiter) -> #(Bool, String, String) {
       let cropped = str |> string.crop(delimiter.symbol)
-      case cropped == str {
+      let before_del_str = cropped |> string.length() |> string.drop_right(str, _)
+      case cropped == str || is_escaped(before_del_str) {
         True -> #(False, "", str)
         False -> {
           let content = cropped |> string.length() |> string.drop_right(str, _)
@@ -24,6 +26,13 @@ fn look_for_closing_delimiter(str: String, delimiter: Delimiter) -> #(Bool, Stri
           #(True, content, rest_of_str)
         }
       }
+}
+
+fn is_escaped(before_del_str: String) -> Bool {
+  case string.last(before_del_str) {
+    Ok(last) -> last == "\\"
+    Error(_) -> False
+  }
 }
 
 fn look_for_opening_delimiter(str: String, dels_to_ignore: List(Delimiter)) -> #(option.Option(Delimiter), String, String) {
@@ -34,6 +43,7 @@ fn look_for_opening_delimiter(str: String, dels_to_ignore: List(Delimiter)) -> #
       #(str |> string.crop(x.symbol), x)
   })
   // cropped with least length is related to found delimiter
+  
   case cropped_all 
       |> list.sort(fn(a, b) {  
           let #(len_a, _) = a
@@ -48,7 +58,16 @@ fn look_for_opening_delimiter(str: String, dels_to_ignore: List(Delimiter)) -> #
               _, _ -> {
                 let rest_of_str = cropped |> string.drop_left(1)
                 let before_del_str = cropped |> string.length() |> string.drop_right(str, _)
-                #(option.Some(found_del), before_del_str, rest_of_str)
+
+                case is_escaped(before_del_str) {
+                  True -> {
+
+                    let #(next_found_del, next_before_del_str, rest_of_str) = look_for_opening_delimiter(rest_of_str, dels_to_ignore)
+
+                    #(next_found_del, before_del_str <> found_del.symbol <> next_before_del_str, rest_of_str)
+                  }
+                  False -> #(option.Some(found_del), before_del_str, rest_of_str)
+                }
               }
             }
         }
@@ -97,12 +116,11 @@ fn split_delimiters(blame: Blame, contents: List(BlamedContent), dels_to_ignore:
             let blamed_line_for_rest_of_string = BlamedContent(first.blame, rest_of_str)
 
             let blamed_line_for_del_content = BlamedContent(first.blame, del_content)
-            
 
             use nested_delimiters_vxml <- result.try(split_content_by_low_level_delimiters_transform(T(first.blame, [blamed_line_for_del_content]), [], Nil))
             
             let new_element = V(first.blame, del.tag, [], nested_delimiters_vxml)
-
+            
             case found, string.is_empty(rest_of_str) {
               False, True -> split_delimiters(blame, rest, [])
               False, False -> split_delimiters(blame, contents, [del, ..dels_to_ignore])
