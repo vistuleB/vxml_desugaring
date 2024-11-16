@@ -1,4 +1,6 @@
+import gleam/io
 import desugarers_docs.{ type Pipeline}
+import argv
 import gleam/list
 import gleam/result
 import gleam/string
@@ -86,18 +88,29 @@ pub fn desugar(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
 }
 
 pub fn main() {
-
   let assert Ok(assembled) = writerly_parser.assemble_blamed_lines(path)
 
-  print_pipeline_doc(assembled)
+  let args = argv.load().arguments
+    case args {
+      [] -> {
+        let assert Ok(writerlys) =
+            writerly_parser.parse_blamed_lines(assembled, False)
+          let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
 
-  // let assert Ok(writerlys) =
-  //   writerly_parser.parse_blamed_lines(assembled, False)
-  // let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
-
-  // case desugar(vxmls) {
-  //   Ok(desugared) ->
-  //     vxml_parser.debug_print_vxml("(add attribute desugarer)", desugared)
-  //   Error(err) -> io.println("there was a desugaring error: " <> ins(err))
-  // }
+          case desugar(vxmls) {
+            Ok(desugared) ->
+              vxml_parser.debug_print_vxml("(add attribute desugarer)", desugared)
+            Error(err) -> io.println("there was a desugaring error: " <> ins(err))
+          }
+      }
+      [command] ->
+        case command {
+          "debug" ->{ 
+            print_pipeline_doc(assembled)
+            Nil
+           }
+          _ -> io.println("commands available: debug")
+        }
+      _ -> io.println("commands available: debug")
+    }
 }
