@@ -10,7 +10,9 @@ import gleam/option.{type Option, Some}
 import vxml_parser.{type VXML}
 import infrastructure.{type DesugaringError}
 import node_to_node_desugarers/add_attributes_desugarer.{add_attributes_desugarer}
+import gleam/string
 
+const ins = string.inspect
 type Desugarer =
   fn(VXML) -> Result(VXML, DesugaringError)
 
@@ -20,11 +22,12 @@ pub type DesugarerDescription {
 
 pub type Pipeline =  List(#(DesugarerDescription, Desugarer))
 
+
 pub fn add_attributes_pipe(extra) {
   #(
     DesugarerDescription(
     "add_attributes_desugarer",
-    Some("AddAttributesExtraArgs(to: List(String), attributes: List(Attribute))"), 
+    Some(ins(extra)), 
     ""),
     fn(x) { 
        add_attributes_desugarer(x, extra)
@@ -70,7 +73,7 @@ pub fn wrap_elements_by_blankline_pipe(extra) {
   #(
     DesugarerDescription(
     "wrap_elements_by_blankline_desugarer",
-    option.None, 
+    Some(ins(extra)), 
     ""),
     fn(x) { 
        wrap_elements_by_blankline_desugarer.wrap_elements_by_blankline_desugarer(x, extra)
@@ -103,7 +106,7 @@ pub fn split_delimiters_chunks_pipe(extra) {
   #(
     DesugarerDescription(
     "split_delimiters_chunks_desugarer",
-    option.None, 
+    Some(ins(extra)), 
     ""),
     fn(x) { 
        split_delimiters_chunks_desugarer.split_delimiters_chunks_desugarer(x, extra)
