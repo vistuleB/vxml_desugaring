@@ -19,12 +19,12 @@ type Delimiter {
 
 const delimiters = [
   Delimiter("*", "b", True, IgnoreWhen(
-    before: ["(", "[", "{", "*", " ", "\\"],
-    after: [ ")", "]", "}", "*", " ", ]
+    before: ["(", "[", "{", "*", "\\"],
+    after: [ ")", "]", "}", "*"]
    )),
   Delimiter("_", "i", True, IgnoreWhen(
-    before: ["(", "[", "{", " ","\\"],
-    after: [")", "]", "}", " ", ]
+    before: ["(", "[", "{", "\\"],
+    after: [")", "]", "}"]
     )), 
   Delimiter("$", "Math", False, IgnoreWhen(["\\"], [])) 
 ]
@@ -116,7 +116,6 @@ fn split_delimiters(blame: Blame, contents: List(BlamedContent), dels_to_ignore:
     [first, ..rest] -> {
 
       let #(del, before_del_str, rest_of_str) = look_for_opening_delimiter(first.content, dels_to_ignore)
-
       case del {
         option.None -> {
             let #(output, rest) = append_until_delimiter(rest, [first], dels_to_ignore) // get all lines that follows and do not have delimiter to be in same list 
@@ -138,8 +137,11 @@ fn split_delimiters(blame: Blame, contents: List(BlamedContent), dels_to_ignore:
             let new_element = V(first.blame, del.tag, [], nested_delimiters_vxml)
             
             case found, string.is_empty(rest_of_str) {
-              False, True -> split_delimiters(blame, rest, [])
               False, False -> split_delimiters(blame, contents, [del, ..dels_to_ignore])
+              False, True -> {
+                use rest <- result.try(split_delimiters(blame, rest, []))
+                Ok([T(first.blame, [blamed_line_for_string_before_delimiter]), ..rest])
+              }
               True, True -> {
                   use rest <- result.try(split_delimiters(blame, rest, dels_to_ignore))
 
