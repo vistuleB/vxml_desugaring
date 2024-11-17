@@ -1,3 +1,4 @@
+import node_to_node_desugarers/wrap_math_with_no_break_desugarer
 import node_to_nodes_desugarers/break_up_text_by_double_dollars_desugarer
 import node_to_node_desugarers/pair_double_dollars_together_desugarer
 import node_to_nodes_desugarers/wrap_elements_by_blankline_desugarer
@@ -113,7 +114,6 @@ pub fn split_delimiters_chunks_pipe(extra) {
     }
   )
 }
-
 pub fn split_content_by_low_level_delimiters_pipe() {
   #(
     DesugarerDescription(
@@ -122,6 +122,17 @@ pub fn split_content_by_low_level_delimiters_pipe() {
     ""),
     fn(x) { 
        split_content_by_low_level_delimiters_desugarer.split_content_by_low_level_delimiters_desugarer(x)
+    }
+  )
+}
+pub fn wrap_math_with_no_break_pipe() {
+  #(
+    DesugarerDescription(
+    "split_content_by_low_level_delimiters_desugarer",
+    option.None, 
+    ""),
+    fn(x) { 
+       wrap_math_with_no_break_desugarer.wrap_math_with_no_break_desugarer(x)
     }
   )
 }

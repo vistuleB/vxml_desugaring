@@ -78,6 +78,7 @@ pub fn desugar(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
       desugarers_docs.split_delimiters_chunks_pipe(extra_3),
       desugarers_docs.split_delimiters_chunks_pipe(extra_4),
       desugarers_docs.split_content_by_low_level_delimiters_pipe(),
+      desugarers_docs.wrap_math_with_no_break_pipe()
     ]
 
     case get_root(vxmls) {
