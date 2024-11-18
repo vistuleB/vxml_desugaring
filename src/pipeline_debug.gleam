@@ -16,21 +16,23 @@ import node_to_nodes_transforms/split_delimiters_chunks_transform.{
 import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{
   WrapByBlankLineExtraArgs,
 }
-import vxml_parser.{type VXML, type Blame, Blame, type BlamedLine}
+import vxml_parser.{type VXML, type Blame, Blame, type BlamedLine, BlamedLine}
 import writerly_parser.{type Writerly}
 const ins = string.inspect
 
 const path = "test/content"
 
-fn header(longest_blame_length: Int){
+type MarginAnnotator = fn(Blame) -> String
+
+fn header(longest_blame_length: Int) -> String {
     string.repeat("-", longest_blame_length + 20) <> "\n"
       <> "| Blame"
-      <> string.repeat(" ", longest_blame_length - string.length("| Blame") + 10 )
+      <> string.repeat(" ", longest_blame_length + 4 - string.length("| Blame") )
       <> "##Content\n"
       <> string.repeat("-", longest_blame_length + 20) <> "\n"
 } 
           
-fn footer(longest_blame_length: Int){
+fn footer(longest_blame_length: Int) -> String {
   string.repeat("-", longest_blame_length + 20) <> "\n"
 } 
 
@@ -48,110 +50,73 @@ fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn get_blame_length(blame: Blame ) {
-   string.length(blame.filename) + string.length(ins(blame.line_no)) + 1
-}
-
-fn get_longest_blame_length(writerlys: List(Writerly)) {
-  case writerlys {
+fn get_longest_blame_length(lines: List(BlamedLine)) -> Int {
+  case lines {
     [] -> 0
     [first, ..rest] -> {
-   
-      let first_length = case first {
-        writerly_parser.Tag(b, _, _, children) -> {
-          let current_blamed_length = get_blame_length(b)
-          let children_longest_length = get_longest_blame_length(children)
-
-          case int.compare(current_blamed_length, children_longest_length) {
-            order.Gt -> current_blamed_length
-            _ -> children_longest_length
-          }
-        }
-        _ -> get_blame_length(first.blame)
-      }
-
-      let rest_length = get_longest_blame_length(rest)
-
-      case int.compare(first_length, rest_length) {
-        order.Gt -> first_length
-        _ -> rest_length
-      }
+      int.max(string.length(blame_to_string(first.blame)),  get_longest_blame_length(rest))
     }
   }
 }
 
-fn margin_assembler(
-  blame: vxml_parser.Blame,
-  longest_blame_length: Int,
-  margin: String,
-) -> String {
-
-  let blame_col = "| " <> blame.filename <> ":" <> ins(blame.line_no)
-          
-  let blame_col = blame_col <> string.repeat(" ", longest_blame_length - string.length(blame_col) + 10)
-
-  blame_col <> "##" <> margin
-
+fn blame_to_string(blame: Blame) -> String {
+  blame.filename <> ":" <> ins(blame.line_no)
 }
 
-fn writerly_content_to_string(
+fn writerly_to_blamed_lines(
   t: Writerly,
-  indentation: String,
-  longest_blame_length: Int,
-) {
+  indent: Int,
+) -> List(BlamedLine) {
   case t {
-    writerly_parser.BlankLine(blame) ->
-      margin_assembler( blame, longest_blame_length, "") <> "\n"
-
-    writerly_parser.Blurb(_, blamed_contents) -> "\n"
-
-    writerly_parser.CodeBlock(blame, annotation, blamed_contents) -> "\n"
+    writerly_parser.BlankLine(blame) -> [BlamedLine(blame, indent, "")]
+    writerly_parser.Blurb(blame, _) -> [BlamedLine(blame, indent, "")]
+    writerly_parser.CodeBlock(blame, _, _) -> [BlamedLine(blame, indent, "")]
 
     writerly_parser.Tag(blame, tag_name, blamed_attributes, children) -> {
 
-      let attributes_list = list.map(blamed_attributes, fn(t) {
-        {
-          margin_assembler(
-            t.blame,
-            longest_blame_length,
-            indentation <> "    ",
-          )
-          <> t.key
-          <> " "
-          <> t.value
-        }
+      let tag_blamed_line = BlamedLine(blame, indent, "|> " <> tag_name)
+      let attributes_blamed_lines = list.map(blamed_attributes, fn(t) {
+        BlamedLine(t.blame, indent + 1, t.key <> " " <> t.value)
       })
-      {
-        margin_assembler(blame, longest_blame_length, indentation)
-        <> "|>"
-        <> " "
-        <> tag_name
-        <> "\n"
-        <> string.join(attributes_list, "\n")
-        <> "\n"
-        <> writerlys_content_to_string_internal(
-            children,
-            indentation <> "    ",
-            longest_blame_length,
-          )
-      }
+      let children_blamed_lines = writerlys_to_blamed_lines_internal(children, indent + 1)
+
+      [tag_blamed_line, ..attributes_blamed_lines]
+        |> list.append(children_blamed_lines)
     }
   }
 }
 
-
-fn writerlys_content_to_string_internal(writerlys: List(Writerly), identation: String, longest_blame_length: Int) -> String {
+fn writerlys_to_blamed_lines_internal(writerlys: List(Writerly), indent: Int) ->  List(BlamedLine) {
     case writerlys {
-      [] -> ""
+      [] -> []
       [first, ..rest] -> {
-        writerly_content_to_string(first, identation, longest_blame_length)
-        <> writerlys_content_to_string_internal(rest, identation, longest_blame_length)
+        writerly_to_blamed_lines(first, indent) 
+          |> list.append(writerlys_to_blamed_lines_internal(rest, indent))
       }
     }
 }
 
-fn writerlys_content_to_string(writerlys: List(Writerly), longest_blame_length: Int) -> String {
-  writerlys_content_to_string_internal(writerlys, "    ", longest_blame_length)
+fn writerlys_to_blamed_lines(writerlys: List(Writerly)) -> List(BlamedLine) {
+  writerlys_to_blamed_lines_internal(writerlys, 0)
+}
+
+fn pretty_print(lines: List(BlamedLine), annotator: MarginAnnotator) -> String {
+  lines
+    |> list.map(fn(x) {
+      let BlamedLine(blame, indent, suffix) = x
+      annotator(blame) <> string.repeat(" ", indent * 4) <> suffix
+    })
+    |> string.join("\n")
+    <> "\n"
+}
+
+fn pipeline_docs_annotator(max_length: Int) -> MarginAnnotator {
+  fn(blame: Blame) {
+    "| " <>
+    blame_to_string(blame) <>
+    string.repeat(" ", max_length + 4 - string.length("| " <> blame_to_string(blame))) <>
+    "##"
+  }
 }
 
 pub fn debug_pipeline(vxml: VXML, pipeline: Pipeline, step: Int, longest_blame_length: Int) {
@@ -191,12 +156,15 @@ pub fn pipeline_introspection_lines2string(
   let assert Ok(writerlys) =
     writerly_parser.parse_blamed_lines(input, False)
 
-  let longest_blame_length = get_longest_blame_length(writerlys)
+  let lines = writerlys_to_blamed_lines(writerlys)
+  let max_length = get_longest_blame_length(lines)
 
   let output = "// PIPELINE INTROSPECTION\n" 
-               <> header(longest_blame_length)
-               <> writerlys_content_to_string(writerlys, longest_blame_length)
-               <> footer(longest_blame_length)
+               <> header(max_length)
+               <> writerlys 
+                  |> writerlys_to_blamed_lines() 
+                  |> pretty_print(pipeline_docs_annotator(max_length))
+               <> footer(max_length)
 
   // let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
 
