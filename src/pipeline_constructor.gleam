@@ -1,5 +1,8 @@
 import desugarers_docs
 
+import node_to_node_transforms/wrap_element_children_transform.{
+  WrapElementChildrenExtra,
+}
 import node_to_nodes_transforms/split_delimiters_chunks_transform.{
   SplitDelimitersChunksExtraArgs,
 }
@@ -8,6 +11,9 @@ import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{
 }
 
 pub fn pipeline_constructor() {
+  let extra_1 =
+    WrapElementChildrenExtra(element_tags: ["List", "Grid"], wrap_with: "Item")
+
   let extra_2 =
     WrapByBlankLineExtraArgs(tags: [
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
@@ -36,6 +42,7 @@ pub fn pipeline_constructor() {
     desugarers_docs.split_vertical_chunks_pipe(),
     desugarers_docs.remove_vertical_chunks_with_no_text_child_pipe(),
     desugarers_docs.insert_indent_pipe(),
+    desugarers_docs.wrap_element_children_pipe(extra_1),
     desugarers_docs.split_delimiters_chunks_pipe(extra_3),
     desugarers_docs.split_delimiters_chunks_pipe(extra_4),
     desugarers_docs.split_content_by_low_level_delimiters_pipe(),

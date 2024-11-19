@@ -10,6 +10,7 @@ import node_to_node_desugarers/pair_double_dollars_together_desugarer
 import node_to_node_desugarers/remove_vertical_chunks_around_single_children_desugarer
 import node_to_node_desugarers/remove_writerly_blurb_tags_around_text_nodes_desugarer
 import node_to_node_desugarers/split_vertical_chunks_desugarer
+import node_to_node_desugarers/wrap_element_children_desugarer
 import node_to_node_desugarers/wrap_math_with_no_break_desugarer
 import node_to_nodes_desugarers/break_up_text_by_double_dollars_desugarer
 import node_to_nodes_desugarers/remove_tag_desugarer
@@ -141,6 +142,12 @@ pub fn split_vertical_chunks_pipe() {
     DesugarerDescription("split_vertical_chunks_desugarer", option.None, ""),
     fn(x) { split_vertical_chunks_desugarer.split_vertical_chunks_desugarer(x) },
   )
+}
+
+pub fn wrap_element_children_pipe(extra) -> #(DesugarerDescription, Desugarer) {
+  #(DesugarerDescription("wrap_element_children", Some(ins(extra)), ""), fn(x) {
+    wrap_element_children_desugarer.wrap_element_children_desugarer(x, extra)
+  })
 }
 
 pub fn remove_vertical_chunks_around_single_children_pipe() {
