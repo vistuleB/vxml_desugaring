@@ -1,5 +1,5 @@
 import infrastructure.{type DesugaringError}
-import vxml_parser.{type VXML, T, V}
+import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
 pub fn insert_indent_transform(
   node: VXML,
@@ -10,16 +10,19 @@ pub fn insert_indent_transform(
   _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    V(_, _, _, _) -> Ok(node)
-    T(blame, _) -> {
+    T(_, _) -> Ok(node)
+    V(blame, "VerticalChunk", attrs, children) -> {
       case previous_unmapped_siblings {
-        [] -> Ok(node)
-        [first, ..] ->
-          case first {
-            T(_, _) -> Ok(V(blame, "Indent", [], [node]))
-            _ -> Ok(node)
-          }
+        [V(_, "VerticalChunk", _, _), ..] ->
+          Ok(V(
+            blame,
+            "VerticalChunk",
+            [BlamedAttribute(blame, "indent", "true"), ..attrs],
+            children,
+          ))
+        _ -> Ok(node)
       }
     }
+    V(_, _, _, _) -> Ok(node)
   }
 }

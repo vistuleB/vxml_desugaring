@@ -5,6 +5,7 @@ import node_to_node_desugarers/add_attributes_desugarer.{
   add_attributes_desugarer,
 }
 import node_to_node_desugarers/insert_indent_desugarer
+import node_to_node_desugarers/insert_indent_v1_desugarer
 import node_to_node_desugarers/pair_double_dollars_together_desugarer
 import node_to_node_desugarers/remove_vertical_chunks_around_single_children_desugarer
 import node_to_node_desugarers/remove_writerly_blurb_tags_around_text_nodes_desugarer
@@ -87,9 +88,20 @@ pub fn insert_indent_pipe() {
     DesugarerDescription(
       "insert_indent_desugarer",
       option.None,
-      "insert <> Indent nodes around text nodes\nwhose previous sibling is a text node",
+      "add 'insert true' attributes to VerticalChunk nodes\nthat immediately follow another VerticalChunk node",
     ),
     fn(x) { insert_indent_desugarer.insert_indent_desugarer(x) },
+  )
+}
+
+pub fn insert_indent_v1_pipe() {
+  #(
+    DesugarerDescription(
+      "insert_indent_v1_desugarer",
+      option.None,
+      "insert <> Indent nodes around text nodes\nwhose previous sibling is a text node",
+    ),
+    fn(x) { insert_indent_v1_desugarer.insert_indent_v1_desugarer(x) },
   )
 }
 

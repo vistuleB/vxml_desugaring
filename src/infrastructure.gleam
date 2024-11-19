@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/list
 import gleam/result
 import vxml_parser.{type Blame, type VXML, T, V}
