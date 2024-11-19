@@ -17,7 +17,7 @@ pub fn pipeline_constructor() {
   let extra_2 =
     WrapByBlankLineExtraArgs(tags: [
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
-      "Section", "Exercise",
+      "Section", "Exercise", "List", "Grid",
     ])
 
   let extra_3 =

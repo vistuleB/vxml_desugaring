@@ -1,24 +1,20 @@
 |> Exercise
+    counter hi
 
-    Imagine a single particle in a one-dimensional
-    world, whose velocity equals its position; at $t = 0$,
-    the particle is sitting at $x = 1$:
+    ```python
+    hello = hi
+    ```
+    hihi
 
-    |> Image
-        src images/svg_ch4_one_particle_at_1.svg
-
-    If we play time backward, will the particle 
-    ever reach $x = 0$? 
+    Going back in __time,
+    |> InlineImage
+        src hi
+    examine how long it would take__ 
 
     This paragraph should get an indent.
 
     |> Solution
 
-        Going back in time,
-        examine how long it would take
+        hi
 
-        _Note 1._
-        We never took the time to prove the associativity
-        of function addition, but it is easy to prove! 
-        (For other proofs see Exercise 32, Exercise 33, as
-        well as Exercise 9, Chapter 3.)
+    

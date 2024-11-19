@@ -17,7 +17,12 @@ pub fn wrap_elements_by_blankline_transform(
       case list.contains(extra.tags, tag) {
         True -> {
           let blank_line =
-            V(blame: blame, tag: "WriterlyBlankLine", attributes: [], children: [])
+            V(
+              blame: blame,
+              tag: "WriterlyBlankLine",
+              attributes: [],
+              children: [],
+            )
 
           Ok([blank_line, node, blank_line])
         }

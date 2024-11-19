@@ -16,20 +16,47 @@ const path = "test/content"
 // ************************
 // Writerly to blamed lines
 // ************************
+fn map_with_special_first(
+  z: List(a),
+  fn1: fn(a) -> b,
+  fn2: fn(a) -> b,
+) -> List(b) {
+  case z {
+    [] -> []
+    [first, ..rest] -> fn1(first) |> list.prepend(list.map(rest, fn2), _)
+  }
+}
+
 fn writerly_to_blamed_lines(t: Writerly, indent: Int) -> List(BlamedLine) {
   case t {
     writerly_parser.BlankLine(blame) -> [BlamedLine(blame, indent, "")]
-    writerly_parser.Blurb(blame, _) -> [BlamedLine(blame, indent, "")]
-    writerly_parser.CodeBlock(blame, _, _) -> [BlamedLine(blame, indent, "")]
+    writerly_parser.Blurb(_, blamed_contents) -> {
+      map_with_special_first(
+        blamed_contents,
+        fn(first) { BlamedLine(first.blame, indent, first.content) },
+        fn(after_first) {
+          BlamedLine(after_first.blame, indent, after_first.content)
+        },
+      )
+    }
+    writerly_parser.CodeBlock(blame, annotation, blamed_contents) -> {
+      [BlamedLine(blame, indent, "```" <> annotation)]
+      |> list.append(
+        list.map(blamed_contents, fn(blamed_content) {
+          BlamedLine(blame, indent, blamed_content.content)
+        }),
+      )
+      |> list.append([BlamedLine(blame, indent, "```")])
+    }
 
     writerly_parser.Tag(blame, tag_name, blamed_attributes, children) -> {
       let tag_blamed_line = BlamedLine(blame, indent, "|> " <> tag_name)
       let attributes_blamed_lines =
         list.map(blamed_attributes, fn(t) {
-          BlamedLine(t.blame, indent + 1, t.key <> " " <> t.value)
+          BlamedLine(t.blame, indent + 4, t.key <> " " <> t.value)
         })
       let children_blamed_lines =
-        writerlys_to_blamed_lines_internal(children, indent + 1)
+        writerlys_to_blamed_lines_internal(children, indent + 4)
 
       [tag_blamed_line, ..attributes_blamed_lines]
       |> list.append(children_blamed_lines)
@@ -72,10 +99,10 @@ fn vxml_to_blamed_lines(vxml: VXML, indent: Int) -> List(BlamedLine) {
       let tag_blamed_line = BlamedLine(blame, indent, "<> " <> tag_name)
       let attributes_blamed_lines =
         list.map(blamed_attributes, fn(t) {
-          BlamedLine(t.blame, indent + 1, t.key <> " " <> t.value)
+          BlamedLine(t.blame, indent + 4, t.key <> " " <> t.value)
         })
       let children_blamed_lines =
-        vxmls_to_blamed_lines_internal(children, indent + 1)
+        vxmls_to_blamed_lines_internal(children, indent + 4)
 
       [tag_blamed_line, ..attributes_blamed_lines]
       |> list.append(children_blamed_lines)
@@ -141,7 +168,7 @@ fn pretty_print(lines: List(BlamedLine), annotator: MarginAnnotator) -> String {
   lines
   |> list.map(fn(x) {
     let BlamedLine(blame, indent, suffix) = x
-    annotator(blame) <> string.repeat(" ", indent * 4) <> suffix
+    annotator(blame) <> string.repeat(" ", indent) <> suffix
   })
   |> string.join("\n")
   <> "\n"
