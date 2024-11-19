@@ -10,6 +10,8 @@
     If we play time backward, will the particle 
     ever reach $x = 0$? 
 
+    This paragraph should get an indent.
+
     |> Solution
 
         Going back in time,
