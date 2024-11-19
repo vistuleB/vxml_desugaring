@@ -4,6 +4,8 @@ import infrastructure.{type DesugaringError}
 import node_to_node_desugarers/add_attributes_desugarer.{
   add_attributes_desugarer,
 }
+import node_to_node_desugarers/insert_indent_desugarer
+import node_to_node_desugarers/insert_indent_v1_desugarer
 import node_to_node_desugarers/pair_double_dollars_together_desugarer
 import node_to_node_desugarers/remove_vertical_chunks_around_single_children_desugarer
 import node_to_node_desugarers/remove_writerly_blurb_tags_around_text_nodes_desugarer
@@ -11,6 +13,7 @@ import node_to_node_desugarers/split_vertical_chunks_desugarer
 import node_to_node_desugarers/wrap_element_children_desugarer
 import node_to_node_desugarers/wrap_math_with_no_break_desugarer
 import node_to_nodes_desugarers/break_up_text_by_double_dollars_desugarer
+import node_to_nodes_desugarers/remove_tag_desugarer
 import node_to_nodes_desugarers/remove_vertical_chunks_with_no_text_child_desugarer
 import node_to_nodes_desugarers/split_content_by_low_level_delimiters_desugarer
 import node_to_nodes_desugarers/split_delimiters_chunks_desugarer
@@ -67,6 +70,39 @@ pub fn break_up_text_by_double_dollars_pipe() {
         x,
       )
     },
+  )
+}
+
+pub fn remove_tag_pipe(tags: List(String)) {
+  #(
+    DesugarerDescription(
+      "remove_tag_desugarer",
+      option.None,
+      "removes V-nodes whose tags come from the specified list",
+    ),
+    fn(x) { remove_tag_desugarer.remove_tag_desugarer(x, tags) },
+  )
+}
+
+pub fn insert_indent_pipe() {
+  #(
+    DesugarerDescription(
+      "insert_indent_desugarer",
+      option.None,
+      "add 'insert true' attributes to VerticalChunk nodes\nthat immediately follow another VerticalChunk node",
+    ),
+    fn(x) { insert_indent_desugarer.insert_indent_desugarer(x) },
+  )
+}
+
+pub fn insert_indent_v1_pipe() {
+  #(
+    DesugarerDescription(
+      "insert_indent_v1_desugarer",
+      option.None,
+      "insert <> Indent nodes around text nodes\nwhose previous sibling is a text node",
+    ),
+    fn(x) { insert_indent_v1_desugarer.insert_indent_v1_desugarer(x) },
   )
 }
 

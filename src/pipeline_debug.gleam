@@ -60,8 +60,13 @@ fn writerlys_to_blamed_lines(writerlys: List(Writerly)) -> List(BlamedLine) {
 
 fn vxml_to_blamed_lines(vxml: VXML, indent: Int) -> List(BlamedLine) {
   case vxml {
-    T(_, lines) -> {
-      list.map(lines, fn(x) { BlamedLine(x.blame, indent, x.content) })
+    T(blame, lines) -> {
+      [
+        BlamedLine(blame, indent, "<>"),
+        ..list.map(lines, fn(x) {
+          BlamedLine(x.blame, indent + 1, "\"" <> x.content <> "\"")
+        })
+      ]
     }
     V(blame, tag_name, blamed_attributes, children) -> {
       let tag_blamed_line = BlamedLine(blame, indent, "<> " <> tag_name)

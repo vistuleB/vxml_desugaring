@@ -1,12 +1,10 @@
 import gleam/list
+import gleam/result
 import vxml_parser.{type Blame, type VXML, T, V}
 
 pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
 }
-
-pub type NodeToNodeTransform(extra) =
-  fn(VXML, List(VXML), extra) -> Result(VXML, DesugaringError)
 
 fn map_result(
   inputs: List(a),
@@ -38,6 +36,9 @@ pub fn first_blame(vxml: VXML) -> Blame {
 //**************************************************************
 //* desugaring efforts #1 deliverable: 'pub' function(s) below *
 //**************************************************************
+
+pub type NodeToNodeTransform(extra) =
+  fn(VXML, List(VXML), extra) -> Result(VXML, DesugaringError)
 
 fn depth_first_node_to_node_desugar_many(
   vxmls: List(VXML),
@@ -97,6 +98,113 @@ pub fn depth_first_node_to_node_desugarer_many(
   extra: extra,
 ) -> Result(List(VXML), DesugaringError) {
   depth_first_node_to_node_desugar_many(vxmls, [], transform, extra)
+}
+
+//**********************************************************************
+//* desugaring efforts #1.5: depth-first-search, node-to-node          *
+//* transform with lots of side info (not only ancestors)              *
+//**********************************************************************
+
+pub type NodeToNodeFancyTransform(extra) =
+  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), extra) ->
+    Result(VXML, DesugaringError)
+
+fn fancy_depth_first_node_to_node_children_traversal(
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  transform: NodeToNodeFancyTransform(extra),
+  extra: extra,
+) -> Result(#(List(VXML), List(VXML), List(VXML)), DesugaringError) {
+  case following_siblings_before_mapping {
+    [] ->
+      Ok(
+        #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
+      )
+    [first, ..rest] -> {
+      use first_replacement <- result.then(
+        fancy_depth_first_node_to_node_desugar_one(
+          first,
+          ancestors,
+          previous_siblings_before_mapping,
+          previous_siblings_after_mapping,
+          rest,
+          transform,
+          extra,
+        ),
+      )
+      fancy_depth_first_node_to_node_children_traversal(
+        ancestors,
+        [first, ..previous_siblings_before_mapping],
+        [first_replacement, ..previous_siblings_after_mapping],
+        rest,
+        transform,
+        extra,
+      )
+    }
+  }
+}
+
+fn fancy_depth_first_node_to_node_desugar_one(
+  node: VXML,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  transform: NodeToNodeFancyTransform(extra),
+  extra: extra,
+) -> Result(VXML, DesugaringError) {
+  case node {
+    T(_, _) ->
+      transform(
+        node,
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+        extra,
+      )
+    V(blame, tag, attrs, children) -> {
+      case
+        fancy_depth_first_node_to_node_children_traversal(
+          [node, ..ancestors],
+          [],
+          [],
+          children,
+          transform,
+          extra,
+        )
+      {
+        Ok(#(_, mapped_children, _)) ->
+          transform(
+            V(blame, tag, attrs, mapped_children |> list.reverse),
+            ancestors,
+            previous_siblings_before_mapping,
+            previous_siblings_after_mapping,
+            following_siblings_before_mapping,
+            extra,
+          )
+        Error(err) -> Error(err)
+      }
+    }
+  }
+}
+
+pub fn fancy_depth_first_node_to_node_desugarer(
+  root: VXML,
+  transform: NodeToNodeFancyTransform(extra),
+  extra: extra,
+) -> Result(VXML, DesugaringError) {
+  fancy_depth_first_node_to_node_desugar_one(
+    root,
+    [],
+    [],
+    [],
+    [],
+    transform,
+    extra,
+  )
 }
 
 //**********************************************************************
