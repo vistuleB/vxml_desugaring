@@ -7,7 +7,7 @@ import gleam/result
 import gleam/string
 import infrastructure.{type DesugaringError, DesugaringError}
 import vxml_parser.{type VXML, Blame}
-import writerly_parser.{assemble_blamed_lines}
+import writerly_parser.{assemble_blamed_lines, parse_blamed_lines, writerlys_to_vxmls}
 import pipeline_debug.{pipeline_introspection_lines2string}
 
 const ins = string.inspect
@@ -45,14 +45,13 @@ pub fn desugar(vxmls: List(VXML), pipeline: Pipeline) -> Result(VXML, Desugaring
 }
 
 pub fn main() {
-  let assert Ok(assembled) = writerly_parser.assemble_blamed_lines(path)
+  let assert Ok(assembled) = assemble_blamed_lines(path)
 
   let args = argv.load().arguments
     case args {
       [] -> {
-        let assert Ok(writerlys) =
-            writerly_parser.parse_blamed_lines(assembled, False)
-        let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
+        let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
+        let vxmls = writerlys_to_vxmls(writerlys)
 
         case desugar(vxmls, pipeline_constructor()) {
           Ok(desugared) ->
