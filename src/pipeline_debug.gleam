@@ -1,6 +1,5 @@
 import desugarers_docs.{type Pipeline}
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
@@ -92,7 +91,7 @@ fn vxml_to_blamed_lines(vxml: VXML, indent: Int) -> List(BlamedLine) {
       [
         BlamedLine(blame, indent, "<>"),
         ..list.map(lines, fn(x) {
-          BlamedLine(x.blame, indent + 1, "\"" <> x.content <> "\"")
+          BlamedLine(x.blame, indent + 4, "\"" <> x.content <> "\"")
         })
       ]
     }
@@ -205,7 +204,7 @@ fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   }
 }
 
-const star_line_length = 54
+const star_line_length = 53
 
 fn star_header() -> String {
   "/" <> string.repeat("*", star_line_length - 1) <> "\n"
@@ -238,7 +237,7 @@ pub fn debug_pipeline(
       let pipe_info =
         "👇\n"
         <> star_header()
-        <> star_line("PIPE " <> ins(step))
+        <> star_line("DESUGARER " <> ins(step))
         <> star_line("")
         <> star_line(
           desugarer_desc.function_name
