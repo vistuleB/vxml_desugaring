@@ -1,7 +1,7 @@
 import desugarers_docs.{type Pipeline}
 import gleam/int
-import gleam/io
 import gleam/list
+import gleam/option.{None, Some}
 import gleam/string
 import infrastructure.{type DesugaringError, DesugaringError}
 import vxml_parser.{
@@ -91,7 +91,7 @@ fn vxml_to_blamed_lines(vxml: VXML, indent: Int) -> List(BlamedLine) {
       [
         BlamedLine(blame, indent, "<>"),
         ..list.map(lines, fn(x) {
-          BlamedLine(x.blame, indent + 1, "\"" <> x.content <> "\"")
+          BlamedLine(x.blame, indent + 4, "\"" <> x.content <> "\"")
         })
       ]
     }
@@ -204,6 +204,27 @@ fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   }
 }
 
+const star_line_length = 53
+
+fn star_header() -> String {
+  "/" <> string.repeat("*", star_line_length - 1) <> "\n"
+}
+
+fn star_footer() -> String {
+  " " <> string.repeat("*", star_line_length - 1) <> "/\n"
+}
+
+fn star_line(content: String) -> String {
+  let chars_left = star_line_length - { 3 + string.length(content) }
+  " * "
+  <> content
+  <> case chars_left >= 1 {
+    True -> string.repeat(" ", chars_left - 1) <> "*"
+    False -> ""
+  }
+  <> "\n"
+}
+
 pub fn debug_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
@@ -214,18 +235,36 @@ pub fn debug_pipeline(
     [] -> ""
     [#(desugarer_desc, desugarer_fun), ..rest] -> {
       let pipe_info =
-        "// PIPELINE STEP "
-        <> ins(step)
-        <> "\n"
-        <> "           "
-        <> desugarer_desc.function_name
-        <> "\n"
-        <> "           "
-        <> ins(desugarer_desc.extra)
-        <> "\n"
-        <> "           "
-        <> desugarer_desc.general_description
-        <> "\n"
+        "👇\n"
+        <> star_header()
+        <> star_line("DESUGARER " <> ins(step))
+        <> star_line("")
+        <> star_line(
+          desugarer_desc.function_name
+          <> case desugarer_desc.extra {
+            Some(extra) ->
+              " "
+              <> ins(extra)
+              |> string.drop_left(1)
+              |> string.drop_right(1)
+              |> string.replace("\\\"", "\"")
+            None -> ""
+          },
+        )
+        <> {
+          case string.is_empty(desugarer_desc.general_description) {
+            True -> ""
+            False ->
+              star_line("")
+              <> {
+                string.split(desugarer_desc.general_description, "\n")
+                |> list.map(star_line)
+                |> string.join("")
+              }
+          }
+        }
+        <> star_footer()
+        <> "👇\n"
 
       case desugarer_fun(vxml) {
         Ok(vxml) -> {
@@ -266,7 +305,11 @@ pub fn pipeline_introspection_lines2string(
   let max_length = get_longest_blame_length(lines)
 
   let output =
-    "// PIPELINE INTROSPECTION\n"
+    "\n"
+    <> star_header()
+    <> star_line("SOURCE")
+    <> star_footer()
+    <> "👇\n"
     <> header(max_length)
     <> lines
     |> pretty_print(pipeline_docs_annotator(max_length))
@@ -276,16 +319,20 @@ pub fn pipeline_introspection_lines2string(
 
   let output =
     output
-    <> "// WLY -> VXML\n"
+    <> "👇\n"
+    <> star_header()
+    <> star_line("PARSE WLY -> VXML")
+    <> star_footer()
+    <> "👇\n"
     <> header(max_length)
     <> vxmls_to_blamed_lines(vxmls)
     |> pretty_print(pipeline_docs_annotator(max_length))
-    <> ins(io.println(footer(max_length)))
+    <> footer(max_length)
 
   let output =
     output
     <> case get_root(vxmls) {
-      Ok(root) -> debug_pipeline(root, pipeline, 0, max_length)
+      Ok(root) -> debug_pipeline(root, pipeline, 1, max_length)
       Error(e) -> e.message
     }
 
