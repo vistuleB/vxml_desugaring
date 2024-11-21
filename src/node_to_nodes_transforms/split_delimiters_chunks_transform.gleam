@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/string
 import infrastructure.{type DesugaringError}
@@ -13,20 +14,31 @@ pub type SplitDelimitersChunksExtraArgs {
   )
 }
 
+type Splits {
+  DelimiterSurrounding(list: PositionedBlamedContents)
+  DelimiterContent(list: PositionedBlamedContents)
+}
+
+type InlineTags =
+  List(#(VXML, Int))
+
+type PositionedBlamedContents =
+  List(#(BlamedContent, Int))
+
 fn look_for_closing_delimiter(
-  rest: List(BlamedContent),
+  rest: PositionedBlamedContents,
   extra: SplitDelimitersChunksExtraArgs,
-  output: List(BlamedContent),
-) -> #(List(BlamedContent), List(BlamedContent)) {
+  output: PositionedBlamedContents,
+) -> #(PositionedBlamedContents, PositionedBlamedContents) {
   // return list of blamed contents inside delimiter and rest of blamed contents
   case rest {
     [] -> #([], [])
-    [first, ..rest] -> {
+    [#(first, pos), ..rest] -> {
       let cropped = string.crop(first.content, extra.close_delimiter)
       case cropped == first.content {
         True -> {
           let #(output, rest) = look_for_closing_delimiter(rest, extra, output)
-          #([first, ..output], rest)
+          #([#(first, pos), ..output], rest)
         }
         False -> {
           let before_closing_del =
@@ -38,10 +50,16 @@ fn look_for_closing_delimiter(
 
           #(
             list.append(output, [
-              BlamedContent(blame: first.blame, content: before_closing_del),
+              #(
+                BlamedContent(blame: first.blame, content: before_closing_del),
+                pos,
+              ),
             ]),
             [
-              BlamedContent(blame: first.blame, content: after_closing_del),
+              #(
+                BlamedContent(blame: first.blame, content: after_closing_del),
+                pos,
+              ),
               ..rest
             ],
           )
@@ -51,18 +69,14 @@ fn look_for_closing_delimiter(
   }
 }
 
-type Splits {
-  DelimiterSurrounding(list: List(BlamedContent))
-  DelimiterContent(list: List(BlamedContent))
-}
-
 fn split_blamed_contents_by_delimiter(
-  contents: List(BlamedContent),
+  contents: PositionedBlamedContents,
   extra: SplitDelimitersChunksExtraArgs,
+  iteration: Int,
 ) -> List(Splits) {
   case contents {
     [] -> []
-    [first, ..rest] -> {
+    [#(first, pos), ..rest] -> {
       let cropped = string.crop(first.content, extra.open_delimiter)
       case
         cropped == first.content,
@@ -70,8 +84,8 @@ fn split_blamed_contents_by_delimiter(
       {
         True, False -> {
           [
-            DelimiterSurrounding([first]),
-            ..split_blamed_contents_by_delimiter(rest, extra)
+            DelimiterSurrounding([#(first, pos)]),
+            ..split_blamed_contents_by_delimiter(rest, extra, iteration + 1)
           ]
         }
         _, _ -> {
@@ -93,19 +107,75 @@ fn split_blamed_contents_by_delimiter(
 
           let #(delimiter_content, rest) =
             look_for_closing_delimiter(
-              list.append([current_line_delimiter_content], rest),
+              list.append([#(current_line_delimiter_content, pos)], rest),
               extra,
               [],
             )
 
           let after_delimiter_split =
-            split_blamed_contents_by_delimiter(rest, extra)
+            split_blamed_contents_by_delimiter(rest, extra, iteration + 1)
 
-          [DelimiterSurrounding([before_delimiter_split])]
+          [DelimiterSurrounding([#(before_delimiter_split, pos)])]
           |> list.append([DelimiterContent(delimiter_content)])
           |> list.append(after_delimiter_split)
         }
       }
+    }
+  }
+}
+
+fn get_inline_tags_before(
+  inline_tags: InlineTags,
+  contents_pos: Int,
+) -> #(List(VXML), InlineTags) {
+  case inline_tags {
+    [] -> #([], [])
+    [#(inline_tag, position), ..rest] -> {
+      case position == contents_pos - 1 {
+        True -> {
+          let previous_elements =
+            inline_tags
+            |> list.filter(fn(x) {
+              let #(_, prev_pos) = x
+              prev_pos < position
+            })
+            |> list.map(fn(x) {
+              let #(e, _) = x
+              e
+            })
+
+          #(list.append(previous_elements, [inline_tag]), rest)
+        }
+        False -> {
+          #([], [#(inline_tag, position), ..rest])
+        }
+      }
+    }
+  }
+}
+
+fn merge_split_list_with_inline_tags(
+  blame: Blame,
+  list: PositionedBlamedContents,
+  inline_tags: InlineTags,
+) -> #(List(VXML), InlineTags) {
+  case list {
+    [] -> #(
+      // all inline tags are returned as vxmls
+      [],
+      inline_tags,
+    )
+
+    [#(blamed_content, pos), ..rest] -> {
+      let #(tags, rest_tags) = get_inline_tags_before(inline_tags, pos)
+      let #(merged, rest_tags) =
+        merge_split_list_with_inline_tags(blame, rest, rest_tags)
+      #(
+        tags
+          |> list.append([T(blame, [blamed_content])])
+          |> list.append(merged),
+        rest_tags,
+      )
     }
   }
 }
@@ -115,15 +185,20 @@ fn append_until_delimiter(
   rest: List(Splits),
   extra: SplitDelimitersChunksExtraArgs,
   output: List(VXML),
+  inline_tags: InlineTags,
 ) -> #(List(VXML), List(Splits)) {
   case rest {
     [] -> #(output, [])
     [first, ..rest] -> {
       case first {
         DelimiterSurrounding(list) -> {
+          let #(vxmls, rest_tags) =
+            merge_split_list_with_inline_tags(blame, list, inline_tags)
+
           let #(output, rest) =
-            append_until_delimiter(blame, rest, extra, output)
-          #(list.append(output, [T(blame, list)]), rest)
+            append_until_delimiter(blame, rest, extra, output, rest_tags)
+
+          #(list.append(output, vxmls), rest)
         }
         DelimiterContent(_) -> {
           #(output, [first, ..rest])
@@ -136,6 +211,7 @@ fn append_until_delimiter(
 fn map_splits_to_vxml(
   blame: Blame,
   splits: List(Splits),
+  inline_tags: InlineTags,
   extra: SplitDelimitersChunksExtraArgs,
 ) -> List(VXML) {
   case splits {
@@ -143,36 +219,51 @@ fn map_splits_to_vxml(
     [first, ..rest] -> {
       case first {
         DelimiterSurrounding(list) -> {
+          let #(vxmls, rest_tags) =
+            merge_split_list_with_inline_tags(blame, list, inline_tags)
+
           let #(output, rest) =
-            append_until_delimiter(blame, rest, extra, [T(blame, list)])
+            append_until_delimiter(blame, rest, extra, vxmls, rest_tags)
+
           case output {
             [] -> []
             output -> {
-              let normal_chunk = V(blame, "VerticalChunk", [], output)
-              [normal_chunk, ..map_splits_to_vxml(blame, rest, extra)]
+              let chunk = V(blame, "VerticalChunk", [], output)
+              [chunk, ..map_splits_to_vxml(blame, rest, rest_tags, extra)]
             }
           }
         }
         DelimiterContent(list) -> {
-          let normal_chunk = V(blame, extra.tag_name, [], [T(blame, list)])
-          [normal_chunk, ..map_splits_to_vxml(blame, rest, extra)]
+          let #(vxmls, rest_tags) =
+            merge_split_list_with_inline_tags(blame, list, inline_tags)
+
+          let new_chunk = V(blame, extra.tag_name, [], vxmls)
+          [new_chunk, ..map_splits_to_vxml(blame, rest, rest_tags, extra)]
         }
       }
     }
   }
 }
 
-fn flatten_chunk_contents(children) -> #(List(BlamedContent), List(VXML)) {
+fn flatten_chunk_contents(
+  children: List(VXML),
+  iteration: Int,
+) -> #(PositionedBlamedContents, InlineTags) {
   case children {
     [] -> #([], [])
     [first, ..rest] -> {
+      let #(res, inline_tags) = flatten_chunk_contents(rest, iteration + 1)
+
       case first {
         V(_, _, _, _) -> {
-          #([], [first, ..rest])
+          #(res, [#(first, iteration), ..inline_tags])
         }
         T(_, contents) -> {
-          let #(res, rest) = flatten_chunk_contents(rest)
-          #(list.append(contents, res), rest)
+          let contents_with_position =
+            contents
+            |> list.map(fn(x) { #(x, iteration) })
+            |> list.append(res)
+          #(contents_with_position, inline_tags)
         }
       }
     }
@@ -183,33 +274,12 @@ fn split_chunk_children(node: VXML, children: List(VXML), extra) -> List(VXML) {
   case children {
     [] -> []
     [first, ..rest] -> {
-      case first {
-        V(_, _, _, _) -> {
-          [node]
-        }
-        T(blame, _) -> {
-          let #(flatten, rest) = flatten_chunk_contents([first, ..rest])
-          let mapped_vxml =
-            split_blamed_contents_by_delimiter(flatten, extra)
-            |> map_splits_to_vxml(blame, _, extra)
+      let #(flatten, inline_tags) = flatten_chunk_contents([first, ..rest], 0)
+      let mapped_vxml =
+        split_blamed_contents_by_delimiter(flatten, extra, 0)
+        |> map_splits_to_vxml(first.blame, _, inline_tags, extra)
 
-          case rest {
-            [] -> mapped_vxml
-            [first, ..rest] -> {
-              case first {
-                V(_, _, _, _) -> mapped_vxml |> list.append([first, ..rest])
-                T(_, _) ->
-                  mapped_vxml
-                  |> list.append(split_chunk_children(
-                    node,
-                    [first, ..rest],
-                    extra,
-                  ))
-              }
-            }
-          }
-        }
-      }
+      mapped_vxml
     }
   }
 }
