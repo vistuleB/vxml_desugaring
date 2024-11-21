@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/list
 import gleam/string
 import infrastructure.{type DesugaringError}
@@ -319,7 +318,7 @@ fn flatten_chunk_contents(
   }
 }
 
-fn split_chunk_children(node: VXML, children: List(VXML), extra) -> List(VXML) {
+fn split_chunk_children(children: List(VXML), extra) -> List(VXML) {
   case children {
     [] -> []
     [first, ..rest] -> {
@@ -345,7 +344,7 @@ pub fn split_delimiters_chunks_transform(
         False -> Ok([node])
         True -> {
           children
-          |> split_chunk_children(node, _, extra)
+          |> split_chunk_children(extra)
           |> Ok()
         }
       }
