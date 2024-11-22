@@ -25,6 +25,8 @@ pub fn pipeline_constructor() {
       open_delimiter: "__",
       close_delimiter: "__",
       tag_name: "CentralItalicDisplay",
+      splits_chunks: True,
+      can_be_nested_inside: [],
     )
 
   let extra_4 =
@@ -32,6 +34,35 @@ pub fn pipeline_constructor() {
       open_delimiter: "_|",
       close_delimiter: "|_",
       tag_name: "CentralDisplay",
+      splits_chunks: True,
+      can_be_nested_inside: [],
+    )
+
+  let extra_5 =
+    SplitDelimitersChunksExtraArgs(
+      open_delimiter: "_",
+      close_delimiter: "_",
+      tag_name: "i",
+      splits_chunks: False,
+      can_be_nested_inside: ["*"],
+    )
+
+  let extra_6 =
+    SplitDelimitersChunksExtraArgs(
+      open_delimiter: "*",
+      close_delimiter: "*",
+      tag_name: "b",
+      splits_chunks: False,
+      can_be_nested_inside: ["i"],
+    )
+
+  let extra_7 =
+    SplitDelimitersChunksExtraArgs(
+      open_delimiter: "$",
+      close_delimiter: "$",
+      tag_name: "Math",
+      splits_chunks: False,
+      can_be_nested_inside: ["i", "*"],
     )
 
   [
@@ -45,7 +76,9 @@ pub fn pipeline_constructor() {
     desugarers_docs.wrap_element_children_pipe(extra_1),
     desugarers_docs.split_delimiters_chunks_pipe(extra_3),
     desugarers_docs.split_delimiters_chunks_pipe(extra_4),
-    desugarers_docs.split_content_by_low_level_delimiters_pipe(),
+    desugarers_docs.split_delimiters_chunks_pipe(extra_5),
+    desugarers_docs.split_delimiters_chunks_pipe(extra_6),
+    desugarers_docs.split_delimiters_chunks_pipe(extra_7),
     desugarers_docs.wrap_math_with_no_break_pipe(),
   ]
 }
