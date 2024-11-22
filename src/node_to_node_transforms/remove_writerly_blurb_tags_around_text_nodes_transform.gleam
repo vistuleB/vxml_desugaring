@@ -3,7 +3,6 @@ import vxml_parser.{type VXML, T, V}
 
 pub fn remove_writerly_blurb_tags_around_text_nodes_transform(
   node: VXML,
-  _: List(VXML),
   _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {

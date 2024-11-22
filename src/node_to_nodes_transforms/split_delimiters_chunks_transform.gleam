@@ -385,7 +385,6 @@ fn split_chunk_children(children: List(VXML), tag: String, extra) -> List(VXML) 
 /// 4. if the delimiter can be nested inside other one , we check the mapped_vxml and call the desugarer recursevly on the element that accepts nesting
 pub fn split_delimiters_chunks_transform(
   node: VXML,
-  _: List(VXML),
   extra: SplitDelimitersChunksExtraArgs,
 ) -> Result(List(VXML), DesugaringError) {
   case node {

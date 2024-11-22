@@ -4,7 +4,6 @@ import vxml_parser.{type VXML, V}
 
 pub fn remove_tag_transform(
   vxml: VXML,
-  _: List(VXML),
   extra: List(String),
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {

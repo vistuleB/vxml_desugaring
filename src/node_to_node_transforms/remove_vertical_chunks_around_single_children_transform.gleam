@@ -3,7 +3,6 @@ import vxml_parser.{type VXML, T, V}
 
 pub fn remove_vertical_chunks_around_single_children_transform(
   node: VXML,
-  _: List(VXML),
   _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {

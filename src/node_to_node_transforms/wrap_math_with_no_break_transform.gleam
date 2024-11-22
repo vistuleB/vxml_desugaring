@@ -1,9 +1,11 @@
-import gleam/string
 import gleam/result
+import gleam/string
 import infrastructure.{type DesugaringError}
 import vxml_parser.{type VXML, T, V}
 
-fn check_if_next_is_line_that_starts_with_none_space(rest: List(VXML)) -> Result(VXML, String) {
+fn check_if_next_is_line_that_starts_with_none_space(
+  rest: List(VXML),
+) -> Result(VXML, String) {
   case rest {
     [] -> Error("No")
     [first, ..] -> {
@@ -44,7 +46,7 @@ fn wrap_math(children: List(VXML)) -> Result(List(VXML), DesugaringError) {
               use wrapped_rest <- result.try(wrap_math(rest))
               case check_if_next_is_line_that_starts_with_none_space(rest) {
                 Error(_) -> Ok([first, ..wrapped_rest])
-                Ok(vxml) ->{
+                Ok(vxml) -> {
                   let assert [_, ..rest] = wrapped_rest
                   Ok([V(b, "NoBreak", [], [first, vxml]), ..rest])
                 }
@@ -52,14 +54,13 @@ fn wrap_math(children: List(VXML)) -> Result(List(VXML), DesugaringError) {
             }
           }
         }
-      } 
+      }
     }
   }
 }
 
 pub fn wrap_math_with_no_break_transform(
   node: VXML,
-  _: List(VXML),
   _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {

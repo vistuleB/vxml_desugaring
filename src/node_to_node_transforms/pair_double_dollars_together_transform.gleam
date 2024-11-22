@@ -89,7 +89,6 @@ fn pair_double_dollars_even(
 
 pub fn pair_double_dollars_together_transform(
   node: VXML,
-  _: List(VXML),
   _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {

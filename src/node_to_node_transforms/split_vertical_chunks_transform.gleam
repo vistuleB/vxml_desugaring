@@ -86,7 +86,6 @@ pub fn chunk_constructor(blame_and_children: #(Blame, List(VXML))) -> VXML {
 
 pub fn split_vertical_chunks_transform(
   vxml: VXML,
-  _: List(VXML),
   _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case vxml {

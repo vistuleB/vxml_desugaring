@@ -8,7 +8,6 @@ pub type WrapByBlankLineExtraArgs {
 
 pub fn wrap_elements_by_blankline_transform(
   node: VXML,
-  _: List(VXML),
   extra: WrapByBlankLineExtraArgs,
 ) -> Result(List(VXML), DesugaringError) {
   case node {

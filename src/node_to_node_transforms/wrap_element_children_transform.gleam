@@ -8,7 +8,6 @@ pub type WrapElementChildrenExtra {
 
 pub fn wrap_element_children_transform(
   vxml: VXML,
-  _: List(VXML),
   extra: WrapElementChildrenExtra,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
