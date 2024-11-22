@@ -397,3 +397,14 @@ pub fn split_delimiters_chunks_transform(
     V(_, _, _, _) -> Ok([node])
   }
 }
+
+pub fn split_delimiters_chunks_desugarer(
+  vxml: VXML,
+  extra: SplitDelimitersChunksExtraArgs,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_nodes_desugarer(
+    vxml,
+    split_delimiters_chunks_transform,
+    extra,
+  )
+}

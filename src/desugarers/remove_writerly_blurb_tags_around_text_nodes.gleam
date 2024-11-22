@@ -28,3 +28,13 @@ pub fn remove_writerly_blurb_tags_around_text_nodes_transform(
     }
   }
 }
+
+pub fn remove_writerly_blurb_tags_around_text_nodes_desugarer(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    remove_writerly_blurb_tags_around_text_nodes_transform,
+    Nil,
+  )
+}

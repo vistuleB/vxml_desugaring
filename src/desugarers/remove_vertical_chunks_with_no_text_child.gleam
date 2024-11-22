@@ -29,3 +29,13 @@ pub fn remove_vertical_chunks_with_no_text_child_transform(
     }
   }
 }
+
+pub fn remove_vertical_chunks_with_no_text_child_desugarer(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_nodes_desugarer(
+    vxml,
+    remove_vertical_chunks_with_no_text_child_transform,
+    Nil,
+  )
+}

@@ -1,14 +1,8 @@
 import desugarers_docs
 
-import node_to_node_transforms/wrap_element_children_transform.{
-  WrapElementChildrenExtra,
-}
-import node_to_nodes_transforms/split_delimiters_chunks_transform.{
-  SplitDelimitersChunksExtraArgs,
-}
-import node_to_nodes_transforms/wrap_elements_by_blankline_transform.{
-  WrapByBlankLineExtraArgs,
-}
+import desugarers/split_delimiters_chunks.{SplitDelimitersChunksExtraArgs}
+import desugarers/wrap_element_children.{WrapElementChildrenExtra}
+import desugarers/wrap_elements_by_blankline.{WrapByBlankLineExtraArgs}
 
 pub fn pipeline_constructor() {
   let extra_1 =

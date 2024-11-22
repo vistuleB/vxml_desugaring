@@ -243,3 +243,14 @@ pub fn split_content_by_low_level_delimiters_transform(
     }
   }
 }
+
+pub fn split_content_by_low_level_delimiters_desugarer(
+  vxml: VXML,
+  //extra: SplitDelimitersChunksExtraArgs
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_nodes_desugarer(
+    vxml,
+    split_content_by_low_level_delimiters_transform,
+    Nil,
+  )
+}

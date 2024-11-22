@@ -24,3 +24,14 @@ pub fn wrap_element_children_transform(
     }
   }
 }
+
+pub fn wrap_element_children_desugarer(
+  vxml: VXML,
+  extra: WrapElementChildrenExtra,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    wrap_element_children_transform,
+    extra,
+  )
+}

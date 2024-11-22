@@ -99,3 +99,11 @@ pub fn pair_double_dollars_together_transform(
     }
   }
 }
+
+pub fn pair_double_dollars_together_desugarer(vxml: VXML) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    pair_double_dollars_together_transform,
+    Nil,
+  )
+}

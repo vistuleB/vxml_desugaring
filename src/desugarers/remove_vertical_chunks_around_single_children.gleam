@@ -19,3 +19,13 @@ pub fn remove_vertical_chunks_around_single_children_transform(
     }
   }
 }
+
+pub fn remove_vertical_chunks_around_single_children_desugarer(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    remove_vertical_chunks_around_single_children_transform,
+    Nil,
+  )
+}

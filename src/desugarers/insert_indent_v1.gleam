@@ -23,3 +23,11 @@ pub fn insert_indent_v1_transform(
     }
   }
 }
+
+pub fn insert_indent_v1_desugarer(vxml: VXML) {
+  infrastructure.fancy_depth_first_node_to_node_desugarer(
+    vxml,
+    insert_indent_v1_transform,
+    Nil,
+  )
+}

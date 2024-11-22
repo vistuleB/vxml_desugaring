@@ -15,3 +15,14 @@ pub fn remove_tag_transform(
     _ -> Ok([vxml])
   }
 }
+
+pub fn remove_tag_desugarer(
+  vxml: VXML,
+  extra: List(String),
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_nodes_desugarer(
+    vxml,
+    remove_tag_transform,
+    extra,
+  )
+}

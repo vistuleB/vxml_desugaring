@@ -98,3 +98,13 @@ pub fn split_vertical_chunks_transform(
     }
   }
 }
+
+pub fn split_vertical_chunks_desugarer(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    split_vertical_chunks_transform,
+    Nil,
+  )
+}

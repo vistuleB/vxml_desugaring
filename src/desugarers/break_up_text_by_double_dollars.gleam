@@ -106,3 +106,13 @@ pub fn break_up_text_by_double_dollars_transform(
     }
   }
 }
+
+pub fn break_up_text_by_double_dollars_desugarer(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_nodes_desugarer(
+    vxml,
+    break_up_text_by_double_dollars_transform,
+    Nil,
+  )
+}

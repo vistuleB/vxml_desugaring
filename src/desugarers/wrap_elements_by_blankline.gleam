@@ -30,3 +30,14 @@ pub fn wrap_elements_by_blankline_transform(
     }
   }
 }
+
+pub fn wrap_elements_by_blankline_desugarer(
+  vxml: VXML,
+  extra: WrapByBlankLineExtraArgs,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_nodes_desugarer(
+    vxml,
+    wrap_elements_by_blankline_transform,
+    extra,
+  )
+}

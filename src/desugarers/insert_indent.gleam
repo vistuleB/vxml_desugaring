@@ -26,3 +26,11 @@ pub fn insert_indent_transform(
     V(_, _, _, _) -> Ok(node)
   }
 }
+
+pub fn insert_indent_desugarer(vxml: VXML) {
+  infrastructure.fancy_depth_first_node_to_node_desugarer(
+    vxml,
+    insert_indent_transform,
+    Nil,
+  )
+}

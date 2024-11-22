@@ -71,3 +71,13 @@ pub fn wrap_math_with_no_break_transform(
     }
   }
 }
+
+pub fn wrap_math_with_no_break_desugarer(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    wrap_math_with_no_break_transform,
+    Nil,
+  )
+}

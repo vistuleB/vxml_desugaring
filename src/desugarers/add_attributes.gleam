@@ -31,3 +31,14 @@ pub fn add_attributes_transform(
     }
   }
 }
+
+pub fn add_attributes_desugarer(
+  vxml: VXML,
+  extra: AddAttributesExtraArgs,
+) -> Result(VXML, DesugaringError) {
+  infrastructure.depth_first_node_to_node_desugarer(
+    vxml,
+    add_attributes_transform,
+    extra,
+  )
+}
