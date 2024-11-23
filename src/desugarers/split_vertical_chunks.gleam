@@ -1,6 +1,10 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import infrastructure.{type DesugaringError}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
+}
+
 import vxml_parser.{type Blame, type VXML, T, V}
 
 fn is_blank_line(vxml: VXML) -> #(Bool, Blame) {
@@ -99,12 +103,17 @@ pub fn split_vertical_chunks_transform(
   }
 }
 
-pub fn split_vertical_chunks_desugarer(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_node_desugarer(
-    vxml,
-    split_vertical_chunks_transform,
-    Nil,
+fn transform_factory() -> NodeToNodeTransform {
+  fn(node) { split_vertical_chunks_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+}
+
+pub fn split_vertical_chunks_desugarer() -> Pipe {
+  #(
+    DesugarerDescription("split_vertical_chunks_desugarer", option.None, "..."),
+    desugarer_factory(),
   )
 }

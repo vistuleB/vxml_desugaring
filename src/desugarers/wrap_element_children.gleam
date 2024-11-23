@@ -1,5 +1,10 @@
 import gleam/list
-import infrastructure.{type DesugaringError}
+import gleam/option
+import gleam/string
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
+  DesugarerDescription, depth_first_node_to_node_desugarer,
+}
 import vxml_parser.{type VXML, T, V}
 
 pub fn wrap_element_children_transform(
@@ -22,13 +27,23 @@ pub fn wrap_element_children_transform(
   }
 }
 
-pub fn wrap_element_children_desugarer(
-  vxml: VXML,
-  extra: #(List(String), String),
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_node_desugarer(
-    vxml,
-    wrap_element_children_transform,
-    extra,
+fn transform_factory(extra: #(List(String), String)) -> NodeToNodeTransform {
+  fn(node) { wrap_element_children_transform(node, extra) }
+}
+
+fn desugarer_factory(extra: #(List(String), String)) -> Desugarer {
+  fn(vxml) {
+    depth_first_node_to_node_desugarer(vxml, transform_factory(extra))
+  }
+}
+
+pub fn wrap_element_children_desugarer(extra: #(List(String), String)) -> Pipe {
+  #(
+    DesugarerDescription(
+      "wrap_element_children_desugarer",
+      option.Some(string.inspect(extra)),
+      "...",
+    ),
+    desugarer_factory(extra),
   )
 }

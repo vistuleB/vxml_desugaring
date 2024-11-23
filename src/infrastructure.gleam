@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/option.{type Option}
 import gleam/result
 import vxml_parser.{type Blame, type VXML, T, V}
 
@@ -37,29 +38,27 @@ pub fn first_blame(vxml: VXML) -> Blame {
 //* desugaring efforts #1 deliverable: 'pub' function(s) below *
 //**************************************************************
 
-pub type NodeToNodeTransform(extra) =
-  fn(VXML, extra) -> Result(VXML, DesugaringError)
+pub type NodeToNodeTransform =
+  fn(VXML) -> Result(VXML, DesugaringError)
 
 fn depth_first_node_to_node_desugar_many(
   vxmls: List(VXML),
-  transform: NodeToNodeTransform(extra),
-  extra: extra,
+  transform: NodeToNodeTransform,
 ) {
-  let mapper = depth_first_node_to_node_desugar_one(_, transform, extra)
+  let mapper = depth_first_node_to_node_desugar_one(_, transform)
   map_result(vxmls, mapper)
 }
 
 fn depth_first_node_to_node_desugar_one(
   node: VXML,
-  transform: NodeToNodeTransform(extra),
-  extra: extra,
+  transform: NodeToNodeTransform,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    T(_, _) -> transform(node, extra)
+    T(_, _) -> transform(node)
     V(blame, tag, attrs, children) -> {
-      case depth_first_node_to_node_desugar_many(children, transform, extra) {
+      case depth_first_node_to_node_desugar_many(children, transform) {
         Ok(transformed_children) ->
-          transform(V(blame, tag, attrs, transformed_children), extra)
+          transform(V(blame, tag, attrs, transformed_children))
         Error(err) -> Error(err)
       }
     }
@@ -68,18 +67,16 @@ fn depth_first_node_to_node_desugar_one(
 
 pub fn depth_first_node_to_node_desugarer(
   root: VXML,
-  transform: NodeToNodeTransform(extra),
-  extra: extra,
+  transform: NodeToNodeTransform,
 ) -> Result(VXML, DesugaringError) {
-  depth_first_node_to_node_desugar_one(root, transform, extra)
+  depth_first_node_to_node_desugar_one(root, transform)
 }
 
 pub fn depth_first_node_to_node_desugarer_many(
   vxmls: List(VXML),
-  transform: NodeToNodeTransform(extra),
-  extra: extra,
+  transform: NodeToNodeTransform,
 ) -> Result(List(VXML), DesugaringError) {
-  depth_first_node_to_node_desugar_many(vxmls, transform, extra)
+  depth_first_node_to_node_desugar_many(vxmls, transform)
 }
 
 //**********************************************************************
@@ -87,8 +84,8 @@ pub fn depth_first_node_to_node_desugarer_many(
 //* transform with lots of side info (not only ancestors)              *
 //**********************************************************************
 
-pub type NodeToNodeFancyTransform(extra) =
-  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), extra) ->
+pub type NodeToNodeFancyTransform =
+  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(VXML, DesugaringError)
 
 fn fancy_depth_first_node_to_node_children_traversal(
@@ -96,8 +93,7 @@ fn fancy_depth_first_node_to_node_children_traversal(
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: NodeToNodeFancyTransform(extra),
-  extra: extra,
+  transform: NodeToNodeFancyTransform,
 ) -> Result(#(List(VXML), List(VXML), List(VXML)), DesugaringError) {
   case following_siblings_before_mapping {
     [] ->
@@ -113,7 +109,6 @@ fn fancy_depth_first_node_to_node_children_traversal(
           previous_siblings_after_mapping,
           rest,
           transform,
-          extra,
         ),
       )
       fancy_depth_first_node_to_node_children_traversal(
@@ -122,7 +117,6 @@ fn fancy_depth_first_node_to_node_children_traversal(
         [first_replacement, ..previous_siblings_after_mapping],
         rest,
         transform,
-        extra,
       )
     }
   }
@@ -134,8 +128,7 @@ fn fancy_depth_first_node_to_node_desugar_one(
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: NodeToNodeFancyTransform(extra),
-  extra: extra,
+  transform: NodeToNodeFancyTransform,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) ->
@@ -145,7 +138,6 @@ fn fancy_depth_first_node_to_node_desugar_one(
         previous_siblings_before_mapping,
         previous_siblings_after_mapping,
         following_siblings_before_mapping,
-        extra,
       )
     V(blame, tag, attrs, children) -> {
       case
@@ -155,7 +147,6 @@ fn fancy_depth_first_node_to_node_desugar_one(
           [],
           children,
           transform,
-          extra,
         )
       {
         Ok(#(_, mapped_children, _)) ->
@@ -165,7 +156,6 @@ fn fancy_depth_first_node_to_node_desugar_one(
             previous_siblings_before_mapping,
             previous_siblings_after_mapping,
             following_siblings_before_mapping,
-            extra,
           )
         Error(err) -> Error(err)
       }
@@ -175,18 +165,9 @@ fn fancy_depth_first_node_to_node_desugar_one(
 
 pub fn fancy_depth_first_node_to_node_desugarer(
   root: VXML,
-  transform: NodeToNodeFancyTransform(extra),
-  extra: extra,
+  transform: NodeToNodeFancyTransform,
 ) -> Result(VXML, DesugaringError) {
-  fancy_depth_first_node_to_node_desugar_one(
-    root,
-    [],
-    [],
-    [],
-    [],
-    transform,
-    extra,
-  )
+  fancy_depth_first_node_to_node_desugar_one(root, [], [], [], [], transform)
 }
 
 //**********************************************************************
@@ -194,15 +175,14 @@ pub fn fancy_depth_first_node_to_node_desugarer(
 //* ; see 'pub' function(s) below                                      *
 //**********************************************************************
 
-pub type NodeToNodesTransform(extra) =
-  fn(VXML, extra) -> Result(List(VXML), DesugaringError)
+pub type NodeToNodesTransform =
+  fn(VXML) -> Result(List(VXML), DesugaringError)
 
 fn depth_first_node_to_nodes_desugar_many(
   vxmls: List(VXML),
-  transform: NodeToNodesTransform(extra),
-  extra: extra,
+  transform: NodeToNodesTransform,
 ) -> Result(List(VXML), DesugaringError) {
-  let mapper = depth_first_node_to_nodes_desugar_one(_, transform, extra)
+  let mapper = depth_first_node_to_nodes_desugar_one(_, transform)
   case map_result(vxmls, mapper) {
     Ok(replacement_lists) -> Ok(list.flatten(replacement_lists))
     Error(err) -> Error(err)
@@ -211,14 +191,13 @@ fn depth_first_node_to_nodes_desugar_many(
 
 fn depth_first_node_to_nodes_desugar_one(
   node: VXML,
-  transform: NodeToNodesTransform(extra),
-  extra: extra,
+  transform: NodeToNodesTransform,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
-    T(_, _) -> transform(node, extra)
+    T(_, _) -> transform(node)
     V(blame, tag, attrs, children) -> {
-      case depth_first_node_to_nodes_desugar_many(children, transform, extra) {
-        Ok(new_children) -> transform(V(blame, tag, attrs, new_children), extra)
+      case depth_first_node_to_nodes_desugar_many(children, transform) {
+        Ok(new_children) -> transform(V(blame, tag, attrs, new_children))
         Error(err) -> Error(err)
       }
     }
@@ -227,10 +206,9 @@ fn depth_first_node_to_nodes_desugar_one(
 
 pub fn depth_first_node_to_nodes_desugarer(
   root: VXML,
-  transform: NodeToNodesTransform(extra),
-  extra: extra,
+  transform: NodeToNodesTransform,
 ) -> Result(VXML, DesugaringError) {
-  case depth_first_node_to_nodes_desugar_one(root, transform, extra) {
+  case depth_first_node_to_nodes_desugar_one(root, transform) {
     Ok([]) ->
       Error(DesugaringError(
         first_blame(root),
@@ -251,10 +229,9 @@ pub fn depth_first_node_to_nodes_desugarer(
 
 pub fn depth_first_node_to_nodes_desugarer_many(
   vxmls: List(VXML),
-  transform: NodeToNodesTransform(extra),
-  extra: extra,
+  transform: NodeToNodesTransform,
 ) -> Result(List(VXML), DesugaringError) {
-  depth_first_node_to_nodes_desugar_many(vxmls, transform, extra)
+  depth_first_node_to_nodes_desugar_many(vxmls, transform)
 }
 
 //**************************************************************
@@ -268,31 +245,24 @@ pub type EarlyReturn(a) {
   Err(DesugaringError)
 }
 
-pub type EarlyReturnNodeToNodeTransform(extra) =
-  fn(VXML, List(VXML), extra) -> EarlyReturn(VXML)
+pub type EarlyReturnNodeToNodeTransform =
+  fn(VXML, List(VXML)) -> EarlyReturn(VXML)
 
 fn early_return_node_to_node_desugar_many(
   vxmls: List(VXML),
   ancestors: List(VXML),
-  transform: EarlyReturnNodeToNodeTransform(extra),
-  extra: extra,
+  transform: EarlyReturnNodeToNodeTransform,
 ) -> Result(List(VXML), DesugaringError) {
-  let mapper = early_return_node_to_node_desugar_one(
-    _,
-    ancestors,
-    transform,
-    extra,
-  )
+  let mapper = early_return_node_to_node_desugar_one(_, ancestors, transform)
   map_result(vxmls, mapper)
 }
 
 fn early_return_node_to_node_desugar_one(
   node: VXML,
   ancestors: List(VXML),
-  transform: EarlyReturnNodeToNodeTransform(extra),
-  extra: extra,
+  transform: EarlyReturnNodeToNodeTransform,
 ) -> Result(VXML, DesugaringError) {
-  case transform(node, ancestors, extra) {
+  case transform(node, ancestors) {
     DoNotRecurse(new_node) -> Ok(new_node)
     Recurse(new_node) -> {
       case new_node {
@@ -303,7 +273,6 @@ fn early_return_node_to_node_desugar_one(
               children,
               [new_node, ..ancestors],
               transform,
-              extra,
             )
           {
             Ok(new_children) -> Ok(V(blame, tag, attrs, new_children))
@@ -318,16 +287,32 @@ fn early_return_node_to_node_desugar_one(
 
 pub fn early_return_node_to_node_desugarer(
   root: VXML,
-  transform: EarlyReturnNodeToNodeTransform(extra),
-  extra: extra,
+  transform: EarlyReturnNodeToNodeTransform,
 ) -> Result(VXML, DesugaringError) {
-  early_return_node_to_node_desugar_one(root, [], transform, extra)
+  early_return_node_to_node_desugar_one(root, [], transform)
 }
 
 pub fn early_return_node_to_node_desugarer_many(
   vxmls: List(VXML),
-  transform: EarlyReturnNodeToNodeTransform(extra),
-  extra: extra,
+  transform: EarlyReturnNodeToNodeTransform,
 ) -> Result(List(VXML), DesugaringError) {
-  early_return_node_to_node_desugar_many(vxmls, [], transform, extra)
+  early_return_node_to_node_desugar_many(vxmls, [], transform)
 }
+
+//*****************
+//* pipeline type *
+//*****************
+
+pub type Desugarer =
+  fn(VXML) -> Result(VXML, DesugaringError)
+
+pub type DesugarerDescription {
+  DesugarerDescription(
+    function_name: String,
+    extra: Option(String),
+    general_description: String,
+  )
+}
+
+pub type Pipe =
+  #(DesugarerDescription, Desugarer)

@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import infrastructure.{type DesugaringError, DesugaringError}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
+}
 import vxml_parser.{type Blame, type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
@@ -100,10 +103,21 @@ pub fn pair_double_dollars_together_transform(
   }
 }
 
-pub fn pair_double_dollars_together_desugarer(vxml: VXML) {
-  infrastructure.depth_first_node_to_node_desugarer(
-    vxml,
-    pair_double_dollars_together_transform,
-    Nil,
+fn transform_factory() -> NodeToNodeTransform {
+  fn(node) { pair_double_dollars_together_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+}
+
+pub fn pair_double_dollars_together_desugarer() -> Pipe {
+  #(
+    DesugarerDescription(
+      "pair_double_dollars_together_desugarer",
+      option.None,
+      "...",
+    ),
+    desugarer_factory(),
   )
 }

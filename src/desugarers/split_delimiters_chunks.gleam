@@ -1,8 +1,12 @@
 import gleam/int
 import gleam/list
+import gleam/option
 import gleam/order
 import gleam/string
-import infrastructure.{type DesugaringError}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_nodes_desugarer,
+}
 import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
@@ -398,13 +402,29 @@ pub fn split_delimiters_chunks_transform(
   }
 }
 
-pub fn split_delimiters_chunks_desugarer(
-  vxml: VXML,
+fn transform_factory(
   extra: #(String, String, String, Bool, List(String)),
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_nodes_desugarer(
-    vxml,
-    split_delimiters_chunks_transform,
-    extra,
+) -> NodeToNodesTransform {
+  fn(node) { split_delimiters_chunks_transform(node, extra) }
+}
+
+fn desugarer_factory(
+  extra: #(String, String, String, Bool, List(String)),
+) -> Desugarer {
+  fn(vxml) {
+    depth_first_node_to_nodes_desugarer(vxml, transform_factory(extra))
+  }
+}
+
+pub fn split_delimiters_chunks_desugarer(
+  extra: #(String, String, String, Bool, List(String)),
+) -> Pipe {
+  #(
+    DesugarerDescription(
+      "split_delimiters_chunks_desugarer",
+      option.Some(string.inspect(extra)),
+      "...",
+    ),
+    desugarer_factory(extra),
   )
 }

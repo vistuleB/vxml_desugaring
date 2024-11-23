@@ -1,4 +1,8 @@
-import infrastructure.{type DesugaringError}
+import gleam/option
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeFancyTransform, type Pipe,
+  DesugarerDescription, fancy_depth_first_node_to_node_desugarer,
+}
 import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
 pub fn insert_indent_transform(
@@ -27,10 +31,21 @@ pub fn insert_indent_transform(
   }
 }
 
-pub fn insert_indent_desugarer(vxml: VXML) {
-  infrastructure.fancy_depth_first_node_to_node_desugarer(
-    vxml,
-    insert_indent_transform,
-    Nil,
+fn transform_factory() -> NodeToNodeFancyTransform {
+  fn(node, n, previous_unmapped_siblings, p, f) {
+    insert_indent_transform(node, n, previous_unmapped_siblings, p, f, Nil)
+  }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) {
+    fancy_depth_first_node_to_node_desugarer(vxml, transform_factory())
+  }
+}
+
+pub fn insert_indent_desugarer() -> Pipe {
+  #(
+    DesugarerDescription("insert_indent_desugarer", option.None, "..."),
+    desugarer_factory(),
   )
 }

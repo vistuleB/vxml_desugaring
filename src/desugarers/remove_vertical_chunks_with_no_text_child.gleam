@@ -1,5 +1,9 @@
 import gleam/list
-import infrastructure.{type DesugaringError, DesugaringError}
+import gleam/option
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_nodes_desugarer,
+}
 import vxml_parser.{type VXML, T, V}
 
 fn is_text(child: VXML) {
@@ -30,12 +34,21 @@ pub fn remove_vertical_chunks_with_no_text_child_transform(
   }
 }
 
-pub fn remove_vertical_chunks_with_no_text_child_desugarer(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_nodes_desugarer(
-    vxml,
-    remove_vertical_chunks_with_no_text_child_transform,
-    Nil,
+fn transform_factory() -> NodeToNodesTransform {
+  fn(node) { remove_vertical_chunks_with_no_text_child_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_nodes_desugarer(vxml, transform_factory()) }
+}
+
+pub fn remove_vertical_chunks_with_no_text_child_desugarer() -> Pipe {
+  #(
+    DesugarerDescription(
+      "remove_vertical_chunks_with_no_text_child_desugarer",
+      option.None,
+      "...",
+    ),
+    desugarer_factory(),
   )
 }

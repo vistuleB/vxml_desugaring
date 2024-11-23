@@ -1,6 +1,10 @@
+import gleam/option
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
+}
 import vxml_parser.{type VXML, T, V}
 
 fn check_if_next_is_line_that_starts_with_none_space(
@@ -72,12 +76,21 @@ pub fn wrap_math_with_no_break_transform(
   }
 }
 
-pub fn wrap_math_with_no_break_desugarer(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_node_desugarer(
-    vxml,
-    wrap_math_with_no_break_transform,
-    Nil,
+fn transform_factory() -> NodeToNodeTransform {
+  fn(node) { wrap_math_with_no_break_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+}
+
+pub fn wrap_math_with_no_break_desugarer() -> Pipe {
+  #(
+    DesugarerDescription(
+      "wrap_math_with_no_break_desugarer",
+      option.None,
+      "...",
+    ),
+    desugarer_factory(),
   )
 }

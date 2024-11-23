@@ -1,7 +1,11 @@
 import gleam/list
+import gleam/option
 import gleam/pair
 import gleam/string
-import infrastructure.{type DesugaringError}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
+  DesugarerDescription, depth_first_node_to_nodes_desugarer,
+}
 import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
@@ -107,12 +111,21 @@ pub fn break_up_text_by_double_dollars_transform(
   }
 }
 
-pub fn break_up_text_by_double_dollars_desugarer(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_nodes_desugarer(
-    vxml,
-    break_up_text_by_double_dollars_transform,
-    Nil,
+fn transform_factory() -> NodeToNodesTransform {
+  fn(node) { break_up_text_by_double_dollars_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_nodes_desugarer(vxml, transform_factory()) }
+}
+
+pub fn break_up_text_by_double_dollars_desugarer() -> Pipe {
+  #(
+    DesugarerDescription(
+      "break_up_text_by_double_dollars_desugarer",
+      option.None,
+      "...",
+    ),
+    desugarer_factory(),
   )
 }

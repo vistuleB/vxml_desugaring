@@ -3,7 +3,10 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_nodes_desugarer,
+}
 import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
@@ -244,13 +247,21 @@ pub fn split_content_by_low_level_delimiters_transform(
   }
 }
 
-pub fn split_content_by_low_level_delimiters_desugarer(
-  vxml: VXML,
-  //extra: SplitDelimitersChunksExtraArgs
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_nodes_desugarer(
-    vxml,
-    split_content_by_low_level_delimiters_transform,
-    Nil,
+fn transform_factory() -> NodeToNodesTransform {
+  fn(node) { split_content_by_low_level_delimiters_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_nodes_desugarer(vxml, transform_factory()) }
+}
+
+pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {
+  #(
+    DesugarerDescription(
+      "split_content_by_low_level_delimiters_desugarer",
+      option.None,
+      "...",
+    ),
+    desugarer_factory(),
   )
 }

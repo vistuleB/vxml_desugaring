@@ -1,5 +1,10 @@
 import gleam/list
-import infrastructure.{type DesugaringError}
+import gleam/option
+import gleam/string
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
+  DesugarerDescription, depth_first_node_to_node_desugarer,
+}
 import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
 pub fn add_attributes_transform(
@@ -26,13 +31,29 @@ pub fn add_attributes_transform(
   }
 }
 
-pub fn add_attributes_desugarer(
-  vxml: VXML,
+fn transform_factory(
   extra: #(List(String), List(#(String, String))),
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_node_desugarer(
-    vxml,
-    add_attributes_transform,
-    extra,
+) -> NodeToNodeTransform {
+  fn(node) { add_attributes_transform(node, extra) }
+}
+
+fn desugarer_factory(
+  extra: #(List(String), List(#(String, String))),
+) -> Desugarer {
+  fn(vxml) {
+    depth_first_node_to_node_desugarer(vxml, transform_factory(extra))
+  }
+}
+
+pub fn add_attributes_desugarer(
+  extra: #(List(String), List(#(String, String))),
+) -> Pipe {
+  #(
+    DesugarerDescription(
+      "add_attributes_desugarer",
+      option.Some(string.inspect(extra)),
+      "...",
+    ),
+    desugarer_factory(extra),
   )
 }

@@ -1,11 +1,10 @@
 import argv
-import desugarers_docs.{type Pipeline}
 import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, DesugaringError}
-import pipeline_constructor.{pipeline_constructor}
+import infrastructure.{type DesugaringError, type Pipe, DesugaringError}
+import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
 import vxml_parser.{type VXML, Blame}
 import writerly_parser.{
@@ -32,7 +31,7 @@ fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
 
 pub fn desugar_internal(
   vxml: VXML,
-  pipeline: Pipeline,
+  pipeline: List(Pipe),
 ) -> Result(VXML, DesugaringError) {
   case pipeline {
     [] -> Ok(vxml)
@@ -44,7 +43,7 @@ pub fn desugar_internal(
 
 pub fn desugar(
   vxmls: List(VXML),
-  pipeline: Pipeline,
+  pipeline: List(Pipe),
 ) -> Result(VXML, DesugaringError) {
   case get_root(vxmls) {
     Ok(root) -> desugar_internal(root, pipeline)

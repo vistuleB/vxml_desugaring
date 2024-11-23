@@ -1,9 +1,8 @@
-import desugarers_docs.{type Pipeline}
 import gleam/int
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
-import infrastructure.{type DesugaringError, DesugaringError}
+import infrastructure.{type DesugaringError, type Pipe, DesugaringError}
 import vxml_parser.{
   type Blame, type BlamedLine, type VXML, Blame, BlamedLine, T, V,
 }
@@ -227,7 +226,7 @@ fn star_line(content: String) -> String {
 
 pub fn debug_pipeline(
   vxml: VXML,
-  pipeline: Pipeline,
+  pipeline: List(Pipe),
   step: Int,
   max_length: Int,
 ) -> String {
@@ -297,7 +296,7 @@ pub fn debug_pipeline(
 
 pub fn pipeline_introspection_lines2string(
   input: List(BlamedLine),
-  pipeline: Pipeline,
+  pipeline: List(Pipe),
 ) -> String {
   let assert Ok(writerlys) = writerly_parser.parse_blamed_lines(input, False)
 

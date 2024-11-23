@@ -1,4 +1,8 @@
-import infrastructure.{type DesugaringError, DesugaringError}
+import gleam/option
+import infrastructure.{
+  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
+  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
+}
 import vxml_parser.{type VXML, T, V}
 
 pub fn remove_writerly_blurb_tags_around_text_nodes_transform(
@@ -29,12 +33,21 @@ pub fn remove_writerly_blurb_tags_around_text_nodes_transform(
   }
 }
 
-pub fn remove_writerly_blurb_tags_around_text_nodes_desugarer(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
-  infrastructure.depth_first_node_to_node_desugarer(
-    vxml,
-    remove_writerly_blurb_tags_around_text_nodes_transform,
-    Nil,
+fn transform_factory() -> NodeToNodeTransform {
+  fn(node) { remove_writerly_blurb_tags_around_text_nodes_transform(node, Nil) }
+}
+
+fn desugarer_factory() -> Desugarer {
+  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+}
+
+pub fn remove_writerly_blurb_tags_around_text_nodes_desugarer() -> Pipe {
+  #(
+    DesugarerDescription(
+      "remove_writerly_blurb_tags_around_text_nodes_desugarer",
+      option.None,
+      "...",
+    ),
+    desugarer_factory(),
   )
 }
