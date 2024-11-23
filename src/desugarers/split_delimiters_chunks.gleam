@@ -7,16 +7,6 @@ import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
 
-pub type SplitDelimitersChunksExtraArgs {
-  SplitDelimitersChunksExtraArgs(
-    open_delimiter: String,
-    close_delimiter: String,
-    tag_name: String,
-    splits_chunks: Bool,
-    can_be_nested_inside: List(String),
-  )
-}
-
 type Splits {
   DelimiterSurrounding(list: PositionedBlamedContents)
   DelimiterContent(list: PositionedBlamedContents)
@@ -30,14 +20,15 @@ type PositionedBlamedContents =
 
 fn look_for_closing_delimiter(
   rest: PositionedBlamedContents,
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
   output: PositionedBlamedContents,
 ) -> #(Bool, PositionedBlamedContents, PositionedBlamedContents) {
   // return list of blamed contents inside delimiter and rest of blamed contents
+  let #(_, close_delimiter, _, _, _) = extra
   case rest {
     [] -> #(False, [], [])
     [#(first, pos), ..rest] -> {
-      let cropped = string.crop(first.content, extra.close_delimiter)
+      let cropped = string.crop(first.content, close_delimiter)
       case cropped == first.content {
         True -> {
           let #(found, output, rest) =
@@ -48,7 +39,7 @@ fn look_for_closing_delimiter(
           let before_closing_del =
             cropped |> string.length() |> string.drop_right(first.content, _)
           let after_closing_del =
-            extra.close_delimiter
+            close_delimiter
             |> string.length()
             |> string.drop_left(cropped, _)
 
@@ -76,16 +67,18 @@ fn look_for_closing_delimiter(
 
 fn split_blamed_contents_by_delimiter(
   contents: PositionedBlamedContents,
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
   iteration: Int,
 ) -> List(Splits) {
+  let #(open_delimiter, _, _, _, _) = extra
+
   case contents {
     [] -> []
     [#(first, pos), ..rest] -> {
-      let cropped = string.crop(first.content, extra.open_delimiter)
+      let cropped = string.crop(first.content, open_delimiter)
       case
         cropped == first.content,
-        string.starts_with(first.content, extra.open_delimiter)
+        string.starts_with(first.content, open_delimiter)
       {
         True, False -> {
           [
@@ -105,7 +98,7 @@ fn split_blamed_contents_by_delimiter(
           let current_line_delimiter_content =
             BlamedContent(
               blame: first.blame,
-              content: extra.open_delimiter
+              content: open_delimiter
                 |> string.length()
                 |> string.drop_left(cropped, _),
             )
@@ -141,7 +134,6 @@ fn split_blamed_contents_by_delimiter(
 fn get_inline_tags_before(
   inline_tags: InlineTags,
   contents_pos: Int,
-  extra: SplitDelimitersChunksExtraArgs,
 ) -> #(List(VXML), InlineTags) {
   case inline_tags {
     [] -> #([], [])
@@ -162,7 +154,7 @@ fn get_inline_tags_before(
           #(previous_elements, rest)
         }
         order.Lt -> {
-          let #(tags, rest) = get_inline_tags_before(rest, contents_pos, extra)
+          let #(tags, rest) = get_inline_tags_before(rest, contents_pos)
           #([tag, ..tags], rest)
         }
         order.Gt -> {
@@ -213,13 +205,13 @@ fn merge_split_list_with_inline_tags(
   blame: Blame,
   list: PositionedBlamedContents,
   inline_tags: InlineTags,
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
 ) -> #(List(VXML), InlineTags) {
   case list {
     [] -> #([], inline_tags)
 
     [#(blamed_content, pos), ..rest] -> {
-      let #(tags, rest_tags) = get_inline_tags_before(inline_tags, pos, extra)
+      let #(tags, rest_tags) = get_inline_tags_before(inline_tags, pos)
 
       let #(merged, rest_tags) =
         merge_split_list_with_inline_tags(blame, rest, rest_tags, extra)
@@ -240,7 +232,7 @@ fn merge_split_list_with_inline_tags(
 fn append_until_delimiter(
   blame: Blame,
   rest: List(Splits),
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
   output: List(VXML),
   inline_tags: InlineTags,
 ) -> #(List(VXML), List(Splits), InlineTags) {
@@ -269,7 +261,7 @@ fn map_splits_to_vxml(
   blame: Blame,
   splits: List(Splits),
   inline_tags: InlineTags,
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
 ) -> List(VXML) {
   case splits {
     [] -> []
@@ -283,7 +275,9 @@ fn map_splits_to_vxml(
             append_until_delimiter(blame, rest, extra, [], rest_tags)
 
           let assembled = assemble_lines(list.append(vxmls, output))
-          case extra.splits_chunks {
+
+          let #(_, _, _, should_splits_chunks, _) = extra
+          case should_splits_chunks {
             True -> {
               case assembled {
                 [] -> []
@@ -305,8 +299,8 @@ fn map_splits_to_vxml(
           let #(vxmls, rest_tags) =
             merge_split_list_with_inline_tags(blame, list, inline_tags, extra)
           let assembled = assemble_lines(vxmls)
-
-          let new_chunk = V(blame, extra.tag_name, [], assembled)
+          let #(_, _, tag_name, _, _) = extra
+          let new_chunk = V(blame, tag_name, [], assembled)
           [new_chunk, ..map_splits_to_vxml(blame, rest, rest_tags, extra)]
         }
       }
@@ -339,7 +333,11 @@ fn flatten_chunk_contents(
   }
 }
 
-fn split_chunk_children(children: List(VXML), tag: String, extra) -> List(VXML) {
+fn split_chunk_children(
+  children: List(VXML),
+  tag: String,
+  extra: #(String, String, String, Bool, List(String)),
+) -> List(VXML) {
   case children {
     [] -> []
     [first, ..rest] -> {
@@ -354,7 +352,8 @@ fn split_chunk_children(children: List(VXML), tag: String, extra) -> List(VXML) 
           case x {
             T(_, _) -> x
             V(_, tag, _, children) -> {
-              case list.contains(extra.can_be_nested_inside, tag) {
+              let #(_, _, _, _, can_be_nested_inside) = extra
+              case list.contains(can_be_nested_inside, tag) {
                 False -> x
                 True -> {
                   let assert [updated_vxml] =
@@ -368,7 +367,8 @@ fn split_chunk_children(children: List(VXML), tag: String, extra) -> List(VXML) 
           }
         })
 
-      case extra.splits_chunks {
+      let #(_, _, _, should_splits_chunks, _) = extra
+      case should_splits_chunks {
         True -> mapped_vxml
         False -> {
           [V(first.blame, tag, [], mapped_vxml)]
@@ -385,7 +385,7 @@ fn split_chunk_children(children: List(VXML), tag: String, extra) -> List(VXML) 
 /// 4. if the delimiter can be nested inside other one , we check the mapped_vxml and call the desugarer recursevly on the element that accepts nesting
 pub fn split_delimiters_chunks_transform(
   node: VXML,
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) -> Ok([node])
@@ -400,7 +400,7 @@ pub fn split_delimiters_chunks_transform(
 
 pub fn split_delimiters_chunks_desugarer(
   vxml: VXML,
-  extra: SplitDelimitersChunksExtraArgs,
+  extra: #(String, String, String, Bool, List(String)),
 ) -> Result(VXML, DesugaringError) {
   infrastructure.depth_first_node_to_nodes_desugarer(
     vxml,
