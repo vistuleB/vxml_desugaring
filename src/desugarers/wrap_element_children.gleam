@@ -3,8 +3,8 @@ import gleam/option
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, depth_first_node_to_node_desugarer,
-}
+  DesugarerDescription,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 pub fn wrap_element_children_transform(
@@ -28,13 +28,11 @@ pub fn wrap_element_children_transform(
 }
 
 fn transform_factory(extra: #(List(String), String)) -> NodeToNodeTransform {
-  fn(node) { wrap_element_children_transform(node, extra) }
+  wrap_element_children_transform(_, extra)
 }
 
 fn desugarer_factory(extra: #(List(String), String)) -> Desugarer {
-  fn(vxml) {
-    depth_first_node_to_node_desugarer(vxml, transform_factory(extra))
-  }
+  infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
 pub fn wrap_element_children_desugarer(extra: #(List(String), String)) -> Pipe {

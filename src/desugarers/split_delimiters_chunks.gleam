@@ -5,8 +5,8 @@ import gleam/order
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
-  DesugarerDescription, DesugaringError, depth_first_node_to_nodes_desugarer,
-}
+  DesugarerDescription, DesugaringError,
+} as infra
 import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
@@ -320,7 +320,6 @@ fn flatten_chunk_contents(
     [] -> #([], [])
     [first, ..rest] -> {
       let #(res, inline_tags) = flatten_chunk_contents(rest, iteration + 1)
-
       case first {
         V(_, _, _, _) -> {
           #(res, [#(first, iteration), ..inline_tags])
@@ -383,10 +382,20 @@ fn split_chunk_children(
 }
 
 /// The idea is as follows :
-/// 1. split all the children into flatten content and inline tags , flatten content will have all contents followed by each other ignoring any inline tags in between, inline tags should save the tags in between with their position so we can re-merge later 
-/// 2. split flattened content by delimiter into splits of what come before delimiter and the delimiter content and what comes after , splits should also save the original position of the line for the re-merge
-/// 3. Each split is then merged with tags that comes before it . and give the vxml reltive 
-/// 4. if the delimiter can be nested inside other one , we check the mapped_vxml and call the desugarer recursevly on the element that accepts nesting
+/// 1. split all the children into flatten content and inline 
+///    tags, flatten content will have all contents followed by
+///    each other ignoring any inline tags in between, inline tags
+///    should save the tags in between with their position so
+///    we can re-merge later 
+/// 2. split flattened content by delimiter into splits of what
+///    come before delimiter and the delimiter content and what
+///    comes after , splits should also save the original position
+///    of the line for the re-merge
+/// 3. each split is then merged with tags that comes before it
+///    and give the vxml reltive 
+/// 4. if the delimiter can be nested inside other one , we check
+///    the mapped_vxml and call the desugarer recursevly on the
+///    element that accepts nesting
 pub fn split_delimiters_chunks_transform(
   node: VXML,
   extra: #(String, String, String, Bool, List(String)),
@@ -405,15 +414,13 @@ pub fn split_delimiters_chunks_transform(
 fn transform_factory(
   extra: #(String, String, String, Bool, List(String)),
 ) -> NodeToNodesTransform {
-  fn(node) { split_delimiters_chunks_transform(node, extra) }
+  split_delimiters_chunks_transform(_, extra)
 }
 
 fn desugarer_factory(
   extra: #(String, String, String, Bool, List(String)),
 ) -> Desugarer {
-  fn(vxml) {
-    depth_first_node_to_nodes_desugarer(vxml, transform_factory(extra))
-  }
+  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
 pub fn split_delimiters_chunks_desugarer(

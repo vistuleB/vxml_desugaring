@@ -2,11 +2,11 @@ import gleam/list
 import gleam/option
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
-  DesugarerDescription, DesugaringError, depth_first_node_to_nodes_desugarer,
-}
+  DesugarerDescription, DesugaringError,
+} as infra
 import vxml_parser.{type VXML, V}
 
-pub fn remove_tag_transform(
+fn remove_tag_transform(
   vxml: VXML,
   extra: List(String),
 ) -> Result(List(VXML), DesugaringError) {
@@ -21,13 +21,11 @@ pub fn remove_tag_transform(
 }
 
 fn transform_factory(extra: List(String)) -> NodeToNodesTransform {
-  fn(node) { remove_tag_transform(node, extra) }
+  remove_tag_transform(_, extra)
 }
 
 fn desugarer_factory(extra: List(String)) -> Desugarer {
-  fn(vxml) {
-    depth_first_node_to_nodes_desugarer(vxml, transform_factory(extra))
-  }
+  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
 pub fn remove_tag_desugarer(extra: List(String)) -> Pipe {

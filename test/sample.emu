@@ -1,9 +1,16 @@
-|> Hello
+|> Book
 
-    |> List
+    $$
+    more
+    $$$$another
+    $$
+    and$$
+    __a _central_
+    quote__ith__ $x + 2$.
 
-        first
+    _my friend *is
+    |> InlineImg
+        src something
+    an* anima_
 
-        second
-
-        third
+    this _one is *fucked_ up*

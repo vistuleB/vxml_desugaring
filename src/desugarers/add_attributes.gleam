@@ -1,29 +1,42 @@
 import gleam/list
 import gleam/option
+import gleam/pair
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, depth_first_node_to_node_desugarer,
-}
-import vxml_parser.{type VXML, BlamedAttribute, T, V}
+  DesugarerDescription,
+} as infra
+import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
-pub fn add_attributes_transform(
+fn build_blamed_attributes(
+  blame,
+  attributes: List(#(String, String)),
+) -> List(BlamedAttribute) {
+  attributes
+  |> list.map(fn(attr) {
+    BlamedAttribute(blame, attr |> pair.first, attr |> pair.second)
+  })
+}
+
+fn add_attributes_param_transform(
   vxml: VXML,
   extra: #(List(String), List(#(String, String))),
 ) -> Result(VXML, DesugaringError) {
   let #(to, new_attributes) = extra
   case vxml {
     T(_, _) -> Ok(vxml)
-    V(blame, tag, attributes, children) -> {
+    V(blame, tag, old_attributes, children) -> {
       case list.contains(to, tag) {
         True -> {
-          let attributes_to_add =
-            list.map(new_attributes, fn(attr) {
-              let #(key, value) = attr
-              BlamedAttribute(blame: blame, key: key, value: value)
-            })
-          let updated_attributes = list.flatten([attributes, attributes_to_add])
-          Ok(V(blame, tag, updated_attributes, children))
+          Ok(V(
+            blame,
+            tag,
+            list.flatten([
+              old_attributes,
+              build_blamed_attributes(blame, new_attributes),
+            ]),
+            children,
+          ))
         }
         False -> Ok(vxml)
       }
@@ -34,15 +47,13 @@ pub fn add_attributes_transform(
 fn transform_factory(
   extra: #(List(String), List(#(String, String))),
 ) -> NodeToNodeTransform {
-  fn(node) { add_attributes_transform(node, extra) }
+  add_attributes_param_transform(_, extra)
 }
 
 fn desugarer_factory(
   extra: #(List(String), List(#(String, String))),
 ) -> Desugarer {
-  fn(vxml) {
-    depth_first_node_to_node_desugarer(vxml, transform_factory(extra))
-  }
+  infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
 pub fn add_attributes_desugarer(

@@ -3,8 +3,8 @@ import gleam/result
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
-}
+  DesugarerDescription, DesugaringError,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn check_if_next_is_line_that_starts_with_none_space(
@@ -63,9 +63,8 @@ fn wrap_math(children: List(VXML)) -> Result(List(VXML), DesugaringError) {
   }
 }
 
-pub fn wrap_math_with_no_break_transform(
+fn wrap_math_with_no_break_transform(
   node: VXML,
-  _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
@@ -77,20 +76,16 @@ pub fn wrap_math_with_no_break_transform(
 }
 
 fn transform_factory() -> NodeToNodeTransform {
-  fn(node) { wrap_math_with_no_break_transform(node, Nil) }
+  wrap_math_with_no_break_transform
 }
 
 fn desugarer_factory() -> Desugarer {
-  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+  infra.node_to_node_desugarer_factory(transform_factory())
 }
 
-pub fn wrap_math_with_no_break_desugarer() -> Pipe {
+pub fn wrap_math_with_no_break() -> Pipe {
   #(
-    DesugarerDescription(
-      "wrap_math_with_no_break_desugarer",
-      option.None,
-      "...",
-    ),
+    DesugarerDescription("wrap_math_with_no_break", option.None, "..."),
     desugarer_factory(),
   )
 }

@@ -5,8 +5,8 @@ import gleam/result
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
-  DesugarerDescription, DesugaringError, depth_first_node_to_nodes_desugarer,
-}
+  DesugarerDescription, DesugaringError,
+} as infra
 import vxml_parser.{
   type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
 }
@@ -178,7 +178,6 @@ fn split_delimiters(
           use nested_delimiters_vxml <- result.try(
             split_content_by_low_level_delimiters_transform(
               T(first.blame, [blamed_line_for_del_content]),
-              Nil,
             ),
           )
 
@@ -237,7 +236,6 @@ fn split_delimiters(
 
 pub fn split_content_by_low_level_delimiters_transform(
   node: VXML,
-  _: Nil,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     V(_, _, _, _) -> Ok([node])
@@ -248,11 +246,11 @@ pub fn split_content_by_low_level_delimiters_transform(
 }
 
 fn transform_factory() -> NodeToNodesTransform {
-  fn(node) { split_content_by_low_level_delimiters_transform(node, Nil) }
+  split_content_by_low_level_delimiters_transform
 }
 
 fn desugarer_factory() -> Desugarer {
-  fn(vxml) { depth_first_node_to_nodes_desugarer(vxml, transform_factory()) }
+  infra.node_to_nodes_desugarer_factory(transform_factory())
 }
 
 pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {

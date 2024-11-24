@@ -3,8 +3,8 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
-}
+  DesugarerDescription, DesugaringError,
+} as infra
 import vxml_parser.{type Blame, type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
@@ -92,7 +92,6 @@ fn pair_double_dollars_even(
 
 pub fn pair_double_dollars_together_transform(
   node: VXML,
-  _: Nil,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
@@ -104,11 +103,11 @@ pub fn pair_double_dollars_together_transform(
 }
 
 fn transform_factory() -> NodeToNodeTransform {
-  fn(node) { pair_double_dollars_together_transform(node, Nil) }
+  pair_double_dollars_together_transform
 }
 
 fn desugarer_factory() -> Desugarer {
-  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+  infra.node_to_node_desugarer_factory(transform_factory())
 }
 
 pub fn pair_double_dollars_together_desugarer() -> Pipe {

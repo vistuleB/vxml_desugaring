@@ -3,7 +3,9 @@ import gleam/io
 import gleam/list
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugaringError}
+import infrastructure.{
+  type DesugaringError, type Pipe, DesugaringError, get_root,
+}
 import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
 import vxml_parser.{type VXML, Blame}
@@ -13,21 +15,7 @@ import writerly_parser.{
 
 const ins = string.inspect
 
-pub const path = "test/content"
-
-fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
-  case vxmls {
-    [root] -> Ok(root)
-    _ ->
-      Error(DesugaringError(
-        blame: Blame("", 0, []),
-        message: "found "
-          <> ins(list.length)
-          <> " != 1 root-level nodes in "
-          <> path,
-      ))
-  }
-}
+pub const path = "test/sample.emu"
 
 pub fn desugar_internal(
   vxml: VXML,

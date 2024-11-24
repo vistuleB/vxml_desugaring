@@ -1,10 +1,10 @@
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, depth_first_node_to_node_desugarer,
-}
-
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError,
+} as infra
 import vxml_parser.{type Blame, type VXML, T, V}
 
 fn is_blank_line(vxml: VXML) -> #(Bool, Blame) {
@@ -76,11 +76,11 @@ fn lists_of_non_blank_line_chunks(
 ) -> List(#(Blame, List(VXML))) {
   let #(first_chunk, remaining_vxmls_after_first_chunk) =
     eat_and_record_non_blank_lines(vxmls)
-  let other_chunks = case remaining_vxmls_after_first_chunk {
+  case remaining_vxmls_after_first_chunk {
     [] -> []
     _ -> lists_of_non_blank_line_chunks(remaining_vxmls_after_first_chunk)
   }
-  prepend_if_not_none(first_chunk, other_chunks)
+  |> prepend_if_not_none(first_chunk, _)
 }
 
 pub fn chunk_constructor(blame_and_children: #(Blame, List(VXML))) -> VXML {
@@ -88,10 +88,7 @@ pub fn chunk_constructor(blame_and_children: #(Blame, List(VXML))) -> VXML {
   V(blame, "VerticalChunk", [], children)
 }
 
-pub fn split_vertical_chunks_transform(
-  vxml: VXML,
-  _: Nil,
-) -> Result(VXML, DesugaringError) {
+fn split_vertical_chunks_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
@@ -103,17 +100,23 @@ pub fn split_vertical_chunks_transform(
   }
 }
 
-fn transform_factory() -> NodeToNodeTransform {
-  fn(node) { split_vertical_chunks_transform(node, Nil) }
+type Extras =
+  List(String)
+
+fn transform_factory(extras: Extras) -> infra.NodeToNodeFancyTransform {
+  infra.prevent_node_to_node_transform_inside(
+    split_vertical_chunks_transform(_),
+    extras,
+  )
 }
 
-fn desugarer_factory() -> Desugarer {
-  fn(vxml) { depth_first_node_to_node_desugarer(vxml, transform_factory()) }
+fn desugarer_factory(extras: Extras) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(extras))
 }
 
-pub fn split_vertical_chunks_desugarer() -> Pipe {
+pub fn split_vertical_chunks(extras: Extras) -> Pipe {
   #(
     DesugarerDescription("split_vertical_chunks_desugarer", option.None, "..."),
-    desugarer_factory(),
+    desugarer_factory(extras),
   )
 }
