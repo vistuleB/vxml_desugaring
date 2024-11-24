@@ -1,5 +1,4 @@
 import gleam/dict.{type Dict}
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -35,8 +34,6 @@ fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   let assert [BlamedContent(blame_last, content_last), ..other_lines1] =
     lines1 |> list.reverse
   let assert [BlamedContent(_, content_first), ..other_lines2] = lines2
-
-  io.println("HLELOO")
 
   T(
     blame1,
