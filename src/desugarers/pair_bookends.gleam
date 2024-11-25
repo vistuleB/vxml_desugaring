@@ -203,7 +203,7 @@ fn pair_bookends_children_accumulator(
                       ),
                     enclosing,
                     [],
-                    after_last_opening,
+                    after_last_opening |> list.reverse,
                   ),
                   ..already_processed
                 ],

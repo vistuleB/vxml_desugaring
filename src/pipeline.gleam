@@ -18,9 +18,7 @@ import desugarers/wrap_elements_by_blankline.{
 }
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
 import gleam/dict
-import gleam/io
 import gleam/regex.{type Regex}
-import gleam/string
 import infrastructure.{type Pipe} as infra
 
 pub fn opening_central_display_italics_regex() -> Regex {
@@ -52,7 +50,7 @@ pub fn closing_centerquote_regex() -> Regex {
 
 pub fn pipeline_constructor() -> List(Pipe) {
   let unescaped_double_dollar_regex = infra.unescaped_suffix_regex("\\$\\$")
-  let unescaped_simple_dollar_regex = infra.unescaped_suffix_regex("\\$")
+  let unescaped_single_dollar_regex = infra.unescaped_suffix_regex("\\$")
   let unescaped_asterisk_regex = infra.unescaped_suffix_regex("\\*")
   let unescaped_underscore_regex = infra.unescaped_suffix_regex("_")
   let plain_double_underscore_regex = plain_double_underscore_regex()
@@ -64,13 +62,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
     //
     //
     // ***************************
-    // START $$ -> MathBlock and $ -> Math
+    // START $$ -> MathBlock
     split_by_regexes(#([#(unescaped_double_dollar_regex, "DoubleDollar")], [])),
     pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
-    split_by_regexes(#([#(unescaped_simple_dollar_regex, "SimpleDollar")], [])),
-    pair_bookends(#(["SimpleDollar"], ["SimpleDollar"], "Math")),
     fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
-    fold_tags_into_text(dict.from_list([#("SimpleDollar", "$")])),
     remove_empty_lines(),
     // END
     // ***************************
@@ -82,8 +77,19 @@ pub fn pipeline_constructor() -> List(Pipe) {
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
       "Section", "Exercise", "List", "Grid",
     ]),
-    split_vertical_chunks(["MathBlock", "Math"]),
+    split_vertical_chunks(["MathBlock"]),
+    // "MathBlock" says "don't create VerticalChunks inside of MathBlocks"
     remove_vertical_chunks_with_no_text_child_desugarer(),
+    // END
+    // ***************************
+    //
+    //
+    // ***************************
+    // START $ -> Math
+    split_by_regexes(#([#(unescaped_single_dollar_regex, "SingleDollar")], [])),
+    pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
+    fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
+    remove_empty_lines(),
     // END
     // ***************************
     //
@@ -91,7 +97,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ***************************
     // START __ __ -> CentralItalicDisplay
     split_by_regexes(
-      #([#(plain_double_underscore_regex, "DoubleUnderscore")], ["MathBlock"]),
+      #([#(plain_double_underscore_regex, "DoubleUnderscore")], [
+        "MathBlock", "Math",
+      ]),
     ),
     pair_bookends(#(
       ["DoubleUnderscore"],

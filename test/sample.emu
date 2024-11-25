@@ -1,18 +1,11 @@
 |> Book
 
     $$
-    more
-    $$$$another
+
+    hey
+
+    ho
+
+    ha
+
     $$
-    and$$
-    __a _central_
-    quote__ith__ $x + 2$.
-
-    _my friend *is
-    |> InlineImg
-        src something
-    an* anima_
-
-    this _one is *fucked_ up*
-    
-    this *one is _symmetrically fucked* up_

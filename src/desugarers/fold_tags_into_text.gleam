@@ -61,8 +61,11 @@ fn fold_tags_into_text_children_accumulator(
   // - already_processed: previously processed children in
   //   reverse order (last stuff is first in the list)
   //
-  // - optional_last_t is a possible text node that would
-  //   appear right before optional_last_v, if it appears
+  // - optional_last_t is:
+  //   * the node right before optional_last_v if 
+  //     optional_last_v != None
+  //   * the last node before remaining if 
+  //     optional_last_v == None
   //
   // - optional_last_v is a possible previoux v-node that
   //   matched the dictionary; if it is not None, it is the
@@ -155,8 +158,8 @@ fn fold_tags_into_text_children_accumulator(
               // *
               fold_tags_into_text_children_accumulator(
                 tags2texts,
-                [left_absorb_text(first, last_v_text), ..already_processed],
-                None,
+                already_processed,
+                Some(left_absorb_text(first, last_v_text)),
                 None,
                 rest,
               )
@@ -188,14 +191,11 @@ fn fold_tags_into_text_children_accumulator(
               // *
               fold_tags_into_text_children_accumulator(
                 tags2texts,
-                [
-                  last_line_concatenate_with_first_line(
-                    last_t,
-                    left_absorb_text(first, text),
-                  ),
-                  ..already_processed
-                ],
-                None,
+                already_processed,
+                Some(last_line_concatenate_with_first_line(
+                  last_t,
+                  left_absorb_text(first, text),
+                )),
                 None,
                 rest,
               )
@@ -271,11 +271,8 @@ fn fold_tags_into_text_children_accumulator(
                   // *
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
-                    [
-                      turn_into_text_node(last_v, last_v_text),
-                      ..already_processed
-                    ],
-                    None,
+                    already_processed,
+                    Some(turn_into_text_node(last_v, last_v_text)),
                     Some(#(first, text)),
                     rest,
                   )
@@ -301,7 +298,7 @@ fn fold_tags_into_text_children_accumulator(
                     None,
                     rest,
                   )
-                Ok(first_text) ->
+                Ok(text) ->
                   // *
                   // case M10: - 'first' is a matching V-node
                   //           - there exists a previous t node
@@ -313,7 +310,7 @@ fn fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
                     optional_last_t,
-                    Some(#(first, first_text)),
+                    Some(#(first, text)),
                     rest,
                   )
               }
@@ -338,7 +335,7 @@ fn fold_tags_into_text_children_accumulator(
                     None,
                     rest,
                   )
-                Ok(first_text) ->
+                Ok(text) ->
                   // *
                   // case M11: - 'first' is matching V-node
                   //           - there exists a previous t node
@@ -348,9 +345,9 @@ fn fold_tags_into_text_children_accumulator(
                   // *
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
-                    [right_absorb_text(last_t, first_text), ..already_processed],
-                    None,
-                    Some(#(first, first_text)),
+                    already_processed,
+                    Some(right_absorb_text(last_t, text)),
+                    Some(#(first, text)),
                     rest,
                   )
               }
@@ -387,6 +384,7 @@ fn desugarer_factory(extras: Dict(String, String)) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extras))
 }
 
+//                              "DoubleDollar", "$$"
 pub fn fold_tags_into_text(extras: Dict(String, String)) -> Pipe {
   #(
     DesugarerDescription("fold_tags_into_text", Some(ins(extras)), "..."),

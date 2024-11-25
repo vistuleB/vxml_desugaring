@@ -4,18 +4,39 @@ import gleam/string
 
 const ins = string.inspect
 
-type StringChar {
+const as_utf_codepoints = string.to_utf_codepoints
+
+fn as_string_chars(from: String) -> List(StringChar) {
+  string.to_utf_codepoints(from) |> list.map(Codepoint)
+}
+
+pub type StringChar {
   Codepoint(UtfCodepoint)
   EOS
   SOS
 }
 
-type DelimiterPattern1 {
+pub type DelimiterPattern1 {
   DelimiterPattern1(
     match_one_of_before: List(StringChar),
     delimiter_chars: List(UtfCodepoint),
     match_one_of_after: List(StringChar),
   )
+}
+
+// *
+// semantics of this one are not totally clear from
+// just at type, but semantics are: match on substring
+// 'delimiter_chars' if it is not preceded by an odd
+// number of backslashes (i.e., if it is not escaped)
+// *
+pub type DelimiterPattern10 {
+  DelimiterPattern10(delimiter_chars: List(UtfCodepoint))
+}
+
+pub type DelimiterPattern {
+  P1(DelimiterPattern1)
+  P10(DelimiterPattern10)
 }
 
 fn prefix_match_last_char_version(
@@ -176,14 +197,10 @@ fn utf_split_for_delimiter_pattern_1_acc(
 }
 
 fn utf_split_for_delimiter_pattern_1(
-  pattern: DelimiterPattern1,
   chars: List(UtfCodepoint),
+  pattern: DelimiterPattern1,
 ) -> List(List(UtfCodepoint)) {
   utf_split_for_delimiter_pattern_1_acc(pattern, [], [], SOS, chars)
-}
-
-type DelimiterPattern10 {
-  DelimiterPattern10(delimiter_chars: List(UtfCodepoint))
 }
 
 fn is_backlash(pt: UtfCodepoint) -> Bool {
@@ -268,16 +285,40 @@ fn utf_split_for_delimiter_pattern_10_acc(
 }
 
 fn utf_split_for_delimiter_pattern_10(
-  pattern: DelimiterPattern10,
   chars: List(UtfCodepoint),
+  pattern: DelimiterPattern10,
 ) -> List(List(UtfCodepoint)) {
   utf_split_for_delimiter_pattern_10_acc(pattern, [], [], 0, chars)
 }
 
-const as_utf_codepoints = string.to_utf_codepoints
+pub fn string_split_for_delimiter_pattern_1(
+  content: String,
+  pattern: DelimiterPattern1,
+) -> List(String) {
+  content
+  |> as_utf_codepoints
+  |> utf_split_for_delimiter_pattern_1(pattern)
+  |> list.map(string.from_utf_codepoints)
+}
 
-fn as_string_chars(from: String) -> List(StringChar) {
-  string.to_utf_codepoints(from) |> list.map(Codepoint)
+pub fn string_split_for_delimiter_pattern_10(
+  content: String,
+  pattern: DelimiterPattern10,
+) -> List(String) {
+  content
+  |> as_utf_codepoints
+  |> utf_split_for_delimiter_pattern_10(pattern)
+  |> list.map(string.from_utf_codepoints)
+}
+
+pub fn delimiter_pattern_string_split(
+  content: String,
+  pattern: DelimiterPattern,
+) -> List(String) {
+  case pattern {
+    P1(pattern1) -> string_split_for_delimiter_pattern_1(content, pattern1)
+    P10(pattern10) -> string_split_for_delimiter_pattern_10(content, pattern10)
+  }
 }
 
 pub fn tests() -> Nil {
@@ -296,19 +337,14 @@ pub fn tests() -> Nil {
 
   let pattern10 = DelimiterPattern10(delimiter_chars: "$$" |> as_utf_codepoints)
 
-  io.println(ins(
-    utf_split_for_delimiter_pattern_1(
-      pattern1,
-      "hello aa(hm hm" |> as_utf_codepoints,
-    )
-    |> list.map(string.from_utf_codepoints),
-  ))
+  io.println(
+    ins(string_split_for_delimiter_pattern_1("hello aa(hm hm", pattern1)),
+  )
 
-  io.println(ins(
-    utf_split_for_delimiter_pattern_10(
+  io.println(
+    ins(string_split_for_delimiter_pattern_10(
+      "hello aa$$hm \\$$hm \\\\$$",
       pattern10,
-      "hello aa$$hm \\$$hm \\\\$$" |> as_utf_codepoints,
-    )
-    |> list.map(string.from_utf_codepoints),
-  ))
+    )),
+  )
 }
