@@ -1,4 +1,3 @@
-import gleam/bool.{negate}
 import gleam/list
 import gleam/option
 import infrastructure.{

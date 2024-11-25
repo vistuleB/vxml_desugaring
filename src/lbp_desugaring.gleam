@@ -1,6 +1,5 @@
 import argv
 import gleam/io
-import gleam/list
 import gleam/result
 import gleam/string
 import infrastructure.{
@@ -8,7 +7,7 @@ import infrastructure.{
 }
 import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
-import vxml_parser.{type VXML, Blame}
+import vxml_parser.{type VXML}
 import writerly_parser.{
   assemble_blamed_lines, parse_blamed_lines, writerlys_to_vxmls,
 }
