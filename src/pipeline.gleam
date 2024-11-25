@@ -18,7 +18,9 @@ import desugarers/wrap_elements_by_blankline.{
 }
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
 import gleam/dict
+import gleam/io
 import gleam/regex.{type Regex}
+import gleam/string
 import infrastructure.{type Pipe} as infra
 
 pub fn opening_central_display_italics_regex() -> Regex {
