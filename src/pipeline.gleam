@@ -8,9 +8,7 @@ import desugarers/remove_vertical_chunks_with_no_text_child.{
 import desugarers/remove_writerly_blurb_tags_around_text_nodes.{
   remove_writerly_blurb_tags_around_text_nodes_desugarer,
 }
-import desugarers/replace_double_dollars_by_tags.{replace_double_dollars_by_tags}
 import desugarers/split_by_regexes.{split_by_regexes}
-import desugarers/split_delimiters_chunks.{split_delimiters_chunks_desugarer}
 import desugarers/split_vertical_chunks.{split_vertical_chunks}
 import desugarers/wrap_element_children.{wrap_element_children_desugarer}
 import desugarers/wrap_elements_by_blankline.{
@@ -143,7 +141,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     //
     //
     // ***************************
-    // START * * -> i
+    // START * * -> b
     split_by_regexes(
       #([#(unescaped_asterisk_regex, "PlainAsterisk")], ["MathBlock", "Math"]),
     ),
