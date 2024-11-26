@@ -34,13 +34,25 @@ pub type DelimiterPattern10 {
   DelimiterPattern10(delimiter_chars: List(UtfCodepoint))
 }
 
+// *
+// same as DelimiterPattern10 but with a matching
+// following character
+// *
+pub type DelimiterPattern5 {
+  DelimiterPattern5(
+    delimiter_chars: List(UtfCodepoint),
+    match_one_of_after: List(StringChar),
+  )
+}
+
 pub type DelimiterPattern {
   P1(DelimiterPattern1)
+  P5(DelimiterPattern5)
   P10(DelimiterPattern10)
 }
 
 pub fn alphanumeric_string_chars() -> List(StringChar) {
-  "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVXYZ0123456789"
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   |> as_string_chars
 }
 
@@ -142,7 +154,7 @@ type PrefixMatchUtfBackslashCounterVersionState {
   )
 }
 
-fn prefix_match_utf_backslash_counter_version_continue_or_stop(
+fn prefix_match_backslash_counter_version_continue_or_stop(
   state: PrefixMatchUtfBackslashCounterVersionState,
 ) -> ContinueOrStop(PrefixMatchUtfBackslashCounterVersionState) {
   let PrefixMatchUtfBackslashCounterVersionState(
@@ -167,13 +179,13 @@ fn prefix_match_utf_backslash_counter_version_continue_or_stop(
               rest_pattern,
               rest_input,
             )
-          prefix_match_utf_backslash_counter_version_continue_or_stop(new_state)
+          prefix_match_backslash_counter_version_continue_or_stop(new_state)
         }
       }
   }
 }
 
-fn prefix_match_utf_backslash_counter_version(
+fn prefix_match_backslash_counter_version(
   num_backslashes_before_in: Int,
   pattern: List(UtfCodepoint),
   input: List(UtfCodepoint),
@@ -185,7 +197,7 @@ fn prefix_match_utf_backslash_counter_version(
         pattern,
         input,
       ),
-      prefix_match_utf_backslash_counter_version_continue_or_stop,
+      prefix_match_backslash_counter_version_continue_or_stop,
     )
   case final_state {
     PrefixMatchUtfBackslashCounterVersionState(
@@ -201,7 +213,7 @@ fn prefix_match_utf_backslash_counter_version(
   }
 }
 
-fn prefix_match_one_string_version(
+fn prefix_match_one_string_char_version(
   in: List(UtfCodepoint),
   one_of: List(StringChar),
 ) -> Bool {
@@ -211,208 +223,277 @@ fn prefix_match_one_string_version(
   }
 }
 
-fn utf_split_for_delimiter_pattern_1_acc(
-  pattern: DelimiterPattern1,
-  previous_splits: List(List(UtfCodepoint)),
-  chars_since_last_split: List(UtfCodepoint),
+fn delimiter_pattern_1_vanilla_split_matcher_parameterized(
   last_char_before_remaining_chars: StringChar,
   remaining_chars: List(UtfCodepoint),
-) -> List(List(UtfCodepoint)) {
-  let DelimiterPattern1(before_matchers, delimiter_chars, after_matchers) =
-    pattern
-  case list.contains(before_matchers, last_char_before_remaining_chars) {
-    False ->
-      case remaining_chars {
-        [] -> {
-          let last_split = chars_since_last_split |> list.reverse
-          [last_split, ..previous_splits] |> list.reverse
-        }
-        [first, ..rest] -> {
-          utf_split_for_delimiter_pattern_1_acc(
-            pattern,
-            previous_splits,
-            [first, ..chars_since_last_split],
-            Codepoint(first),
-            rest,
-          )
-        }
-      }
+  pattern: DelimiterPattern1,
+) -> #(Bool, List(UtfCodepoint), StringChar, List(UtfCodepoint)) {
+  let DelimiterPattern1(
+    match_one_of_before,
+    delimiter_chars,
+    match_one_of_after,
+  ) = pattern
+  let assert [first_char, ..rest] = remaining_chars
+  let failure_return_value = #(False, [first_char], Codepoint(first_char), rest)
+  case list.contains(match_one_of_before, last_char_before_remaining_chars) {
+    False -> failure_return_value
     True ->
       case
-        io.debug(prefix_match_last_char_version(
-          io.debug(last_char_before_remaining_chars),
+        prefix_match_last_char_version(
+          last_char_before_remaining_chars,
           delimiter_chars,
           remaining_chars,
-        ))
+        )
       {
-        #(False, _, _) -> {
-          case remaining_chars {
-            [] -> {
-              let last_split = chars_since_last_split |> list.reverse
-              [last_split, ..previous_splits] |> list.reverse
-            }
-            [first, ..rest] -> {
-              utf_split_for_delimiter_pattern_1_acc(
-                pattern,
-                previous_splits,
-                [first, ..chars_since_last_split],
-                Codepoint(first),
-                rest,
-              )
-            }
-          }
-        }
-        #(True, new_last_char, after_delimiter_chars) -> {
+        #(False, _, _) -> failure_return_value
+        #(True, new_last_char, after_delimiter_chars) ->
           case
-            prefix_match_one_string_version(
+            prefix_match_one_string_char_version(
               after_delimiter_chars,
-              after_matchers,
+              match_one_of_after,
             )
           {
-            False -> {
-              case remaining_chars {
-                [] -> {
-                  let last_split = chars_since_last_split |> list.reverse
-                  [last_split, ..previous_splits] |> list.reverse
-                }
-                [first, ..rest] -> {
-                  utf_split_for_delimiter_pattern_1_acc(
-                    pattern,
-                    previous_splits,
-                    [first, ..chars_since_last_split],
-                    Codepoint(first),
-                    rest,
-                  )
-                }
-              }
-            }
-            True -> {
-              let new_split = chars_since_last_split |> list.reverse
-              let new_previous_splits = [new_split, ..previous_splits]
-              utf_split_for_delimiter_pattern_1_acc(
-                pattern,
-                new_previous_splits,
-                [],
-                new_last_char,
-                after_delimiter_chars,
-              )
-            }
+            False -> failure_return_value
+            True -> #(
+              True,
+              delimiter_chars |> list.reverse,
+              new_last_char,
+              after_delimiter_chars,
+            )
           }
-        }
       }
   }
 }
 
-fn utf_split_for_delimiter_pattern_1(
-  chars: List(UtfCodepoint),
+fn delimiter_pattern_5_vanilla_split_matcher_parameterized(
+  num_preceding_backslashes: Int,
+  remaining_chars: List(UtfCodepoint),
+  pattern: DelimiterPattern5,
+) -> #(Bool, List(UtfCodepoint), Int, List(UtfCodepoint)) {
+  let DelimiterPattern5(delimiter_chars, match_one_of_after) = pattern
+  let assert [first_char, ..rest] = remaining_chars
+  let new_num_backslashes_after_first = case is_backlash(first_char) {
+    True -> num_preceding_backslashes + 1
+    False -> 0
+  }
+  let failure_return_value = #(
+    False,
+    [first_char],
+    new_num_backslashes_after_first,
+    rest,
+  )
+  case num_preceding_backslashes % 2 == 0 {
+    False -> failure_return_value
+    True ->
+      case
+        prefix_match_backslash_counter_version(
+          num_preceding_backslashes,
+          delimiter_chars,
+          remaining_chars,
+        )
+      {
+        #(False, _, _) -> failure_return_value
+        #(
+          True,
+          new_num_backslashes_after_delimiter_chars,
+          after_delimiter_chars,
+        ) ->
+          case
+            prefix_match_one_string_char_version(
+              after_delimiter_chars,
+              match_one_of_after,
+            )
+          {
+            False -> failure_return_value
+            True -> #(
+              True,
+              delimiter_chars |> list.reverse,
+              new_num_backslashes_after_delimiter_chars,
+              after_delimiter_chars,
+            )
+          }
+      }
+  }
+}
+
+fn delimiter_pattern_10_vanilla_split_matcher_parameterized(
+  num_preceding_backslashes: Int,
+  remaining_chars: List(UtfCodepoint),
+  pattern: DelimiterPattern10,
+) -> #(Bool, List(UtfCodepoint), Int, List(UtfCodepoint)) {
+  let DelimiterPattern10(delimiter_chars) = pattern
+  let assert [first_char, ..rest] = remaining_chars
+  let new_num_backslashes_after_first = case is_backlash(first_char) {
+    True -> num_preceding_backslashes + 1
+    False -> 0
+  }
+  let failure_return_value = #(
+    False,
+    [first_char],
+    new_num_backslashes_after_first,
+    rest,
+  )
+  case num_preceding_backslashes % 2 == 0 {
+    False -> failure_return_value
+    True ->
+      case
+        prefix_match_backslash_counter_version(
+          num_preceding_backslashes,
+          delimiter_chars,
+          remaining_chars,
+        )
+      {
+        #(False, _, _) -> failure_return_value
+        #(
+          True,
+          new_num_backslashes_after_delimiter_chars,
+          after_delimiter_chars,
+        ) -> #(
+          True,
+          delimiter_chars |> list.reverse,
+          new_num_backslashes_after_delimiter_chars,
+          after_delimiter_chars,
+        )
+      }
+  }
+}
+
+fn delimiter_pattern_1_vanilla_splitter_constructor(
   pattern: DelimiterPattern1,
+) -> VanillaSplitter(StringChar) {
+  VanillaSplitter(
+    initial_pre_input_info: StartOfString,
+    matcher: fn(last_char_before_remaining_chars, remaining_chars) {
+      delimiter_pattern_1_vanilla_split_matcher_parameterized(
+        last_char_before_remaining_chars,
+        remaining_chars,
+        pattern,
+      )
+    },
+  )
+}
+
+fn delimiter_pattern_5_vanilla_splitter_constructor(
+  pattern: DelimiterPattern5,
+) -> VanillaSplitter(Int) {
+  VanillaSplitter(
+    initial_pre_input_info: 0,
+    matcher: fn(num_backslashes_before_remaining_chars, remaining_chars) {
+      delimiter_pattern_5_vanilla_split_matcher_parameterized(
+        num_backslashes_before_remaining_chars,
+        remaining_chars,
+        pattern,
+      )
+    },
+  )
+}
+
+fn delimiter_pattern_10_vanilla_splitter_constructor(
+  pattern: DelimiterPattern10,
+) -> VanillaSplitter(Int) {
+  VanillaSplitter(
+    initial_pre_input_info: 0,
+    matcher: fn(num_backslashes_before_remaining_chars, remaining_chars) {
+      delimiter_pattern_10_vanilla_split_matcher_parameterized(
+        num_backslashes_before_remaining_chars,
+        remaining_chars,
+        pattern,
+      )
+    },
+  )
+}
+
+type VanillaSplitMatcher(pre_input_info) =
+  fn(pre_input_info, List(UtfCodepoint)) ->
+    #(Bool, List(UtfCodepoint), pre_input_info, List(UtfCodepoint))
+
+type VanillaSplitter(pre_input_info) {
+  VanillaSplitter(
+    initial_pre_input_info: pre_input_info,
+    matcher: VanillaSplitMatcher(pre_input_info),
+  )
+}
+
+type VanillaSplitterContinueOrStopState(pre_input_info) {
+  VanillaSplitterContinueOrStopState(
+    previous_splits: List(List(UtfCodepoint)),
+    chars_since_last_split: List(UtfCodepoint),
+    pre_input_info: pre_input_info,
+    remaining_input: List(UtfCodepoint),
+  )
+}
+
+fn vanilla_splitter_continue_or_stop(
+  state: VanillaSplitterContinueOrStopState(a),
+  matcher: VanillaSplitMatcher(a),
+) -> ContinueOrStop(VanillaSplitterContinueOrStopState(a)) {
+  let VanillaSplitterContinueOrStopState(
+    previous_splits,
+    chars_since_last_split,
+    pre_input_info,
+    remaining_input,
+  ) = state
+  case remaining_input {
+    [] -> Stop(state)
+    _ ->
+      case matcher(pre_input_info, remaining_input) {
+        #(False, chars_eaten, new_pre_input_info, new_remaining_input) -> {
+          Continue(VanillaSplitterContinueOrStopState(
+            previous_splits,
+            list.flatten([chars_eaten, chars_since_last_split]),
+            new_pre_input_info,
+            new_remaining_input,
+          ))
+        }
+        #(True, _, new_pre_input_info, new_remaining_input) ->
+          Continue(VanillaSplitterContinueOrStopState(
+            [chars_since_last_split |> list.reverse, ..previous_splits],
+            [],
+            new_pre_input_info,
+            new_remaining_input,
+          ))
+      }
+  }
+}
+
+fn utf_split_for_vanilla_splitter(
+  input: List(UtfCodepoint),
+  splitter: VanillaSplitter(a),
 ) -> List(List(UtfCodepoint)) {
-  utf_split_for_delimiter_pattern_1_acc(pattern, [], [], StartOfString, chars)
+  let VanillaSplitter(initial_pre_input_info, matcher) = splitter
+  let initial_vanilla_splitter_continue_or_stop_state =
+    VanillaSplitterContinueOrStopState(
+      previous_splits: [],
+      chars_since_last_split: [],
+      pre_input_info: initial_pre_input_info,
+      remaining_input: input,
+    )
+  let final_state =
+    while_not_stop(
+      initial_vanilla_splitter_continue_or_stop_state,
+      vanilla_splitter_continue_or_stop(_, matcher),
+    )
+  let assert VanillaSplitterContinueOrStopState(
+    final_previous_splits,
+    final_chars_since_last_split,
+    _,
+    [],
+  ) = final_state
+  [final_chars_since_last_split |> list.reverse, ..final_previous_splits]
+  |> list.reverse
 }
 
 fn is_backlash(pt: UtfCodepoint) -> Bool {
   string.utf_codepoint_to_int(pt) == 92
 }
 
-fn utf_split_for_delimiter_pattern_10_acc(
-  pattern: DelimiterPattern10,
-  previous_splits: List(List(UtfCodepoint)),
-  chars_since_last_split: List(UtfCodepoint),
-  num_preceding_backslashes: Int,
-  remaining_chars: List(UtfCodepoint),
-) -> List(List(UtfCodepoint)) {
-  let DelimiterPattern10(delimiter_chars) = pattern
-  case num_preceding_backslashes % 2 == 0 {
-    False -> {
-      case remaining_chars {
-        [] -> {
-          let last_split = chars_since_last_split |> list.reverse
-          [last_split, ..previous_splits] |> list.reverse
-        }
-        [first, ..rest] -> {
-          let new_num_backslashes = case is_backlash(first) {
-            False -> 0
-            True -> num_preceding_backslashes + 1
-          }
-          utf_split_for_delimiter_pattern_10_acc(
-            pattern,
-            previous_splits,
-            [first, ..chars_since_last_split],
-            new_num_backslashes,
-            rest,
-          )
-        }
-      }
-    }
-    True -> {
-      case
-        prefix_match_utf_backslash_counter_version(
-          num_preceding_backslashes,
-          delimiter_chars,
-          remaining_chars,
-        )
-      {
-        #(False, _, _) -> {
-          case remaining_chars {
-            [] -> {
-              let last_split = chars_since_last_split |> list.reverse
-              [last_split, ..previous_splits] |> list.reverse
-            }
-            [first, ..rest] -> {
-              let new_num_backslashes = case is_backlash(first) {
-                False -> 0
-                True -> num_preceding_backslashes + 1
-              }
-              utf_split_for_delimiter_pattern_10_acc(
-                pattern,
-                previous_splits,
-                [first, ..chars_since_last_split],
-                new_num_backslashes,
-                rest,
-              )
-            }
-          }
-        }
-        #(True, new_num_backslashes, new_remaining_chars) -> {
-          let new_split = chars_since_last_split |> list.reverse
-          let new_previous_splits = [new_split, ..previous_splits]
-          utf_split_for_delimiter_pattern_10_acc(
-            pattern,
-            new_previous_splits,
-            [],
-            new_num_backslashes,
-            new_remaining_chars,
-          )
-        }
-      }
-    }
-  }
-}
-
-fn utf_split_for_delimiter_pattern_10(
-  chars: List(UtfCodepoint),
-  pattern: DelimiterPattern10,
-) -> List(List(UtfCodepoint)) {
-  utf_split_for_delimiter_pattern_10_acc(pattern, [], [], 0, chars)
-}
-
-pub fn string_split_for_delimiter_pattern_1(
+fn string_split_for_vanilla_splitter(
   content: String,
-  pattern: DelimiterPattern1,
+  splitter: VanillaSplitter(a),
 ) -> List(String) {
   content
   |> as_utf_codepoints
-  |> utf_split_for_delimiter_pattern_1(pattern)
-  |> list.map(string.from_utf_codepoints)
-}
-
-pub fn string_split_for_delimiter_pattern_10(
-  content: String,
-  pattern: DelimiterPattern10,
-) -> List(String) {
-  content
-  |> as_utf_codepoints
-  |> utf_split_for_delimiter_pattern_10(pattern)
+  |> utf_split_for_vanilla_splitter(splitter)
   |> list.map(string.from_utf_codepoints)
 }
 
@@ -421,8 +502,21 @@ pub fn delimiter_pattern_string_split(
   pattern: DelimiterPattern,
 ) -> List(String) {
   case pattern {
-    P1(pattern1) -> string_split_for_delimiter_pattern_1(content, pattern1)
-    P10(pattern10) -> string_split_for_delimiter_pattern_10(content, pattern10)
+    P1(pattern1) ->
+      string_split_for_vanilla_splitter(
+        content,
+        delimiter_pattern_1_vanilla_splitter_constructor(pattern1),
+      )
+    P5(pattern5) ->
+      string_split_for_vanilla_splitter(
+        content,
+        delimiter_pattern_5_vanilla_splitter_constructor(pattern5),
+      )
+    P10(pattern10) ->
+      string_split_for_vanilla_splitter(
+        content,
+        delimiter_pattern_10_vanilla_splitter_constructor(pattern10),
+      )
   }
 }
 

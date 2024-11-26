@@ -1,6 +1,6 @@
 import codepoints.{
   type DelimiterPattern, Codepoint, DelimiterPattern1, DelimiterPattern10,
-  EndOfString, P1, P10, StartOfString,
+  DelimiterPattern5, EndOfString, P1, P10, P5, StartOfString,
 }
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
@@ -110,6 +110,84 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ))
 
+  let opening_single_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        [StartOfString],
+        codepoints.space_string_chars(),
+      ]),
+      delimiter_chars: "_" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let opening_or_closing_single_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "_" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let closing_single_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "_" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.space_string_chars(),
+        [EndOfString],
+      ]),
+    ))
+
+  let opening_single_asterisk_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        [StartOfString],
+        codepoints.space_string_chars(),
+      ]),
+      delimiter_chars: "*" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let opening_or_closing_single_asterisk_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "*" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let closing_single_asterisk_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "*" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.space_string_chars(),
+        [EndOfString],
+      ]),
+    ))
+
   let unescaped_asterisk_regex = infra.unescaped_suffix_regex("\\*")
   let unescaped_underscore_regex = infra.unescaped_suffix_regex("_")
   let double_underscore_regex = double_underscore_regex()
@@ -200,31 +278,69 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ),
     remove_empty_lines(),
+    // ************************
+    // _ **********************
+    // ************************
+    split_by_delimiter_pattern(
+      #(
+        [
+          #(opening_single_underscore_delimiter_pattern, "OpeningUnderscore"),
+          #(
+            opening_or_closing_single_underscore_delimiter_pattern,
+            "OpeningOrClosingUnderscore",
+          ),
+          #(closing_single_underscore_delimiter_pattern, "ClosingUnderscore"),
+        ],
+        ["MathBlock", "Math"],
+      ),
+    ),
+    pair_bookends(#(
+      ["OpeningUnderscore", "OpeningOrClosingUnderscore"],
+      ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
+      "i",
+    )),
+    fold_tags_into_text(
+      dict.from_list([
+        #("OpeningOrClosingUnderscore", "_"),
+        #("OpeningUnderscore", "_"),
+        #("ClosingUnderscore", "_"),
+      ]),
+    ),
+    remove_empty_lines(),
     // // ************************
-  // // _ **********************
-  // // ************************
-  // split_by_regexes(
-  //   #([#(unescaped_underscore_regex, "PlainUnderscore")], [
-  //     "MathBlock", "Math",
-  //   ]),
-  // ),
-  // pair_bookends(#(["PlainUnderscore"], ["PlainUnderscore"], "i")),
-  // fold_tags_into_text(dict.from_list([#("PlainUnderscore", "_")])),
-  // remove_empty_lines(),
-  // // ************************
-  // // * **********************
-  // // ************************
-  // split_by_regexes(
-  //   #([#(unescaped_asterisk_regex, "PlainAsterisk")], ["MathBlock", "Math"]),
-  // ),
-  // pair_bookends(#(["PlainAsterisk"], ["PlainAsterisk"], "b")),
-  // fold_tags_into_text(dict.from_list([#("PlainAsterisk", "*")])),
-  // remove_empty_lines(),
-  // // ************************
-  // // misc *******************
-  // // ************************
-  // wrap_math_with_no_break(),
-  // insert_indent(),
-  // wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
+    // // * **********************
+    // // ************************
+    split_by_delimiter_pattern(
+      #(
+        [
+          #(opening_single_asterisk_delimiter_pattern, "OpeningAsterisk"),
+          #(
+            opening_or_closing_single_asterisk_delimiter_pattern,
+            "OpeningOrClosingAsterisk",
+          ),
+          #(closing_single_asterisk_delimiter_pattern, "ClosingAsterisk"),
+        ],
+        ["MathBlock", "Math"],
+      ),
+    ),
+    pair_bookends(#(
+      ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
+      ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
+      "b",
+    )),
+    fold_tags_into_text(
+      dict.from_list([
+        #("OpeningOrClosingAsterisk", "_"),
+        #("OpeningAsterisk", "_"),
+        #("ClosingAsterisk", "_"),
+      ]),
+    ),
+    remove_empty_lines(),
+    // ************************
+    // misc *******************
+    // ************************
+    wrap_math_with_no_break(),
+    insert_indent(),
+    wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
   ]
 }
