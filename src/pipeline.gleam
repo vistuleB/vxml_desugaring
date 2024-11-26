@@ -165,7 +165,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // $$ *********************
     // ************************
-    // split_by_regexes(#([#(unescaped_double_dollar_regex, "DoubleDollar")], [])),
     split_by_delimiter_pattern(
       #([#(double_dollar_delimiter_pattern, "DoubleDollar")], []),
     ),
@@ -273,9 +272,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ),
     remove_empty_lines(),
-    // // ************************
-    // // * **********************
-    // // ************************
+    // ************************
+    // * **********************
+    // ************************
     split_by_delimiter_pattern(
       #(
         [
