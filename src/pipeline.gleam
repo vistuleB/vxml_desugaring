@@ -1,6 +1,7 @@
 import desugarers/break_up_text_by_double_dollars.{
   break_up_text_by_double_dollars_desugarer,
 }
+import desugarers/counter.{counter_desugarer}
 import desugarers/insert_indent.{insert_indent_desugarer}
 import desugarers/pair_double_dollars_together.{
   pair_double_dollars_together_desugarer,
@@ -41,5 +42,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     split_delimiters_chunks_desugarer(#("*", "*", "b", False, ["i"])),
     split_delimiters_chunks_desugarer(#("$", "$", "Math", False, ["i", "*"])),
     wrap_math_with_no_break_desugarer(),
+    counter_desugarer(),
+    // END
   ]
 }

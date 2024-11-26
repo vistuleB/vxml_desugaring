@@ -13,7 +13,7 @@ import writerly_parser.{
 
 const ins = string.inspect
 
-pub const path = "test/content"
+pub const path = "test/sample.emu"
 
 fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   case vxmls {

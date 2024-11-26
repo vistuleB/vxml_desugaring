@@ -1,9 +1,6 @@
-|> Hello
+|> Book
+    counter MyCounter
 
-    |> List
+    more ::++MyCounter c
 
-        first
-
-        second
-
-        third
+   
