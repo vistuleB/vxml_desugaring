@@ -1,6 +1,6 @@
 import codepoints.{
-  type DelimiterPattern, Codepoint, DelimiterPattern1, DelimiterPattern10,
-  DelimiterPattern5, EndOfString, P1, P10, P5, StartOfString,
+  type DelimiterPattern, DelimiterPattern1, DelimiterPattern10, EndOfString, P1,
+  P10, StartOfString,
 }
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
@@ -17,35 +17,7 @@ import desugarers/wrap_element_children.{wrap_element_children_desugarer}
 import desugarers/wrap_elements_by_blankline.{wrap_elements_by_blankline}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
 import gleam/dict
-import gleam/regex.{type Regex}
-import infrastructure.{type Pipe} as infra
-
-pub fn opening_central_display_italics_regex() -> Regex {
-  let assert Ok(re) =
-    regex.from_string("(?:^|\\s)(__)(?:(?:[a-zA-Z0-9])|(?:\\()|(?:\\[))")
-  re
-}
-
-pub fn closing_central_display_italics_regex() -> Regex {
-  let assert Ok(re) =
-    regex.from_string("(?:(?:[a-zA-Z0-9])|(?:\\()|(?:\\[))(__)(?:$|\\s)")
-  re
-}
-
-pub fn double_underscore_regex() -> Regex {
-  let assert Ok(re) = regex.from_string("__")
-  re
-}
-
-pub fn opening_centerquote_regex() -> Regex {
-  let assert Ok(re) = regex.from_string("_\\|")
-  re
-}
-
-pub fn closing_centerquote_regex() -> Regex {
-  let assert Ok(re) = regex.from_string("\\|_")
-  re
-}
+import infrastructure.{type Pipe}
 
 pub fn pipeline_constructor() -> List(Pipe) {
   let double_dollar_delimiter_pattern: DelimiterPattern =
@@ -187,12 +159,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         [EndOfString],
       ]),
     ))
-
-  let unescaped_asterisk_regex = infra.unescaped_suffix_regex("\\*")
-  let unescaped_underscore_regex = infra.unescaped_suffix_regex("_")
-  let double_underscore_regex = double_underscore_regex()
-  let opening_centerquote_regex = opening_centerquote_regex()
-  let closing_centerquote_regex = closing_centerquote_regex()
 
   [
     unwrap_tags(["WriterlyBurbNode"]),
