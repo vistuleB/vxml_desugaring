@@ -10,7 +10,6 @@ import desugarers/remove_vertical_chunks_with_no_text_child.{
   remove_vertical_chunks_with_no_text_child,
 }
 import desugarers/split_by_delimiter_pattern.{split_by_delimiter_pattern}
-import desugarers/split_by_regexes.{split_by_regexes}
 import desugarers/split_vertical_chunks.{split_vertical_chunks}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_element_children.{wrap_element_children_desugarer}
