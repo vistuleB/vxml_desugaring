@@ -55,7 +55,7 @@ pub type DelimiterPattern {
 
 pub const as_utf_codepoints = string.to_utf_codepoints
 
-fn as_string_chars(from: String) -> List(StringChar) {
+pub fn as_string_chars(from: String) -> List(StringChar) {
   string.to_utf_codepoints(from) |> list.map(Codepoint)
 }
 
