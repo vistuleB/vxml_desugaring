@@ -1,19 +1,20 @@
+import codepoints.{
+  type DelimiterPattern, Codepoint, DelimiterPattern1, DelimiterPattern10,
+  EndOfString, P1, P10, StartOfString,
+}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/remove_empty_lines.{remove_empty_lines}
 import desugarers/remove_vertical_chunks_with_no_text_child.{
-  remove_vertical_chunks_with_no_text_child_desugarer,
+  remove_vertical_chunks_with_no_text_child,
 }
-import desugarers/remove_writerly_blurb_tags_around_text_nodes.{
-  remove_writerly_blurb_tags_around_text_nodes_desugarer,
-}
+import desugarers/split_by_delimiter_pattern.{split_by_delimiter_pattern}
 import desugarers/split_by_regexes.{split_by_regexes}
 import desugarers/split_vertical_chunks.{split_vertical_chunks}
+import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_element_children.{wrap_element_children_desugarer}
-import desugarers/wrap_elements_by_blankline.{
-  wrap_elements_by_blankline_desugarer,
-}
+import desugarers/wrap_elements_by_blankline.{wrap_elements_by_blankline}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
 import gleam/dict
 import gleam/regex.{type Regex}
@@ -31,7 +32,7 @@ pub fn closing_central_display_italics_regex() -> Regex {
   re
 }
 
-pub fn plain_double_underscore_regex() -> Regex {
+pub fn double_underscore_regex() -> Regex {
   let assert Ok(re) = regex.from_string("__")
   re
 }
@@ -47,76 +48,142 @@ pub fn closing_centerquote_regex() -> Regex {
 }
 
 pub fn pipeline_constructor() -> List(Pipe) {
-  let unescaped_double_dollar_regex = infra.unescaped_suffix_regex("\\$\\$")
-  let unescaped_single_dollar_regex = infra.unescaped_suffix_regex("\\$")
+  let double_dollar_delimiter_pattern: DelimiterPattern =
+    P10(DelimiterPattern10(
+      delimiter_chars: "$$" |> codepoints.as_utf_codepoints,
+    ))
+
+  let single_dollar_delimiter_pattern: DelimiterPattern =
+    P10(DelimiterPattern10(delimiter_chars: "$" |> codepoints.as_utf_codepoints))
+
+  let opening_double_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        [StartOfString],
+        codepoints.space_string_chars(),
+      ]),
+      delimiter_chars: "__" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let closing_double_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "__" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+        [EndOfString],
+      ]),
+    ))
+
+  let opening_central_quote_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        [StartOfString],
+        codepoints.space_string_chars(),
+      ]),
+      delimiter_chars: "_|" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let closing_central_quote_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "|_" |> codepoints.as_utf_codepoints,
+      match_one_of_after: codepoints.one_of([
+        codepoints.alphanumeric_string_chars(),
+        codepoints.opening_bracket_string_chars(),
+        [EndOfString],
+      ]),
+    ))
+
   let unescaped_asterisk_regex = infra.unescaped_suffix_regex("\\*")
   let unescaped_underscore_regex = infra.unescaped_suffix_regex("_")
-  let plain_double_underscore_regex = plain_double_underscore_regex()
+  let double_underscore_regex = double_underscore_regex()
   let opening_centerquote_regex = opening_centerquote_regex()
   let closing_centerquote_regex = closing_centerquote_regex()
 
   [
-    remove_writerly_blurb_tags_around_text_nodes_desugarer(),
-    //
-    //
-    // ***************************
-    // START $$ -> MathBlock
-    split_by_regexes(#([#(unescaped_double_dollar_regex, "DoubleDollar")], [])),
+    unwrap_tags(["WriterlyBurbNode"]),
+    // ************************
+    // $$ *********************
+    // ************************
+    // split_by_regexes(#([#(unescaped_double_dollar_regex, "DoubleDollar")], [])),
+    split_by_delimiter_pattern(
+      #([#(double_dollar_delimiter_pattern, "DoubleDollar")], []),
+    ),
     pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
     fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
     remove_empty_lines(),
-    // END
-    // ***************************
-    //
-    //
-    // ***************************
-    // START VerticalChunk creation
-    wrap_elements_by_blankline_desugarer([
+    // ************************
+    // VerticalChunk **********
+    // ************************
+    wrap_elements_by_blankline([
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
       "Section", "Exercise", "List", "Grid",
     ]),
     split_vertical_chunks(["MathBlock"]),
-    // "MathBlock" says "don't create VerticalChunks inside of MathBlocks"
-    remove_vertical_chunks_with_no_text_child_desugarer(),
-    // END
-    // ***************************
-    //
-    //
-    // ***************************
-    // START $ -> Math
-    split_by_regexes(#([#(unescaped_single_dollar_regex, "SingleDollar")], [])),
+    remove_vertical_chunks_with_no_text_child(),
+    // ************************
+    // $ **********************
+    // ************************
+    split_by_delimiter_pattern(
+      #([#(single_dollar_delimiter_pattern, "SingleDollar")], []),
+    ),
     pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
     fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
     remove_empty_lines(),
-    // END
-    // ***************************
-    //
-    //
-    // ***************************
-    // START __ __ -> CentralItalicDisplay
-    split_by_regexes(
-      #([#(plain_double_underscore_regex, "DoubleUnderscore")], [
-        "MathBlock", "Math",
-      ]),
-    ),
-    pair_bookends(#(
-      ["DoubleUnderscore"],
-      ["DoubleUnderscore"],
-      "CentralItalicDisplay",
-    )),
-    fold_tags_into_text(dict.from_list([#("DoubleUnderscore", "__")])),
-    remove_empty_lines(),
-    // END
-    // ***************************
-    //
-    //
-    // ***************************
-    // START _| |_ -> CenterDisplay
-    split_by_regexes(
+    // ************************
+    // __ *********************
+    // ************************
+    split_by_delimiter_pattern(
       #(
         [
-          #(opening_centerquote_regex, "OpeningCenterQuote"),
-          #(closing_centerquote_regex, "ClosingCenterQuote"),
+          #(
+            opening_double_underscore_delimiter_pattern,
+            "OpeningDoubleUnderscore",
+          ),
+          #(
+            closing_double_underscore_delimiter_pattern,
+            "ClosingDoubleUnderscore",
+          ),
+        ],
+        ["MathBlock", "Math"],
+      ),
+    ),
+    pair_bookends(#(
+      ["OpeningDoubleUnderscore"],
+      ["ClosingDoubleUnderscore"],
+      "CentralItalicDisplay",
+    )),
+    fold_tags_into_text(
+      dict.from_list([
+        #("OpeningDoubleUnderscore", "__"),
+        #("ClosingDoubleUnderscore", "__"),
+      ]),
+    ),
+    remove_empty_lines(),
+    // // ************************
+    // _| |_ ******************
+    // ************************
+    split_by_delimiter_pattern(
+      #(
+        [
+          #(opening_central_quote_delimiter_pattern, "OpeningCenterQuote"),
+          #(closing_central_quote_delimiter_pattern, "ClosingCenterQuote"),
         ],
         ["MathBlock"],
       ),
@@ -133,40 +200,31 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ),
     remove_empty_lines(),
-    // END
-    // ***************************
-    //
-    //
-    // ***************************
-    // START _ _ -> i
-    split_by_regexes(
-      #([#(unescaped_underscore_regex, "PlainUnderscore")], [
-        "MathBlock", "Math",
-      ]),
-    ),
-    pair_bookends(#(["PlainUnderscore"], ["PlainUnderscore"], "i")),
-    fold_tags_into_text(dict.from_list([#("PlainUnderscore", "_")])),
-    remove_empty_lines(),
-    // END
-    //
-    //
-    // ***************************
-    // START * * -> b
-    split_by_regexes(
-      #([#(unescaped_asterisk_regex, "PlainAsterisk")], ["MathBlock", "Math"]),
-    ),
-    pair_bookends(#(["PlainAsterisk"], ["PlainAsterisk"], "b")),
-    fold_tags_into_text(dict.from_list([#("PlainAsterisk", "*")])),
-    remove_empty_lines(),
-    // END
-    // ***************************
-    //
-    //
-    // ***************************
-    // START misc
-    wrap_math_with_no_break(),
-    insert_indent(),
-    wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
-    // END
+    // // ************************
+  // // _ **********************
+  // // ************************
+  // split_by_regexes(
+  //   #([#(unescaped_underscore_regex, "PlainUnderscore")], [
+  //     "MathBlock", "Math",
+  //   ]),
+  // ),
+  // pair_bookends(#(["PlainUnderscore"], ["PlainUnderscore"], "i")),
+  // fold_tags_into_text(dict.from_list([#("PlainUnderscore", "_")])),
+  // remove_empty_lines(),
+  // // ************************
+  // // * **********************
+  // // ************************
+  // split_by_regexes(
+  //   #([#(unescaped_asterisk_regex, "PlainAsterisk")], ["MathBlock", "Math"]),
+  // ),
+  // pair_bookends(#(["PlainAsterisk"], ["PlainAsterisk"], "b")),
+  // fold_tags_into_text(dict.from_list([#("PlainAsterisk", "*")])),
+  // remove_empty_lines(),
+  // // ************************
+  // // misc *******************
+  // // ************************
+  // wrap_math_with_no_break(),
+  // insert_indent(),
+  // wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
   ]
 }

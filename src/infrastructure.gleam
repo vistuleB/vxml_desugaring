@@ -1,3 +1,4 @@
+import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
 import gleam/io
 import gleam/list
 import gleam/option.{type Option}
@@ -26,7 +27,7 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
 }
 
 //**************************************************************
-//* some functions relating to string-splitting                *
+//* either-or functions
 //**************************************************************
 
 pub type EitherOr(a, b) {
@@ -45,14 +46,6 @@ pub fn unescaped_suffix_regex(suffix: String) -> regex.Regex {
   re
 }
 
-fn odd_positions_insert(ze_list: List(a), ze_thing: a) -> List(a) {
-  case ze_list {
-    [] -> []
-    [first] -> [first]
-    [first, ..rest] -> [first, ze_thing, ..odd_positions_insert(rest, ze_thing)]
-  }
-}
-
 pub fn line_split_into_list_either_content_or_blame(
   line: BlamedContent,
   re: Regex,
@@ -60,7 +53,17 @@ pub fn line_split_into_list_either_content_or_blame(
   let BlamedContent(blame, content) = line
   regex.split(with: re, content: content)
   |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
-  |> odd_positions_insert(Or(blame))
+  |> list.intersperse(Or(blame))
+}
+
+pub fn line_split_into_list_either_content_or_blame_delimiter_pattern_version(
+  line: BlamedContent,
+  pattern: DelimiterPattern,
+) -> List(EitherOr(BlamedContent, Blame)) {
+  let BlamedContent(blame, content) = line
+  delimiter_pattern_string_split(content, pattern)
+  |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
+  |> list.intersperse(Or(blame))
 }
 
 fn regroup_eithers_accumulator(
@@ -117,6 +120,10 @@ pub fn either_or_mapper(
   ze_list
   |> list.map(either_or_function_combinant(fn1, fn2))
 }
+
+//**************************************************************
+//* regex splitting
+//**************************************************************
 
 fn replace_regex_by_tag_in_lines(
   lines: List(BlamedContent),
@@ -184,6 +191,83 @@ pub fn replace_regexes_by_tags_param_transform(
   rules: List(#(Regex, String)),
 ) -> Result(List(VXML), DesugaringError) {
   Ok(replace_regexes_by_tags_in_nodes([node], rules))
+}
+
+//**************************************************************
+//* delimiter_pattern splitting
+//**************************************************************
+
+fn replace_delimiter_pattern_by_tag_in_lines(
+  lines: List(BlamedContent),
+  pattern: DelimiterPattern,
+  tag: String,
+) -> List(VXML) {
+  lines
+  |> list.map(
+    line_split_into_list_either_content_or_blame_delimiter_pattern_version(
+      _,
+      pattern,
+    ),
+  )
+  |> list.flatten
+  |> regroup_eithers
+  |> either_or_mapper(
+    fn(blamed_contents) {
+      let assert [BlamedContent(blame, _), ..] = blamed_contents
+      T(blame, blamed_contents)
+    },
+    fn(blame) { V(blame, tag, [], []) },
+  )
+}
+
+fn replace_delimiter_pattern_by_tag_in_node(
+  node: VXML,
+  pattern: DelimiterPattern,
+  tag: String,
+) -> List(VXML) {
+  case node {
+    V(_, _, _, _) -> [node]
+    T(_, lines) -> {
+      replace_delimiter_pattern_by_tag_in_lines(lines, pattern, tag)
+    }
+  }
+}
+
+fn replace_delimiter_pattern_by_tag_in_nodes(
+  nodes: List(VXML),
+  pattern: DelimiterPattern,
+  tag: String,
+) -> List(VXML) {
+  nodes
+  |> list.map(replace_delimiter_pattern_by_tag_in_node(_, pattern, tag))
+  |> list.flatten
+}
+
+fn replace_delimiter_patterns_by_tags_in_nodes(
+  nodes: List(VXML),
+  rules: List(#(DelimiterPattern, String)),
+) -> List(VXML) {
+  case rules {
+    [] -> nodes
+    [#(pattern, tag), ..rest] ->
+      replace_delimiter_pattern_by_tag_in_nodes(nodes, pattern, tag)
+      |> replace_delimiter_patterns_by_tags_in_nodes(rest)
+  }
+}
+
+pub fn replace_delimiter_pattern_by_tag_param_transform(
+  node: VXML,
+  pattern: DelimiterPattern,
+  tag: String,
+) -> Result(List(VXML), DesugaringError) {
+  Ok(replace_delimiter_pattern_by_tag_in_node(node, pattern, tag))
+}
+
+pub fn replace_delimiter_patterns_by_tags_param_transform(
+  node: VXML,
+  rules: List(#(DelimiterPattern, String)),
+) -> Result(List(VXML), DesugaringError) {
+  Ok(replace_delimiter_patterns_by_tags_in_nodes([node], rules))
 }
 
 //**************************************************************

@@ -41,10 +41,10 @@ fn desugarer_factory() -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory())
 }
 
-pub fn remove_vertical_chunks_with_no_text_child_desugarer() -> Pipe {
+pub fn remove_vertical_chunks_with_no_text_child() -> Pipe {
   #(
     DesugarerDescription(
-      "remove_vertical_chunks_with_no_text_child_desugarer",
+      "remove_vertical_chunks_with_no_text_child",
       option.None,
       "...",
     ),

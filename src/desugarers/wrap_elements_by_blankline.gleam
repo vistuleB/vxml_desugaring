@@ -32,18 +32,21 @@ pub fn wrap_elements_by_blankline_transform(
   }
 }
 
-fn transform_factory(extra: List(String)) -> NodeToNodesTransform {
+type Extra =
+  List(String)
+
+fn transform_factory(extra: Extra) -> NodeToNodesTransform {
   wrap_elements_by_blankline_transform(_, extra)
 }
 
-fn desugarer_factory(extra: List(String)) -> Desugarer {
+fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
-pub fn wrap_elements_by_blankline_desugarer(extra: List(String)) -> Pipe {
+pub fn wrap_elements_by_blankline(extra: Extra) -> Pipe {
   #(
     DesugarerDescription(
-      "wrap_elements_by_blankline_desugarer",
+      "wrap_elements_by_blankline",
       option.Some(string.inspect(extra)),
       "...",
     ),

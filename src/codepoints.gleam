@@ -1,10 +1,10 @@
 import gleam/io
-import gleam/list
+import gleam/list.{type ContinueOrStop, Continue, Stop}
 import gleam/string
 
 const ins = string.inspect
 
-const as_utf_codepoints = string.to_utf_codepoints
+pub const as_utf_codepoints = string.to_utf_codepoints
 
 fn as_string_chars(from: String) -> List(StringChar) {
   string.to_utf_codepoints(from) |> list.map(Codepoint)
@@ -12,8 +12,8 @@ fn as_string_chars(from: String) -> List(StringChar) {
 
 pub type StringChar {
   Codepoint(UtfCodepoint)
-  EOS
-  SOS
+  EndOfString
+  StartOfString
 }
 
 pub type DelimiterPattern1 {
@@ -39,58 +39,165 @@ pub type DelimiterPattern {
   P10(DelimiterPattern10)
 }
 
-fn prefix_match_last_char_version(
-  pattern: List(UtfCodepoint),
-  last_char_before_in: StringChar,
-  in: List(UtfCodepoint),
-) -> #(Bool, StringChar, List(UtfCodepoint)) {
-  case pattern {
-    [] -> #(True, last_char_before_in, in)
-    [pattern_first, ..pattern_rest] -> {
-      case in {
-        [] -> #(False, last_char_before_in, in)
-        [in_first, ..in_rest] ->
-          case in_first == pattern_first {
-            False -> #(False, last_char_before_in, in)
-            True ->
-              prefix_match_last_char_version(
-                pattern_rest,
-                Codepoint(in_first),
-                in_rest,
-              )
-          }
+pub fn alphanumeric_string_chars() -> List(StringChar) {
+  "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVXYZ0123456789"
+  |> as_string_chars
+}
+
+pub fn space_string_chars() -> List(StringChar) {
+  " " |> as_string_chars
+}
+
+pub fn opening_bracket_string_chars() -> List(StringChar) {
+  "({[" |> as_string_chars
+}
+
+pub fn closing_bracket_string_chars() -> List(StringChar) {
+  ")}]" |> as_string_chars
+}
+
+pub fn backslash_string_chars() -> List(StringChar) {
+  "\\" |> as_string_chars
+}
+
+pub const one_of = list.flatten
+
+fn while_not_stop(
+  initial_state initial_state: a,
+  map map: fn(a) -> ContinueOrStop(a),
+) -> a {
+  case map(initial_state) {
+    Stop(new_state) -> new_state
+    Continue(new_state) -> while_not_stop(new_state, map)
+  }
+}
+
+type PrefixMatchLastCharVersionState {
+  PrefixMatchLastCharVersionState(
+    last_char_before_input: StringChar,
+    remaining_pattern_chars: List(UtfCodepoint),
+    remaining_input_chars: List(UtfCodepoint),
+  )
+}
+
+fn prefix_match_last_char_version_continue_or_stop(
+  state: PrefixMatchLastCharVersionState,
+) -> ContinueOrStop(PrefixMatchLastCharVersionState) {
+  let PrefixMatchLastCharVersionState(
+    _,
+    remaining_pattern_chars,
+    remaining_input_chars,
+  ) = state
+  case remaining_pattern_chars, remaining_input_chars {
+    [], _ -> Stop(state)
+    _, [] -> Stop(state)
+    [first_pattern, ..rest_pattern], [first_input, ..rest_input] ->
+      case first_pattern == first_input {
+        False -> Stop(state)
+        True ->
+          prefix_match_last_char_version_continue_or_stop(
+            PrefixMatchLastCharVersionState(
+              Codepoint(first_input),
+              rest_pattern,
+              rest_input,
+            ),
+          )
       }
-    }
+  }
+}
+
+fn prefix_match_last_char_version(
+  initial_last_char_before_input: StringChar,
+  pattern: List(UtfCodepoint),
+  input: List(UtfCodepoint),
+) -> #(Bool, StringChar, List(UtfCodepoint)) {
+  let final_state =
+    while_not_stop(
+      PrefixMatchLastCharVersionState(
+        initial_last_char_before_input,
+        pattern,
+        input,
+      ),
+      prefix_match_last_char_version_continue_or_stop,
+    )
+  case final_state {
+    PrefixMatchLastCharVersionState(last_char, [], remaining_input) -> #(
+      True,
+      last_char,
+      remaining_input,
+    )
+    PrefixMatchLastCharVersionState(last_char, _, remaining_input) -> #(
+      False,
+      last_char,
+      remaining_input,
+    )
+  }
+}
+
+type PrefixMatchUtfBackslashCounterVersionState {
+  PrefixMatchUtfBackslashCounterVersionState(
+    num_backslashes_before_input: Int,
+    remaining_pattern_chars: List(UtfCodepoint),
+    remaining_input_chars: List(UtfCodepoint),
+  )
+}
+
+fn prefix_match_utf_backslash_counter_version_continue_or_stop(
+  state: PrefixMatchUtfBackslashCounterVersionState,
+) -> ContinueOrStop(PrefixMatchUtfBackslashCounterVersionState) {
+  let PrefixMatchUtfBackslashCounterVersionState(
+    num_backslashes_before_input,
+    remaining_pattern_chars,
+    remaining_input_chars,
+  ) = state
+  case remaining_pattern_chars, remaining_input_chars {
+    [], _ -> Stop(state)
+    _, [] -> Stop(state)
+    [first_pattern, ..rest_pattern], [first_input, ..rest_input] ->
+      case first_pattern == first_input {
+        False -> Stop(state)
+        True -> {
+          let new_num_backslashes = case is_backlash(first_input) {
+            True -> num_backslashes_before_input + 1
+            False -> 0
+          }
+          let new_state =
+            PrefixMatchUtfBackslashCounterVersionState(
+              new_num_backslashes,
+              rest_pattern,
+              rest_input,
+            )
+          prefix_match_utf_backslash_counter_version_continue_or_stop(new_state)
+        }
+      }
   }
 }
 
 fn prefix_match_utf_backslash_counter_version(
-  pattern: List(UtfCodepoint),
   num_backslashes_before_in: Int,
-  in: List(UtfCodepoint),
+  pattern: List(UtfCodepoint),
+  input: List(UtfCodepoint),
 ) -> #(Bool, Int, List(UtfCodepoint)) {
-  case pattern {
-    [] -> #(True, num_backslashes_before_in, in)
-    [pattern_first, ..pattern_rest] -> {
-      case in {
-        [] -> #(False, num_backslashes_before_in, in)
-        [in_first, ..in_rest] ->
-          case in_first == pattern_first {
-            False -> #(False, num_backslashes_before_in, in)
-            True -> {
-              let new_num_backslashes = case is_backlash(in_first) {
-                True -> num_backslashes_before_in + 1
-                False -> 0
-              }
-              prefix_match_utf_backslash_counter_version(
-                pattern_rest,
-                new_num_backslashes,
-                in_rest,
-              )
-            }
-          }
-      }
-    }
+  let final_state =
+    while_not_stop(
+      PrefixMatchUtfBackslashCounterVersionState(
+        num_backslashes_before_in,
+        pattern,
+        input,
+      ),
+      prefix_match_utf_backslash_counter_version_continue_or_stop,
+    )
+  case final_state {
+    PrefixMatchUtfBackslashCounterVersionState(
+      num_backslashes,
+      [],
+      remaining_input,
+    ) -> #(True, num_backslashes, remaining_input)
+    PrefixMatchUtfBackslashCounterVersionState(
+      num_backslashes,
+      _,
+      remaining_input,
+    ) -> #(False, num_backslashes, remaining_input)
   }
 }
 
@@ -99,7 +206,7 @@ fn prefix_match_one_string_version(
   one_of: List(StringChar),
 ) -> Bool {
   case in {
-    [] -> list.contains(one_of, EOS)
+    [] -> list.contains(one_of, EndOfString)
     [first, ..] -> list.contains(one_of, Codepoint(first))
   }
 }
@@ -132,11 +239,11 @@ fn utf_split_for_delimiter_pattern_1_acc(
       }
     True ->
       case
-        prefix_match_last_char_version(
+        io.debug(prefix_match_last_char_version(
+          io.debug(last_char_before_remaining_chars),
           delimiter_chars,
-          last_char_before_remaining_chars,
           remaining_chars,
-        )
+        ))
       {
         #(False, _, _) -> {
           case remaining_chars {
@@ -200,12 +307,10 @@ fn utf_split_for_delimiter_pattern_1(
   chars: List(UtfCodepoint),
   pattern: DelimiterPattern1,
 ) -> List(List(UtfCodepoint)) {
-  utf_split_for_delimiter_pattern_1_acc(pattern, [], [], SOS, chars)
+  utf_split_for_delimiter_pattern_1_acc(pattern, [], [], StartOfString, chars)
 }
 
 fn is_backlash(pt: UtfCodepoint) -> Bool {
-  let assert [backslash] = string.to_utf_codepoints("\\")
-  let assert True = string.utf_codepoint_to_int(backslash) == 92
   string.utf_codepoint_to_int(pt) == 92
 }
 
@@ -242,8 +347,8 @@ fn utf_split_for_delimiter_pattern_10_acc(
     True -> {
       case
         prefix_match_utf_backslash_counter_version(
-          delimiter_chars,
           num_preceding_backslashes,
+          delimiter_chars,
           remaining_chars,
         )
       {
@@ -322,12 +427,6 @@ pub fn delimiter_pattern_string_split(
 }
 
 pub fn tests() -> Nil {
-  io.println(ins(string.to_utf_codepoints("\\")))
-  let assert Ok(b) = string.utf_codepoint(50)
-  io.println(ins(b))
-  io.println(ins(Codepoint(b)))
-  string.from_utf_codepoints([])
-
   let pattern1 =
     DelimiterPattern1(
       match_one_of_before: " " |> as_string_chars,
@@ -335,16 +434,53 @@ pub fn tests() -> Nil {
       match_one_of_after: "(" |> as_string_chars,
     )
 
-  let pattern10 = DelimiterPattern10(delimiter_chars: "$$" |> as_utf_codepoints)
+  let double_dollar_delimiter_pattern =
+    P10(DelimiterPattern10(delimiter_chars: "$$" |> as_utf_codepoints))
+
+  let assert [space_utf_codepoint] = string.to_utf_codepoints(" ")
+  let assert [opening_parenthesis_utf_codepoint] = string.to_utf_codepoints("(")
+  let assert [underscore_utf_codepoint] = string.to_utf_codepoints("_")
+  let alphanumeric_utf_codepoints =
+    string.to_utf_codepoints(
+      "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVXYZ0123456789",
+    )
+  let brackets_utf_codepoints = string.to_utf_codepoints("()[]{}")
+
+  let opening_double_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: one_of([[StartOfString], space_string_chars()]),
+      delimiter_chars: "__" |> as_utf_codepoints,
+      match_one_of_after: one_of([
+        alphanumeric_string_chars(),
+        opening_bracket_string_chars(),
+      ]),
+    ))
+
+  let closing_double_underscore_delimiter_pattern =
+    P1(DelimiterPattern1(
+      match_one_of_before: one_of([
+        alphanumeric_string_chars(),
+        closing_bracket_string_chars(),
+      ]),
+      delimiter_chars: "__" |> as_utf_codepoints,
+      match_one_of_after: one_of([
+        [EndOfString],
+        alphanumeric_string_chars(),
+        opening_bracket_string_chars(),
+      ]),
+    ))
 
   io.println(
-    ins(string_split_for_delimiter_pattern_1("hello aa(hm hm", pattern1)),
-  )
-
-  io.println(
-    ins(string_split_for_delimiter_pattern_10(
-      "hello aa$$hm \\$$hm \\\\$$",
-      pattern10,
+    ins(delimiter_pattern_string_split(
+      "__\\\\$$aa__",
+      double_dollar_delimiter_pattern,
     )),
   )
+  // io.println(
+  //   ins(delimiter_pattern_string_split(
+  //     "hello aa$$hm \\$$hm \\\\$$",
+  //     P10(pattern10),
+  //   )),
+  // )
+  Nil
 }

@@ -1,11 +1,8 @@
 |> Book
 
+    hello$$
+    a^2 + b^2
     $$
 
-    hey
-
-    ho
-
-    ha
-
-    $$
+    this $x\te{\$}$ will be __again__
+    one __more__

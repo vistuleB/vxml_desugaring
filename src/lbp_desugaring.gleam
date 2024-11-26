@@ -1,5 +1,5 @@
 import argv
-import codepoint_splitter
+import codepoints
 import gleam/io
 import gleam/result
 import gleam/string
@@ -40,7 +40,7 @@ pub fn desugar(
 }
 
 pub fn main() {
-  // codepoint_splitter.tests()
+  // codepoints.tests()
   let assert Ok(assembled) = assemble_blamed_lines(path)
 
   let args = argv.load().arguments
