@@ -289,8 +289,7 @@ fn utf_split_for_vanilla_splitter(
 }
 
 //***************************************************
-// covers the conversion from string to utf & back,
-// for a given VanillaSplitter & a given input
+// string wrapper for utf_split_for_vanilla_splitter:
 //***************************************************
 
 fn string_split_for_vanilla_splitter(
@@ -510,6 +509,10 @@ fn start_of_input_match_keeping_track_of_num_backslashes(
 
 //***************************************************
 // delimiter_pattern_1_vanilla_splitter_constructor
+//
+// (no looping, just matching/not matching at the start
+// of a string, while updating the pre_input_info,
+// the eaten_chars, the remaining_chars, etc)
 //***************************************************
 
 fn start_of_input_match_one_of(
@@ -581,6 +584,10 @@ fn delimiter_pattern_1_vanilla_splitter_constructor(
 
 //***************************************************
 //* delimiter_pattern_5_vanilla_splitter_constructor
+//
+// (no looping, just matching/not matching at the start
+// of a string, while updating the pre_input_info,
+// the eaten_chars, the remaining_chars, etc)
 //***************************************************
 
 fn delimiter_pattern_5_vanilla_split_matcher_parameterized(
@@ -651,6 +658,10 @@ fn delimiter_pattern_5_vanilla_splitter_constructor(
 
 //***************************************************
 //* delimiter_pattern_10_vanilla_splitter_constructor
+//
+// (no looping, just matching/not matching at the start
+// of a string, while updating the pre_input_info,
+// the eaten_chars, the remaining_chars, etc)
 //***************************************************
 
 fn delimiter_pattern_10_vanilla_split_matcher_parameterized(
