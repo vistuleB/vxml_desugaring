@@ -294,9 +294,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
     )),
     fold_tags_into_text(
       dict.from_list([
-        #("OpeningOrClosingAsterisk", "_"),
-        #("OpeningAsterisk", "_"),
-        #("ClosingAsterisk", "_"),
+        #("OpeningOrClosingAsterisk", "*"),
+        #("OpeningAsterisk", "*"),
+        #("ClosingAsterisk", "*"),
       ]),
     ),
     remove_empty_lines(),
