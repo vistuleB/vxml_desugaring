@@ -225,15 +225,6 @@ fn take_existing_counters(
   |> list.filter(fn(x) { current_names |> list.contains(x.name) })
 }
 
-fn take_new_counters(
-  current: List(CounterInstance),
-  new: List(CounterInstance),
-) -> List(CounterInstance) {
-  let current_names = current |> list.map(fn(x) { x.name })
-  new
-  |> list.filter(fn(x) { !{ current_names |> list.contains(x.name) } })
-}
-
 fn transform_children_recursive(
   children: List(VXML),
   counters: List(CounterInstance),
@@ -245,22 +236,10 @@ fn transform_children_recursive(
         first,
         counters,
       ))
-      // rest of children should take only updated existing counters, new counters should not be taken as they are suppose to be out of scope
-
-      use #(updated_rest, updated_existing_counters) <- result.try(
-        transform_children_recursive(
-          rest,
-          take_existing_counters(counters, updated_counters),
-        ),
+      use #(updated_rest, updated_counters) <- result.try(
+        transform_children_recursive(rest, updated_counters),
       )
-
-      Ok(#(
-        [updated_first, ..updated_rest],
-        list.append(
-          updated_existing_counters,
-          take_new_counters(updated_counters, counters),
-        ),
-      ))
+      Ok(#([updated_first, ..updated_rest], updated_counters))
     }
   }
 }
@@ -275,11 +254,16 @@ pub fn counter_transform(
         attributes
         |> get_counters_from_attributes(counters),
       )
-      let counters = list.append(counters, new_counters)
       use #(updated_children, updated_counters) <- result.try(
-        transform_children_recursive(children, counters),
+        transform_children_recursive(
+          children,
+          list.append(counters, new_counters),
+        ),
       )
-      Ok(#(V(b, t, attributes, updated_children), updated_counters))
+      Ok(#(
+        V(b, t, attributes, updated_children),
+        take_existing_counters(counters, updated_counters),
+      ))
     }
     T(b, contents) -> {
       case counters {
