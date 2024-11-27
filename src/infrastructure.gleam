@@ -542,7 +542,7 @@ pub fn prevent_node_to_node_transform_inside(
       })
     {
       False -> transform(node)
-      True -> Ok(io.debug(node))
+      True -> Ok(node)
     }
   }
 }

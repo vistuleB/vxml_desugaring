@@ -198,7 +198,7 @@ fn pair_bookends_children_accumulator(
                 enclosing,
                 [
                   V(
-                    get_blame(io.debug(dude))
+                    get_blame(dude)
                       |> append_blame_comment(
                         "paired with " <> ins(get_blame(first)),
                       ),

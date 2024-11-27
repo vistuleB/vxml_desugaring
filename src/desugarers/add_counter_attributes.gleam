@@ -25,7 +25,10 @@
 // ) -> Result(#(VXML, CountingState), DesugaringError) {
 //   case node {
 //     T(_, _) -> Ok(#(node, state))
-//     V(tag, )
+//     V(blame, tag, attributes, children) -> {
+//       let #(new_attributes, new_counting_state) = possibly_add_counter_attribute(tag, state, attributes)
+//       let new_new_counting_state
+//     }
 //   }
 // }
 
