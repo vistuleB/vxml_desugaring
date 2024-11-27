@@ -163,7 +163,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   [
     unwrap_tags(["WriterlyBlurb"]),
-    add_counter_attributes([#("Solution", "Book", "number", 1)]),
+    add_counter_attributes([
+      #("Solution", "Book", "number", 1),
+      #("Solution", "other", "number", 45),
+    ]),
     // ************************
   // $$ *********************
   // ************************
