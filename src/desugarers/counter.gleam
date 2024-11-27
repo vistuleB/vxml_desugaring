@@ -188,7 +188,6 @@ fn counter_regex(
   let assert Ok(re) = regex.from_string("(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
   let matches = regex.scan(re, content)
   let splits = regex.split(re, content)
-  io.debug(splits)
   handle_matches(blame, matches, splits, counters)
 }
 
