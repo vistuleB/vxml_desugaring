@@ -293,23 +293,23 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 pub type NodeToNodeTransform =
   fn(VXML) -> Result(VXML, DesugaringError)
 
-fn depth_first_node_to_node_desugar_many(
+fn node_to_node_desugar_many(
   vxmls: List(VXML),
   transform: NodeToNodeTransform,
-) {
+) -> Result(List(VXML), DesugaringError) {
   vxmls
-  |> list.map(depth_first_node_to_node_desugar_one(_, transform))
+  |> list.map(node_to_node_desugar_one(_, transform))
   |> result.all
 }
 
-fn depth_first_node_to_node_desugar_one(
+fn node_to_node_desugar_one(
   node: VXML,
   transform: NodeToNodeTransform,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> transform(node)
     V(blame, tag, attrs, children) -> {
-      case depth_first_node_to_node_desugar_many(children, transform) {
+      case node_to_node_desugar_many(children, transform) {
         Ok(transformed_children) ->
           transform(V(blame, tag, attrs, transformed_children))
         Error(err) -> Error(err)
@@ -318,17 +318,10 @@ fn depth_first_node_to_node_desugar_one(
   }
 }
 
-// fn depth_first_node_to_node_desugarer(
-//   root: VXML,
-//   transform: NodeToNodeTransform,
-// ) -> Result(VXML, DesugaringError) {
-//   depth_first_node_to_node_desugar_one(root, transform)
-// }
-
 pub fn node_to_node_desugarer_factory(
   transform: NodeToNodeTransform,
 ) -> Desugarer {
-  depth_first_node_to_node_desugar_one(_, transform)
+  node_to_node_desugar_one(_, transform)
 }
 
 //**********************************************************************
@@ -572,6 +565,65 @@ pub fn prevent_node_to_nodes_transform_inside(
     {
       False -> transform(node)
       True -> Ok([node])
+    }
+  }
+}
+
+//**************************************************************
+//* desugaring efforts #1.8: stateful node-to-node
+//**************************************************************
+
+pub type StatefulNodeToNodeTransform(a) =
+  fn(VXML, a) -> Result(#(VXML, a), DesugaringError)
+
+fn stateful_node_to_node_desugar_many(
+  state: a,
+  vxmls: List(VXML),
+  transform: StatefulNodeToNodeTransform(a),
+) -> Result(#(List(VXML), a), DesugaringError) {
+  case vxmls {
+    [] -> Ok(#([], state))
+    [first, ..rest] -> {
+      case stateful_node_to_node_desugar_one(state, first, transform) {
+        Error(err) -> Error(err)
+        Ok(#(first_transformed, new_state)) -> {
+          case stateful_node_to_node_desugar_many(new_state, rest, transform) {
+            Error(err) -> Error(err)
+            Ok(#(rest_transformed, new_new_state)) -> {
+              Ok(#([first_transformed, ..rest_transformed], new_new_state))
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+fn stateful_node_to_node_desugar_one(
+  state: a,
+  node: VXML,
+  transform: StatefulNodeToNodeTransform(a),
+) -> Result(#(VXML, a), DesugaringError) {
+  case node {
+    T(_, _) -> transform(node, state)
+    V(blame, tag, attrs, children) -> {
+      case stateful_node_to_node_desugar_many(state, children, transform) {
+        Ok(#(transformed_children, new_state)) ->
+          transform(V(blame, tag, attrs, transformed_children), new_state)
+        Error(err) -> Error(err)
+      }
+    }
+  }
+}
+
+pub fn stateful_node_to_node_desugarer_factory(
+  transform: StatefulNodeToNodeTransform(a),
+  initial_state: a,
+) -> Desugarer {
+  fn(vxml) {
+    case stateful_node_to_node_desugar_one(initial_state, vxml, transform) {
+      Error(err) -> Error(err)
+      Ok(#(new_vxml, _)) -> Ok(new_vxml)
     }
   }
 }

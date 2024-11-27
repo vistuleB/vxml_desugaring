@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -161,7 +162,7 @@ fn pair_bookends_children_accumulator(
                       ),
                     enclosing,
                     [],
-                    after_last_opening,
+                    after_last_opening |> list.reverse,
                   ),
                   ..already_processed
                 ],
@@ -197,7 +198,7 @@ fn pair_bookends_children_accumulator(
                 enclosing,
                 [
                   V(
-                    get_blame(dude)
+                    get_blame(io.debug(dude))
                       |> append_blame_comment(
                         "paired with " <> ins(get_blame(first)),
                       ),

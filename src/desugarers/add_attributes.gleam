@@ -56,12 +56,10 @@ fn desugarer_factory(
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
-pub fn add_attributes_desugarer(
-  extra: #(List(String), List(#(String, String))),
-) -> Pipe {
+pub fn add_attributes(extra: #(List(String), List(#(String, String)))) -> Pipe {
   #(
     DesugarerDescription(
-      "add_attributes_desugarer",
+      "add_attributes",
       option.Some(string.inspect(extra)),
       "...",
     ),

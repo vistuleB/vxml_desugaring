@@ -1,3 +1,5 @@
 |> Book
 
-    _more_ *
+    _italic *should be
+    |> InlineImage
+    bold and italic* italic_
