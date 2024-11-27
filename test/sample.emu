@@ -1,15 +1,15 @@
 |> Book
-    roman_counter MyCounter
 
-    more ::::MyCounter should be i
+    |> Solution
+    |> Solution
+    |> Solution
 
-    more ::++MyCounter should be ii
-    more ::++MyCounter should be iii silent
-    more ::++MyCounter should be iv
+    |> other
 
-    more ..--MyCounter c should be iii silent
+        |> Solution
+        |> Solution
+        |> Solution
 
-    more ::::MyCounter c should be iii
-
-
-   
+    |> Solution
+    |> Solution
+    |> Solution

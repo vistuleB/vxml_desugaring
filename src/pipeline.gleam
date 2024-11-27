@@ -2,6 +2,7 @@ import codepoints.{
   type DelimiterPattern, DelimiterPattern1, DelimiterPattern10, EndOfString, P1,
   P10, StartOfString,
 }
+import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/counter.{counter_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
@@ -162,151 +163,152 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   [
     unwrap_tags(["WriterlyBlurb"]),
+    add_counter_attributes([#("Solution", "Book", "number", 1)]),
     // ************************
-    // $$ *********************
-    // ************************
-    split_by_delimiter_pattern(
-      #([#(double_dollar_delimiter_pattern, "DoubleDollar")], []),
-    ),
-    pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
-    fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
-    remove_empty_lines(),
-    // ************************
-    // VerticalChunk **********
-    // ************************
-    wrap_elements_by_blankline([
-      "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
-      "Section", "Exercise", "List", "Grid",
-    ]),
-    split_vertical_chunks(["MathBlock"]),
-    remove_vertical_chunks_with_no_text_child(),
-    // ************************
-    // $ **********************
-    // ************************
-    split_by_delimiter_pattern(
-      #([#(single_dollar_delimiter_pattern, "SingleDollar")], []),
-    ),
-    pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
-    fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
-    remove_empty_lines(),
-    // ************************
-    // __ *********************
-    // ************************
-    split_by_delimiter_pattern(
-      #(
-        [
-          #(
-            opening_double_underscore_delimiter_pattern,
-            "OpeningDoubleUnderscore",
-          ),
-          #(
-            closing_double_underscore_delimiter_pattern,
-            "ClosingDoubleUnderscore",
-          ),
-        ],
-        ["MathBlock", "Math"],
-      ),
-    ),
-    pair_bookends(#(
-      ["OpeningDoubleUnderscore"],
-      ["ClosingDoubleUnderscore"],
-      "CentralItalicDisplay",
-    )),
-    fold_tags_into_text(
-      dict.from_list([
-        #("OpeningDoubleUnderscore", "__"),
-        #("ClosingDoubleUnderscore", "__"),
-      ]),
-    ),
-    remove_empty_lines(),
-    // // ************************
-    // _| |_ ******************
-    // ************************
-    split_by_delimiter_pattern(
-      #(
-        [
-          #(opening_central_quote_delimiter_pattern, "OpeningCenterQuote"),
-          #(closing_central_quote_delimiter_pattern, "ClosingCenterQuote"),
-        ],
-        ["MathBlock"],
-      ),
-    ),
-    pair_bookends(#(
-      ["OpeningCenterQuote"],
-      ["ClosingCenterQuote"],
-      "CenterDisplay",
-    )),
-    fold_tags_into_text(
-      dict.from_list([
-        #("OpeningCenterQuote", "_|"),
-        #("ClosingCenterQuote", "|_"),
-      ]),
-    ),
-    remove_empty_lines(),
-    // ************************
-    // _ **********************
-    // ************************
-    split_by_delimiter_pattern(
-      #(
-        [
-          #(opening_single_underscore_delimiter_pattern, "OpeningUnderscore"),
-          #(
-            opening_or_closing_single_underscore_delimiter_pattern,
-            "OpeningOrClosingUnderscore",
-          ),
-          #(closing_single_underscore_delimiter_pattern, "ClosingUnderscore"),
-        ],
-        ["MathBlock", "Math"],
-      ),
-    ),
-    pair_bookends(#(
-      ["OpeningUnderscore", "OpeningOrClosingUnderscore"],
-      ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
-      "i",
-    )),
-    fold_tags_into_text(
-      dict.from_list([
-        #("OpeningOrClosingUnderscore", "_"),
-        #("OpeningUnderscore", "_"),
-        #("ClosingUnderscore", "_"),
-      ]),
-    ),
-    remove_empty_lines(),
-    // ************************
-    // * **********************
-    // ************************
-    split_by_delimiter_pattern(
-      #(
-        [
-          #(opening_single_asterisk_delimiter_pattern, "OpeningAsterisk"),
-          #(
-            opening_or_closing_single_asterisk_delimiter_pattern,
-            "OpeningOrClosingAsterisk",
-          ),
-          #(closing_single_asterisk_delimiter_pattern, "ClosingAsterisk"),
-        ],
-        ["MathBlock", "Math"],
-      ),
-    ),
-    pair_bookends(#(
-      ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
-      ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
-      "b",
-    )),
-    fold_tags_into_text(
-      dict.from_list([
-        #("OpeningOrClosingAsterisk", "*"),
-        #("OpeningAsterisk", "*"),
-        #("ClosingAsterisk", "*"),
-      ]),
-    ),
-    remove_empty_lines(),
-    // ************************
-    // misc *******************
-    // ************************
-    wrap_math_with_no_break(),
-    insert_indent(),
-    wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
-    counter_desugarer(),
+  // $$ *********************
+  // ************************
+  // split_by_delimiter_pattern(
+  //   #([#(double_dollar_delimiter_pattern, "DoubleDollar")], []),
+  // ),
+  // pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
+  // fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
+  // remove_empty_lines(),
+  // // ************************
+  // // VerticalChunk **********
+  // // ************************
+  // wrap_elements_by_blankline([
+  //   "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
+  //   "Section", "Exercise", "List", "Grid",
+  // ]),
+  // split_vertical_chunks(["MathBlock"]),
+  // remove_vertical_chunks_with_no_text_child(),
+  // // ************************
+  // // $ **********************
+  // // ************************
+  // split_by_delimiter_pattern(
+  //   #([#(single_dollar_delimiter_pattern, "SingleDollar")], []),
+  // ),
+  // pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
+  // fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
+  // remove_empty_lines(),
+  // // ************************
+  // // __ *********************
+  // // ************************
+  // split_by_delimiter_pattern(
+  //   #(
+  //     [
+  //       #(
+  //         opening_double_underscore_delimiter_pattern,
+  //         "OpeningDoubleUnderscore",
+  //       ),
+  //       #(
+  //         closing_double_underscore_delimiter_pattern,
+  //         "ClosingDoubleUnderscore",
+  //       ),
+  //     ],
+  //     ["MathBlock", "Math"],
+  //   ),
+  // ),
+  // pair_bookends(#(
+  //   ["OpeningDoubleUnderscore"],
+  //   ["ClosingDoubleUnderscore"],
+  //   "CentralItalicDisplay",
+  // )),
+  // fold_tags_into_text(
+  //   dict.from_list([
+  //     #("OpeningDoubleUnderscore", "__"),
+  //     #("ClosingDoubleUnderscore", "__"),
+  //   ]),
+  // ),
+  // remove_empty_lines(),
+  // // // ************************
+  // // _| |_ ******************
+  // // ************************
+  // split_by_delimiter_pattern(
+  //   #(
+  //     [
+  //       #(opening_central_quote_delimiter_pattern, "OpeningCenterQuote"),
+  //       #(closing_central_quote_delimiter_pattern, "ClosingCenterQuote"),
+  //     ],
+  //     ["MathBlock"],
+  //   ),
+  // ),
+  // pair_bookends(#(
+  //   ["OpeningCenterQuote"],
+  //   ["ClosingCenterQuote"],
+  //   "CenterDisplay",
+  // )),
+  // fold_tags_into_text(
+  //   dict.from_list([
+  //     #("OpeningCenterQuote", "_|"),
+  //     #("ClosingCenterQuote", "|_"),
+  //   ]),
+  // ),
+  // remove_empty_lines(),
+  // // ************************
+  // // _ **********************
+  // // ************************
+  // split_by_delimiter_pattern(
+  //   #(
+  //     [
+  //       #(opening_single_underscore_delimiter_pattern, "OpeningUnderscore"),
+  //       #(
+  //         opening_or_closing_single_underscore_delimiter_pattern,
+  //         "OpeningOrClosingUnderscore",
+  //       ),
+  //       #(closing_single_underscore_delimiter_pattern, "ClosingUnderscore"),
+  //     ],
+  //     ["MathBlock", "Math"],
+  //   ),
+  // ),
+  // pair_bookends(#(
+  //   ["OpeningUnderscore", "OpeningOrClosingUnderscore"],
+  //   ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
+  //   "i",
+  // )),
+  // fold_tags_into_text(
+  //   dict.from_list([
+  //     #("OpeningOrClosingUnderscore", "_"),
+  //     #("OpeningUnderscore", "_"),
+  //     #("ClosingUnderscore", "_"),
+  //   ]),
+  // ),
+  // remove_empty_lines(),
+  // // ************************
+  // // * **********************
+  // // ************************
+  // split_by_delimiter_pattern(
+  //   #(
+  //     [
+  //       #(opening_single_asterisk_delimiter_pattern, "OpeningAsterisk"),
+  //       #(
+  //         opening_or_closing_single_asterisk_delimiter_pattern,
+  //         "OpeningOrClosingAsterisk",
+  //       ),
+  //       #(closing_single_asterisk_delimiter_pattern, "ClosingAsterisk"),
+  //     ],
+  //     ["MathBlock", "Math"],
+  //   ),
+  // ),
+  // pair_bookends(#(
+  //   ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
+  //   ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
+  //   "b",
+  // )),
+  // fold_tags_into_text(
+  //   dict.from_list([
+  //     #("OpeningOrClosingAsterisk", "*"),
+  //     #("OpeningAsterisk", "*"),
+  //     #("ClosingAsterisk", "*"),
+  //   ]),
+  // ),
+  // remove_empty_lines(),
+  // // ************************
+  // // misc *******************
+  // // ************************
+  // wrap_math_with_no_break(),
+  // insert_indent(),
+  // wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
+  // counter_desugarer(),
   ]
 }
