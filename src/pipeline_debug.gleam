@@ -10,7 +10,7 @@ import writerly_parser.{type Writerly}
 
 const ins = string.inspect
 
-const path = "test/content"
+const path = "test/sample.emu"
 
 // ************************
 // Writerly to blamed lines

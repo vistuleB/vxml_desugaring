@@ -2,6 +2,7 @@ import codepoints.{
   type DelimiterPattern, DelimiterPattern1, DelimiterPattern10, EndOfString, P1,
   P10, StartOfString,
 }
+import desugarers/counter.{counter_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
@@ -306,5 +307,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     wrap_math_with_no_break(),
     insert_indent(),
     wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
+    counter_desugarer(),
   ]
 }

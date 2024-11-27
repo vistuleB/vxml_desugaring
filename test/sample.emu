@@ -1,5 +1,15 @@
 |> Book
+    roman_counter MyCounter
 
-    _italic *should be
-    |> InlineImage
-    bold and italic* italic_
+    more ::::MyCounter should be i
+
+    more ::++MyCounter should be ii
+    more ::++MyCounter should be iii silent
+    more ::++MyCounter should be iv
+
+    more ..--MyCounter c should be iii silent
+
+    more ::::MyCounter c should be iii
+
+
+   
