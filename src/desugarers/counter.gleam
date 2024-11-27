@@ -237,10 +237,10 @@ fn transform_children_recursive(
         first,
         counters,
       ))
-      use #(updated_rest, updated_existing_counters) <- result.try(
+      use #(updated_rest, updated_counters) <- result.try(
         transform_children_recursive(rest, updated_counters),
       )
-      Ok(#([updated_first, ..updated_rest], updated_existing_counters))
+      Ok(#([updated_first, ..updated_rest], updated_counters))
     }
   }
 }
