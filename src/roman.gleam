@@ -1,4 +1,5 @@
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/order
@@ -71,16 +72,20 @@ pub fn string_to_roman(input: String) -> Option(Roman) {
   string_to_roman_recursive(chars)
 }
 
-fn value_recursive(reversed_values: List(Int), max: Int, total: Int) -> Int {
+fn roman_to_int_recursive(
+  reversed_values: List(Int),
+  max: Int,
+  total: Int,
+) -> Int {
   case reversed_values {
     [] -> total
     [first, ..rest] -> {
-      case int.compare(first, max) {
-        order.Lt -> {
-          total + value_recursive(rest, max, total - first)
+      case first >= max {
+        True -> {
+          roman_to_int_recursive(rest, first, total + first)
         }
-        _ -> {
-          total + value_recursive(rest, first, total + first)
+        False -> {
+          roman_to_int_recursive(rest, max, total - first)
         }
       }
     }
@@ -92,7 +97,7 @@ pub fn roman_to_int(roman: Roman) -> Int {
   roman
   |> list.map(fn(x) { numeral_value(x) })
   |> list.reverse()
-  |> value_recursive(0, 0)
+  |> roman_to_int_recursive(0, 0)
 }
 
 fn append_primary(
@@ -101,12 +106,12 @@ fn append_primary(
   numerals: List(Numeral),
 ) -> #(Int, List(Numeral)) {
   let primary_val = primary |> numeral_value()
-  case int.compare(val, primary_val) {
-    order.Lt -> {
+  case val >= primary_val {
+    True -> {
       let new_val = val - primary_val
       append_primary(new_val, primary, list.append(numerals, [primary]))
     }
-    _ -> #(val, numerals)
+    False -> #(val, numerals)
   }
 }
 
@@ -147,7 +152,9 @@ pub fn int_to_roman(val: Int) -> Option(Roman) {
     order.Gt -> {
       let mappings = [#(C, M), #(C, D), #(X, C), #(X, L), #(I, X), #(I, V)]
       let #(new_val, numerals) = loop_mappings(val, mappings, [])
+
       let #(_, numerals) = dec_until_zero(new_val, numerals)
+
       Some(numerals)
     }
     _ -> None

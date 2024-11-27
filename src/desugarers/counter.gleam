@@ -106,13 +106,11 @@ fn update_counter(
     case x.name == counter_name {
       True -> {
         case mutation {
-          "++" -> {
+          "++" ->
             CounterInstance(
               ..x,
               current_value: mutate(x.counter_type, x.current_value, 1),
             )
-          }
-          // todo create inc/dec functions
           "--" ->
             CounterInstance(
               ..x,

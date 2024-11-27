@@ -1,6 +1,15 @@
 |> Book
-    counter MyCounter
+    roman_counter MyCounter
 
-    more ::++MyCounter c
+    more ::::MyCounter should be i
+
+    more ::++MyCounter should be ii
+    more ::++MyCounter should be iii silent
+    more ::++MyCounter should be iv
+
+    more ..--MyCounter c should be iii silent
+
+    more ::::MyCounter c should be iii
+
 
    
