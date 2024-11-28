@@ -1,6 +1,8 @@
 import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
+import gleam/io
 import gleam/list
 import gleam/option.{type Option}
+import gleam/pair
 import gleam/regex.{type Regex}
 import gleam/result
 import gleam/string
@@ -34,7 +36,7 @@ pub type EitherOr(a, b) {
   Or(b)
 }
 
-pub const regex_prefix_to_make_unescaped = "(?<!\\\\)(?:\\\\\\\\)*"
+pub const regex_prefix_to_make_unescaped = "(?<!\\\\)((?:\\\\\\\\)*)"
 
 pub fn unescaped_suffix_regex(suffix: String) -> regex.Regex {
   let assert Ok(re) =
@@ -45,7 +47,52 @@ pub fn unescaped_suffix_regex(suffix: String) -> regex.Regex {
   re
 }
 
-pub fn line_split_into_list_either_content_or_blame(
+pub type RegexWithIndexedGroup =
+  #(Regex, Int, Int)
+
+pub fn string_split_into_list_either_content_or_blame_indexed_group_version(
+  content: String,
+  indexed_regex: RegexWithIndexedGroup,
+) -> List(String) {
+  io.println("content:[START]" <> content <> "[END]")
+  let #(re, dropped_group, num_groups) = indexed_regex
+  let splits = io.debug(regex.split(re, content))
+  let num_matches: Int = { list.length(splits) - 1 } / { num_groups + 1 }
+  // io.println("num_groups:" <> ins(num_groups))
+  // io.println("num_matches:" <> ins(num_matches))
+  // io.println("splits.length:" <> ins(list.length(splits)))
+  let assert True =
+    { num_matches * { num_groups + 1 } } + 1 == list.length(splits)
+  list.map_fold(over: splits, from: 0, with: fn(index: Int, split) -> #(
+    Int,
+    EitherOr(String, Nil),
+  ) {
+    case index % { num_groups + 1 } == dropped_group + 1 {
+      False -> #(index + 1, Either(split))
+      True -> #(index + 1, Or(Nil))
+    }
+  })
+  |> pair.second
+  // |> io.debug
+  |> regroup_eithers
+  |> remove_ors_unwrap_eithers
+  |> list.map(string.join(_, ""))
+}
+
+fn line_split_into_list_either_content_or_blame_indexed_group_version(
+  line: BlamedContent,
+  re: RegexWithIndexedGroup,
+) -> List(EitherOr(BlamedContent, Blame)) {
+  let BlamedContent(blame, content) = line
+  string_split_into_list_either_content_or_blame_indexed_group_version(
+    content,
+    re,
+  )
+  |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
+  |> list.intersperse(Or(blame))
+}
+
+fn line_split_into_list_either_content_or_blame(
   line: BlamedContent,
   re: Regex,
 ) -> List(EitherOr(BlamedContent, Blame)) {
@@ -55,7 +102,7 @@ pub fn line_split_into_list_either_content_or_blame(
   |> list.intersperse(Or(blame))
 }
 
-pub fn line_split_into_list_either_content_or_blame_delimiter_pattern_version(
+fn line_split_into_list_either_content_or_blame_delimiter_pattern_version(
   line: BlamedContent,
   pattern: DelimiterPattern,
 ) -> List(EitherOr(BlamedContent, Blame)) {
@@ -93,6 +140,15 @@ fn regroup_eithers_accumulator(
   }
 }
 
+pub fn remove_ors_unwrap_eithers(ze_list: List(EitherOr(a, b))) -> List(a) {
+  list.filter_map(ze_list, fn(either_or) {
+    case either_or {
+      Either(sth) -> Ok(sth)
+      Or(_) -> Error(Nil)
+    }
+  })
+}
+
 pub fn regroup_eithers(
   ze_list: List(EitherOr(a, b)),
 ) -> List(EitherOr(List(a), b)) {
@@ -118,6 +174,81 @@ pub fn either_or_mapper(
 ) -> List(c) {
   ze_list
   |> list.map(either_or_function_combinant(fn1, fn2))
+}
+
+//**************************************************************
+//* regex-with-indexed-group splitting
+//**************************************************************
+
+fn replace_regex_by_tag_in_lines_indexed_group_version(
+  lines: List(BlamedContent),
+  re: RegexWithIndexedGroup,
+  tag: String,
+) -> List(VXML) {
+  io.debug(lines)
+  |> list.map(line_split_into_list_either_content_or_blame_indexed_group_version(
+    _,
+    re,
+  ))
+  |> list.flatten
+  |> regroup_eithers
+  |> either_or_mapper(
+    fn(blamed_contents) {
+      let assert [BlamedContent(blame, _), ..] = blamed_contents
+      T(blame, blamed_contents)
+    },
+    fn(blame) { V(blame, tag, [], []) },
+  )
+}
+
+fn replace_regex_by_tag_in_node_indexed_group_version(
+  node: VXML,
+  re: RegexWithIndexedGroup,
+  tag: String,
+) -> List(VXML) {
+  case node {
+    V(_, _, _, _) -> [node]
+    T(_, lines) -> {
+      replace_regex_by_tag_in_lines_indexed_group_version(lines, re, tag)
+    }
+  }
+}
+
+fn replace_regex_by_tag_in_nodes_indexed_group_version(
+  nodes: List(VXML),
+  re: RegexWithIndexedGroup,
+  tag: String,
+) -> List(VXML) {
+  nodes
+  |> list.map(replace_regex_by_tag_in_node_indexed_group_version(_, re, tag))
+  |> list.flatten
+}
+
+fn replace_regexes_by_tags_in_nodes_indexed_group_version(
+  nodes: List(VXML),
+  rules: List(#(RegexWithIndexedGroup, String)),
+) -> List(VXML) {
+  case rules {
+    [] -> nodes
+    [#(regex, tag), ..rest] ->
+      replace_regex_by_tag_in_nodes_indexed_group_version(nodes, regex, tag)
+      |> replace_regexes_by_tags_in_nodes_indexed_group_version(rest)
+  }
+}
+
+pub fn replace_regex_by_tag_param_transform_indexed_group_version(
+  node: VXML,
+  re: RegexWithIndexedGroup,
+  tag: String,
+) -> Result(List(VXML), DesugaringError) {
+  Ok(replace_regex_by_tag_in_node_indexed_group_version(node, re, tag))
+}
+
+pub fn replace_regexes_by_tags_param_transform_indexed_group_version(
+  node: VXML,
+  rules: List(#(RegexWithIndexedGroup, String)),
+) -> Result(List(VXML), DesugaringError) {
+  Ok(replace_regexes_by_tags_in_nodes_indexed_group_version([node], rules))
 }
 
 //**************************************************************

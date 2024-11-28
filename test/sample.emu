@@ -1,14 +1,6 @@
 |> Book
-    |> Note
-    |> Note
-    |> Note
-    |> Solution
-        |> Note
-        |> Note
-        |> Note
-        |> Solution
-            |> Note
-        |> Note
-    |> Note
-    |> Note
-    |> Note
+    
+    hello $$a^2 + b^2$$ bye $x$
+    alpha __goodbye)__ _|xx|_ |_
+
+    and _some_ italics *some* bold*

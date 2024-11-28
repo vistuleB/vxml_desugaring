@@ -1,11 +1,12 @@
 import argv
-import codepoints
 import gleam/io
+import gleam/regex
 import gleam/result
 import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugaringError, get_root,
 }
+import infrastructure as infra
 import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
 import vxml_parser.{type VXML}
@@ -40,7 +41,6 @@ pub fn desugar(
 }
 
 pub fn main() {
-  // codepoints.tests()
   let assert Ok(assembled) = assemble_blamed_lines(path)
 
   let args = argv.load().arguments
