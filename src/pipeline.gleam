@@ -162,6 +162,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   [
     unwrap_tags(["WriterlyBlurb"]),
+    unwrap_tags(["WriterlyBlankLine"]),
     // ************************
     // $$ *********************
     // ************************
