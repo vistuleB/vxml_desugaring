@@ -1,14 +1,9 @@
 |> Book
-    |> Note
-    |> Note
-    |> Note
+    carnita 1
+    carnita 2.01
+    carnita -1
+    carnito 1
+    carnito 2.01
+    carnito -1
     |> Solution
-        |> Note
-        |> Note
-        |> Note
-        |> Solution
-            |> Note
-        |> Note
-    |> Note
-    |> Note
-    |> Note
+        goobmor 3

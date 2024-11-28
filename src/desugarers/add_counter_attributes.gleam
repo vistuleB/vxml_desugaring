@@ -99,13 +99,6 @@ fn param_transform_first_half(
   }
 }
 
-fn update_counting_state_by(
-  old: CountingState,
-  new: CountingState,
-) -> CountingState {
-  dict.combine(old, new, with: fn(_, new_val) { new_val })
-}
-
 fn revert_new_counter_nodes_for_parent(
   parent: String,
   original_counting_state: CountingState,

@@ -2,6 +2,9 @@ import codepoints.{
   type DelimiterPattern, DelimiterPattern1, DelimiterPattern10, EndOfString, P1,
   P10, StartOfString,
 }
+import desugarers/convert_int_attributes_to_float.{
+  convert_int_attributes_to_float,
+}
 import desugarers/counter.{counter_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
@@ -163,6 +166,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   [
     unwrap_tags(["WriterlyBlurb"]),
     unwrap_tags(["WriterlyBlankLine"]),
+    convert_int_attributes_to_float([#("Book", "carnita"), #("", "goobmor")]),
     // ************************
     // $$ *********************
     // ************************
