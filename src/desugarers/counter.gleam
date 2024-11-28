@@ -266,16 +266,11 @@ pub fn counter_transform(
       ))
     }
     T(b, contents) -> {
-      case counters {
-        [] -> Ok(#(T(b, contents), []))
-        _ -> {
-          use #(updated_contents, counters) <- result.try(update_contents(
-            contents,
-            counters,
-          ))
-          Ok(#(T(b, updated_contents), counters))
-        }
-      }
+      use #(updated_contents, updated_counters) <- result.try(update_contents(
+        contents,
+        counters,
+      ))
+      Ok(#(T(b, updated_contents), updated_counters))
     }
   }
 }
