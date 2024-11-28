@@ -54,13 +54,9 @@ pub fn string_split_into_list_either_content_or_blame_indexed_group_version(
   content: String,
   indexed_regex: RegexWithIndexedGroup,
 ) -> List(String) {
-  io.println("content:[START]" <> content <> "[END]")
   let #(re, dropped_group, num_groups) = indexed_regex
-  let splits = io.debug(regex.split(re, content))
+  let splits = regex.split(re, content)
   let num_matches: Int = { list.length(splits) - 1 } / { num_groups + 1 }
-  // io.println("num_groups:" <> ins(num_groups))
-  // io.println("num_matches:" <> ins(num_matches))
-  // io.println("splits.length:" <> ins(list.length(splits)))
   let assert True =
     { num_matches * { num_groups + 1 } } + 1 == list.length(splits)
   list.map_fold(over: splits, from: 0, with: fn(index: Int, split) -> #(
@@ -73,7 +69,6 @@ pub fn string_split_into_list_either_content_or_blame_indexed_group_version(
     }
   })
   |> pair.second
-  // |> io.debug
   |> regroup_eithers
   |> remove_ors_unwrap_eithers
   |> list.map(string.join(_, ""))
@@ -185,7 +180,7 @@ fn replace_regex_by_tag_in_lines_indexed_group_version(
   re: RegexWithIndexedGroup,
   tag: String,
 ) -> List(VXML) {
-  io.debug(lines)
+  lines
   |> list.map(line_split_into_list_either_content_or_blame_indexed_group_version(
     _,
     re,
