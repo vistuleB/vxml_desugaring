@@ -163,9 +163,12 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   [
     unwrap_tags(["WriterlyBlurb"]),
+    unwrap_tags(["WriterlyBlankLine"]),
+    // FOR TESTING 'add_counter_attributes' !!!
     add_counter_attributes([
-      #("Solution", "Book", "number", 1),
-      #("Solution", "other", "number", 45),
+      #("Note", "Book", "number", 1),
+      #("Note", "Solution", "number", 1),
+      // change 'number' to 'x_number' on previous line to see how the logic works
     ]),
     // ************************
   // $$ *********************

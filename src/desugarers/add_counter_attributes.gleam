@@ -1,5 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option
 import gleam/pair
@@ -11,6 +12,22 @@ import vxml_parser.{
   type Blame, type BlamedAttribute, type VXML, BlamedAttribute, T, V,
 }
 
+fn produce_attributes_and_increase_counters_for_tag(
+  blame: Blame,
+  counters: Dict(String, Int),
+) -> #(Dict(String, Int), List(BlamedAttribute)) {
+  counters
+  |> dict.to_list
+  |> list.map_fold(from: counters, with: fn(current_counters, pair) {
+    let #(counter_name, counter_value) = pair
+    let new_attribute =
+      BlamedAttribute(blame, counter_name, int.to_string(counter_value))
+    let new_current_counters =
+      dict.insert(current_counters, counter_name, counter_value + 1)
+    #(new_current_counters, new_attribute)
+  })
+}
+
 fn possibly_add_counter_attribute(
   tag: String,
   blame: Blame,
@@ -19,23 +36,22 @@ fn possibly_add_counter_attribute(
 ) -> #(List(BlamedAttribute), CountingState) {
   case dict.get(state, tag) {
     Error(_) -> #(attributes, state)
-    Ok(#(counter_name, counter_value)) -> {
-      let new_attribute =
-        BlamedAttribute(blame, counter_name, int.to_string(counter_value))
-      let new_attributes = [new_attribute, ..attributes]
+    Ok(counters_dict) -> {
+      let #(new_counters_dict, attributes_to_add) =
+        produce_attributes_and_increase_counters_for_tag(blame, counters_dict)
       #(
-        new_attributes,
-        dict.insert(state, tag, #(counter_name, counter_value + 1)),
+        list.flatten([attributes, attributes_to_add]),
+        dict.insert(state, tag, new_counters_dict),
       )
     }
   }
 }
 
-fn add_new_counter_nodes_for_tag(
+fn introduce_new_counter_nodes_for_parent(
   parent: String,
   transform_extra: Dict(String, List(TagInfoForParent)),
   counting_state: CountingState,
-) {
+) -> CountingState {
   case dict.get(transform_extra, parent) {
     Error(_) -> counting_state
     Ok(tag_infos) -> {
@@ -44,13 +60,21 @@ fn add_new_counter_nodes_for_tag(
         from: counting_state,
         with: fn(current_dict, tag_info) -> #(CountingState, Nil) {
           let #(tag, counter_name, counter_initial_value) = tag_info
-          #(
-            dict.insert(current_dict, tag, #(
-              counter_name,
-              counter_initial_value,
-            )),
-            Nil,
-          )
+          case dict.get(current_dict, tag) {
+            Error(Nil) -> {
+              dict.insert(
+                current_dict,
+                tag,
+                dict.from_list([#(counter_name, counter_initial_value)]),
+              )
+            }
+            Ok(tag_dict) -> {
+              let new_tag_dict =
+                dict.insert(tag_dict, counter_name, counter_initial_value)
+              dict.insert(current_dict, tag, new_tag_dict)
+            }
+          }
+          |> pair.new(Nil)
         },
       )
       |> pair.first
@@ -66,37 +90,11 @@ fn param_transform_first_half(
   case node {
     T(_, _) -> Ok(#(node, state))
     V(blame, tag, attributes, children) -> {
-      let new_state = add_new_counter_nodes_for_tag(tag, transform_extra, state)
+      let new_state =
+        introduce_new_counter_nodes_for_parent(tag, transform_extra, state)
       let #(new_attributes, new_new_state) =
         possibly_add_counter_attribute(tag, blame, new_state, attributes)
       Ok(#(V(blame, tag, new_attributes, children), new_new_state))
-    }
-  }
-}
-
-fn revert_new_counter_nodes_for_parent(
-  parent: String,
-  original_counting_state: CountingState,
-  counting_state: CountingState,
-  transform_extra: Dict(String, List(TagInfoForParent)),
-) {
-  case dict.get(transform_extra, parent) {
-    Error(_) -> counting_state
-    Ok(tag_infos) -> {
-      list.map_fold(
-        over: tag_infos,
-        from: counting_state,
-        with: fn(current_dict, tag_info) -> #(CountingState, Nil) {
-          let #(tag, _, _) = tag_info
-          case dict.get(original_counting_state, tag) {
-            Error(Nil) -> #(current_dict, Nil)
-            Ok(original_counter_info) -> {
-              #(dict.insert(current_dict, tag, original_counter_info), Nil)
-            }
-          }
-        },
-      )
-      |> pair.first
     }
   }
 }
@@ -105,19 +103,69 @@ fn update_counting_state_by(
   old: CountingState,
   new: CountingState,
 ) -> CountingState {
-  new
-  |> dict.to_list
-  |> list.map_fold(from: old, with: fn(updated_old, new_key_item_pair) {
-    let #(counter_name_from_new, counter_value_from_new) = new_key_item_pair
-    case dict.has_key(old, counter_name_from_new) {
-      False -> #(old, Nil)
-      True -> #(
-        dict.insert(updated_old, counter_name_from_new, counter_value_from_new),
-        Nil,
+  dict.combine(old, new, with: fn(_, new_val) { new_val })
+}
+
+fn revert_new_counter_nodes_for_parent(
+  parent: String,
+  original_counting_state: CountingState,
+  counting_state_given_from_children: CountingState,
+  transform_extra: Dict(String, List(TagInfoForParent)),
+) -> CountingState {
+  case dict.get(transform_extra, parent) {
+    Error(_) -> counting_state_given_from_children
+    Ok(tag_infos) -> {
+      list.map_fold(
+        over: tag_infos,
+        from: counting_state_given_from_children,
+        with: fn(current_dict, tag_info) -> #(CountingState, Nil) {
+          io.debug(current_dict)
+          let #(tag, counter_name, _) = tag_info
+          case dict.get(original_counting_state, tag) {
+            Error(Nil) -> #(dict.delete(current_dict, tag), Nil)
+            Ok(original_counter_value_dict) -> {
+              let assert Ok(current_name_values_for_tag) =
+                dict.get(current_dict, tag)
+              let new_name_values_for_tag = {
+                current_name_values_for_tag
+                |> dict.to_list
+                |> list.map_fold(
+                  from: original_counter_value_dict,
+                  with: fn(
+                    rewritten_counter_value_dict: Dict(String, Int),
+                    pair: #(String, Int),
+                  ) -> #(Dict(String, Int), Nil) {
+                    let #(name, value) = pair
+                    case name == counter_name {
+                      True -> #(rewritten_counter_value_dict, Nil)
+                      False ->
+                        case dict.get(original_counter_value_dict, name) {
+                          Error(Nil) ->
+                            panic as "thought child would not let leak something to us that they created"
+                          Ok(_) -> #(
+                            dict.insert(
+                              rewritten_counter_value_dict,
+                              name,
+                              value,
+                            ),
+                            Nil,
+                          )
+                        }
+                    }
+                    |> pair.first
+                    |> pair.new(Nil)
+                  },
+                )
+                |> pair.first
+              }
+              #(dict.insert(current_dict, tag, new_name_values_for_tag), Nil)
+            }
+          }
+        },
       )
+      |> pair.first
     }
-  })
-  |> pair.first
+  }
 }
 
 fn param_transform_second_half(
@@ -133,9 +181,10 @@ fn param_transform_second_half(
     }
     V(_, tag, _, _) -> {
       let new_counting_state =
-        update_counting_state_by(
+        dict.combine(
           original_state,
           state_after_processing_children,
+          with: fn(_, new_val) { new_val },
         )
       let new_new_counting_state =
         revert_new_counter_nodes_for_parent(
@@ -147,15 +196,6 @@ fn param_transform_second_half(
       Ok(#(node, new_new_counting_state))
     }
   }
-}
-
-fn initial_state(extra: Extra) -> CountingState {
-  extra
-  |> list.map(fn(tuple) {
-    let #(tag, _, attribute_name, initial_value) = tuple
-    #(tag, #(attribute_name, initial_value))
-  })
-  |> dict.from_list
 }
 
 type TagInfoForParent =
@@ -235,7 +275,7 @@ type Extra =
 //                      name
 //**********************************
 type CountingState =
-  Dict(String, #(String, Int))
+  Dict(String, Dict(String, Int))
 
 //**********************************
 // '\' is the static portion
@@ -269,9 +309,10 @@ fn transform_factory(
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
+  let initial_state: CountingState = dict.from_list([])
   infra.stateful_down_up_node_to_node_desugarer_factory(
     transform_factory(extra),
-    initial_state(extra),
+    initial_state,
   )
 }
 

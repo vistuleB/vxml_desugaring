@@ -1,27 +1,14 @@
 |> Book
-
+    |> Note
+    |> Note
+    |> Note
     |> Solution
-    |> Solution
-    |> Solution
-    |> Solution
-    |> Solution
-    |> Solution
-    |> Solution
-    |> Solution
-    |> Solution
-
-    |> Book
-
+        |> Note
+        |> Note
+        |> Note
         |> Solution
-        |> Solution
-        |> Solution
-
-    |> other
-
-        |> Solution
-        |> Solution
-        |> Solution
-
-    |> Solution
-    |> Solution
-    |> Solution
+            |> Note
+        |> Note
+    |> Note
+    |> Note
+    |> Note
