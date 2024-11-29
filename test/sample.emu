@@ -1,9 +1,19 @@
 |> Book
-    carnita 1
-    carnita 2.01
-    carnita -1
-    carnito 1
-    carnito 2.01
-    carnito -1
-    |> Solution
-        goobmor 3
+    roman_counter MyCounter
+    handle handle1
+
+    more handle1<<::++MyCounter should be ii
+
+    this >>handle2 should be iii
+
+    |> Ref
+
+        shoul error
+        shoul handle2<<..++MyCounter error
+
+        this >>handle1 should be ii
+
+
+
+    
+
