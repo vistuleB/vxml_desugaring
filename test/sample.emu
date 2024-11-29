@@ -1,14 +1,19 @@
 |> Book
-    |> Note
-    |> Note
-    |> Note
-    |> Solution
-        |> Note
-        |> Note
-        |> Note
-        |> Solution
-            |> Note
-        |> Note
-    |> Note
-    |> Note
-    |> Note
+    roman_counter MyCounter
+    handle handle1
+
+    more handle1<<::++MyCounter should be ii
+
+    this >>handle2 should be iii
+
+    |> Ref
+
+        shoul error
+        shoul handle2<<..++MyCounter error
+
+        this >>handle1 should be ii
+
+
+
+    
+
