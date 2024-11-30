@@ -31,7 +31,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(__)(\\w|[\\(\\[{])")
+      let assert Ok(re) = regex.from_string("(^|\\s)(__)(\\w|[\\*\\(\\[{])")
       re
     },
     1,
@@ -40,7 +40,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\)\\]}])(__)($|\\s)")
+      let assert Ok(re) = regex.from_string("(\\w|[\\*\\)\\]}])(__)($|\\s)")
       re
     },
     1,
@@ -49,7 +49,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_central_quote_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(_\\|)(\\w|[\\(\\[{])")
+      let assert Ok(re) = regex.from_string("(^|\\s)(_\\|)(\\w|[_\\*\\(\\[{])")
       re
     },
     1,
@@ -58,7 +58,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_central_quote_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\)\\]}])(\\|_)($|\\s)")
+      let assert Ok(re) = regex.from_string("(\\w|[_\\*\\)\\]}])(\\|_)($|\\s)")
       re
     },
     1,
@@ -67,7 +67,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_single_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(_)(\\w|[\\(\\[{])")
+      let assert Ok(re) = regex.from_string("(^|\\s)(_)(\\w|[\\*\\(\\[{])")
       re
     },
     1,
@@ -83,9 +83,19 @@ pub fn pipeline_constructor() -> List(Pipe) {
     3,
   )
 
+  let opening_or_closing_single_underscore_indexed_regex_with_asterisks = #(
+    {
+      let assert Ok(re) =
+        regex.from_string("(\\w|[\\*\\(\\[{])(_)(\\w|[\\*\\)\\]}])")
+      re
+    },
+    1,
+    3,
+  )
+
   let closing_single_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\(\\[{])(_)(\\s|$)")
+      let assert Ok(re) = regex.from_string("(\\w|[\\*\\(\\[{])(_)(\\s|$)")
       re
     },
     1,
@@ -94,7 +104,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_single_asterisk_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(\\*)(\\w|[\\(\\[{])")
+      let assert Ok(re) = regex.from_string("(^|\\s)(\\*)(\\w|[_\\(\\[{])")
       re
     },
     1,
@@ -104,7 +114,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_or_closing_single_asterisk_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[\\(\\[{])(\\*)(\\w|[\\)\\]}])")
+        regex.from_string("(\\w|[_\\(\\[{])(\\*)(\\w|[_\\)\\]}])")
       re
     },
     1,
@@ -113,7 +123,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_single_asterisk_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\(\\[{])(\\*)(\\s|$)")
+      let assert Ok(re) = regex.from_string("(\\w|[_\\(\\[{])(\\*)(\\s|$)")
       re
     },
     1,
@@ -198,7 +208,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ),
     remove_empty_lines(),
     // ************************
-    // _ **********************
+    // _ & * ******************
     // ************************
     split_by_indexed_regexes(
       #(
@@ -206,6 +216,18 @@ pub fn pipeline_constructor() -> List(Pipe) {
           #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(
             opening_or_closing_single_underscore_indexed_regex,
+            "OpeningOrClosingUnderscore",
+          ),
+          #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
+          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
+          #(
+            opening_or_closing_single_asterisk_indexed_regex,
+            "OpeningOrClosingAsterisk",
+          ),
+          #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
+          #(
+            opening_or_closing_single_underscore_indexed_regex_with_asterisks,
             "OpeningOrClosingUnderscore",
           ),
           #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
@@ -218,30 +240,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
       "i",
     )),
-    fold_tags_into_text(
-      dict.from_list([
-        #("OpeningOrClosingUnderscore", "_"),
-        #("OpeningUnderscore", "_"),
-        #("ClosingUnderscore", "_"),
-      ]),
-    ),
-    remove_empty_lines(),
-    // ************************
-    // * **********************
-    // ************************
-    split_by_indexed_regexes(
-      #(
-        [
-          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
-          #(
-            opening_or_closing_single_asterisk_indexed_regex,
-            "OpeningOrClosingAsterisk",
-          ),
-          #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
-        ],
-        ["MathBlock", "Math"],
-      ),
-    ),
     pair_bookends(#(
       ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
       ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
@@ -249,6 +247,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
     )),
     fold_tags_into_text(
       dict.from_list([
+        #("OpeningOrClosingUnderscore", "_"),
+        #("OpeningUnderscore", "_"),
+        #("ClosingUnderscore", "_"),
         #("OpeningOrClosingAsterisk", "*"),
         #("OpeningAsterisk", "*"),
         #("ClosingAsterisk", "*"),

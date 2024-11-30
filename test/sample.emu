@@ -1,6 +1,5 @@
 |> Book
     
-    hello $$a^2 + b^2$$ bye $x$
-    alpha __goodbye)__ _|xx|_ |_
-
-    and _some_ italics *some* bold*
+    _brings $x$ back_
+    and *_bold_ some*
+    and *some _bold_*
