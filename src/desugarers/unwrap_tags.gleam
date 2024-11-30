@@ -9,7 +9,7 @@ import vxml_parser.{type VXML, V}
 
 const ins = string.inspect
 
-fn unwrap_tag_transform(
+fn param_transform(
   node: VXML,
   tags: List(String),
 ) -> Result(List(VXML), DesugaringError) {
@@ -27,7 +27,7 @@ type Extra =
   List(String)
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
-  unwrap_tag_transform(_, extra)
+  param_transform(_, extra)
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {

@@ -2,6 +2,7 @@ import codepoints.{
   type DelimiterPattern, DelimiterPattern1, DelimiterPattern10, EndOfString, P1,
   P10, StartOfString,
 }
+import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
 }
@@ -116,6 +117,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       match_one_of_before: codepoints.one_of([
         codepoints.alphanumeric_string_chars(),
         codepoints.closing_bracket_string_chars(),
+        codepoints.as_string_chars("."),
       ]),
       delimiter_chars: "_" |> codepoints.as_utf_codepoints,
       match_one_of_after: codepoints.one_of([
@@ -155,6 +157,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       match_one_of_before: codepoints.one_of([
         codepoints.alphanumeric_string_chars(),
         codepoints.closing_bracket_string_chars(),
+        codepoints.as_string_chars("."),
       ]),
       delimiter_chars: "*" |> codepoints.as_utf_codepoints,
       match_one_of_after: codepoints.one_of([
@@ -176,6 +179,14 @@ pub fn pipeline_constructor() -> List(Pipe) {
     pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
     fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
     remove_empty_lines(),
+    // ************************
+    // AddTitleCounters *******
+    // ************************
+    add_title_counters_and_titles([
+      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*"),
+      #("Exercises", "ExerciseCounter", "Exercise", "*Exercise ", ".*"),
+      #("Solution", "NotesCounter", "Note", "_Note ", "._"),
+    ]),
     // ************************
     // VerticalChunk **********
     // ************************
