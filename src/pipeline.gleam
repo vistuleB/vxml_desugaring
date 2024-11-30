@@ -1,7 +1,3 @@
-import codepoints.{
-  type DelimiterPattern, DelimiterPattern1, DelimiterPattern10, EndOfString, P1,
-  P10, StartOfString,
-}
 import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
@@ -14,157 +10,129 @@ import desugarers/remove_empty_lines.{remove_empty_lines}
 import desugarers/remove_vertical_chunks_with_no_text_child.{
   remove_vertical_chunks_with_no_text_child,
 }
-import desugarers/split_by_delimiter_pattern.{split_by_delimiter_pattern}
+import desugarers/split_by_indexed_regexes.{split_by_indexed_regexes}
 import desugarers/split_vertical_chunks.{split_vertical_chunks}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_element_children.{wrap_element_children_desugarer}
 import desugarers/wrap_elements_by_blankline.{wrap_elements_by_blankline}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
 import gleam/dict
-import infrastructure.{type Pipe}
+import gleam/regex
+import infrastructure.{type Pipe} as infra
 
 pub fn pipeline_constructor() -> List(Pipe) {
-  let double_dollar_delimiter_pattern: DelimiterPattern =
-    P10(DelimiterPattern10(
-      delimiter_chars: "$$" |> codepoints.as_utf_codepoints,
-    ))
+  let double_dollar_indexed_regex = #(
+    infra.unescaped_suffix_regex("(\\$\\$)"),
+    1,
+    2,
+  )
 
-  let single_dollar_delimiter_pattern: DelimiterPattern =
-    P10(DelimiterPattern10(delimiter_chars: "$" |> codepoints.as_utf_codepoints))
+  let single_dollar_indexed_regex = #(
+    infra.unescaped_suffix_regex("(\\$)"),
+    1,
+    2,
+  )
 
-  let opening_double_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        [StartOfString],
-        codepoints.space_string_chars(),
-      ]),
-      delimiter_chars: "__" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-      ]),
-    ))
+  let opening_double_underscore_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(^|\\s)(__)(\\w|[\\*\\(\\[{])")
+      re
+    },
+    1,
+    3,
+  )
 
-  let closing_double_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.closing_bracket_string_chars(),
-      ]),
-      delimiter_chars: "__" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-        [EndOfString],
-      ]),
-    ))
+  let closing_double_underscore_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(\\w|[\\*\\)\\]}])(__)($|\\s)")
+      re
+    },
+    1,
+    3,
+  )
 
-  let opening_central_quote_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        [StartOfString],
-        codepoints.space_string_chars(),
-      ]),
-      delimiter_chars: "_|" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-      ]),
-    ))
+  let opening_central_quote_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(^|\\s)(_\\|)(\\w|[_\\*\\(\\[{])")
+      re
+    },
+    1,
+    3,
+  )
 
-  let closing_central_quote_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.closing_bracket_string_chars(),
-      ]),
-      delimiter_chars: "|_" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-        [EndOfString],
-      ]),
-    ))
+  let closing_central_quote_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(\\w|[_\\*\\)\\]}])(\\|_)($|\\s)")
+      re
+    },
+    1,
+    3,
+  )
 
-  let opening_single_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        [StartOfString],
-        codepoints.space_string_chars(),
-      ]),
-      delimiter_chars: "_" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-      ]),
-    ))
+  let opening_single_underscore_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(^|\\s)(_)(\\w|[\\*\\(\\[{])")
+      re
+    },
+    1,
+    3,
+  )
 
-  let opening_or_closing_single_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.closing_bracket_string_chars(),
-      ]),
-      delimiter_chars: "_" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-      ]),
-    ))
+  let opening_or_closing_single_underscore_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(\\w|[\\(\\[{])(_)(\\w|[\\)\\]}])")
+      re
+    },
+    1,
+    3,
+  )
 
-  let closing_single_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.closing_bracket_string_chars(),
-        codepoints.as_string_chars("."),
-      ]),
-      delimiter_chars: "_" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.space_string_chars(),
-        [EndOfString],
-      ]),
-    ))
+  let opening_or_closing_single_underscore_indexed_regex_with_asterisks = #(
+    {
+      let assert Ok(re) =
+        regex.from_string("(\\w|[\\*\\(\\[{])(_)(\\w|[\\*\\)\\]}])")
+      re
+    },
+    1,
+    3,
+  )
 
-  let opening_single_asterisk_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        [StartOfString],
-        codepoints.space_string_chars(),
-      ]),
-      delimiter_chars: "*" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-      ]),
-    ))
+  let closing_single_underscore_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(\\w|[\\*\\(\\[{])(_)(\\s|$)")
+      re
+    },
+    1,
+    3,
+  )
 
-  let opening_or_closing_single_asterisk_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.closing_bracket_string_chars(),
-      ]),
-      delimiter_chars: "*" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.opening_bracket_string_chars(),
-      ]),
-    ))
+  let opening_single_asterisk_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(^|\\s)(\\*)(\\w|[_\\(\\[{])")
+      re
+    },
+    1,
+    3,
+  )
 
-  let closing_single_asterisk_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: codepoints.one_of([
-        codepoints.alphanumeric_string_chars(),
-        codepoints.closing_bracket_string_chars(),
-        codepoints.as_string_chars("."),
-      ]),
-      delimiter_chars: "*" |> codepoints.as_utf_codepoints,
-      match_one_of_after: codepoints.one_of([
-        codepoints.space_string_chars(),
-        [EndOfString],
-      ]),
-    ))
+  let opening_or_closing_single_asterisk_indexed_regex = #(
+    {
+      let assert Ok(re) =
+        regex.from_string("(\\w|[_\\(\\[{])(\\*)(\\w|[_\\)\\]}])")
+      re
+    },
+    1,
+    3,
+  )
+
+  let closing_single_asterisk_indexed_regex = #(
+    {
+      let assert Ok(re) = regex.from_string("(\\w|[_\\(\\[{])(\\*)(\\s|$)")
+      re
+    },
+    1,
+    3,
+  )
 
   [
     unwrap_tags(["WriterlyBlurb"]),
@@ -173,8 +141,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // $$ *********************
     // ************************
-    split_by_delimiter_pattern(
-      #([#(double_dollar_delimiter_pattern, "DoubleDollar")], []),
+    split_by_indexed_regexes(
+      #([#(double_dollar_indexed_regex, "DoubleDollar")], []),
     ),
     pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
     fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
@@ -199,8 +167,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // $ **********************
     // ************************
-    split_by_delimiter_pattern(
-      #([#(single_dollar_delimiter_pattern, "SingleDollar")], []),
+    split_by_indexed_regexes(
+      #([#(single_dollar_indexed_regex, "SingleDollar")], []),
     ),
     pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
     fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
@@ -208,17 +176,11 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // __ *********************
     // ************************
-    split_by_delimiter_pattern(
+    split_by_indexed_regexes(
       #(
         [
-          #(
-            opening_double_underscore_delimiter_pattern,
-            "OpeningDoubleUnderscore",
-          ),
-          #(
-            closing_double_underscore_delimiter_pattern,
-            "ClosingDoubleUnderscore",
-          ),
+          #(opening_double_underscore_indexed_regex, "OpeningDoubleUnderscore"),
+          #(closing_double_underscore_indexed_regex, "ClosingDoubleUnderscore"),
         ],
         ["MathBlock", "Math"],
       ),
@@ -235,14 +197,14 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ),
     remove_empty_lines(),
-    // // ************************
+    // ************************
     // _| |_ ******************
     // ************************
-    split_by_delimiter_pattern(
+    split_by_indexed_regexes(
       #(
         [
-          #(opening_central_quote_delimiter_pattern, "OpeningCenterQuote"),
-          #(closing_central_quote_delimiter_pattern, "ClosingCenterQuote"),
+          #(opening_central_quote_indexed_regex, "OpeningCenterQuote"),
+          #(closing_central_quote_indexed_regex, "ClosingCenterQuote"),
         ],
         ["MathBlock"],
       ),
@@ -260,17 +222,29 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ),
     remove_empty_lines(),
     // ************************
-    // _ **********************
+    // _ & * ******************
     // ************************
-    split_by_delimiter_pattern(
+    split_by_indexed_regexes(
       #(
         [
-          #(opening_single_underscore_delimiter_pattern, "OpeningUnderscore"),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(
-            opening_or_closing_single_underscore_delimiter_pattern,
+            opening_or_closing_single_underscore_indexed_regex,
             "OpeningOrClosingUnderscore",
           ),
-          #(closing_single_underscore_delimiter_pattern, "ClosingUnderscore"),
+          #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
+          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
+          #(
+            opening_or_closing_single_asterisk_indexed_regex,
+            "OpeningOrClosingAsterisk",
+          ),
+          #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
+          #(
+            opening_or_closing_single_underscore_indexed_regex_with_asterisks,
+            "OpeningOrClosingUnderscore",
+          ),
+          #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
         ],
         ["MathBlock", "Math"],
       ),
@@ -280,30 +254,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
       "i",
     )),
-    fold_tags_into_text(
-      dict.from_list([
-        #("OpeningOrClosingUnderscore", "_"),
-        #("OpeningUnderscore", "_"),
-        #("ClosingUnderscore", "_"),
-      ]),
-    ),
-    remove_empty_lines(),
-    // ************************
-    // * **********************
-    // ************************
-    split_by_delimiter_pattern(
-      #(
-        [
-          #(opening_single_asterisk_delimiter_pattern, "OpeningAsterisk"),
-          #(
-            opening_or_closing_single_asterisk_delimiter_pattern,
-            "OpeningOrClosingAsterisk",
-          ),
-          #(closing_single_asterisk_delimiter_pattern, "ClosingAsterisk"),
-        ],
-        ["MathBlock", "Math"],
-      ),
-    ),
     pair_bookends(#(
       ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
       ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
@@ -311,6 +261,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
     )),
     fold_tags_into_text(
       dict.from_list([
+        #("OpeningOrClosingUnderscore", "_"),
+        #("OpeningUnderscore", "_"),
+        #("ClosingUnderscore", "_"),
         #("OpeningOrClosingAsterisk", "*"),
         #("OpeningAsterisk", "*"),
         #("ClosingAsterisk", "*"),
