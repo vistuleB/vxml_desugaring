@@ -1,19 +1,20 @@
 |> Book
-    roman_counter MyCounter
-    handle handle1
+    |> Chapter
+        |> Example
 
-    more handle1<<::++MyCounter should be ii
+            hello world
+        |> Example
 
-    this >>handle2 should be iii
+            goodbye world
+        |> Example
 
-    |> Ref
+            zzz
+        |> Exercises
+            |> Exercise
 
-        shoul error
-        shoul handle2<<..++MyCounter error
-
-        this >>handle1 should be ii
-
-
-
-    
-
+                |> Solution
+                    |> Note
+                    |> Note
+                    |> Note
+    |> Example
+        |> Note

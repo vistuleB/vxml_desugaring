@@ -1,3 +1,4 @@
+import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
 }
@@ -146,6 +147,14 @@ pub fn pipeline_constructor() -> List(Pipe) {
     pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
     fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
     remove_empty_lines(),
+    // ************************
+    // AddTitleCounters *******
+    // ************************
+    add_title_counters_and_titles([
+      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*"),
+      #("Exercises", "ExerciseCounter", "Exercise", "*Exercise ", ".*"),
+      #("Solution", "NotesCounter", "Note", "_Note ", "._"),
+    ]),
     // ************************
     // VerticalChunk **********
     // ************************
