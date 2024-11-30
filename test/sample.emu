@@ -1,5 +1,19 @@
 |> Book
+    roman_counter MyCounter
+    handle handle1
+
+    more handle1<<::++MyCounter should be ii
+
+    this >>handle2 should be iii
+
+    |> Ref
+
+        shoul error
+        shoul handle2<<..++MyCounter error
+
+        this >>handle1 should be ii
+
+
+
     
-    _brings $x$ back_
-    and *_bold_ some*
-    and *some _bold_*
+
