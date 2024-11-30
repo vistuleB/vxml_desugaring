@@ -1,20 +1,13 @@
 |> Book
     |> Chapter
-        |> Example
-
-            hello world
-        |> Example
-
-            goodbye world
-        |> Example
-
-            zzz
-        |> Exercises
-            |> Exercise
-
-                |> Solution
-                    |> Note
-                    |> Note
-                    |> Note
-    |> Example
         |> Note
+        |> Note
+        |> Note
+        |> Solution
+            |> Note
+                handle leprechaun
+                handle davies
+            |> Note
+            |> Note
+    |> Note
+        handle zorro

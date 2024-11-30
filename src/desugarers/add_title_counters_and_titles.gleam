@@ -81,8 +81,8 @@ fn param_transform(
 
 //**********************************
 // type Extra = List(#(String,         String,       String,        String,         String))
-//                       ↖ parent or     ↖ counter     ↖ element     ↖ pre-counter     ↖ post-counter
-//                         ancestor        name          to add        phrase            phrase
+//                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter
+//                         ancestor        name          to add         phrase          phrase
 //                         tag that                      title to
 //                         contains
 //                         counter
