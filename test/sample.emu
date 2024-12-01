@@ -1,11 +1,16 @@
 |> Book
+    counter hey
+
+    handleHey<<::::hey counter
+
+    >>handleHey handle
     |> Chapter
         |> Example
 
             hello world
         |> Example
 
-            goodbye world
+            goodbye world<<::::ExampleCounter
         |> Example
 
             zzz
@@ -13,8 +18,11 @@
             |> Exercise
 
                 |> Solution
+
                     |> Note
                     |> Note
                     |> Note
     |> Example
         |> Note
+
+            >>world

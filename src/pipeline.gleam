@@ -3,6 +3,7 @@ import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
 }
 import desugarers/counter.{counter_desugarer}
+import desugarers/counter_handles.{counter_handles_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
@@ -277,5 +278,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     insert_indent(),
     wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
     counter_desugarer(),
+    counter_handles_desugarer(),
   ]
 }
