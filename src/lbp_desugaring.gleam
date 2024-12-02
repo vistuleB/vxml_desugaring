@@ -1,12 +1,10 @@
 import argv
 import gleam/io
-import gleam/regex
 import gleam/result
 import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugaringError, get_root,
 }
-import infrastructure as infra
 import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
 import vxml_parser.{type VXML}
@@ -41,11 +39,10 @@ pub fn desugar(
 }
 
 pub fn main() {
-  let assert Ok(assembled) = assemble_blamed_lines(path)
-
   let args = argv.load().arguments
   case args {
-    [] -> {
+    [path] -> {
+      let assert Ok(assembled) = assemble_blamed_lines(path)
       let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
       let vxmls = writerlys_to_vxmls(writerlys)
       case desugar(vxmls, pipeline_constructor()) {
@@ -54,14 +51,14 @@ pub fn main() {
         Error(err) -> io.println("there was a desugaring error: " <> ins(err))
       }
     }
-    [command] ->
-      case command {
-        "debug" -> {
-          pipeline_introspection_lines2string(assembled, pipeline_constructor())
-          |> io.print()
-        }
-        _ -> io.println("commands available: debug")
-      }
-    _ -> io.println("commands available: debug")
+    ["--debug", path] -> {
+      let assert Ok(assembled) = assemble_blamed_lines(path)
+      pipeline_introspection_lines2string(assembled, pipeline_constructor())
+      |> io.print()
+    }
+    _ ->
+      io.println(
+        "usage: executable_file_name <path>\noptions:\n    --debug: debug pipeline steps",
+      )
   }
 }
