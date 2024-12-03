@@ -8,6 +8,7 @@ import desugarers/convert_int_attributes_to_float.{
 import desugarers/counter.{counter_desugarer}
 import desugarers/counter_handles.{counter_handles_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
+import desugarers/free_children.{free_children}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/remove_empty_lines.{remove_empty_lines}
@@ -226,6 +227,15 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ),
     remove_empty_lines(),
+    // ************************
+    // break CenterDisplay &
+    // CentralItalicDisplay out
+    // of VerticalChunk
+    // ************************
+    free_children([
+      #("CenterDisplay", "VerticalChunk"),
+      #("CentralItalicDisplay", "VerticalChunk"),
+    ]),
     // ************************
     // _ & * ******************
     // ************************

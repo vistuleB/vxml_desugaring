@@ -184,12 +184,39 @@ pub fn either_or_mapper(
   |> list.map(either_or_function_combinant(fn1, fn2))
 }
 
+fn regroup_ors_accumulator(
+  already_packaged: List(EitherOr(a, List(b))),
+  under_construction: List(b),
+  upcoming: List(EitherOr(a, b)),
+) -> List(EitherOr(a, List(b))) {
+  case upcoming {
+    [] ->
+      [under_construction |> list.reverse |> Or, ..already_packaged]
+      |> list.reverse
+    [Or(b), ..rest] ->
+      regroup_ors_accumulator(already_packaged, [b, ..under_construction], rest)
+    [Either(a), ..rest] ->
+      regroup_ors_accumulator(
+        [
+          Either(a),
+          under_construction |> list.reverse |> Or,
+          ..already_packaged
+        ],
+        [],
+        rest,
+      )
+  }
+}
+
+pub fn regroup_ors(ze_list: List(EitherOr(a, b))) -> List(EitherOr(a, List(b))) {
+  regroup_ors_accumulator([], [], ze_list)
+}
+
 pub fn either_or_misceginator(
   list: List(a),
   condition: fn(a) -> Bool,
 ) -> List(EitherOr(a, a)) {
-  list
-  |> list.map(fn(thing) {
+  list.map(list, fn(thing) {
     case condition(thing) {
       True -> Either(thing)
       False -> Or(thing)
