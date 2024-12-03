@@ -21,7 +21,9 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
     _ ->
       Error(DesugaringError(
         blame: Blame("", 0, []),
-        message: "found " <> ins(list.length) <> " != 1 root-level nodes in ",
+        message: "found "
+          <> ins(list.length(vxmls))
+          <> " != 1 root-level nodes in ",
       ))
   }
 }
