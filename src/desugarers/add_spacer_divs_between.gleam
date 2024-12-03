@@ -65,6 +65,12 @@ fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
+//**********************************
+// type Extra = List(#(String,                String),     String))
+//                       ↖ insert divs between ↗             ↖ class name         
+//                          adjacent siblings                  for inserted div
+//                         of these two names
+//**********************************
 type Extra =
   List(#(#(String, String), String))
 

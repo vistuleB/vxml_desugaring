@@ -66,6 +66,13 @@ fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
+//**********************************
+// type Extra = List(#(String,                  String))
+//                       ↖ insert divs          ↖ class attribute
+//                         after tags            of inserted div
+//                         of this name
+//                         (except if tag is last child)
+//**********************************
 type Extra =
   List(#(String, String))
 
