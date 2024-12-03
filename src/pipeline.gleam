@@ -38,7 +38,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\s)(__)(\\w|[~\\*\\(\\[{“]|$)")
+      let assert Ok(re) =
+        regex.from_string("(\\s)(__)(\\w|[“‘~\\*\\(\\[{]|$)")
       re
     },
     1,
@@ -49,7 +50,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     {
       let assert Ok(re) =
         regex.from_string(
-          "(\\w|[~\\.\\?\\!\\*\\)\\]}”~]|^)(__)(\\w|[~\\*\\(\\[{“]|$)",
+          "(\\w|[”’~\\.\\?\\!\\*\\)\\]}]|^)(__)(\\w|[“‘~\\*\\(\\[{]|$)",
         )
       re
     },
@@ -60,7 +61,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let closing_double_underscore_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[~\\.\\?\\!\\*\\)\\]}”~]|^)(__)(\\s)")
+        regex.from_string("(\\w|[”’~\\.\\?\\!\\*\\)\\]}]|^)(__)(\\s)")
       re
     },
     1,
@@ -70,7 +71,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_central_quote_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\s|^)(_\\|)(\\w|[_~\\.\\?\\!\\*\\(\\[{“]|$)")
+        regex.from_string("(\\s|^)(_\\|)(\\w|[“‘_~\\.\\?\\!\\*\\(\\[{]|$)")
       re
     },
     1,
@@ -80,7 +81,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let closing_central_quote_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[_~\\.\\?\\!\\*\\)\\]}”~]|^)(\\|_)(\\s|$)")
+        regex.from_string("(\\w|[”’_~\\.\\?\\!\\*\\)\\]}]|^)(\\|_)(\\s|$)")
       re
     },
     1,
@@ -89,7 +90,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_single_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\s|^)(_)(\\w|[~\\*\\(\\[{]|$)")
+      let assert Ok(re) =
+        regex.from_string("(\\s|^)(_)(\\w|[“‘~\\*\\(\\[{]|$)")
       re
     },
     1,
@@ -99,7 +101,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_or_closing_single_underscore_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[~\\.\\?\\!\\(\\[{]|^)(_)(\\w|[~\\)\\]}]|$)")
+        regex.from_string(
+          "(\\w|[”’~\\.\\?\\!\\(\\[{]|^)(_)(\\w|[“‘~\\)\\]}]|$)",
+        )
       re
     },
     1,
@@ -110,7 +114,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     {
       let assert Ok(re) =
         regex.from_string(
-          "(\\w|[~\\.\\?\\!\\*\\(\\[{]|^)(_)(\\w|[~\\*\\)\\]}]|$)",
+          "(\\w|[”’~\\.\\?\\!\\*\\(\\[{]|^)(_)(\\w|[“‘~\\*\\)\\]}]|$)",
         )
       re
     },
@@ -121,7 +125,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let closing_single_underscore_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[~\\.\\?\\!\\*\\(\\[{]|^)(_)(\\s|$)")
+        regex.from_string("(\\w|[”’~\\.\\?\\!\\*\\(\\[{]|^)(_)(\\s|$)")
       re
     },
     1,
@@ -130,7 +134,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_single_asterisk_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\s)(\\*)(\\w|[_~\\(\\[{]|$)")
+      let assert Ok(re) =
+        regex.from_string("(\\s)(\\*)(\\w|[“‘_~\\(\\[{]|$)")
       re
     },
     1,
@@ -140,7 +145,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_or_closing_single_asterisk_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[~\\._\\(\\[{]|^)(\\*)(\\w|[_~\\)\\]}]|$)")
+        regex.from_string(
+          "(\\w|[”’~\\._\\(\\[{]|^)(\\*)(\\w|[“‘_~\\)\\]}]|$)",
+        )
       re
     },
     1,
@@ -149,7 +156,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_single_asterisk_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[~\\._\\(\\[{]|^)(\\*)(\\s)")
+      let assert Ok(re) =
+        regex.from_string("(\\w|[”’~\\._\\(\\[{]|^)(\\*)(\\s)")
       re
     },
     1,
