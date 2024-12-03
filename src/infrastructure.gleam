@@ -1,6 +1,7 @@
 import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
+import gleam/io
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option.{type Option, None, Some}
 import gleam/pair
 import gleam/regex.{type Regex}
 import gleam/result
@@ -25,6 +26,17 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
           <> ins(list.length(vxmls))
           <> " != 1 root-level nodes in ",
       ))
+  }
+}
+
+pub fn get_duplicate(list: List(a)) -> Option(a) {
+  case list {
+    [] -> None
+    [first, ..rest] ->
+      case list.contains(rest, first) {
+        True -> Some(first)
+        False -> get_duplicate(rest)
+      }
   }
 }
 

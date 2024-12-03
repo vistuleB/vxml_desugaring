@@ -1,25 +1,35 @@
-|> Sectionn
+|> Book
+    |> Chapter
+        |> Section
+            title first-section
 
-    Apply the definition
-    
-    $$
-    fg = (u \ra f(u)g(u))
-    $$
-    
-    of function multiplication
-    in order to show that
+            Apply the definition
+            
+            $$
+            fg = (u \ra f(u)g(u))
+            $$
+            
+            of function multiplication
+            in order to show that
 
-    $$
-    (fg)h = f(gh)
-    $$
+            $$
+            (fg)h = f(gh)
+            $$
 
-    for all functions $f, g, h : \rr \ra \rr$,
-    or, namely, to show that
+        |> Section
+            title second-section
 
-    __($f$ times $g$) times $h$__
+            for all functions $f, g, h : \rr \ra \rr$,
+            or, namely, to show that
 
-    equals
+            __($f$ times $g$) times $h$__
 
-    __$f$ times ($g$ times $h$)__
+            equals
 
-    for all functions $f, g, h : \rr \ra \rr$.
+            __$f$ times ($g$ times $h$)__
+
+            for all functions $f, g, h : \rr \ra \rr$.
+
+            |> Example
+
+                hello world

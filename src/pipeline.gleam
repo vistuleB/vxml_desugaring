@@ -1,5 +1,8 @@
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
+import desugarers/add_spacer_divs_after.{add_spacer_divs_after}
+import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
+import desugarers/add_spacer_divs_between.{add_spacer_divs_between}
 import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
@@ -285,5 +288,19 @@ pub fn pipeline_constructor() -> List(Pipe) {
     counter_handles_desugarer(),
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
+    // uncomment this, remove rest:
+    // add_spacer_divs_before([
+    //   #("Exercises", "spacer"),
+    //   #("Example", "spacer"),
+    //   #("Note", "spacer"),
+    //   #("Section", "spacer"),
+    // ]),
+    add_spacer_divs_before([
+      #("Exercises", "spacer-1"),
+      #("Example", "spacer-1"),
+      #("Note", "spacer-1"),
+    ]),
+    add_spacer_divs_after([#("Example", "spacer-x")]),
+    add_spacer_divs_between([#(#("Section", "Section"), "spacer-10")]),
   ]
 }
