@@ -1,5 +1,4 @@
 import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
-import gleam/io
 import gleam/list
 import gleam/option.{type Option}
 import gleam/pair

@@ -726,48 +726,48 @@ fn delimiter_pattern_10_vanilla_splitter_constructor(
 //***************************************************
 
 pub fn tests() -> Nil {
-  let pattern1 =
-    DelimiterPattern1(
-      match_one_of_before: " " |> as_string_chars,
-      delimiter_chars: "aa" |> as_utf_codepoints,
-      match_one_of_after: "(" |> as_string_chars,
-    )
+  // let pattern1 =
+  //   DelimiterPattern1(
+  //     match_one_of_before: " " |> as_string_chars,
+  //     delimiter_chars: "aa" |> as_utf_codepoints,
+  //     match_one_of_after: "(" |> as_string_chars,
+  //   )
 
   let double_dollar_delimiter_pattern =
     P10(DelimiterPattern10(delimiter_chars: "$$" |> as_utf_codepoints))
 
-  let assert [space_utf_codepoint] = string.to_utf_codepoints(" ")
-  let assert [opening_parenthesis_utf_codepoint] = string.to_utf_codepoints("(")
-  let assert [underscore_utf_codepoint] = string.to_utf_codepoints("_")
-  let alphanumeric_utf_codepoints =
-    string.to_utf_codepoints(
-      "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVXYZ0123456789",
-    )
-  let brackets_utf_codepoints = string.to_utf_codepoints("()[]{}")
+  // let assert [space_utf_codepoint] = string.to_utf_codepoints(" ")
+  // let assert [opening_parenthesis_utf_codepoint] = string.to_utf_codepoints("(")
+  // let assert [underscore_utf_codepoint] = string.to_utf_codepoints("_")
+  // let alphanumeric_utf_codepoints =
+  //   string.to_utf_codepoints(
+  //     "abcdefghijklmnopqrstuvxyzABCDEFGHIJKLMNOPQRSTUVXYZ0123456789",
+  //   )
+  // let brackets_utf_codepoints = string.to_utf_codepoints("()[]{}")
 
-  let opening_double_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: one_of([[StartOfString], space_string_chars()]),
-      delimiter_chars: "__" |> as_utf_codepoints,
-      match_one_of_after: one_of([
-        alphanumeric_string_chars(),
-        opening_bracket_string_chars(),
-      ]),
-    ))
+  // let opening_double_underscore_delimiter_pattern =
+  //   P1(DelimiterPattern1(
+  //     match_one_of_before: one_of([[StartOfString], space_string_chars()]),
+  //     delimiter_chars: "__" |> as_utf_codepoints,
+  //     match_one_of_after: one_of([
+  //       alphanumeric_string_chars(),
+  //       opening_bracket_string_chars(),
+  //     ]),
+  //   ))
 
-  let closing_double_underscore_delimiter_pattern =
-    P1(DelimiterPattern1(
-      match_one_of_before: one_of([
-        alphanumeric_string_chars(),
-        closing_bracket_string_chars(),
-      ]),
-      delimiter_chars: "__" |> as_utf_codepoints,
-      match_one_of_after: one_of([
-        [EndOfString],
-        alphanumeric_string_chars(),
-        opening_bracket_string_chars(),
-      ]),
-    ))
+  // let closing_double_underscore_delimiter_pattern =
+  //   P1(DelimiterPattern1(
+  //     match_one_of_before: one_of([
+  //       alphanumeric_string_chars(),
+  //       closing_bracket_string_chars(),
+  //     ]),
+  //     delimiter_chars: "__" |> as_utf_codepoints,
+  //     match_one_of_after: one_of([
+  //       [EndOfString],
+  //       alphanumeric_string_chars(),
+  //       opening_bracket_string_chars(),
+  //     ]),
+  //   ))
 
   io.println(
     ins(delimiter_pattern_string_split(
