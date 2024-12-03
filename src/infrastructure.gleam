@@ -151,6 +151,18 @@ pub fn regroup_eithers(
   regroup_eithers_accumulator([], [], ze_list)
 }
 
+pub fn regroup_eithers_no_empty_lists(
+  ze_list: List(EitherOr(a, b)),
+) -> List(EitherOr(List(a), b)) {
+  regroup_eithers(ze_list)
+  |> list.filter(fn(thing) {
+    case thing {
+      Either(a_list) -> !{ list.is_empty(a_list) }
+      Or(_) -> True
+    }
+  })
+}
+
 pub fn either_or_function_combinant(
   fn1: fn(a) -> c,
   fn2: fn(b) -> c,
@@ -170,6 +182,19 @@ pub fn either_or_mapper(
 ) -> List(c) {
   ze_list
   |> list.map(either_or_function_combinant(fn1, fn2))
+}
+
+pub fn either_or_misceginator(
+  list: List(a),
+  condition: fn(a) -> Bool,
+) -> List(EitherOr(a, a)) {
+  list
+  |> list.map(fn(thing) {
+    case condition(thing) {
+      True -> Either(thing)
+      False -> Or(thing)
+    }
+  })
 }
 
 //**************************************************************
@@ -644,6 +669,13 @@ pub fn node_to_nodes_fancy_desugarer_factory(
 pub fn extract_tag(node: VXML) -> String {
   let assert V(_, tag, _, _) = node
   tag
+}
+
+pub fn is_text_node(node: VXML) -> Bool {
+  case node {
+    T(_, _) -> True
+    V(_, _, _, _) -> False
+  }
 }
 
 pub fn prevent_node_to_node_transform_inside(
