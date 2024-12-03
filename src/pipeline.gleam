@@ -38,8 +38,17 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_double_underscore_indexed_regex = #(
     {
+      let assert Ok(re) = regex.from_string("(\\s)(__)(\\w|[\\*\\(\\[{“]|$)")
+      re
+    },
+    1,
+    3,
+  )
+
+  let opening_or_closing_double_underscore_indexed_regex = #(
+    {
       let assert Ok(re) =
-        regex.from_string("(^|\\s)(__)(\\w|[\\*\\(\\[{“]|$)")
+        regex.from_string("(\\w|[\\*\\)\\]}”~]|^)(__)(\\w|[\\*\\(\\[{“]|$)")
       re
     },
     1,
@@ -48,8 +57,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) =
-        regex.from_string("(\\w|[\\*\\)\\]}”~]|^)(__)($|\\s)")
+      let assert Ok(re) = regex.from_string("(\\w|[\\*\\)\\]}”~]|^)(__)(\\s)")
       re
     },
     1,
@@ -187,6 +195,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
     split_by_indexed_regexes(
       #(
         [
+          #(
+            opening_or_closing_double_underscore_indexed_regex,
+            "OpeningOrClosingDoubleUnderscore",
+          ),
           #(opening_double_underscore_indexed_regex, "OpeningDoubleUnderscore"),
           #(closing_double_underscore_indexed_regex, "ClosingDoubleUnderscore"),
         ],
@@ -194,8 +206,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ),
     ),
     pair_bookends(#(
-      ["OpeningDoubleUnderscore"],
-      ["ClosingDoubleUnderscore"],
+      ["OpeningDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
+      ["ClosingDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
       "CentralItalicDisplay",
     )),
     fold_tags_into_text(
@@ -235,23 +247,23 @@ pub fn pipeline_constructor() -> List(Pipe) {
     split_by_indexed_regexes(
       #(
         [
-          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(
             opening_or_closing_single_underscore_indexed_regex,
             "OpeningOrClosingUnderscore",
           ),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
-          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
           #(
             opening_or_closing_single_asterisk_indexed_regex,
             "OpeningOrClosingAsterisk",
           ),
+          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
           #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
-          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(
             opening_or_closing_single_underscore_indexed_regex_with_asterisks,
             "OpeningOrClosingUnderscore",
           ),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
         ],
         ["MathBlock", "Math"],

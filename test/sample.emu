@@ -2,24 +2,4 @@
 
     Apply the definition
     
-    $$
-    fg = (u \ra f(u)g(u))
-    $$
-    
-    of function multiplication
-    in order to show that
-
-    $$
-    (fg)h = f(gh)
-    $$
-
-    for all functions $f, g, h : \rr \ra \rr$,
-    or, namely, to show that
-
-    _|($f$ times $g$) times $h$|_
-
-    equals
-
-    __$f$ times ($g$ times $h$)__
-
-    for all functions $f, g, h : \rr \ra \rr$.
+    __($f$ times $g$) times $h$__
