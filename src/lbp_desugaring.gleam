@@ -57,12 +57,12 @@ pub fn main() {
         vxml_parser.debug_print_vxml("", desugared)
       })
     }
-    ["--debug", path] -> {
+    [path, "--debug"] -> {
       let assert Ok(assembled) = assemble_blamed_lines(path)
       pipeline_introspection_lines2string(assembled, pipeline_constructor())
       |> io.print()
     }
-    ["--emit", emitter, "--output", output_folder, path] -> {
+    [path, "--emit", emitter, "--output", output_folder] -> {
       assemble_and_desugar(path, fn(desugared) {
         case emitter {
           "leptos" -> {
@@ -78,8 +78,8 @@ pub fn main() {
       io.println(
         "usage: executable_file_name <input_file>
         options:
-            --debug <input_file>: debug pipeline steps
-            --emit <emitter> --output <output_file> <input_file>
+            <input_file> --debug : debug pipeline steps
+            <input_file> --emit <emitter> --output <output_file>
             ",
       )
   }
