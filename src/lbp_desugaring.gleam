@@ -5,6 +5,7 @@ import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugaringError, get_root,
 }
+import leptos_emitter
 import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
 import vxml_parser.{type VXML}
@@ -38,27 +39,48 @@ pub fn desugar(
   }
 }
 
+fn assemble_and_desugar(path: String, on_success: fn(VXML) -> Nil) {
+  let assert Ok(assembled) = assemble_blamed_lines(path)
+  let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
+  let vxmls = writerlys_to_vxmls(writerlys)
+  case desugar(vxmls, pipeline_constructor()) {
+    Ok(desugared) -> on_success(desugared)
+    Error(err) -> io.println("there was a desugaring error: " <> ins(err))
+  }
+}
+
 pub fn main() {
   let args = argv.load().arguments
   case args {
     [path] -> {
-      let assert Ok(assembled) = assemble_blamed_lines(path)
-      let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
-      let vxmls = writerlys_to_vxmls(writerlys)
-      case desugar(vxmls, pipeline_constructor()) {
-        Ok(desugared) ->
-          vxml_parser.debug_print_vxml("(add attribute desugarer)", desugared)
-        Error(err) -> io.println("there was a desugaring error: " <> ins(err))
-      }
+      assemble_and_desugar(path, fn(desugared) {
+        vxml_parser.debug_print_vxml("", desugared)
+      })
     }
     ["--debug", path] -> {
       let assert Ok(assembled) = assemble_blamed_lines(path)
       pipeline_introspection_lines2string(assembled, pipeline_constructor())
       |> io.print()
     }
+    ["--emit", emitter, "--output", output_folder, path] -> {
+      assemble_and_desugar(path, fn(desugared) {
+        case emitter {
+          "leptos" -> {
+            //let emitted = leptos_emitter.leptos_emitter([desugared])
+            io.debug(output_folder)
+            leptos_emitter.write_splitted(desugared, output_folder)
+          }
+          _ -> io.println_error("Emitter " <> emitter <> " is not supported")
+        }
+      })
+    }
     _ ->
       io.println(
-        "usage: executable_file_name <path>\noptions:\n    --debug: debug pipeline steps",
+        "usage: executable_file_name <input_file>
+        options:
+            --debug <input_file>: debug pipeline steps
+            --emit <emitter> --output <output_file> <input_file>
+            ",
       )
   }
 }

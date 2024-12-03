@@ -1,3 +1,5 @@
+import desugarers/add_counter_attributes.{add_counter_attributes}
+import desugarers/add_exercise_labels.{add_exercise_labels}
 import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
@@ -36,7 +38,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(__)(\\w|[\\*\\(\\[{])")
+      let assert Ok(re) = regex.from_string("(^|\\s)(__)(\\w|[\\*\\(\\[{“])")
       re
     },
     1,
@@ -45,7 +47,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\*\\)\\]}])(__)($|\\s)")
+      let assert Ok(re) = regex.from_string("(\\w|[\\*\\)\\]}”~])(__)($|\\s)")
       re
     },
     1,
@@ -54,7 +56,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_central_quote_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(_\\|)(\\w|[_\\*\\(\\[{])")
+      let assert Ok(re) =
+        regex.from_string("(^|\\s)(_\\|)(\\w|[_\\*\\(\\[{“])")
       re
     },
     1,
@@ -63,7 +66,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_central_quote_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[_\\*\\)\\]}])(\\|_)($|\\s)")
+      let assert Ok(re) =
+        regex.from_string("(\\w|[_\\*\\)\\]}”~])(\\|_)($|\\s)")
       re
     },
     1,
@@ -138,7 +142,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   [
     unwrap_tags(["WriterlyBlurb"]),
     unwrap_tags(["WriterlyBlankLine"]),
-    convert_int_attributes_to_float([#("Book", "carnita"), #("", "goobmor")]),
+    convert_int_attributes_to_float([#("", "line"), #("", "padding_left")]),
     // ************************
     // $$ *********************
     // ************************
@@ -279,5 +283,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
     counter_desugarer(),
     counter_handles_desugarer(),
+    add_exercise_labels(),
+    add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
   ]
 }
