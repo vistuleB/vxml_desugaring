@@ -1,11 +1,11 @@
 import argv
-import codepoints
 import gleam/io
 import gleam/result
 import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugaringError, get_root,
 }
+import leptos_emitter
 import pipeline.{pipeline_constructor}
 import pipeline_debug.{pipeline_introspection_lines2string}
 import vxml_parser.{type VXML}
@@ -39,29 +39,48 @@ pub fn desugar(
   }
 }
 
-pub fn main() {
-  // codepoints.tests()
+fn assemble_and_desugar(path: String, on_success: fn(VXML) -> Nil) {
   let assert Ok(assembled) = assemble_blamed_lines(path)
+  let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
+  let vxmls = writerlys_to_vxmls(writerlys)
+  case desugar(vxmls, pipeline_constructor()) {
+    Ok(desugared) -> on_success(desugared)
+    Error(err) -> io.println("there was a desugaring error: " <> ins(err))
+  }
+}
 
+pub fn main() {
   let args = argv.load().arguments
   case args {
-    [] -> {
-      let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
-      let vxmls = writerlys_to_vxmls(writerlys)
-      case desugar(vxmls, pipeline_constructor()) {
-        Ok(desugared) ->
-          vxml_parser.debug_print_vxml("(add attribute desugarer)", desugared)
-        Error(err) -> io.println("there was a desugaring error: " <> ins(err))
-      }
+    [path] -> {
+      assemble_and_desugar(path, fn(desugared) {
+        vxml_parser.debug_print_vxml("", desugared)
+      })
     }
-    [command] ->
-      case command {
-        "debug" -> {
-          pipeline_introspection_lines2string(assembled, pipeline_constructor())
-          |> io.print()
+    [path, "--debug"] -> {
+      let assert Ok(assembled) = assemble_blamed_lines(path)
+      pipeline_introspection_lines2string(assembled, pipeline_constructor())
+      |> io.print()
+    }
+    [path, "--emit", emitter, "--output", output_folder] -> {
+      assemble_and_desugar(path, fn(desugared) {
+        case emitter {
+          "leptos" -> {
+            //let emitted = leptos_emitter.leptos_emitter([desugared])
+            io.debug(output_folder)
+            leptos_emitter.write_splitted(desugared, output_folder)
+          }
+          _ -> io.println_error("Emitter " <> emitter <> " is not supported")
         }
-        _ -> io.println("commands available: debug")
-      }
-    _ -> io.println("commands available: debug")
+      })
+    }
+    _ ->
+      io.println(
+        "usage: executable_file_name <input_file>
+        options:
+            <input_file> --debug : debug pipeline steps
+            <input_file> --emit <emitter> --output <output_file>
+            ",
+      )
   }
 }

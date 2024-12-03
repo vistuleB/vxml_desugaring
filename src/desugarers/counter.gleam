@@ -5,12 +5,11 @@ import gleam/regex
 import gleam/result
 import gleam/string
 import infrastructure.{
-  type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
+}
 import roman
 import vxml_parser.{
-  type Blame, type BlamedAttribute, type BlamedContent, type VXML,
+  type Blame, type BlamedAttribute, type BlamedContent, type VXML, Blame,
   BlamedAttribute, BlamedContent, T, V,
 }
 
@@ -79,9 +78,9 @@ fn get_counters_from_attributes(
     [first, ..rest] -> {
       let att = case first.key {
         "counter" ->
-          option.Some(CounterInstance(ArabicCounter, first.value, "1"))
+          option.Some(CounterInstance(ArabicCounter, first.value, "0"))
         "roman_counter" ->
-          option.Some(CounterInstance(RomanCounter, first.value, "i"))
+          option.Some(CounterInstance(RomanCounter, first.value, "."))
         _ -> option.None
       }
 
@@ -103,47 +102,83 @@ fn get_counters_from_attributes(
   }
 }
 
-fn mutate(counter_type: CounterType, value: String, mutate_by: Int) -> String {
+fn mutate(
+  blame: Blame,
+  counter_type: CounterType,
+  value: String,
+  mutate_by: Int,
+) -> Result(String, DesugaringError) {
   case counter_type {
     ArabicCounter -> {
       let assert Ok(int_val) = int.parse(value)
-      string.inspect(int_val + mutate_by)
+      case int_val + mutate_by < 0 {
+        True ->
+          Error(DesugaringError(
+            blame,
+            "Counter can't be decremented to less than 0",
+          ))
+        False -> Ok(string.inspect(int_val + mutate_by))
+      }
     }
     RomanCounter -> {
-      let assert option.Some(romans) = roman.string_to_roman(value)
-      romans
-      |> roman.roman_to_int()
-      |> int.add(mutate_by)
-      |> roman.int_to_roman()
-      |> option.unwrap([])
-      |> roman.roman_to_string()
+      let int_value = case value {
+        "." ->
+          value
+          |> roman.string_to_roman()
+          |> option.unwrap([])
+          |> roman.roman_to_int()
+        _ -> 0
+      }
+      case int_value + mutate_by < 0 {
+        True ->
+          Error(DesugaringError(
+            blame,
+            "Counter can't be decremented to less than 0",
+          ))
+        False ->
+          int_value
+          |> int.add(mutate_by)
+          |> roman.int_to_roman()
+          |> option.unwrap([])
+          |> roman.roman_to_string()
+          |> Ok()
+      }
     }
   }
 }
 
 fn update_counter(
+  blame: Blame,
   counters: List(CounterInstance),
   counter_name: String,
   mutation: String,
-) -> List(CounterInstance) {
-  list.map(counters, fn(x) {
+) -> Result(List(CounterInstance), DesugaringError) {
+  list.try_map(counters, fn(x) {
     case x.name == counter_name {
       True -> {
         case mutation {
-          "++" ->
-            CounterInstance(
-              ..x,
-              current_value: mutate(x.counter_type, x.current_value, 1),
-            )
-          "--" ->
-            CounterInstance(
-              ..x,
-              current_value: mutate(x.counter_type, x.current_value, -1),
-            )
-          _ -> x
+          "++" -> {
+            use new_value <- result.try(mutate(
+              blame,
+              x.counter_type,
+              x.current_value,
+              1,
+            ))
+            Ok(CounterInstance(..x, current_value: new_value))
+          }
+          "--" -> {
+            use new_value <- result.try(mutate(
+              blame,
+              x.counter_type,
+              x.current_value,
+              -1,
+            ))
+            Ok(CounterInstance(..x, current_value: new_value))
+          }
+          _ -> Ok(x)
         }
       }
-      False -> x
+      False -> Ok(x)
     }
   })
 }
@@ -190,7 +225,12 @@ fn handle_matches(
       {
         Ok(_) -> {
           // update counter
-          let counters = update_counter(counters, counter_name, mutation)
+          use counters <- result.try(update_counter(
+            blame,
+            counters,
+            counter_name,
+            mutation,
+          ))
           let assert Ok(updated_instance) =
             list.find(counters, fn(x: CounterInstance) {
               x.name == counter_name
@@ -305,7 +345,7 @@ fn transform_children_recursive(
     [] -> Ok(#([], counters, handles))
     [first, ..rest] -> {
       use #(updated_first, updated_counters, updated_handles) <- result.try(
-        counter_transform(first, counters, handles),
+        counter_transform(first, counters, handles, False),
       )
       // next children will not have counters that were added by nested children ( because of take_existing_counter)
       // handles will have them
@@ -317,10 +357,25 @@ fn transform_children_recursive(
   }
 }
 
+fn convert_handles_to_attributes(
+  handles: List(HandleInstance),
+) -> List(BlamedAttribute) {
+  let blame = Blame("", 0, [])
+
+  list.map(handles, fn(handle) {
+    BlamedAttribute(
+      blame: blame,
+      key: "handle_" <> handle.name,
+      value: handle.value,
+    )
+  })
+}
+
 fn counter_transform(
   vxml: VXML,
   counters: List(CounterInstance),
   handles: List(HandleInstance),
+  is_root: Bool,
 ) -> Result(
   #(VXML, List(CounterInstance), List(HandleInstance)),
   DesugaringError,
@@ -338,11 +393,28 @@ fn counter_transform(
           handles,
         ),
       )
-      Ok(#(
-        V(b, t, attributes, updated_children),
-        take_existing_counters(counters, updated_counters),
-        updated_handles,
-      ))
+
+      case is_root {
+        True -> {
+          let handles_as_attributs =
+            convert_handles_to_attributes(updated_handles)
+          let updated_root = V(b, t, attributes, updated_children)
+          let new_root =
+            V(b, "GrandWrapper", handles_as_attributs, [updated_root])
+          Ok(#(
+            new_root,
+            take_existing_counters(counters, updated_counters),
+            updated_handles,
+          ))
+        }
+        False -> {
+          Ok(#(
+            V(b, t, attributes, updated_children),
+            take_existing_counters(counters, updated_counters),
+            updated_handles,
+          ))
+        }
+      }
     }
     T(b, contents) -> {
       use #(updated_contents, updated_counters, updated_handles) <- result.try(
@@ -353,102 +425,9 @@ fn counter_transform(
   }
 }
 
-// *************************
-// handle values replacement
-// *************************
-fn handle_handle_matches(
-  blame: Blame,
-  matches: List(regex.Match),
-  splits: List(String),
-  handles: List(HandleInstance),
-) -> Result(String, DesugaringError) {
-  case matches {
-    [] -> {
-      Ok(string.join(splits, ""))
-    }
-    [first, ..rest] -> {
-      let regex.Match(_, sub_matches) = first
-
-      let assert [_, handle_name] = sub_matches
-      let assert option.Some(handle_name) = handle_name
-      case list.find(handles, fn(x) { x.name == handle_name }) {
-        Error(_) ->
-          Error(DesugaringError(
-            blame,
-            "Handle " <> handle_name <> " was not assigned",
-          ))
-        Ok(handle) -> {
-          let assert [first_split, _, _, ..rest_splits] = splits
-          use rest_content <- result.try(handle_handle_matches(
-            blame,
-            rest,
-            rest_splits,
-            handles,
-          ))
-          Ok(first_split <> handle.value <> rest_content)
-        }
-      }
-    }
-  }
-}
-
-fn print_handle(
-  blamed_line: BlamedContent,
-  handles: List(HandleInstance),
-) -> Result(String, DesugaringError) {
-  let assert Ok(re) = regex.from_string("(>>)(\\w+)")
-
-  let matches = regex.scan(re, blamed_line.content)
-  let splits = regex.split(re, blamed_line.content)
-  handle_handle_matches(blamed_line.blame, matches, splits, handles)
-}
-
-fn print_handle_for_contents(
-  contents: List(BlamedContent),
-  handles: List(HandleInstance),
-) -> Result(List(BlamedContent), DesugaringError) {
-  case contents {
-    [] -> Ok([])
-    [first, ..rest] -> {
-      use updated_line <- result.try(print_handle(first, handles))
-      use updated_rest <- result.try(print_handle_for_contents(rest, handles))
-
-      Ok([BlamedContent(first.blame, updated_line), ..updated_rest])
-    }
-  }
-}
-
-fn handles_transform(
-  vxml: VXML,
-  handles: List(HandleInstance),
-) -> Result(VXML, DesugaringError) {
-  case vxml {
-    T(b, contents) -> {
-      use update_contents <- result.try(print_handle_for_contents(
-        contents,
-        handles,
-      ))
-      Ok(T(b, update_contents))
-    }
-    _ -> {
-      Ok(vxml)
-    }
-  }
-}
-
-fn handle_transform_factory(
-  handles: List(HandleInstance),
-) -> NodeToNodeTransform {
-  handles_transform(_, handles)
-}
-
-fn handle_desugarer_factory(handles: List(HandleInstance)) {
-  infra.node_to_node_desugarer_factory(handle_transform_factory(handles))
-}
-
 pub fn counter_desugarer() -> Pipe {
   #(DesugarerDescription("Counter", option.None, "..."), fn(vxml) {
-    use #(vxml, _, handles) <- result.try(counter_transform(vxml, [], []))
-    handle_desugarer_factory(handles)(vxml)
+    use #(vxml, _, _) <- result.try(counter_transform(vxml, [], [], True))
+    Ok(vxml)
   })
 }
