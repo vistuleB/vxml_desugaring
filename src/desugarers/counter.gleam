@@ -5,9 +5,8 @@ import gleam/regex
 import gleam/result
 import gleam/string
 import infrastructure.{
-  type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
+}
 import roman
 import vxml_parser.{
   type Blame, type BlamedAttribute, type BlamedContent, type VXML, Blame,
