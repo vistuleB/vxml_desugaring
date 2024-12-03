@@ -49,7 +49,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     {
       let assert Ok(re) =
         regex.from_string(
-          "(\\w|[~\\.\\?\\!\\*\\)\\]}”~]|^)(__)(\\w|[\\*\\(\\[{“]|$)",
+          "(\\w|[~\\.\\?\\!\\*\\)\\]}”~]|^)(__)(\\w|[~\\*\\(\\[{“]|$)",
         )
       re
     },
