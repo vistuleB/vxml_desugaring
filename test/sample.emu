@@ -1,25 +1,13 @@
-|> Sectionn
-
-    Apply the definition
-    
-    $$
-    fg = (u \ra f(u)g(u))
-    $$
-    
-    of function multiplication
-    in order to show that
-
-    $$
-    (fg)h = f(gh)
-    $$
-
-    for all functions $f, g, h : \rr \ra \rr$,
-    or, namely, to show that
-
-    __($f$ times $g$) times $h$__
-
-    equals
-
-    __$f$ times ($g$ times $h$)__
-
-    for all functions $f, g, h : \rr \ra \rr$.
+|> Book
+    |> Chapter
+        |> Note
+        |> Note
+        |> Note
+        |> Solution
+            |> Note
+                handle leprechaun
+                handle davies
+            |> Note
+            |> Note
+    |> Note
+        handle zorro

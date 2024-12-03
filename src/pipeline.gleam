@@ -1,6 +1,9 @@
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
 import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
+import desugarers/add_title_counters_and_titles_with_handle_assignments.{
+  add_title_counters_and_titles_with_handle_assignments,
+}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
 }
@@ -156,10 +159,18 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // AddTitleCounters *******
     // ************************
-    add_title_counters_and_titles([
-      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*"),
-      #("Exercises", "ExerciseCounter", "Exercise", "*Exercise ", ".*"),
-      #("Solution", "NotesCounter", "Note", "_Note ", "._"),
+    add_title_counters_and_titles_with_handle_assignments([
+      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*", "*Example.*"),
+      #("Chapter", "NoteCounter", "Note", "_Note ", "._", "_Note._"),
+      #(
+        "Exercises",
+        "ExerciseCounter",
+        "Exercise",
+        "*Exercise ",
+        ".*",
+        "*Exercise.*",
+      ),
+      #("Solution", "SolutionNoteCounter", "Note", "_Note ", "._", "_Note._"),
     ]),
     // ************************
     // VerticalChunk **********
