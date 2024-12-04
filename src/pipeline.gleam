@@ -3,13 +3,17 @@ import desugarers/add_exercise_labels.{add_exercise_labels}
 import desugarers/add_spacer_divs_after.{add_spacer_divs_after}
 import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
 import desugarers/add_spacer_divs_between.{add_spacer_divs_between}
-import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
+import desugarers/add_title_counters_and_titles_with_handle_assignments.{
+  add_title_counters_and_titles_with_handle_assignments,
+}
+import desugarers/concatenate_text_nodes.{concatenate_text_nodes}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
 }
 import desugarers/counter.{counter_desugarer}
 import desugarers/counter_handles.{counter_handles_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
+import desugarers/free_children.{free_children}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/remove_empty_lines.{remove_empty_lines}
@@ -41,7 +45,20 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(__)(\\w|[\\*\\(\\[{“])")
+      let assert Ok(re) =
+        regex.from_string("(\\s)(__)(\\w|[“‘~\\*\\(\\[{]|$)")
+      re
+    },
+    1,
+    3,
+  )
+
+  let opening_or_closing_double_underscore_indexed_regex = #(
+    {
+      let assert Ok(re) =
+        regex.from_string(
+          "(\\w|[”’~\\.\\?\\!\\*\\)\\]}]|^)(__)(\\w|[“‘~\\*\\(\\[{]|$)",
+        )
       re
     },
     1,
@@ -50,7 +67,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_double_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\*\\)\\]}”~])(__)($|\\s)")
+      let assert Ok(re) =
+        regex.from_string("(\\w|[”’~\\.\\?\\!\\*\\)\\]}]|^)(__)(\\s)")
       re
     },
     1,
@@ -60,7 +78,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_central_quote_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(^|\\s)(_\\|)(\\w|[_\\*\\(\\[{“])")
+        regex.from_string("(\\s|^)(_\\|)(\\w|[“‘_~\\.\\?\\!\\*\\(\\[{]|$)")
       re
     },
     1,
@@ -70,7 +88,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let closing_central_quote_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[_\\*\\)\\]}”~])(\\|_)($|\\s)")
+        regex.from_string("(\\w|[”’_~\\.\\?\\!\\*\\)\\]}]|^)(\\|_)(\\s|$)")
       re
     },
     1,
@@ -79,7 +97,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_single_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(_)(\\w|[\\*\\(\\[{])")
+      let assert Ok(re) =
+        regex.from_string("(\\s)(_)(\\w|[“‘~\\*\\(\\[{]|$)")
       re
     },
     1,
@@ -88,7 +107,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_or_closing_single_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\(\\[{])(_)(\\w|[\\)\\]}])")
+      let assert Ok(re) =
+        regex.from_string(
+          "(\\w|[”’~\\.\\?\\!\\(\\[{]|^)(_)(\\w|[“‘~\\.\\?\\!\\)\\]}]|$)",
+        )
       re
     },
     1,
@@ -98,7 +120,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_or_closing_single_underscore_indexed_regex_with_asterisks = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[\\.\\*\\(\\[{])(_)(\\w|[\\*\\)\\]}])")
+        regex.from_string(
+          "(\\w|[”’~\\.\\?\\!\\*\\(\\[{]|^)(_)(\\w|[“‘~\\.\\?\\!\\*\\)\\]}]|$)",
+        )
       re
     },
     1,
@@ -107,7 +131,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_single_underscore_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\.\\*\\(\\[{])(_)(\\s|$)")
+      let assert Ok(re) =
+        regex.from_string("(\\w|[”’~\\.\\?\\!\\*\\(\\[{]|^)(_)(\\s)")
       re
     },
     1,
@@ -116,7 +141,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let opening_single_asterisk_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(^|\\s)(\\*)(\\w|[_\\(\\[{])")
+      let assert Ok(re) =
+        regex.from_string("(\\s)(\\*)(\\w|[“‘_~\\(\\[{]|$)")
       re
     },
     1,
@@ -126,7 +152,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
   let opening_or_closing_single_asterisk_indexed_regex = #(
     {
       let assert Ok(re) =
-        regex.from_string("(\\w|[\\._\\(\\[{])(\\*)(\\w|[_\\)\\]}])")
+        regex.from_string(
+          "(\\w|[”’~\\._\\(\\[{]|^)(\\*)(\\w|[“‘_~\\.\\?\\!\\)\\]}]|$)",
+        )
       re
     },
     1,
@@ -135,7 +163,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   let closing_single_asterisk_indexed_regex = #(
     {
-      let assert Ok(re) = regex.from_string("(\\w|[\\._\\(\\[{])(\\*)(\\s|$)")
+      let assert Ok(re) =
+        regex.from_string("(\\w|[”’~\\._\\(\\[{]|^)(\\*)(\\s)")
       re
     },
     1,
@@ -144,7 +173,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   [
     unwrap_tags(["WriterlyBlurb"]),
-    unwrap_tags(["WriterlyBlankLine"]),
     convert_int_attributes_to_float([#("", "line"), #("", "padding_left")]),
     // ************************
     // $$ *********************
@@ -158,10 +186,18 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // AddTitleCounters *******
     // ************************
-    add_title_counters_and_titles([
-      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*"),
-      #("Exercises", "ExerciseCounter", "Exercise", "*Exercise ", ".*"),
-      #("Solution", "NotesCounter", "Note", "_Note ", "._"),
+    add_title_counters_and_titles_with_handle_assignments([
+      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*", "*Example.*"),
+      #("Chapter", "NoteCounter", "Note", "_Note ", "._", "_Note._"),
+      #(
+        "Exercises",
+        "ExerciseCounter",
+        "Exercise",
+        "*Exercise ",
+        ".*",
+        "*Exercise.*",
+      ),
+      #("Solution", "SolutionNoteCounter", "Note", "_Note ", "._", "_Note._"),
     ]),
     // ************************
     // VerticalChunk **********
@@ -187,6 +223,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
     split_by_indexed_regexes(
       #(
         [
+          #(
+            opening_or_closing_double_underscore_indexed_regex,
+            "OpeningOrClosingDoubleUnderscore",
+          ),
           #(opening_double_underscore_indexed_regex, "OpeningDoubleUnderscore"),
           #(closing_double_underscore_indexed_regex, "ClosingDoubleUnderscore"),
         ],
@@ -194,8 +234,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ),
     ),
     pair_bookends(#(
-      ["OpeningDoubleUnderscore"],
-      ["ClosingDoubleUnderscore"],
+      ["OpeningDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
+      ["ClosingDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
       "CentralItalicDisplay",
     )),
     fold_tags_into_text(
@@ -230,28 +270,37 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ),
     remove_empty_lines(),
     // ************************
+    // break CenterDisplay &
+    // CentralItalicDisplay out
+    // of VerticalChunk
+    // ************************
+    free_children([
+      #("CenterDisplay", "VerticalChunk"),
+      #("CentralItalicDisplay", "VerticalChunk"),
+    ]),
+    // ************************
     // _ & * ******************
     // ************************
     split_by_indexed_regexes(
       #(
         [
-          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(
             opening_or_closing_single_underscore_indexed_regex,
             "OpeningOrClosingUnderscore",
           ),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
-          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
           #(
             opening_or_closing_single_asterisk_indexed_regex,
             "OpeningOrClosingAsterisk",
           ),
+          #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
           #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
-          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(
             opening_or_closing_single_underscore_indexed_regex_with_asterisks,
             "OpeningOrClosingUnderscore",
           ),
+          #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
           #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
         ],
         ["MathBlock", "Math"],
@@ -302,5 +351,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ]),
     add_spacer_divs_after([#("Example", "spacer-x")]),
     add_spacer_divs_between([#(#("Section", "Section"), "spacer-10")]),
+    concatenate_text_nodes(),
   ]
 }
