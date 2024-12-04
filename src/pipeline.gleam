@@ -1,12 +1,16 @@
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
-import desugarers/add_title_counters_and_titles.{add_title_counters_and_titles}
+import desugarers/add_title_counters_and_titles_with_handle_assignments.{
+  add_title_counters_and_titles_with_handle_assignments,
+}
+import desugarers/concatenate_text_nodes.{concatenate_text_nodes}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
 }
 import desugarers/counter.{counter_desugarer}
 import desugarers/counter_handles.{counter_handles_desugarer}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
+import desugarers/free_children.{free_children}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/remove_empty_lines.{remove_empty_lines}
@@ -166,7 +170,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   [
     unwrap_tags(["WriterlyBlurb"]),
-    unwrap_tags(["WriterlyBlankLine"]),
     convert_int_attributes_to_float([#("", "line"), #("", "padding_left")]),
     // ************************
     // $$ *********************
@@ -180,10 +183,18 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // AddTitleCounters *******
     // ************************
-    add_title_counters_and_titles([
-      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*"),
-      #("Exercises", "ExerciseCounter", "Exercise", "*Exercise ", ".*"),
-      #("Solution", "NotesCounter", "Note", "_Note ", "._"),
+    add_title_counters_and_titles_with_handle_assignments([
+      #("Chapter", "ExampleCounter", "Example", "*Example ", ".*", "*Example.*"),
+      #("Chapter", "NoteCounter", "Note", "_Note ", "._", "_Note._"),
+      #(
+        "Exercises",
+        "ExerciseCounter",
+        "Exercise",
+        "*Exercise ",
+        ".*",
+        "*Exercise.*",
+      ),
+      #("Solution", "SolutionNoteCounter", "Note", "_Note ", "._", "_Note._"),
     ]),
     // ************************
     // VerticalChunk **********
@@ -256,6 +267,15 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ),
     remove_empty_lines(),
     // ************************
+    // break CenterDisplay &
+    // CentralItalicDisplay out
+    // of VerticalChunk
+    // ************************
+    free_children([
+      #("CenterDisplay", "VerticalChunk"),
+      #("CentralItalicDisplay", "VerticalChunk"),
+    ]),
+    // ************************
     // _ & * ******************
     // ************************
     split_by_indexed_regexes(
@@ -314,5 +334,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     counter_handles_desugarer(),
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
+    concatenate_text_nodes(),
   ]
 }
