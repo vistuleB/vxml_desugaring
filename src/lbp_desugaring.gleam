@@ -62,13 +62,24 @@ pub fn main() {
       pipeline_introspection_lines2string(assembled, pipeline_constructor())
       |> io.print()
     }
-    [path, "--emit", emitter, "--output", output_folder] -> {
+    [path, "--emit-book", emitter, "--output", output_folder] -> {
       assemble_and_desugar(path, fn(desugared) {
         case emitter {
           "leptos" -> {
-            //let emitted = leptos_emitter.leptos_emitter([desugared])
-            io.debug(output_folder)
             leptos_emitter.write_splitted(desugared, output_folder)
+          }
+          _ -> io.println_error("Emitter " <> emitter <> " is not supported")
+        }
+      })
+    }
+    [path, "--emit", emitter, "--output", output_file] -> {
+      assemble_and_desugar(path, fn(desugared) {
+        case emitter {
+          "leptos" -> {
+            leptos_emitter.write_file(
+              leptos_emitter.leptos_emitter([desugared]),
+              output_file,
+            )
           }
           _ -> io.println_error("Emitter " <> emitter <> " is not supported")
         }
