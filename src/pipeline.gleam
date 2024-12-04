@@ -1,8 +1,6 @@
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
-import desugarers/add_spacer_divs_after.{add_spacer_divs_after}
 import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
-import desugarers/add_spacer_divs_between.{add_spacer_divs_between}
 import desugarers/add_title_counters_and_titles_with_handle_assignments.{
   add_title_counters_and_titles_with_handle_assignments,
 }
@@ -16,6 +14,7 @@ import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/free_children.{free_children}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
+import desugarers/reinsert_math_dolar.{reinsert_math_dolar}
 import desugarers/remove_empty_lines.{remove_empty_lines}
 import desugarers/remove_vertical_chunks_with_no_text_child.{
   remove_vertical_chunks_with_no_text_child,
@@ -338,19 +337,23 @@ pub fn pipeline_constructor() -> List(Pipe) {
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
     // uncomment this, remove rest:
-    // add_spacer_divs_before([
-    //   #("Exercises", "spacer"),
-    //   #("Example", "spacer"),
-    //   #("Note", "spacer"),
-    //   #("Section", "spacer"),
-    // ]),
     add_spacer_divs_before([
-      #("Exercises", "spacer-1"),
-      #("Example", "spacer-1"),
-      #("Note", "spacer-1"),
+      #("Exercises", "spacer"),
+      #("Example", "spacer"),
+      #("Note", "spacer"),
+      #("Section", "spacer"),
+      #("VerticalChunk", "spacer"),
+      #("MathBlock", "spacer"),
+      #("Image", "spacer"),
     ]),
-    add_spacer_divs_after([#("Example", "spacer-x")]),
-    add_spacer_divs_between([#(#("Section", "Section"), "spacer-10")]),
+    // add_spacer_divs_before([
+    //   #("Exercises", "spacer-1"),
+    //   #("Example", "spacer-1"),
+    //   #("Note", "spacer-1"),
+    // ]),
+    // add_spacer_divs_after([#("Example", "spacer-x")]),
+    // add_spacer_divs_between([#(#("Section", "Section"), "spacer-10")]),
     concatenate_text_nodes(),
+    reinsert_math_dolar(),
   ]
 }
