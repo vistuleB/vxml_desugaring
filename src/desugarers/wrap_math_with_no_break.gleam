@@ -24,7 +24,10 @@ fn split_next_line_nodes_by_space(rest: List(VXML)) -> Result(List(VXML), Nil) {
                     T(b, [BlamedContent(f.blame, no_break_str)])
 
                   let rest_text_node =
-                    T(b, [BlamedContent(f.blame, rest_of_str), ..rest_lines])
+                    T(b, [
+                      BlamedContent(f.blame, " " <> rest_of_str),
+                      ..rest_lines
+                    ])
 
                   Ok([no_break_text_node, rest_text_node])
                 }
