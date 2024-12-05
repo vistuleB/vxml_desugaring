@@ -5,23 +5,30 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
   DesugarerDescription, DesugaringError,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml_parser.{type VXML, BlamedContent, T, V}
 
-fn check_if_next_is_line_that_starts_with_none_space(
-  rest: List(VXML),
-) -> Result(VXML, String) {
+fn split_next_line_nodes_by_space(rest: List(VXML)) -> Result(List(VXML), Nil) {
   case rest {
-    [] -> Error("No")
+    [] -> Error(Nil)
     [first, ..] -> {
       case first {
-        V(_, _, _, _) -> Error("No")
-        T(_, a) -> {
+        V(_, _, _, _) -> Error(Nil)
+        T(b, a) -> {
           case a {
-            [] -> Error("No")
-            [f, ..] -> {
-              case !{ string.starts_with(f.content, " ") } {
-                False -> Error("No")
-                True -> Ok(first)
+            [] -> Error(Nil)
+            [f, ..rest_lines] -> {
+              let splits_res = f.content |> string.split_once(" ")
+              case splits_res {
+                Ok(#(no_break_str, rest_of_str)) -> {
+                  let no_break_text_node =
+                    T(b, [BlamedContent(f.blame, no_break_str)])
+
+                  let rest_text_node =
+                    T(b, [BlamedContent(f.blame, rest_of_str), ..rest_lines])
+
+                  Ok([no_break_text_node, rest_text_node])
+                }
+                Error(_) -> Ok([first])
               }
             }
           }
@@ -48,11 +55,28 @@ fn wrap_math(children: List(VXML)) -> Result(List(VXML), DesugaringError) {
             }
             True -> {
               use wrapped_rest <- result.try(wrap_math(rest))
-              case check_if_next_is_line_that_starts_with_none_space(rest) {
+              case split_next_line_nodes_by_space(rest) {
                 Error(_) -> Ok([first, ..wrapped_rest])
-                Ok(vxml) -> {
+                Ok(vxmls) -> {
                   let assert [_, ..rest] = wrapped_rest
-                  Ok([V(b, "NoBreak", [], [first, vxml]), ..rest])
+                  case vxmls {
+                    [one] -> Ok([V(b, "NoBreak", [], [first]), one, ..rest])
+                    [no_break_node, rest_nodes] -> {
+                      let assert T(_, [no_break_text]) = no_break_node
+
+                      case no_break_text.content {
+                        "" ->
+                          Ok([V(b, "NoBreak", [], [first]), rest_nodes, ..rest])
+                        _ ->
+                          Ok([
+                            V(b, "NoBreak", [], [first, no_break_node]),
+                            rest_nodes,
+                            ..rest
+                          ])
+                      }
+                    }
+                    _ -> Ok([])
+                  }
                 }
               }
             }
