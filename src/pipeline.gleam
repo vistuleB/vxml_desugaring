@@ -269,6 +269,22 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ),
     remove_empty_lines(),
     // ************************
+    // Add spacers
+    // ************************
+    add_spacer_divs_before([
+      #("Exercises", "spacer"),
+      #("Example", "spacer"),
+      #("Note", "spacer"),
+      #("Section", "spacer"),
+      #("VerticalChunk", "spacer"),
+      #("MathBlock", "spacer"),
+      #("Image", "spacer"),
+      #("Table", "spacer"),
+      #("table", "spacer"),
+      #("Grid", "spacer"),
+      #("Solution", "spacer"),
+    ]),
+    // ************************
     // break CenterDisplay &
     // CentralItalicDisplay out
     // of VerticalChunk
@@ -277,6 +293,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("CenterDisplay", "VerticalChunk"),
       #("CentralItalicDisplay", "VerticalChunk"),
     ]),
+    remove_vertical_chunks_with_no_text_child(),
     // ************************
     // _ & * ******************
     // ************************
@@ -337,15 +354,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
     // uncomment this, remove rest:
-    add_spacer_divs_before([
-      #("Exercises", "spacer"),
-      #("Example", "spacer"),
-      #("Note", "spacer"),
-      #("Section", "spacer"),
-      #("VerticalChunk", "spacer"),
-      #("MathBlock", "spacer"),
-      #("Image", "spacer"),
-    ]),
+
     // add_spacer_divs_before([
     //   #("Exercises", "spacer-1"),
     //   #("Example", "spacer-1"),
