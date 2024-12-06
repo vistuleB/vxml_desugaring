@@ -1,3 +1,4 @@
+import desugarers/absorb_next_sibling_while.{absorb_next_sibling_while}
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
 import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
@@ -353,16 +354,11 @@ pub fn pipeline_constructor() -> List(Pipe) {
     counter_handles_desugarer(),
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
-    // uncomment this, remove rest:
-
-    // add_spacer_divs_before([
-    //   #("Exercises", "spacer-1"),
-    //   #("Example", "spacer-1"),
-    //   #("Note", "spacer-1"),
-    // ]),
-    // add_spacer_divs_after([#("Example", "spacer-x")]),
-    // add_spacer_divs_between([#(#("Section", "Section"), "spacer-10")]),
     concatenate_text_nodes(),
     reinsert_math_dolar(),
+    absorb_next_sibling_while([
+      #("VerticalChunk", "ImageRight"),
+      #("VerticalChunk", "ImageLeft"),
+    ]),
   ]
 }

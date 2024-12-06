@@ -4,7 +4,14 @@
     ten thousand
     |> Inline 
     $$
+
+    paragraph a
     
-    to
+    paragraph b
     
-    __ten ten thousand thousand__
+    |> ImageRight
+    |> ImageLeft
+    $$a^2 + b^2$$
+    
+    |> ImageRight
+    |> ImageLeft
