@@ -203,7 +203,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     wrap_elements_by_blankline([
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
-      "Section", "Exercise", "List", "Grid",
+      "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight",
     ]),
     split_vertical_chunks(["MathBlock"]),
     remove_vertical_chunks_with_no_text_child(),
