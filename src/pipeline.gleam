@@ -4,6 +4,7 @@ import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
 import desugarers/add_title_counters_and_titles_with_handle_assignments.{
   add_title_counters_and_titles_with_handle_assignments,
 }
+import desugarers/change_attribute_value.{change_attribute_value}
 import desugarers/concatenate_text_nodes.{concatenate_text_nodes}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
@@ -359,5 +360,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // add_spacer_divs_between([#(#("Section", "Section"), "spacer-10")]),
     concatenate_text_nodes(),
     reinsert_math_dolar(),
+    change_attribute_value([#("src", "/()")]),
   ]
 }
