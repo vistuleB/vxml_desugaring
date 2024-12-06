@@ -211,11 +211,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // $ **********************
     // ************************
     split_by_indexed_regexes(
-      #([#(single_dollar_indexed_regex, "SingleDollar")], []),
+      #([#(single_dollar_indexed_regex, "SingleDollar")], ["MathBlock"]),
     ),
     pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
     fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
-    remove_empty_lines(),
     // ************************
     // __ *********************
     // ************************
@@ -243,7 +242,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         #("ClosingDoubleUnderscore", "__"),
       ]),
     ),
-    remove_empty_lines(),
     // ************************
     // _| |_ ******************
     // ************************
@@ -267,7 +265,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         #("ClosingCenterQuote", "|_"),
       ]),
     ),
-    remove_empty_lines(),
     // ************************
     // Add spacers
     // ************************
@@ -342,7 +339,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         #("ClosingAsterisk", "*"),
       ]),
     ),
-    remove_empty_lines(),
     // ************************
     // misc *******************
     // ************************
