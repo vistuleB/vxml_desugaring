@@ -2,9 +2,11 @@ import desugarers/absorb_next_sibling_while.{absorb_next_sibling_while}
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
 import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
+import desugarers/add_spacer_divs_between.{add_spacer_divs_between}
 import desugarers/add_title_counters_and_titles_with_handle_assignments.{
   add_title_counters_and_titles_with_handle_assignments,
 }
+import desugarers/change_attribute_value.{change_attribute_value}
 import desugarers/concatenate_text_nodes.{concatenate_text_nodes}
 import desugarers/convert_int_attributes_to_float.{
   convert_int_attributes_to_float,
@@ -204,7 +206,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     wrap_elements_by_blankline([
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
-      "Section", "Exercise", "List", "Grid",
+      "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight",
     ]),
     split_vertical_chunks(["MathBlock"]),
     remove_vertical_chunks_with_no_text_child(),
@@ -212,11 +214,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // $ **********************
     // ************************
     split_by_indexed_regexes(
-      #([#(single_dollar_indexed_regex, "SingleDollar")], []),
+      #([#(single_dollar_indexed_regex, "SingleDollar")], ["MathBlock"]),
     ),
     pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
     fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
-    remove_empty_lines(),
     // ************************
     // __ *********************
     // ************************
@@ -244,7 +245,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         #("ClosingDoubleUnderscore", "__"),
       ]),
     ),
-    remove_empty_lines(),
     // ************************
     // _| |_ ******************
     // ************************
@@ -268,23 +268,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         #("ClosingCenterQuote", "|_"),
       ]),
     ),
-    remove_empty_lines(),
-    // ************************
-    // Add spacers
-    // ************************
-    add_spacer_divs_before([
-      #("Exercises", "spacer"),
-      #("Example", "spacer"),
-      #("Note", "spacer"),
-      #("Section", "spacer"),
-      #("VerticalChunk", "spacer"),
-      #("MathBlock", "spacer"),
-      #("Image", "spacer"),
-      #("Table", "spacer"),
-      #("table", "spacer"),
-      #("Grid", "spacer"),
-      #("Solution", "spacer"),
-    ]),
     // ************************
     // break CenterDisplay &
     // CentralItalicDisplay out
@@ -343,7 +326,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
         #("ClosingAsterisk", "*"),
       ]),
     ),
-    remove_empty_lines(),
     // ************************
     // misc *******************
     // ************************
@@ -359,6 +341,37 @@ pub fn pipeline_constructor() -> List(Pipe) {
     absorb_next_sibling_while([
       #("VerticalChunk", "ImageRight"),
       #("VerticalChunk", "ImageLeft"),
+      #("MathBlock", "ImageRight"),
+      #("MathBlock", "ImageLeft"),
+      #("CentralItalicDisplay", "ImageRight"),
+      #("CentralItalicDisplay", "ImageLeft"),
+      #("CentralDisplay", "ImageRight"),
+      #("CentralDisplay", "ImageLeft"),
+    ]),
+    change_attribute_value([#("src", "/()")]),
+    // ************************
+    // Add spacers
+    // ************************
+    add_spacer_divs_between([
+      #(#("MathBlock", "VerticalChunk"), "spacer"),
+      #(#("Example", "VerticalChunk"), "spacer"),
+      #(#("Image", "VerticalChunk"), "spacer"),
+      #(#("Table", "VerticalChunk"), "spacer"),
+      #(#("table", "VerticalChunk"), "spacer"),
+      #(#("Grid", "VerticalChunk"), "spacer"),
+      #(#("CentralItalicDisplay", "VerticalChunk"), "spacer"),
+    ]),
+    add_spacer_divs_before([
+      #("Exercises", "spacer"),
+      #("Example", "spacer"),
+      #("Note", "spacer"),
+      #("Section", "spacer"),
+      #("MathBlock", "spacer"),
+      #("Image", "spacer"),
+      #("Table", "spacer"),
+      #("table", "spacer"),
+      #("Grid", "spacer"),
+      #("Solution", "spacer"),
     ]),
   ]
 }
