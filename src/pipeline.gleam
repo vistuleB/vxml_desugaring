@@ -273,7 +273,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("Example", "spacer"),
       #("Note", "spacer"),
       #("Section", "spacer"),
-      #("VerticalChunk", "spacer"),
       #("MathBlock", "spacer"),
       #("Image", "spacer"),
       #("Table", "spacer"),
