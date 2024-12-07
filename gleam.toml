@@ -20,7 +20,7 @@ gleescript = ">= 1.4.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
-leptos_emitter = { path = "../leptos_emitter" }
-vxml_parser = { path = "../vxml_parser" }
-writerly_parser = { path = "../writerly_parser" }
+leptos_emitter = { path = "../../vistuleB/leptos_emitter" }
+vxml_parser = { path = "../../vistuleB/vxml_parser" }
+writerly_parser = { path = "../../vistuleB/writerly_parser" }
 
