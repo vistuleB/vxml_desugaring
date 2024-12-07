@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
@@ -19,7 +18,6 @@ fn update_attributes(
   case attributes {
     [] -> attributes
     [first, ..rest] -> {
-      //let #(attribute_key, replacement) = first
       case
         extra
         |> list.find(fn(x) {

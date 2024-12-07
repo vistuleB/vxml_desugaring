@@ -40,12 +40,19 @@ pub fn desugar(
 }
 
 fn assemble_and_desugar(path: String, on_success: fn(VXML) -> Nil) {
-  let assert Ok(assembled) = assemble_blamed_lines(path)
-  let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
-  let vxmls = writerlys_to_vxmls(writerlys)
-  case desugar(vxmls, pipeline_constructor()) {
-    Ok(desugared) -> on_success(desugared)
-    Error(err) -> io.println("there was a desugaring error: " <> ins(err))
+  io.println(path)
+  case assemble_blamed_lines(path) {
+    Error(e) -> {
+      io.println("get error from assemble_blamed_lines: " <> ins(e))
+    }
+    Ok(assembled) -> {
+      let assert Ok(writerlys) = parse_blamed_lines(assembled, False)
+      let vxmls = writerlys_to_vxmls(writerlys)
+      case desugar(vxmls, pipeline_constructor()) {
+        Ok(desugared) -> on_success(desugared)
+        Error(err) -> io.println("there was a desugaring error: " <> ins(err))
+      }
+    }
   }
 }
 
