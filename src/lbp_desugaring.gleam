@@ -71,25 +71,12 @@ pub fn main() {
     }
     [path, "--emit-book", emitter, "--output", output_folder] -> {
       assemble_and_desugar(path, fn(desugared) {
-        case emitter {
-          "leptos" -> {
-            leptos_emitter.write_splitted(desugared, output_folder)
-          }
-          _ -> io.println_error("Emitter " <> emitter <> " is not supported")
-        }
+        leptos_emitter.write_splitted(desugared, output_folder, emitter)
       })
     }
     [path, "--emit", emitter, "--output", output_file] -> {
       assemble_and_desugar(path, fn(desugared) {
-        case emitter {
-          "leptos" -> {
-            leptos_emitter.write_file(
-              leptos_emitter.leptos_emitter([desugared]),
-              output_file,
-            )
-          }
-          _ -> io.println_error("Emitter " <> emitter <> " is not supported")
-        }
+        leptos_emitter.write_splitted(desugared, output_file, emitter)
       })
     }
     _ ->
@@ -98,6 +85,7 @@ pub fn main() {
         options:
             <input_file> --debug : debug pipeline steps
             <input_file> --emit <emitter> --output <output_file>
+            <input_file> --emit-book <emitter> --output <output_file>
             ",
       )
   }
