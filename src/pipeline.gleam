@@ -1,4 +1,5 @@
 import desugarers/absorb_next_sibling_while.{absorb_next_sibling_while}
+import desugarers/add_attributes.{add_attributes}
 import desugarers/add_counter_attributes.{add_counter_attributes}
 import desugarers/add_exercise_labels.{add_exercise_labels}
 import desugarers/add_spacer_divs_before.{add_spacer_divs_before}
@@ -377,5 +378,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("Grid", "spacer"),
       #("Solution", "spacer"),
     ]),
+    // Self closed tags
+    add_attributes(#(["col"], [#("is_self_closed", "true")])),
   ]
 }

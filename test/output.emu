@@ -1,19 +1,9 @@
-view! {
-    <Sectionn>
-        <VerticalChunk>
-            r#"For "#<Math>r#"t < 0"#</Math>r#" motion will be
-            down and to the left, at least initially—it
-            is hard to forecast off the top of one's
-            head (unless you have a sudden flash of insight)
-            what will happen for larger negative
-            values of "#<NoBreak>
-                <Math>r#"t"#</Math>
-                r#". should not be in no break"#
-            </NoBreak>r#"HOWEVER.
-            new
-            It is possible to say much more."#r#"To go deeper, we introduce eight new
-            particles, comprising the original colors but
-            in white and black flavors:"#
-        </VerticalChunk>
-    </Sectionn>
-}
+const Article = () => {
+    return <> <Book><MathBlock>{`$$
+ten thousand
+ten thousand`}<Inline></Inline>{`$$`}</MathBlock><div class="spacer"></div><VerticalChunk><col />{`paragraph a`}</VerticalChunk><VerticalChunk indent={true}>{`paragraph b`}<ImageRight></ImageRight><ImageLeft></ImageLeft></VerticalChunk><div class="spacer"></div><MathBlock>{`$$
+a^2 + b^2
+$$`}<ImageRight></ImageRight><ImageLeft></ImageLeft></MathBlock></Book> </>
+  }
+  export default Article
+  

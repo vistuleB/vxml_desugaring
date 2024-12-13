@@ -5,6 +5,8 @@
     |> Inline 
     $$
 
+    |> col
+
     paragraph a
     
     paragraph b

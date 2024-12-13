@@ -76,7 +76,7 @@ pub fn main() {
     }
     [path, "--emit", emitter, "--output", output_file] -> {
       assemble_and_desugar(path, fn(desugared) {
-        leptos_emitter.write_splitted(desugared, output_file, emitter)
+        leptos_emitter.write_file(desugared, output_file, emitter)
       })
     }
     _ ->
