@@ -1,5 +1,6 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/result
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
@@ -82,30 +83,54 @@ fn lists_of_non_blank_line_chunks(
   |> prepend_if_not_none(first_chunk, _)
 }
 
-pub fn chunk_constructor(blame_and_children: #(Blame, List(VXML))) -> VXML {
+pub fn chunk_constructor(
+  blame_and_children: #(Blame, List(VXML)),
+  tag: String,
+  tag_wrapper_pairs: List(#(String, String)),
+) -> VXML {
   let #(blame, children) = blame_and_children
-  V(blame, "VerticalChunk", [], children)
+
+  let #(_, wrapper) =
+    tag_wrapper_pairs
+    |> list.find(fn(pair) {
+      let #(tag_, _) = pair
+      tag_ == tag
+    })
+    |> result.unwrap(#("", "VerticalChunk"))
+
+  V(blame, wrapper, [], children)
 }
 
-fn split_vertical_chunks_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn split_vertical_chunks_transform(
+  vxml: VXML,
+  tag_wrapper_pairs: List(#(String, String)),
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
       let new_children =
         lists_of_non_blank_line_chunks(children)
-        |> list.map(chunk_constructor)
+        |> list.map(chunk_constructor(_, tag, tag_wrapper_pairs))
       Ok(V(blame, tag, attrs, new_children))
     }
   }
 }
 
 type Extras =
-  List(String)
+  #(
+    List(
+      String,
+      // List to exclude from vertical chunking
+    ),
+    List(#(String, String)),
+    // List of tag and wrapper pairs
+  )
 
 fn transform_factory(extras: Extras) -> infra.NodeToNodeFancyTransform {
+  let #(excluded_tags, wrappers) = extras
   infra.prevent_node_to_node_transform_inside(
-    split_vertical_chunks_transform(_),
-    extras,
+    split_vertical_chunks_transform(_, wrappers),
+    excluded_tags,
   )
 }
 

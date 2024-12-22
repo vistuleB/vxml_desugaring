@@ -213,7 +213,9 @@ pub fn pipeline_constructor() -> List(Pipe) {
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
       "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight",
     ]),
-    split_vertical_chunks(["MathBlock"]),
+    split_vertical_chunks(
+      #(["MathBlock"], [#("List", "Item"), #("Grid", "Item")]),
+    ),
     remove_vertical_chunks_with_no_text_child(),
     // ************************
     // $ **********************
@@ -336,7 +338,6 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     wrap_math_with_no_break(),
     insert_indent(),
-    wrap_element_children_desugarer(#(["List", "Grid"], "Item")),
     counter_desugarer(),
     counter_handles_desugarer(),
     add_exercise_labels(),
@@ -365,6 +366,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #(#("table", "VerticalChunk"), "spacer"),
       #(#("Grid", "VerticalChunk"), "spacer"),
       #(#("CentralItalicDisplay", "VerticalChunk"), "spacer"),
+      #(#("List", "VerticalChunk"), "spacer"),
     ]),
     add_spacer_divs_before([
       #("Exercises", "spacer"),
@@ -377,6 +379,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("table", "spacer"),
       #("Grid", "spacer"),
       #("Solution", "spacer"),
+      #("List", "spacer"),
     ]),
     // Self closed tags
     add_attributes(#(["col"], [#("is_self_closed", "true")])),
