@@ -211,7 +211,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     wrap_elements_by_blankline([
       "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
-      "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight",
+      "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight", "Pause",
     ]),
     split_vertical_chunks(
       #(["MathBlock"], [#("List", "Item"), #("Grid", "Item")]),
