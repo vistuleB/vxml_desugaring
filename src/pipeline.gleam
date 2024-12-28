@@ -342,6 +342,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     counter_handles_desugarer(),
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
+    add_counter_attributes([#("Exercise", "Exercises", "exercise_number", 0)]),
     concatenate_text_nodes(),
     reinsert_math_dolar(),
     absorb_next_sibling_while([
@@ -380,6 +381,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("Grid", "spacer"),
       #("Solution", "spacer"),
       #("List", "spacer"),
+      #("Pause", "spacer"),
     ]),
     // Self closed tags
     add_attributes(#(["col"], [#("is_self_closed", "true")])),
