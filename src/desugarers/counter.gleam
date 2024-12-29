@@ -1,7 +1,8 @@
+import blamedlines.{type Blame, Blame}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option}
-import gleam/regex
+import gleam/regexp
 import gleam/result
 import gleam/string
 import infrastructure.{
@@ -9,8 +10,8 @@ import infrastructure.{
 }
 import roman
 import vxml_parser.{
-  type Blame, type BlamedAttribute, type BlamedContent, type VXML, Blame,
-  BlamedAttribute, BlamedContent, T, V,
+  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
+  BlamedContent, T, V,
 }
 
 pub type CounterType {
@@ -200,7 +201,7 @@ fn assign_to_handle(
 
 fn handle_matches(
   blame: Blame,
-  matches: List(regex.Match),
+  matches: List(regexp.Match),
   splits: List(String),
   counters: List(CounterInstance),
   handles: List(HandleInstance),
@@ -213,7 +214,7 @@ fn handle_matches(
       Ok(#(string.join(splits, ""), counters, handles))
     }
     [first, ..rest] -> {
-      let regex.Match(_, sub_matches) = first
+      let regexp.Match(_, sub_matches) = first
 
       let assert [_, handle_name, _, insert_or_not, mutation, counter_name] =
         sub_matches
@@ -293,10 +294,10 @@ fn counter_regex(
   // splits:
   //   ["more ", "", "", "", "::", "::", "MyCounter", " more"]
   let assert Ok(re) =
-    regex.from_string("((\\w+)(<<))?(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
+    regexp.from_string("((\\w+)(<<))?(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
 
-  let matches = regex.scan(re, content)
-  let splits = regex.split(re, content)
+  let matches = regexp.scan(re, content)
+  let splits = regexp.split(re, content)
   handle_matches(blame, matches, splits, counters, handles)
 }
 

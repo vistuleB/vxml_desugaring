@@ -1,84 +1,14 @@
-import gleam/int
+import blamedlines.{type Blame, type BlamedLine, Blame, BlamedLine}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import infrastructure.{type DesugaringError, type Pipe, DesugaringError}
-import vxml_parser.{
-  type Blame, type BlamedLine, type VXML, Blame, BlamedLine, T, V,
-}
-import writerly_parser.{type Writerly}
+import vxml_parser.{type VXML, T, V}
+import writerly_parser
 
 const ins = string.inspect
 
 const path = "test/sample.emu"
-
-// ************************
-// Writerly to blamed lines
-// ************************
-fn map_with_special_first(
-  z: List(a),
-  fn1: fn(a) -> b,
-  fn2: fn(a) -> b,
-) -> List(b) {
-  case z {
-    [] -> []
-    [first, ..rest] -> fn1(first) |> list.prepend(list.map(rest, fn2), _)
-  }
-}
-
-fn writerly_to_blamed_lines(t: Writerly, indent: Int) -> List(BlamedLine) {
-  case t {
-    writerly_parser.BlankLine(blame) -> [BlamedLine(blame, indent, "")]
-    writerly_parser.Blurb(_, blamed_contents) -> {
-      map_with_special_first(
-        blamed_contents,
-        fn(first) { BlamedLine(first.blame, indent, first.content) },
-        fn(after_first) {
-          BlamedLine(after_first.blame, indent, after_first.content)
-        },
-      )
-    }
-    writerly_parser.CodeBlock(blame, annotation, blamed_contents) -> {
-      [BlamedLine(blame, indent, "```" <> annotation)]
-      |> list.append(
-        list.map(blamed_contents, fn(blamed_content) {
-          BlamedLine(blame, indent, blamed_content.content)
-        }),
-      )
-      |> list.append([BlamedLine(blame, indent, "```")])
-    }
-
-    writerly_parser.Tag(blame, tag_name, blamed_attributes, children) -> {
-      let tag_blamed_line = BlamedLine(blame, indent, "|> " <> tag_name)
-      let attributes_blamed_lines =
-        list.map(blamed_attributes, fn(t) {
-          BlamedLine(t.blame, indent + 4, t.key <> " " <> t.value)
-        })
-      let children_blamed_lines =
-        writerlys_to_blamed_lines_internal(children, indent + 4)
-
-      [tag_blamed_line, ..attributes_blamed_lines]
-      |> list.append(children_blamed_lines)
-    }
-  }
-}
-
-fn writerlys_to_blamed_lines_internal(
-  writerlys: List(Writerly),
-  indent: Int,
-) -> List(BlamedLine) {
-  case writerlys {
-    [] -> []
-    [first, ..rest] -> {
-      writerly_to_blamed_lines(first, indent)
-      |> list.append(writerlys_to_blamed_lines_internal(rest, indent))
-    }
-  }
-}
-
-fn writerlys_to_blamed_lines(writerlys: List(Writerly)) -> List(BlamedLine) {
-  writerlys_to_blamed_lines_internal(writerlys, 0)
-}
 
 // ************************
 // VXML to blamed lines
@@ -119,69 +49,6 @@ fn vxmls_to_blamed_lines_internal(
       vxml_to_blamed_lines(first, indent)
       |> list.append(vxmls_to_blamed_lines_internal(rest, indent))
     }
-  }
-}
-
-fn vxmls_to_blamed_lines(vxmls: List(VXML)) -> List(BlamedLine) {
-  vxmls_to_blamed_lines_internal(vxmls, 0)
-}
-
-// ************************
-// pretty printing
-// ************************
-
-type MarginAnnotator =
-  fn(Blame) -> String
-
-fn header(longest_blame_length: Int) -> String {
-  string.repeat("-", longest_blame_length + 20)
-  <> "\n"
-  <> "| Blame"
-  <> string.repeat(" ", longest_blame_length + 4 - string.length("| Blame"))
-  <> "##Content\n"
-  <> string.repeat("-", longest_blame_length + 20)
-  <> "\n"
-}
-
-fn footer(longest_blame_length: Int) -> String {
-  string.repeat("-", longest_blame_length + 20) <> "\n"
-}
-
-fn get_longest_blame_length(lines: List(BlamedLine)) -> Int {
-  case lines {
-    [] -> 0
-    [first, ..rest] -> {
-      int.max(
-        string.length(blame_to_string(first.blame)),
-        get_longest_blame_length(rest),
-      )
-    }
-  }
-}
-
-fn blame_to_string(blame: Blame) -> String {
-  blame.filename <> ":" <> ins(blame.line_no)
-}
-
-fn pretty_print(lines: List(BlamedLine), annotator: MarginAnnotator) -> String {
-  lines
-  |> list.map(fn(x) {
-    let BlamedLine(blame, indent, suffix) = x
-    annotator(blame) <> string.repeat(" ", indent) <> suffix
-  })
-  |> string.join("\n")
-  <> "\n"
-}
-
-fn pipeline_docs_annotator(max_length: Int) -> MarginAnnotator {
-  fn(blame: Blame) {
-    "| "
-    <> blame_to_string(blame)
-    <> string.repeat(
-      " ",
-      max_length + 4 - string.length("| " <> blame_to_string(blame)),
-    )
-    <> "##"
   }
 }
 
@@ -244,8 +111,8 @@ pub fn debug_pipeline(
             Some(extra) ->
               " "
               <> ins(extra)
-              |> string.drop_left(1)
-              |> string.drop_right(1)
+              |> string.drop_start(1)
+              |> string.drop_end(1)
               |> string.replace("\\\"", "\"")
             None -> ""
           },
@@ -268,12 +135,10 @@ pub fn debug_pipeline(
       case desugarer_fun(vxml) {
         Ok(vxml) -> {
           pipe_info
-          <> header(max_length)
-          <> vxml_to_blamed_lines(vxml, 0)
-          |> pretty_print(pipeline_docs_annotator(max_length))
-          <> footer(max_length)
+          <> vxml_parser.debug_vxml_to_string("", vxml)
           <> debug_pipeline(vxml, rest, step + 1, max_length)
         }
+
         Error(error) -> {
           pipe_info
           <> "FAILED ON: "
@@ -300,19 +165,13 @@ pub fn pipeline_introspection_lines2string(
 ) -> String {
   let assert Ok(writerlys) = writerly_parser.parse_blamed_lines(input, False)
 
-  let lines = writerlys_to_blamed_lines(writerlys)
-  let max_length = get_longest_blame_length(lines)
-
   let output =
     "\n"
     <> star_header()
     <> star_line("SOURCE")
     <> star_footer()
     <> "👇\n"
-    <> header(max_length)
-    <> lines
-    |> pretty_print(pipeline_docs_annotator(max_length))
-    <> footer(max_length)
+    <> writerly_parser.debug_writerlys_to_string("", writerlys)
 
   let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
 
@@ -323,15 +182,12 @@ pub fn pipeline_introspection_lines2string(
     <> star_line("PARSE WLY -> VXML")
     <> star_footer()
     <> "👇\n"
-    <> header(max_length)
-    <> vxmls_to_blamed_lines(vxmls)
-    |> pretty_print(pipeline_docs_annotator(max_length))
-    <> footer(max_length)
+    <> vxml_parser.debug_vxmls_to_string("", vxmls)
 
   let output =
     output
     <> case get_root(vxmls) {
-      Ok(root) -> debug_pipeline(root, pipeline, 1, max_length)
+      Ok(root) -> debug_pipeline(root, pipeline, 1, 40)
       Error(e) -> e.message
     }
 

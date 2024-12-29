@@ -1,6 +1,7 @@
+import blamedlines.{type Blame}
 import gleam/list
 import gleam/option
-import gleam/regex
+import gleam/regexp
 import gleam/result
 import gleam/string
 import infrastructure.{
@@ -8,8 +9,8 @@ import infrastructure.{
   DesugarerDescription, DesugaringError, StatefulDownAndUpNodeToNodeTransform,
 } as infra
 import vxml_parser.{
-  type Blame, type BlamedAttribute, type BlamedContent, type VXML, Blame,
-  BlamedAttribute, BlamedContent, T, V,
+  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
+  BlamedContent, T, V,
 }
 
 type HandleInstance {
@@ -18,7 +19,7 @@ type HandleInstance {
 
 fn handle_handle_matches(
   blame: Blame,
-  matches: List(regex.Match),
+  matches: List(regexp.Match),
   splits: List(String),
   handles: List(HandleInstance),
 ) -> Result(String, DesugaringError) {
@@ -27,7 +28,7 @@ fn handle_handle_matches(
       Ok(string.join(splits, ""))
     }
     [first, ..rest] -> {
-      let regex.Match(_, sub_matches) = first
+      let regexp.Match(_, sub_matches) = first
 
       let assert [_, handle_name] = sub_matches
       let assert option.Some(handle_name) = handle_name
@@ -56,10 +57,10 @@ fn print_handle(
   blamed_line: BlamedContent,
   handles: List(HandleInstance),
 ) -> Result(String, DesugaringError) {
-  let assert Ok(re) = regex.from_string("(>>)(\\w+)")
+  let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
 
-  let matches = regex.scan(re, blamed_line.content)
-  let splits = regex.split(re, blamed_line.content)
+  let matches = regexp.scan(re, blamed_line.content)
+  let splits = regexp.split(re, blamed_line.content)
   handle_handle_matches(blamed_line.blame, matches, splits, handles)
 }
 
@@ -84,7 +85,7 @@ fn get_handles_from_root_attributes(
   let handles =
     list.filter(attributes, fn(att) { string.starts_with(att.key, "handle_") })
     |> list.map(fn(att) {
-      HandleInstance(string.drop_left(att.key, 7), att.value)
+      HandleInstance(string.drop_start(att.key, 7), att.value)
     })
 
   let filtered_attributes =

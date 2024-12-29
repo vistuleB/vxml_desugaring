@@ -1,14 +1,12 @@
+import blamedlines.{type Blame, Blame}
 import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
-import gleam/regex.{type Regex}
+import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string
-import vxml_parser.{
-  type Blame, type BlamedContent, type VXML, Blame, BlamedContent, T, V,
-}
+import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
 
@@ -51,24 +49,24 @@ pub type EitherOr(a, b) {
 
 pub const regex_prefix_to_make_unescaped = "(?<!\\\\)((?:\\\\\\\\)*)"
 
-pub fn unescaped_suffix_regex(suffix: String) -> regex.Regex {
+pub fn unescaped_suffix_regex(suffix: String) -> Regexp {
   let assert Ok(re) =
-    regex.compile(
+    regexp.compile(
       regex_prefix_to_make_unescaped <> suffix,
-      regex.Options(False, False),
+      regexp.Options(False, False),
     )
   re
 }
 
 pub type RegexWithIndexedGroup =
-  #(Regex, Int, Int)
+  #(Regexp, Int, Int)
 
 pub fn string_split_into_list_either_content_or_blame_indexed_group_version(
   content: String,
   indexed_regex: RegexWithIndexedGroup,
 ) -> List(String) {
   let #(re, dropped_group, num_groups) = indexed_regex
-  let splits = regex.split(re, content)
+  let splits = regexp.split(re, content)
   let num_matches: Int = { list.length(splits) - 1 } / { num_groups + 1 }
   let assert True =
     { num_matches * { num_groups + 1 } } + 1 == list.length(splits)
@@ -102,10 +100,10 @@ fn line_split_into_list_either_content_or_blame_indexed_group_version(
 
 fn line_split_into_list_either_content_or_blame(
   line: BlamedContent,
-  re: Regex,
+  re: Regexp,
 ) -> List(EitherOr(BlamedContent, Blame)) {
   let BlamedContent(blame, content) = line
-  regex.split(with: re, content: content)
+  regexp.split(with: re, content: content)
   |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
   |> list.intersperse(Or(blame))
 }
@@ -317,7 +315,7 @@ pub fn replace_regexes_by_tags_param_transform_indexed_group_version(
 
 fn replace_regex_by_tag_in_lines(
   lines: List(BlamedContent),
-  re: Regex,
+  re: Regexp,
   tag: String,
 ) -> List(VXML) {
   lines
@@ -335,7 +333,7 @@ fn replace_regex_by_tag_in_lines(
 
 fn replace_regex_by_tag_in_node(
   node: VXML,
-  re: Regex,
+  re: Regexp,
   tag: String,
 ) -> List(VXML) {
   case node {
@@ -348,7 +346,7 @@ fn replace_regex_by_tag_in_node(
 
 fn replace_regex_by_tag_in_nodes(
   nodes: List(VXML),
-  re: Regex,
+  re: Regexp,
   tag: String,
 ) -> List(VXML) {
   nodes
@@ -358,7 +356,7 @@ fn replace_regex_by_tag_in_nodes(
 
 fn replace_regexes_by_tags_in_nodes(
   nodes: List(VXML),
-  rules: List(#(Regex, String)),
+  rules: List(#(Regexp, String)),
 ) -> List(VXML) {
   case rules {
     [] -> nodes
@@ -370,7 +368,7 @@ fn replace_regexes_by_tags_in_nodes(
 
 pub fn replace_regex_by_tag_param_transform(
   node: VXML,
-  re: Regex,
+  re: Regexp,
   tag: String,
 ) -> Result(List(VXML), DesugaringError) {
   Ok(replace_regex_by_tag_in_node(node, re, tag))
@@ -378,7 +376,7 @@ pub fn replace_regex_by_tag_param_transform(
 
 pub fn replace_regexes_by_tags_param_transform(
   node: VXML,
-  rules: List(#(Regex, String)),
+  rules: List(#(Regexp, String)),
 ) -> Result(List(VXML), DesugaringError) {
   Ok(replace_regexes_by_tags_in_nodes([node], rules))
 }
