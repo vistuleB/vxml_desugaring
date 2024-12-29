@@ -91,12 +91,7 @@ fn star_line(content: String) -> String {
   <> "\n"
 }
 
-pub fn debug_pipeline(
-  vxml: VXML,
-  pipeline: List(Pipe),
-  step: Int,
-  max_length: Int,
-) -> String {
+pub fn debug_pipeline(vxml: VXML, pipeline: List(Pipe), step: Int) -> String {
   case pipeline {
     [] -> ""
     [#(desugarer_desc, desugarer_fun), ..rest] -> {
@@ -136,7 +131,7 @@ pub fn debug_pipeline(
         Ok(vxml) -> {
           pipe_info
           <> vxml_parser.debug_vxml_to_string("", vxml)
-          <> debug_pipeline(vxml, rest, step + 1, max_length)
+          <> debug_pipeline(vxml, rest, step + 1)
         }
 
         Error(error) -> {
@@ -187,7 +182,7 @@ pub fn pipeline_introspection_lines2string(
   let output =
     output
     <> case get_root(vxmls) {
-      Ok(root) -> debug_pipeline(root, pipeline, 1, 40)
+      Ok(root) -> debug_pipeline(root, pipeline, 1)
       Error(e) -> e.message
     }
 
