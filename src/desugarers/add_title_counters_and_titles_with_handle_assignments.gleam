@@ -1,3 +1,4 @@
+import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
@@ -6,8 +7,7 @@ import infrastructure.{
   DesugaringError,
 } as infra
 import vxml_parser.{
-  type Blame, type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T,
-  V,
+  type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V,
 }
 
 const ins = string.inspect

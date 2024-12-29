@@ -1,3 +1,4 @@
+import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
@@ -8,9 +9,7 @@ import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
 } as infra
-import vxml_parser.{
-  type Blame, type BlamedAttribute, type VXML, BlamedAttribute, T, V,
-}
+import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn produce_attributes_and_increase_counters_for_tag(
   blame: Blame,

@@ -1,3 +1,4 @@
+import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -5,7 +6,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
-import vxml_parser.{type Blame, type VXML, T, V}
+import vxml_parser.{type VXML, T, V}
 
 fn is_blank_line(vxml: VXML) -> #(Bool, Blame) {
   case vxml {

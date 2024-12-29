@@ -1,3 +1,4 @@
+import blamedlines.{type Blame}
 import gleam/int
 import gleam/list
 import gleam/option
@@ -7,9 +8,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
   DesugarerDescription, DesugaringError,
 } as infra
-import vxml_parser.{
-  type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
-}
+import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type IgnoreWhen {
   IgnoreWhen(before: List(String), after: List(String))
@@ -44,13 +43,13 @@ fn look_for_closing_delimiter(
   delimiter: Delimiter,
 ) -> #(Bool, String, String) {
   let cropped = str |> string.crop(delimiter.symbol)
-  let before_del_str = cropped |> string.length() |> string.drop_right(str, _)
-  let rest_of_str = cropped |> string.drop_left(1)
+  let before_del_str = cropped |> string.length() |> string.drop_end(str, _)
+  let rest_of_str = cropped |> string.drop_start(1)
 
   case cropped == str || is_escaped(delimiter, before_del_str, rest_of_str) {
     True -> #(False, "", str)
     False -> {
-      let content = cropped |> string.length() |> string.drop_right(str, _)
+      let content = cropped |> string.length() |> string.drop_end(str, _)
       #(True, content, rest_of_str)
     }
   }
@@ -92,9 +91,9 @@ fn look_for_opening_delimiter(
         True, False ->
           look_for_opening_delimiter(str, [found_del, ..dels_to_ignore])
         _, _ -> {
-          let rest_of_str = cropped |> string.drop_left(1)
+          let rest_of_str = cropped |> string.drop_start(1)
           let before_del_str =
-            cropped |> string.length() |> string.drop_right(str, _)
+            cropped |> string.length() |> string.drop_end(str, _)
 
           case is_escaped(found_del, before_del_str, rest_of_str) {
             True -> {

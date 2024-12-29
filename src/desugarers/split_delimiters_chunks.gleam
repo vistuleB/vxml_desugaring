@@ -1,3 +1,4 @@
+import blamedlines.{type Blame}
 import gleam/int
 import gleam/list
 import gleam/option
@@ -7,9 +8,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
   DesugarerDescription, DesugaringError,
 } as infra
-import vxml_parser.{
-  type Blame, type BlamedContent, type VXML, BlamedContent, T, V,
-}
+import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type Splits {
   DelimiterSurrounding(list: PositionedBlamedContents)
@@ -41,11 +40,11 @@ fn look_for_closing_delimiter(
         }
         False -> {
           let before_closing_del =
-            cropped |> string.length() |> string.drop_right(first.content, _)
+            cropped |> string.length() |> string.drop_end(first.content, _)
           let after_closing_del =
             close_delimiter
             |> string.length()
-            |> string.drop_left(cropped, _)
+            |> string.drop_start(cropped, _)
 
           #(
             True,
@@ -96,7 +95,7 @@ fn split_blamed_contents_by_delimiter(
           let before_delimiter_split =
             BlamedContent(
               blame: first.blame,
-              content: string.drop_right(first.content, cropped_str_length),
+              content: string.drop_end(first.content, cropped_str_length),
             )
 
           let current_line_delimiter_content =
@@ -104,7 +103,7 @@ fn split_blamed_contents_by_delimiter(
               blame: first.blame,
               content: open_delimiter
                 |> string.length()
-                |> string.drop_left(cropped, _),
+                |> string.drop_start(cropped, _),
             )
 
           let #(found, delimiter_content, rest) =

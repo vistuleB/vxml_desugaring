@@ -1,5 +1,5 @@
 import gleam/option.{Some}
-import gleam/regex.{type Regex}
+import gleam/regexp.{type Regexp}
 import gleam/string
 import infrastructure.{
   type Desugarer, type NodeToNodesFancyTransform, type Pipe,
@@ -9,7 +9,7 @@ import infrastructure.{
 const ins = string.inspect
 
 type Extras =
-  #(List(#(Regex, String)), List(String))
+  #(List(#(Regexp, String)), List(String))
 
 fn transform_factory(extras: Extras) -> NodeToNodesFancyTransform {
   let #(regexes_and_tags, forbidden_parents) = extras

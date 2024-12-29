@@ -1,3 +1,4 @@
+import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{None, Some}
@@ -7,7 +8,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
-import vxml_parser.{type Blame, type VXML, BlamedAttribute, V}
+import vxml_parser.{type VXML, BlamedAttribute, V}
 
 type Param =
   Dict(#(String, String), String)
