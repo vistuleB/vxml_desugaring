@@ -1,5 +1,6 @@
 import blamedlines.{type Blame, Blame}
 import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
+import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/pair
@@ -12,18 +13,24 @@ const ins = string.inspect
 
 pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
+  GetRootError(message: String)
 }
 
-pub fn get_root(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
+pub fn on_error_on_ok(res: Result(a, b), f1: fn(b) -> c, f2: fn(a) -> c) -> c {
+  case res {
+    Error(e) -> f1(e)
+    Ok(r) -> f2(r)
+  }
+}
+
+pub fn announce_error(message: String) -> fn(e) -> Nil {
+  fn(error) { io.println(message <> ": " <> ins(error)) }
+}
+
+pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
   case vxmls {
     [root] -> Ok(root)
-    _ ->
-      Error(DesugaringError(
-        blame: Blame("", 0, []),
-        message: "found "
-          <> ins(list.length(vxmls))
-          <> " != 1 root-level nodes in ",
-      ))
+    _ -> Error("found " <> ins(list.length(vxmls)) <> " != 1 top-level nodes")
   }
 }
 
@@ -719,8 +726,19 @@ pub fn node_to_nodes_fancy_desugarer_factory(
   transform: NodeToNodesFancyTransform,
 ) -> Desugarer {
   fn(root: VXML) {
-    fancy_depth_first_node_to_nodes_desugar_one(root, [], [], [], [], transform)
-    |> result.then(get_root)
+    use vxmls <- result.then(fancy_depth_first_node_to_nodes_desugar_one(
+      root,
+      [],
+      [],
+      [],
+      [],
+      transform,
+    ))
+
+    case get_root(vxmls) {
+      Ok(r) -> Ok(r)
+      Error(message) -> Error(GetRootError(message))
+    }
   }
 }
 
@@ -989,8 +1007,15 @@ pub fn node_to_nodes_desugarer_factory(
   transform: NodeToNodesTransform,
 ) -> Desugarer {
   fn(root: VXML) {
-    depth_first_node_to_nodes_desugar_one(root, transform)
-    |> result.then(get_root)
+    use vxmls <- result.then(depth_first_node_to_nodes_desugar_one(
+      root,
+      transform,
+    ))
+
+    case get_root(vxmls) {
+      Ok(r) -> Ok(r)
+      Error(message) -> Error(GetRootError(message))
+    }
   }
 }
 

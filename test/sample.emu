@@ -1,4 +1,15 @@
 |> Book
 
 
-    _*hello* *world*_
+    |> col
+
+    paragraph a
+    
+    paragraph b
+    
+    |> ImageRight
+    |> ImageLeft
+    $$a^2 + b^2$$
+    
+    |> ImageRight
+    |> ImageLeft
