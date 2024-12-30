@@ -1,10 +1,7 @@
-import blamedlines.{type BlamedLine, BlamedLine}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
-import infrastructure.{type Pipe, get_root}
-import vxml_parser.{type VXML}
-import writerly_parser
+import infrastructure as infra
 
 const ins = string.inspect
 
@@ -52,7 +49,7 @@ pub fn star_block(
 }
 
 pub fn desugarer_description_star_block(
-  desugarer_desc: infrastructure.DesugarerDescription,
+  desugarer_desc: infra.DesugarerDescription,
   step: Int,
 ) -> String {
   let desugarer_name_and_extra =

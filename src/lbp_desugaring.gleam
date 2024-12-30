@@ -44,7 +44,7 @@ pub fn desugar(
 }
 
 fn assemble_and_desugar(path: String, debug: Bool, on_success: fn(VXML) -> Nil) {
-  io.println(path)
+  io.print("\nassemble_and_desugar: " <> path <> "\n\n")
 
   use lines <- on_error_on_ok(
     writerly_parser.assemble_blamed_lines(path),
@@ -60,8 +60,7 @@ fn assemble_and_desugar(path: String, debug: Bool, on_success: fn(VXML) -> Nil) 
     False -> Nil
     True ->
       {
-        "\n"
-        <> star_block(False, ["SOURCE"], True)
+        star_block(False, ["SOURCE"], True)
         <> writerly_parser.debug_writerlys_to_string("", writerlys)
       }
       |> io.print
