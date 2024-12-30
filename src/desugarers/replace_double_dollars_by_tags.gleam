@@ -4,9 +4,9 @@ import infrastructure.{
 } as infra
 
 fn transform_factory() -> NodeToNodesTransform {
-  infra.replace_regex_by_tag_param_transform(
+  infra.replace_regex_by_tag_param_transform_indexed_group_version(
     _,
-    infra.unescaped_suffix_regex("\\$\\$"),
+    infra.unescaped_suffix_indexed_regex("\\$\\$"),
     "DoubleDollar",
   )
 }

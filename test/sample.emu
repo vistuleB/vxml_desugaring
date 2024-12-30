@@ -1,19 +1,4 @@
 |> Book
 
-    $$ten thousand
-    ten thousand
-    |> Inline 
-    $$
 
-    |> col
-
-    paragraph a
-    
-    paragraph b
-    
-    |> ImageRight
-    |> ImageLeft
-    $$a^2 + b^2$$
-    
-    |> ImageRight
-    |> ImageLeft
+    _*hello* *world*_
