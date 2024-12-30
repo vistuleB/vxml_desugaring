@@ -1,9 +1,5 @@
 |> Book
 
-    $$ten thousand
-    ten thousand
-    |> Inline 
-    $$
 
     |> col
 

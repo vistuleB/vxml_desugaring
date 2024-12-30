@@ -54,29 +54,55 @@ pub type EitherOr(a, b) {
   Or(b)
 }
 
-pub const regex_prefix_to_make_unescaped = "(?<!\\\\)((?:\\\\\\\\)*)"
+pub type RegexWithIndexedGroup =
+  #(Regexp, Int, Int, String)
 
-pub fn unescaped_suffix_regex(suffix: String) -> Regexp {
-  let assert Ok(re) =
-    regexp.compile(
-      regex_prefix_to_make_unescaped <> suffix,
-      regexp.Options(False, False),
-    )
+const regex_prefix_to_make_unescaped = "(?<!\\\\)((?:\\\\\\\\)*)"
+
+fn assert_ok_regexp_from_string(s: String) -> regexp.Regexp {
+  let assert Ok(re) = regexp.from_string(s)
   re
 }
 
-pub type RegexWithIndexedGroup =
-  #(Regexp, Int, Int)
+fn compile_into_indexed_group(
+  pattern: String,
+  zero_indexed_group: Int,
+  num_groups: Int,
+) -> RegexWithIndexedGroup {
+  let assert True = zero_indexed_group + 1 <= num_groups
+  #(
+    pattern |> assert_ok_regexp_from_string,
+    zero_indexed_group,
+    num_groups,
+    pattern,
+  )
+}
+
+pub fn unescaped_suffix_indexed_regex(suffix: String) -> RegexWithIndexedGroup {
+  { regex_prefix_to_make_unescaped <> "(" <> suffix <> ")" }
+  |> compile_into_indexed_group(1, 2)
+}
+
+pub fn l_m_r_1_3_indexed_regex(
+  left: String,
+  middle: String,
+  right: String,
+) -> RegexWithIndexedGroup {
+  { "(" <> left <> ")(" <> middle <> ")(" <> right <> ")" }
+  |> compile_into_indexed_group(1, 3)
+}
 
 pub fn string_split_into_list_either_content_or_blame_indexed_group_version(
   content: String,
   indexed_regex: RegexWithIndexedGroup,
 ) -> List(String) {
-  let #(re, dropped_group, num_groups) = indexed_regex
+  let #(re, dropped_group, num_groups, pattern) = indexed_regex
   let splits = regexp.split(re, content)
   let num_matches: Int = { list.length(splits) - 1 } / { num_groups + 1 }
-  let assert True =
-    { num_matches * { num_groups + 1 } } + 1 == list.length(splits)
+  case { num_matches * { num_groups + 1 } } + 1 == list.length(splits) {
+    True -> Nil
+    False -> panic as { "pattern split failed: " <> pattern <> "[END]" }
+  }
   list.map_fold(over: splits, from: 0, with: fn(index: Int, split) -> #(
     Int,
     EitherOr(String, Nil),
