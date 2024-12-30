@@ -27,14 +27,6 @@ pub fn announce_error(message: String) -> fn(e) -> Nil {
   fn(error) { io.println(message <> ": " <> ins(error)) }
 }
 
-pub fn on_error(
-  res: Result(a, b),
-  message: String,
-  continue_with: fn(a) -> Nil,
-) -> Nil {
-  on_error_on_ok(res, announce_error(message), continue_with)
-}
-
 pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
   case vxmls {
     [root] -> Ok(root)
@@ -721,28 +713,6 @@ pub fn node_to_nodes_fancy_desugarer_factory(
       Ok(r) -> Ok(r)
       Error(message) -> Error(GetRootError(message))
     }
-    // case
-    //   fancy_depth_first_node_to_nodes_desugar_one(
-    //     root,
-    //     [],
-    //     [],
-    //     [],
-    //     [],
-    //     transform,
-    //   )
-    // {
-    //   Error(e) -> Error(e)
-    //   Ok(vxmls) -> {
-    //     let a: List(VXML) = vxmls
-    //     case get_root(vxmls) {
-    //       Ok(singleton) -> {
-    //         let b: VXML = singleton
-    //         Ok(singleton)
-    //       }
-    //       Error(message) -> Error(GetRootError(message))
-    //     }
-    //   }
-    // }
   }
 }
 
