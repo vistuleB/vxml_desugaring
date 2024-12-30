@@ -1,19 +1,4 @@
 |> Book
 
-    _ten *_world*
-    and*ten_*world_
 
-    _|hi there|_ folks
-    |> Inline 
-    |> col
-
-    $$a^2 + bb^2$$
-    
-    paragraph b $x$
-    
-    |> ImageRight
-    |> ImageLeft
-    $$a^2 + b^2$$
-    
-    |> ImageRight
-    |> ImageLeft
+    _*hello* *world*_

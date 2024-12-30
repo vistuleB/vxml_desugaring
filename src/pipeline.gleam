@@ -56,26 +56,26 @@ pub fn pipeline_constructor() -> List(Pipe) {
 
   // _ _
   let opening_single_underscore_indexed_regex =
-    infra.l_m_r_1_3_indexed_regex("[\\s]|^", "_", "[^\\s_]|$")
+    infra.l_m_r_1_3_indexed_regex("[\\s({\\[]|^", "_", "[^\\s)}\\]_]|$")
 
   let opening_or_closing_single_underscore_indexed_regex_without_asterisks =
-    infra.l_m_r_1_3_indexed_regex("[^\\s\\*_]|^", "_", "[^\\s\\*_]|$")
+    infra.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*_]|^", "_", "[^\\s)}\\]\\*_]|$")
 
   let opening_or_closing_single_underscore_indexed_regex_with_asterisks =
-    infra.l_m_r_1_3_indexed_regex("[^\\s_]|^", "_", "[^\\s_]|$")
+    infra.l_m_r_1_3_indexed_regex("[^\\s({\\[_]|^", "_", "[^\\s)}\\]_]|$")
 
   let closing_single_underscore_indexed_regex =
-    infra.l_m_r_1_3_indexed_regex("[^\\s_]|^", "_", "[\\s]|$")
+    infra.l_m_r_1_3_indexed_regex("[^\\s({\\[_]|^", "_", "[\\s)}\\]]|$")
 
   // * *
   let opening_single_asterisk_indexed_regex =
-    infra.l_m_r_1_3_indexed_regex("[\\s]|^", "\\*", "[^\\s\\*]|$")
+    infra.l_m_r_1_3_indexed_regex("[\\s({\\[]|^", "\\*", "[^\\s)}\\]\\*]|$")
 
   let opening_or_closing_single_asterisk_indexed_regex =
-    infra.l_m_r_1_3_indexed_regex("[^\\s\\*]|^", "\\*", "[^\\s\\*]|$")
+    infra.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*]|^", "\\*", "[^\\s)}\\]\\*]|$")
 
   let closing_single_asterisk_indexed_regex =
-    infra.l_m_r_1_3_indexed_regex("[^\\s\\*]|^", "\\*", "[\\s]|$")
+    infra.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*]|^", "\\*", "[\\s)}\\]]|$")
 
   [
     unwrap_tags(["WriterlyBlurb"]),
