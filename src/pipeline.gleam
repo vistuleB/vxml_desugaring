@@ -19,6 +19,7 @@ import desugarers/free_children.{free_children}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/reinsert_math_dolar.{reinsert_math_dolar}
+import desugarers/remove_empty_chunks.{remove_empty_chunks}
 import desugarers/remove_empty_lines.{remove_empty_lines}
 import desugarers/remove_vertical_chunks_with_no_text_child.{
   remove_vertical_chunks_with_no_text_child,
@@ -235,6 +236,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // misc *******************
     // ************************
+    remove_empty_chunks(),
     wrap_math_with_no_break(),
     insert_indent(),
     counter_desugarer(),
