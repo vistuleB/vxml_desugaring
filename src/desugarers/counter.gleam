@@ -1,7 +1,7 @@
 import blamedlines.{type Blame, Blame}
 import gleam/int
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option
 import gleam/regexp
 import gleam/result
 import gleam/string
@@ -184,19 +184,35 @@ fn update_counter(
   })
 }
 
-fn assign_to_handle(
+fn assign_to_handles(
   blame: Blame,
   handles: List(HandleInstance),
-  handle_name: Option(String),
+  handle_names: option.Option(List(String)),
   value: String,
 ) -> Result(List(HandleInstance), DesugaringError) {
-  case handle_name {
+  case handle_names {
     option.None -> Ok(handles)
-    option.Some(name) -> {
-      use _ <- result.try(check_handle_already_defined(name, handles, blame))
-      Ok(list.flatten([handles, [HandleInstance(name, value)]]))
+    option.Some(handle_names) -> {
+      use _ <- result.try(
+        list.try_each(handle_names, fn(handle_name) {
+          check_handle_already_defined(handle_name, handles, blame)
+        }),
+      )
+      let handles =
+        list.scan(handle_names, handles, fn(acc, handle_name) {
+          list.flatten([acc, [HandleInstance(handle_name, value)]])
+        })
+        |> list.last()
+        |> result.unwrap([])
+
+      Ok(handles)
     }
   }
+}
+
+fn get_all_handles_from_match_content(match_content: String) -> List(String) {
+  let assert [_, ..rest] = string.split(match_content, "<<") |> list.reverse()
+  list.reverse(rest)
 }
 
 fn handle_matches(
@@ -214,12 +230,18 @@ fn handle_matches(
       Ok(#(string.join(splits, ""), counters, handles))
     }
     [first, ..rest] -> {
-      let regexp.Match(_, sub_matches) = first
+      let regexp.Match(content, sub_matches) = first
 
       let assert [_, handle_name, _, insert_or_not, mutation, counter_name] =
         sub_matches
       let assert option.Some(counter_name) = counter_name
       let assert option.Some(mutation) = mutation
+
+      let handle_names = case handle_name {
+        option.None -> option.None
+        option.Some(_) ->
+          option.Some(get_all_handles_from_match_content(content))
+      }
 
       case
         list.find(counters, fn(x: CounterInstance) { x.name == counter_name })
@@ -236,14 +258,13 @@ fn handle_matches(
             list.find(counters, fn(x: CounterInstance) {
               x.name == counter_name
             })
-          // update handle
-          use updated_handles <- result.try(assign_to_handle(
+          // update handles
+          use updated_handles <- result.try(assign_to_handles(
             blame,
             handles,
-            handle_name,
+            handle_names,
             updated_instance.current_value,
           ))
-
           // handle rest of matches
           let assert [first_split, _, _, _, _, _, _, ..rest_splits] = splits
           use #(str, updated_counters, updated_handles) <- result.try(
@@ -282,11 +303,20 @@ fn counter_regex(
   DesugaringError,
 ) {
   // examples
+
   // "more handle<<::::MyCounter more" will result in
   // sub-matches of first match :
   //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("::"), Some   ("MyCounter")]
   // splits:
   //   ["more ", "handle<<", "handle", "<<", "::", "::", "MyCounter", " more"]
+
+  // "more handle1<<handle2<<::::MyCounter more" will result in
+  // content of first match : (only diff between first case) 
+  //    \"handle2<<handle1<<::::Counter\"
+  // sub-matches of first match :
+  //   [Some("handle2<<"), Some("handle2"), Some("<<"), Some("::"), Some("::"), Some   ("MyCounter")]
+  // splits:
+  //   ["more ", "handle2<<", "handle2", "<<", "::", "::", "MyCounter", " more"]
 
   // "more ::::MyCounter more" will result in
   // sub-matches of first match :
@@ -294,10 +324,12 @@ fn counter_regex(
   // splits:
   //   ["more ", "", "", "", "::", "::", "MyCounter", " more"]
   let assert Ok(re) =
-    regexp.from_string("((\\w+)(<<))?(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
+    regexp.from_string("((\\w+)(<<))*(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
 
   let matches = regexp.scan(re, content)
+
   let splits = regexp.split(re, content)
+
   handle_matches(blame, matches, splits, counters, handles)
 }
 

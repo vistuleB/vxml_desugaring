@@ -1,15 +1,10 @@
 |> Book
+    counter Counter
 
+    handle2<<::::Counter
+    handle2<<handle1<<::::Counter
 
-    |> col
+    |> padding
 
-    paragraph a
-    
-    paragraph b
-    
-    |> ImageRight
-    |> ImageLeft
-    $$a^2 + b^2$$
-    
-    |> ImageRight
-    |> ImageLeft
+        this is >>handle1
+        this is >>handle1
