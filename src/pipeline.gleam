@@ -268,7 +268,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #(#("table", "VerticalChunk"), "spacer"),
       #(#("Grid", "VerticalChunk"), "spacer"),
       #(#("CentralItalicDisplay", "VerticalChunk"), "spacer"),
-      #(#("CentralDisplay", "VerticalChunk"), "spacer"),
+      #(#("CenterDisplay", "VerticalChunk"), "spacer"),
       #(#("List", "VerticalChunk"), "spacer"),
     ]),
     add_spacer_divs_before([
@@ -277,7 +277,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("Note", "spacer"),
       #("Section", "spacer"),
       #("MathBlock", "spacer"),
-      #("CenterItalicDisplay", "spacer"),
+      #("CentralItalicDisplay", "spacer"),
       #("CenterDisplay", "spacer"),
       #("Image", "spacer"),
       #("Table", "spacer"),
