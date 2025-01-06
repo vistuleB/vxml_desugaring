@@ -93,6 +93,16 @@ fn assemble_and_desugar(path: String, debug: Bool, on_success: fn(VXML) -> Nil) 
   on_success(desugared)
 }
 
+pub fn emit_book(
+  path path: String,
+  emitter emitter: String,
+  output_folder output_folder: String,
+) {
+  assemble_and_desugar(path, False, fn(desugared) {
+    leptos_emitter.write_splitted(desugared, output_folder, emitter)
+  })
+}
+
 pub fn main() {
   let args = argv.load().arguments
   case args {
@@ -105,9 +115,7 @@ pub fn main() {
       assemble_and_desugar(path, True, fn(_) { Nil })
     }
     [path, "--emit-book", emitter, "--output", output_folder] -> {
-      assemble_and_desugar(path, False, fn(desugared) {
-        leptos_emitter.write_splitted(desugared, output_folder, emitter)
-      })
+      emit_book(path, emitter, output_folder)
     }
     [path, "--emit", emitter, "--output", output_file] -> {
       assemble_and_desugar(path, False, fn(desugared) {
