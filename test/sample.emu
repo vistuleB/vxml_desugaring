@@ -2,9 +2,21 @@
     counter Counter
 
     handle2<<::::Counter
-    handle2<<handle1<<::::Counter
+    handle3<<handle1<<::::Counter
 
     |> padding
 
         this is >>handle1
         this is >>handle1
+    $$
+    a^2 + b^2
+    $$
+    What will happen to ImageRight?
+    |> span
+
+        blue
+    continued
+
+    not continued
+
+    |> ImageRight

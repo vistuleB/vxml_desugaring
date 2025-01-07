@@ -45,6 +45,13 @@ pub fn get_duplicate(list: List(a)) -> Option(a) {
   }
 }
 
+pub fn is_tag(vxml: VXML, tag: String) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    V(_, t, _, _) -> t == tag
+  }
+}
+
 //**************************************************************
 //* either-or functions
 //**************************************************************
@@ -53,6 +60,147 @@ pub type EitherOr(a, b) {
   Either(a)
   Or(b)
 }
+
+fn regroup_eithers_accumulator(
+  already_packaged: List(EitherOr(List(a), b)),
+  under_construction: List(a),
+  upcoming: List(EitherOr(a, b)),
+) -> List(EitherOr(List(a), b)) {
+  case upcoming {
+    [] ->
+      [under_construction |> list.reverse |> Either, ..already_packaged]
+      |> list.reverse
+    [Either(a), ..rest] ->
+      regroup_eithers_accumulator(
+        already_packaged,
+        [a, ..under_construction],
+        rest,
+      )
+    [Or(b), ..rest] ->
+      regroup_eithers_accumulator(
+        [
+          Or(b),
+          under_construction |> list.reverse |> Either,
+          ..already_packaged
+        ],
+        [],
+        rest,
+      )
+  }
+}
+
+fn regroup_ors_accumulator(
+  already_packaged: List(EitherOr(a, List(b))),
+  under_construction: List(b),
+  upcoming: List(EitherOr(a, b)),
+) -> List(EitherOr(a, List(b))) {
+  case upcoming {
+    [] ->
+      [under_construction |> list.reverse |> Or, ..already_packaged]
+      |> list.reverse
+    [Or(b), ..rest] ->
+      regroup_ors_accumulator(already_packaged, [b, ..under_construction], rest)
+    [Either(a), ..rest] ->
+      regroup_ors_accumulator(
+        [
+          Either(a),
+          under_construction |> list.reverse |> Or,
+          ..already_packaged
+        ],
+        [],
+        rest,
+      )
+  }
+}
+
+pub fn remove_ors_unwrap_eithers(ze_list: List(EitherOr(a, b))) -> List(a) {
+  list.filter_map(ze_list, fn(either_or) {
+    case either_or {
+      Either(sth) -> Ok(sth)
+      Or(_) -> Error(Nil)
+    }
+  })
+}
+
+pub fn remove_eithers_unwrap_ors(ze_list: List(EitherOr(a, b))) -> List(b) {
+  list.filter_map(ze_list, fn(either_or) {
+    case either_or {
+      Either(_) -> Error(Nil)
+      Or(sth) -> Ok(sth)
+    }
+  })
+}
+
+pub fn regroup_eithers(
+  ze_list: List(EitherOr(a, b)),
+) -> List(EitherOr(List(a), b)) {
+  regroup_eithers_accumulator([], [], ze_list)
+}
+
+pub fn regroup_ors(ze_list: List(EitherOr(a, b))) -> List(EitherOr(a, List(b))) {
+  regroup_ors_accumulator([], [], ze_list)
+}
+
+pub fn regroup_eithers_no_empty_lists(
+  ze_list: List(EitherOr(a, b)),
+) -> List(EitherOr(List(a), b)) {
+  regroup_eithers(ze_list)
+  |> list.filter(fn(thing) {
+    case thing {
+      Either(a_list) -> !{ list.is_empty(a_list) }
+      Or(_) -> True
+    }
+  })
+}
+
+pub fn regroup_ors_no_empty_lists(
+  ze_list: List(EitherOr(a, b)),
+) -> List(EitherOr(a, List(b))) {
+  regroup_ors(ze_list)
+  |> list.filter(fn(thing) {
+    case thing {
+      Either(_) -> True
+      Or(a_list) -> !{ list.is_empty(a_list) }
+    }
+  })
+}
+
+pub fn either_or_function_combinant(
+  fn1: fn(a) -> c,
+  fn2: fn(b) -> c,
+) -> fn(EitherOr(a, b)) -> c {
+  fn(thing) {
+    case thing {
+      Either(a) -> fn1(a)
+      Or(b) -> fn2(b)
+    }
+  }
+}
+
+pub fn either_or_mapper(
+  ze_list: List(EitherOr(a, b)),
+  fn1: fn(a) -> c,
+  fn2: fn(b) -> c,
+) -> List(c) {
+  ze_list
+  |> list.map(either_or_function_combinant(fn1, fn2))
+}
+
+pub fn either_or_misceginator(
+  list: List(a),
+  condition: fn(a) -> Bool,
+) -> List(EitherOr(a, a)) {
+  list.map(list, fn(thing) {
+    case condition(thing) {
+      True -> Either(thing)
+      False -> Or(thing)
+    }
+  })
+}
+
+//**************************************************************
+//* RegexWithIndexedGroup
+//**************************************************************
 
 pub type RegexWithIndexedGroup =
   #(Regexp, Int, Int, String)
@@ -92,7 +240,7 @@ pub fn l_m_r_1_3_indexed_regex(
   |> compile_into_indexed_group(1, 3)
 }
 
-pub fn string_split_into_list_either_content_or_blame_indexed_group_version(
+pub fn split_string_by_regex_with_indexed_group(
   content: String,
   indexed_regex: RegexWithIndexedGroup,
 ) -> List(String) {
@@ -123,10 +271,7 @@ fn line_split_into_list_either_content_or_blame_indexed_group_version(
   re: RegexWithIndexedGroup,
 ) -> List(EitherOr(BlamedContent, Blame)) {
   let BlamedContent(blame, content) = line
-  string_split_into_list_either_content_or_blame_indexed_group_version(
-    content,
-    re,
-  )
+  split_string_by_regex_with_indexed_group(content, re)
   |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
   |> list.intersperse(Or(blame))
 }
@@ -150,126 +295,6 @@ fn line_split_into_list_either_content_or_blame_delimiter_pattern_version(
   |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
   |> list.intersperse(Or(blame))
 }
-
-fn regroup_eithers_accumulator(
-  already_packaged: List(EitherOr(List(a), b)),
-  under_construction: List(a),
-  upcoming: List(EitherOr(a, b)),
-) -> List(EitherOr(List(a), b)) {
-  case upcoming {
-    [] ->
-      [under_construction |> list.reverse |> Either, ..already_packaged]
-      |> list.reverse
-    [Either(a), ..rest] ->
-      regroup_eithers_accumulator(
-        already_packaged,
-        [a, ..under_construction],
-        rest,
-      )
-    [Or(b), ..rest] ->
-      regroup_eithers_accumulator(
-        [
-          Or(b),
-          under_construction |> list.reverse |> Either,
-          ..already_packaged
-        ],
-        [],
-        rest,
-      )
-  }
-}
-
-pub fn remove_ors_unwrap_eithers(ze_list: List(EitherOr(a, b))) -> List(a) {
-  list.filter_map(ze_list, fn(either_or) {
-    case either_or {
-      Either(sth) -> Ok(sth)
-      Or(_) -> Error(Nil)
-    }
-  })
-}
-
-pub fn regroup_eithers(
-  ze_list: List(EitherOr(a, b)),
-) -> List(EitherOr(List(a), b)) {
-  regroup_eithers_accumulator([], [], ze_list)
-}
-
-pub fn regroup_eithers_no_empty_lists(
-  ze_list: List(EitherOr(a, b)),
-) -> List(EitherOr(List(a), b)) {
-  regroup_eithers(ze_list)
-  |> list.filter(fn(thing) {
-    case thing {
-      Either(a_list) -> !{ list.is_empty(a_list) }
-      Or(_) -> True
-    }
-  })
-}
-
-pub fn either_or_function_combinant(
-  fn1: fn(a) -> c,
-  fn2: fn(b) -> c,
-) -> fn(EitherOr(a, b)) -> c {
-  fn(thing) {
-    case thing {
-      Either(a) -> fn1(a)
-      Or(b) -> fn2(b)
-    }
-  }
-}
-
-pub fn either_or_mapper(
-  ze_list: List(EitherOr(a, b)),
-  fn1: fn(a) -> c,
-  fn2: fn(b) -> c,
-) -> List(c) {
-  ze_list
-  |> list.map(either_or_function_combinant(fn1, fn2))
-}
-
-fn regroup_ors_accumulator(
-  already_packaged: List(EitherOr(a, List(b))),
-  under_construction: List(b),
-  upcoming: List(EitherOr(a, b)),
-) -> List(EitherOr(a, List(b))) {
-  case upcoming {
-    [] ->
-      [under_construction |> list.reverse |> Or, ..already_packaged]
-      |> list.reverse
-    [Or(b), ..rest] ->
-      regroup_ors_accumulator(already_packaged, [b, ..under_construction], rest)
-    [Either(a), ..rest] ->
-      regroup_ors_accumulator(
-        [
-          Either(a),
-          under_construction |> list.reverse |> Or,
-          ..already_packaged
-        ],
-        [],
-        rest,
-      )
-  }
-}
-
-pub fn regroup_ors(ze_list: List(EitherOr(a, b))) -> List(EitherOr(a, List(b))) {
-  regroup_ors_accumulator([], [], ze_list)
-}
-
-pub fn either_or_misceginator(
-  list: List(a),
-  condition: fn(a) -> Bool,
-) -> List(EitherOr(a, a)) {
-  list.map(list, fn(thing) {
-    case condition(thing) {
-      True -> Either(thing)
-      False -> Or(thing)
-    }
-  })
-}
-
-//**************************************************************
-//* regex-with-indexed-group splitting
-//**************************************************************
 
 fn replace_regex_by_tag_in_lines_indexed_group_version(
   lines: List(BlamedContent),
@@ -500,6 +525,11 @@ pub fn get_blame(vxml: VXML) -> Blame {
     T(blame, _) -> blame
     V(blame, _, _, _) -> blame
   }
+}
+
+pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
+  let assert [first, ..] = vxmls
+  get_blame(first)
 }
 
 pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
