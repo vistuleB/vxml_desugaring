@@ -10,6 +10,18 @@
 
             Bob is: >>bob
 
+    |> List
+
+        para1
+
+        para2
+
+        |> Grid
+
+            auot1
+            
+            auot1
+
     |> padding
 
         this is >>handle1
