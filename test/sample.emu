@@ -2,7 +2,13 @@
     counter Counter
 
     handle2<<::::Counter
-    handle3<<handle1<<::::Counter
+    handle3<<handle1<<::++Counter
+
+    |> Exercises
+        |> Exercise
+            handle bob
+
+            Bob is: >>bob
 
     |> padding
 

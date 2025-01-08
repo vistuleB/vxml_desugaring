@@ -27,6 +27,10 @@ pub fn announce_error(message: String) -> fn(e) -> Nil {
   fn(error) { io.println(message <> ": " <> ins(error)) }
 }
 
+pub fn nillify_error(message: String) -> fn(e) -> Result(a, Nil) {
+  fn(error) { Error(io.println(message <> ": " <> ins(error))) }
+}
+
 pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
   case vxmls {
     [root] -> Ok(root)
@@ -526,6 +530,8 @@ pub fn get_blame(vxml: VXML) -> Blame {
     V(blame, _, _, _) -> blame
   }
 }
+
+pub const no_blame = Blame("", -1, [])
 
 pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
   let assert [first, ..] = vxmls
