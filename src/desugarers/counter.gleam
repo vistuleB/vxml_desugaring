@@ -14,12 +14,12 @@ import vxml_parser.{
   BlamedContent, T, V,
 }
 
-pub type CounterType {
+type CounterType {
   ArabicCounter
   RomanCounter
 }
 
-pub type CounterInstance {
+type CounterInstance {
   CounterInstance(
     counter_type: CounterType,
     name: String,
@@ -28,7 +28,7 @@ pub type CounterInstance {
   )
 }
 
-pub type HandleInstance {
+type HandleInstance {
   HandleInstance(name: String, value: String)
 }
 

@@ -26,8 +26,8 @@ import desugarers/remove_vertical_chunks_with_no_text_child.{
 }
 import desugarers/split_by_indexed_regexes.{split_by_indexed_regexes}
 import desugarers/split_vertical_chunks.{split_vertical_chunks}
+import desugarers/surround_elements_by.{surround_elements_by}
 import desugarers/unwrap_tags.{unwrap_tags}
-import desugarers/wrap_elements_by_blankline.{wrap_elements_by_blankline}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
 import gleam/dict
 import infrastructure.{type Pipe} as infra
@@ -109,13 +109,19 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // VerticalChunk **********
     // ************************
-    wrap_elements_by_blankline([
-      "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
-      "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight", "Pause",
-    ]),
+    surround_elements_by(#(
+      [
+        "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
+        "Section", "Exercise", "List", "Grid", "ImageLeft", "ImageRight",
+        "Pause",
+      ],
+      "WriterlyBlankLine",
+      "WriterlyBlankLine",
+    )),
     split_vertical_chunks(
       #(["MathBlock"], [#("List", "Item"), #("Grid", "Item")]),
     ),
+    unwrap_tags(["WriterlyBlankLine"]),
     remove_vertical_chunks_with_no_text_child(),
     // ************************
     // $ **********************
@@ -144,7 +150,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     pair_bookends(#(
       ["OpeningDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
       ["ClosingDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
-      "CentralItalicDisplay",
+      "CentralDisplayItalic",
     )),
     fold_tags_into_text(
       dict.from_list([
@@ -167,7 +173,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     pair_bookends(#(
       ["OpeningCenterQuote"],
       ["ClosingCenterQuote"],
-      "CenterDisplay",
+      "CentralDisplay",
     )),
     fold_tags_into_text(
       dict.from_list([
@@ -176,13 +182,13 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ]),
     ),
     // ************************
-    // break CenterDisplay &
-    // CentralItalicDisplay out
+    // break CentralDisplay &
+    // CentralDisplayItalic out
     // of VerticalChunk
     // ************************
     free_children([
-      #("CenterDisplay", "VerticalChunk"),
-      #("CentralItalicDisplay", "VerticalChunk"),
+      #("CentralDisplay", "VerticalChunk"),
+      #("CentralDisplayItalic", "VerticalChunk"),
     ]),
     remove_vertical_chunks_with_no_text_child(),
     // ************************
@@ -251,8 +257,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("VerticalChunk", "ImageLeft"),
       #("MathBlock", "ImageRight"),
       #("MathBlock", "ImageLeft"),
-      #("CentralItalicDisplay", "ImageRight"),
-      #("CentralItalicDisplay", "ImageLeft"),
+      #("CentralDisplayItalic", "ImageRight"),
+      #("CentralDisplayItalic", "ImageLeft"),
       #("CentralDisplay", "ImageRight"),
       #("CentralDisplay", "ImageLeft"),
     ]),
@@ -267,8 +273,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #(#("Table", "VerticalChunk"), "spacer"),
       #(#("table", "VerticalChunk"), "spacer"),
       #(#("Grid", "VerticalChunk"), "spacer"),
-      #(#("CentralItalicDisplay", "VerticalChunk"), "spacer"),
-      #(#("CenterDisplay", "VerticalChunk"), "spacer"),
+      #(#("CentralDisplayItalic", "VerticalChunk"), "spacer"),
+      #(#("CentralDisplay", "VerticalChunk"), "spacer"),
       #(#("List", "VerticalChunk"), "spacer"),
     ]),
     add_spacer_divs_before([
@@ -277,8 +283,8 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #("Note", "spacer"),
       #("Section", "spacer"),
       #("MathBlock", "spacer"),
-      #("CentralItalicDisplay", "spacer"),
-      #("CenterDisplay", "spacer"),
+      #("CentralDisplayItalic", "spacer"),
+      #("CentralDisplay", "spacer"),
       #("Image", "spacer"),
       #("Table", "spacer"),
       #("table", "spacer"),
