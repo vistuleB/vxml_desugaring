@@ -142,6 +142,7 @@ fn usage_message() {
         <input_file> --emit <emitter> --output <output_file>
         <input_file> --emit-book <emitter> --output <output_file>
         <input_file> --debug-<start:int>-<end:int> : debug pipeline steps with start & stop indices
+        <input_file> --debug-<start:int> : shorthand for --debug-<start>-<start>
         ",
   )
 }
