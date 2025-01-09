@@ -113,23 +113,25 @@ pub fn assemble_and_desugar(
   Ok(desugared)
 }
 
-fn assemble_and_desugar_wrapper(
+pub fn assemble_and_desugar_and_callback(
   path: String,
+  pipeline: List(Pipe),
   debug_start: Int,
   debug_end: Int,
   on_success: fn(VXML) -> Nil,
 ) -> Nil {
-  assemble_and_desugar(path, pipeline.pipeline_constructor(), debug_start, debug_end)
+  assemble_and_desugar(path, pipeline, debug_start, debug_end)
   |> result.map(on_success)
   |> result.unwrap(Nil)
 }
 
 pub fn emit_book(
   path path: String,
+  pipeline pipeline: List(Pipe),
   emitter emitter: String,
   output_folder output_folder: String,
 ) {
-  assemble_and_desugar_wrapper(path, -1, -1, fn(desugared) {
+  assemble_and_desugar_and_callback(path, pipeline, -1, -1, fn(desugared) {
     leptos_emitter.write_splitted(desugared, output_folder, emitter)
   })
 }
@@ -147,31 +149,28 @@ fn usage_message() {
   )
 }
 
-pub fn main() {
-  let args = argv.load().arguments
+pub fn process_command_line_args(args: List(String), pipeline: List(Pipe)) -> Nil {
   case args {
     [path] -> {
-      assemble_and_desugar_wrapper(path, -1, -1, fn(desugared) {
+      assemble_and_desugar_and_callback(path, pipeline, -1, -1, fn(desugared) {
         vxml_parser.debug_print_vxml("", desugared)
       })
     }
     [path, "--debug"] -> {
-      assemble_and_desugar_wrapper(path, 0, 0, fn(_) { Nil })
+      assemble_and_desugar_and_callback(path, pipeline, 0, 0, fn(_) { Nil })
     }
     [path, "--emit-book", emitter, "--output", output_folder] -> {
-      emit_book(path, emitter, output_folder)
+      emit_book(path, pipeline, emitter, output_folder)
     }
     [path, "--emit", emitter, "--output", output_file] -> {
-      assemble_and_desugar_wrapper(path, -1, -1, fn(desugared) {
+      assemble_and_desugar_and_callback(path, pipeline, -1, -1, fn(desugared) {
         leptos_emitter.write_file(desugared, output_file, emitter)
       })
     }
     [path, maybe_debug_range] -> {
-      io.println("hello")
       case string.starts_with(maybe_debug_range, "--debug") {
         False -> usage_message()
         True -> {
-          io.println("hello2")
           let suffix = string.drop_start(maybe_debug_range, 7)
           let pieces = string.split(suffix, "-")
           case list.length(pieces) {
@@ -179,7 +178,7 @@ pub fn main() {
               let assert [_, b, c] = pieces
               case int.parse(b), int.parse(c) {
                 Ok(debug_start), Ok(debug_end) ->
-                  assemble_and_desugar_wrapper(path, debug_start, debug_end, fn(_) { Nil })
+                  assemble_and_desugar_and_callback(path, pipeline, debug_start, debug_end, fn(_) { Nil })
                 _, _ ->  usage_message()
               }
             }
@@ -187,7 +186,7 @@ pub fn main() {
               let assert [_, b] = pieces
               case int.parse(b) {
                 Ok(debug_start) ->
-                  assemble_and_desugar_wrapper(path, debug_start, debug_start, fn(_) { Nil })
+                  assemble_and_desugar_and_callback(path, pipeline, debug_start, debug_start, fn(_) { Nil })
                 _ ->  usage_message()
               }
             }
@@ -201,4 +200,9 @@ pub fn main() {
     }
     _ -> usage_message()
   }
+}
+
+pub fn main() {
+  argv.load().arguments
+  |> process_command_line_args(pipeline.pipeline_constructor())
 }
