@@ -1,3 +1,4 @@
+import desugarers/rename_when_child_of.{rename_when_child_of}
 import desugarers/absorb_next_sibling_while.{absorb_next_sibling_while}
 import desugarers/add_attributes.{add_attributes}
 import desugarers/add_counter_attributes.{add_counter_attributes}
@@ -25,7 +26,7 @@ import desugarers/remove_vertical_chunks_with_no_text_child.{
   remove_vertical_chunks_with_no_text_child,
 }
 import desugarers/split_by_indexed_regexes.{split_by_indexed_regexes}
-import desugarers/split_vertical_chunks.{split_vertical_chunks}
+import desugarers/group_siblings_not_separated_by_blank_lines.{group_siblings_not_separated_by_blank_lines}
 import desugarers/surround_elements_by.{surround_elements_by}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
@@ -118,9 +119,13 @@ pub fn pipeline_constructor() -> List(Pipe) {
       "WriterlyBlankLine",
       "WriterlyBlankLine",
     )),
-    split_vertical_chunks(
-      #(["MathBlock"], [#("List", "Item"), #("Grid", "Item")]),
+    group_siblings_not_separated_by_blank_lines(
+      #("VerticalChunk", ["MathBlock"]),
     ),
+    rename_when_child_of([
+      #("VerticalChunk", "Item", "List"),
+      #("VerticalChunk", "Item", "Grid")
+    ]),
     unwrap_tags(["WriterlyBlankLine"]),
     remove_vertical_chunks_with_no_text_child(),
     // ************************

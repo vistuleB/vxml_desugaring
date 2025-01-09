@@ -37,7 +37,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 pub fn rename_tag(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("split_vertical_chunks_desugarer", None, "..."),
+    DesugarerDescription("rename_tag", None, "..."),
     desugarer_factory(extra),
   )
 }

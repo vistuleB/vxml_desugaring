@@ -1,12 +1,14 @@
 import blamedlines.{type Blame}
 import gleam/list
+import gleam/string
 import gleam/option.{None}
-import gleam/result
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
 import vxml_parser.{type VXML, T, V}
+
+const ins = string.inspect
 
 fn lists_of_non_blank_line_chunks(
   vxmls: List(VXML),
@@ -21,62 +23,57 @@ fn lists_of_non_blank_line_chunks(
 
 pub fn chunk_constructor(
   blame_and_children: #(Blame, List(VXML)),
-  parent_tag: String,
-  tag_wrapper_pairs: List(#(String, String)),
+  wrapper: String,
 ) -> VXML {
   let #(blame, children) = blame_and_children
-
-  let #(_, wrapper) =
-    tag_wrapper_pairs
-    |> list.find(fn(pair) {
-      let #(tag_, _) = pair
-      tag_ == parent_tag
-    })
-    |> result.unwrap(#("", "VerticalChunk"))
-
   V(blame, wrapper, [], children)
 }
 
-fn split_vertical_chunks_transform(
+fn param_transform(
   vxml: VXML,
-  tag_wrapper_pairs: List(#(String, String)),
+  wrapper: String,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
       let new_children =
         lists_of_non_blank_line_chunks(children)
-        |> list.map(chunk_constructor(_, tag, tag_wrapper_pairs))
+        |> list.map(chunk_constructor(_, wrapper))
       Ok(V(blame, tag, attrs, new_children))
     }
   }
 }
 
-type Extras =
-  #(
-    List(
-      String,
-      // List to exclude from vertical chunking
-    ),
-    List(#(String, String)),
-    // List of tag and wrapper pairs
-  )
+//********************************
+// - String: name of wrapper tag
+// - List(String): keep out of these
+//********************************
+type Extra =
+  #(String, List(String))
 
-fn transform_factory(extras: Extras) -> infra.NodeToNodeFancyTransform {
-  let #(excluded_tags, wrappers) = extras
+fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
+  let #(wrapper, excluded_tags) = extra
   infra.prevent_node_to_node_transform_inside(
-    split_vertical_chunks_transform(_, wrappers),
+    param_transform(_, wrapper),
     excluded_tags,
   )
 }
 
-fn desugarer_factory(extras: Extras) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(extras))
+fn desugarer_factory(extra: Extra) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
 }
 
-pub fn split_vertical_chunks(extras: Extras) -> Pipe {
+pub fn group_siblings_not_separated_by_blank_lines(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("split_vertical_chunks_desugarer", None, "..."),
-    desugarer_factory(extras),
+    DesugarerDescription(
+      "group_siblings_not_separated_by_blank_lines " <> ins(extra),
+      None,
+      "wrap siblings that are not separated by
+WriterlyBlankLine inside a designated tag
+and remove WriterlyBlankLine elements;
+stays out of subtrees designated by
+tags in the second 'List(String)' argument"
+    ),
+    desugarer_factory(extra),
   )
 }
