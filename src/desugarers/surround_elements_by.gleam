@@ -3,21 +3,23 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
 import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
+  type Desugarer, type DesugaringError, type NodeToNodesFancyTransform, type Pipe,
   DesugarerDescription,
 } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn surround_elements_by_transform(
   node: VXML,
+  ancestors: List(VXML),
   params: Param,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) -> Ok([node])
     V(blame, tag, _, _) -> {
-      case dict.get(params, tag) {
-        Error(Nil) -> Ok([node])
-        Ok(#(above_tag, below_tag)) -> {
+      case dict.get(params, tag), list.length(ancestors) > 0 {
+        Error(Nil), _ -> Ok([node])
+        _, False -> Ok([node])
+        Ok(#(above_tag, below_tag)), True -> {
           let some_none_above = case above_tag == "" {
             True -> None
             False ->
@@ -63,13 +65,14 @@ fn extra_to_param(extra: Extra) -> Param {
   |> dict.from_list
 }
 
-fn transform_factory(params: Param) -> NodeToNodesTransform {
-  // wrap_elements_by_blankline_transform(_, extra)
-  surround_elements_by_transform(_, params)
+fn transform_factory(params: Param) -> NodeToNodesFancyTransform {
+  fn (node, ancestors, _, _, _) {
+    surround_elements_by_transform(node, ancestors, params)
+  }
 }
 
 fn desugarer_factory(params: Param) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(params))
+  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(params))
 }
 
 pub fn surround_elements_by(extra: Extra) -> Pipe {

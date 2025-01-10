@@ -30,7 +30,6 @@ import desugarers/group_siblings_not_separated_by_blank_lines.{group_siblings_no
 import desugarers/surround_elements_by.{surround_elements_by}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
-import gleam/dict
 import infrastructure.{type Pipe} as infra
 
 pub fn pipeline_constructor() -> List(Pipe) {
@@ -89,7 +88,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #([#(double_dollar_indexed_regex, "DoubleDollar")], []),
     ),
     pair_bookends(#(["DoubleDollar"], ["DoubleDollar"], "MathBlock")),
-    fold_tags_into_text(dict.from_list([#("DoubleDollar", "$$")])),
+    fold_tags_into_text([#("DoubleDollar", "$$")]),
     remove_empty_lines(),
     // ************************
     // AddTitleCounters *******
@@ -135,7 +134,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
       #([#(single_dollar_indexed_regex, "SingleDollar")], ["MathBlock"]),
     ),
     pair_bookends(#(["SingleDollar"], ["SingleDollar"], "Math")),
-    fold_tags_into_text(dict.from_list([#("SingleDollar", "$")])),
+    fold_tags_into_text([#("SingleDollar", "$")]),
     // ************************
     // __ *********************
     // ************************
@@ -158,10 +157,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
       "CentralDisplayItalic",
     )),
     fold_tags_into_text(
-      dict.from_list([
+      [
         #("OpeningDoubleUnderscore", "__"),
         #("ClosingDoubleUnderscore", "__"),
-      ]),
+      ],
     ),
     // ************************
     // _| |_ ******************
@@ -181,10 +180,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
       "CentralDisplay",
     )),
     fold_tags_into_text(
-      dict.from_list([
+      [
         #("OpeningCenterQuote", "_|"),
         #("ClosingCenterQuote", "|_"),
-      ]),
+      ],
     ),
     // ************************
     // break CentralDisplay &
@@ -235,14 +234,14 @@ pub fn pipeline_constructor() -> List(Pipe) {
       "b",
     )),
     fold_tags_into_text(
-      dict.from_list([
+      [
         #("OpeningOrClosingUnderscore", "_"),
         #("OpeningUnderscore", "_"),
         #("ClosingUnderscore", "_"),
         #("OpeningOrClosingAsterisk", "*"),
         #("OpeningAsterisk", "*"),
         #("ClosingAsterisk", "*"),
-      ]),
+      ],
     ),
     // ************************
     // misc *******************

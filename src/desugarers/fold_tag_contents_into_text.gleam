@@ -45,16 +45,17 @@ fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   )
 }
 
-fn turn_into_text_node(node: VXML, text: String) -> VXML {
-  let blame = get_blame(node)
-  T(blame, [BlamedContent(blame, text)])
+fn inside_text_node(node: VXML) -> VXML {
+  let assert V(_, _, _, children) = node
+  let assert [T(_, _) as child] = children
+  child
 }
 
 fn fold_tags_into_text_children_accumulator(
-  tags2texts: Dict(String, String),
+  tags: Extra,
   already_processed: List(VXML),
   optional_last_t: Option(VXML),
-  optional_last_v: Option(#(VXML, String)),
+  optional_last_v: Option(VXML),
   remaining: List(VXML),
 ) -> List(VXML) {
   // *
@@ -94,7 +95,7 @@ fn fold_tags_into_text_children_accumulator(
               // we reverse the list
               // *
               already_processed |> list.reverse
-            Some(#(last_v, last_v_text)) ->
+            Some(last_v) ->
               // *
               // case N01: - no following node
               //           - no previous t node
@@ -102,7 +103,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we turn the previous v node into a standalone text node
               // *
-              [turn_into_text_node(last_v, last_v_text), ..already_processed]
+              [inside_text_node(last_v), ..already_processed]
               |> list.reverse
           }
         }
@@ -117,7 +118,7 @@ fn fold_tags_into_text_children_accumulator(
               // we add the t to already_processed, reverse the list
               // *
               [last_t, ..already_processed] |> list.reverse
-            Some(#(_, replacement_text)) ->
+            Some(last_v) ->
               // *
               // case N11: - no following node
               //           - there is a previous t node
@@ -125,7 +126,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              [right_absorb_text(last_t, replacement_text), ..already_processed]
+              [last_line_concatenate_with_first_line(last_t, inside_text_node(last_v)), ..already_processed]
               |> list.reverse
           }
       }
@@ -142,13 +143,13 @@ fn fold_tags_into_text_children_accumulator(
               // we make 'first' the previous t node
               // *
               fold_tags_into_text_children_accumulator(
-                tags2texts,
+                tags,
                 already_processed,
                 Some(first),
                 None,
                 rest,
               )
-            Some(#(_, last_v_text)) ->
+            Some(last_v) ->
               // *
               // case T01: - 'first' is a Text node
               //           - no previous t node
@@ -157,9 +158,9 @@ fn fold_tags_into_text_children_accumulator(
               // we bundle the v & first, add to already_processed, reset v to None
               // *
               fold_tags_into_text_children_accumulator(
-                tags2texts,
+                tags,
                 already_processed,
-                Some(left_absorb_text(first, last_v_text)),
+                Some(last_line_concatenate_with_first_line(inside_text_node(last_v), first)),
                 None,
                 rest,
               )
@@ -175,13 +176,13 @@ fn fold_tags_into_text_children_accumulator(
               // we pass the previous t into already_processed and make 'first' the new optional_last_t
               // *
               fold_tags_into_text_children_accumulator(
-                tags2texts,
+                tags,
                 [last_t, ..already_processed],
                 Some(first),
                 None,
                 rest,
               )
-            Some(#(_, text)) -> {
+            Some(last_v) -> {
               // *
               // case T11: - 'first' is a Text node
               //           - there exists a previous t node
@@ -190,11 +191,14 @@ fn fold_tags_into_text_children_accumulator(
               // we bundle t & v & first and etc
               // *
               fold_tags_into_text_children_accumulator(
-                tags2texts,
+                tags,
                 already_processed,
                 Some(last_line_concatenate_with_first_line(
                   last_t,
-                  left_absorb_text(first, text),
+                  last_line_concatenate_with_first_line(
+                    inside_text_node(last_v),
+                    first
+                  ),
                 )),
                 None,
                 rest,
@@ -208,8 +212,8 @@ fn fold_tags_into_text_children_accumulator(
         None -> {
           case optional_last_v {
             None ->
-              case dict.get(tags2texts, tag) {
-                Error(Nil) ->
+              case list.contains(tags, tag) {
+                False ->
                   // *
                   // case W00: - 'first' is non-matching V-node
                   //           - no previous t node
@@ -218,13 +222,13 @@ fn fold_tags_into_text_children_accumulator(
                   // add 'first' to already_processed
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     [first, ..already_processed],
                     None,
                     None,
                     rest,
                   )
-                Ok(text) ->
+                True ->
                   // *
                   // case M00: - 'first' is matching V-node
                   //           - no previous t node
@@ -233,16 +237,16 @@ fn fold_tags_into_text_children_accumulator(
                   // make 'first' the optional_last_v
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     already_processed,
                     None,
-                    Some(#(first, text)),
+                    Some(first),
                     rest,
                   )
               }
-            Some(#(last_v, last_v_text)) ->
-              case dict.get(tags2texts, tag) {
-                Error(Nil) ->
+            Some(last_v) ->
+              case list.contains(tags, tag) {
+                False ->
                   // *
                   // case W01: - 'first' is non-matching V-node
                   //           - no previous t node
@@ -251,17 +255,17 @@ fn fold_tags_into_text_children_accumulator(
                   // standalone-bundle the previous v node & add first to already processed
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     [
                       first,
-                      turn_into_text_node(last_v, last_v_text),
+                      inside_text_node(last_v),
                       ..already_processed
                     ],
                     None,
                     None,
                     rest,
                   )
-                Ok(text) ->
+                True ->
                   // *
                   // case M01: - 'first' is matching V-node
                   //           - no previous t node
@@ -270,10 +274,10 @@ fn fold_tags_into_text_children_accumulator(
                   // standalone-bundle the previous v node & make 'first' the optional_last_v
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     already_processed,
-                    Some(turn_into_text_node(last_v, last_v_text)),
-                    Some(#(first, text)),
+                    Some(inside_text_node(last_v)),
+                    Some(first),
                     rest,
                   )
               }
@@ -282,8 +286,8 @@ fn fold_tags_into_text_children_accumulator(
         Some(last_t) ->
           case optional_last_v {
             None ->
-              case dict.get(tags2texts, tag) {
-                Error(Nil) ->
+              case list.contains(tags, tag) {
+                False ->
                   // *
                   // case W10: - 'first' is a non-matching V-node
                   //           - there exists a previous t node
@@ -292,13 +296,13 @@ fn fold_tags_into_text_children_accumulator(
                   // add 'first' and previoux t node to already_processed
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     [first, last_t, ..already_processed],
                     None,
                     None,
                     rest,
                   )
-                Ok(text) ->
+                True ->
                   // *
                   // case M10: - 'first' is a matching V-node
                   //           - there exists a previous t node
@@ -307,16 +311,16 @@ fn fold_tags_into_text_children_accumulator(
                   // keep the previous t node, make 'first' the optional_last_v
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     already_processed,
                     optional_last_t,
-                    Some(#(first, text)),
+                    Some(first),
                     rest,
                   )
               }
-            Some(#(_, last_v_text)) ->
-              case dict.get(tags2texts, tag) {
-                Error(Nil) ->
+            Some(last_v) ->
+              case list.contains(tags, tag) {
+                False ->
                   // *
                   // case W11: - 'first' is a non-matching V-node
                   //           - there exists a previous t node
@@ -325,17 +329,17 @@ fn fold_tags_into_text_children_accumulator(
                   // fold t & v, put first & folder t/v into already_processed
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     [
                       first,
-                      right_absorb_text(last_t, last_v_text),
+                      last_line_concatenate_with_first_line(last_t, inside_text_node(last_v)),
                       ..already_processed
                     ],
                     None,
                     None,
                     rest,
                   )
-                Ok(text) ->
+                True ->
                   // *
                   // case M11: - 'first' is matching V-node
                   //           - there exists a previous t node
@@ -344,10 +348,10 @@ fn fold_tags_into_text_children_accumulator(
                   // fold t & v, put into already_processed, make v the new optional_last_v
                   // *
                   fold_tags_into_text_children_accumulator(
-                    tags2texts,
+                    tags,
                     already_processed,
-                    Some(right_absorb_text(last_t, text)),
-                    Some(#(first, text)),
+                    Some(last_line_concatenate_with_first_line(last_t, inside_text_node(last_v))),
+                    Some(first),
                     rest,
                   )
               }
@@ -358,14 +362,14 @@ fn fold_tags_into_text_children_accumulator(
 
 fn param_transform(
   node: VXML,
-  tags_and_texts: Param,
+  tags: Extra,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       let new_children =
         fold_tags_into_text_children_accumulator(
-          tags_and_texts,
+          tags,
           [],
           None,
           None,
@@ -376,24 +380,22 @@ fn param_transform(
   }
 }
 
-fn transform_factory(param: Param) -> NodeToNodeTransform {
-  param_transform(_, param)
+fn transform_factory(extra: Extra) -> NodeToNodeTransform {
+  param_transform(_, extra)
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(extra: Extra) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
-
-type Param = Dict(String, String)
 
 //*********************************
-// - first string is tag name
-// - second string is replacement value to use
-type Extra = List(#(String, String))
+// list of tags whose contents should
+// be folded into surrounding text
+type Extra = List(String)
 
-pub fn fold_tags_into_text(extra: Extra) -> Pipe {
+pub fn fold_tag_contents_into_text(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("fold_tags_into_text", Some(ins(extra)), "..."),
-    desugarer_factory(extra |> dict.from_list),
+    DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "..."),
+    desugarer_factory(extra),
   )
 }
