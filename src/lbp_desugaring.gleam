@@ -127,11 +127,10 @@ pub fn assemble_and_desugar_and_callback(
 
 pub fn emit_book(
   path path: String,
-  pipeline pipeline: List(Pipe),
   emitter emitter: String,
   output_folder output_folder: String,
 ) {
-  assemble_and_desugar_and_callback(path, pipeline, -1, -1, fn(desugared) {
+  assemble_and_desugar_and_callback(path, pipeline.pipeline_constructor(), -1, -1, fn(desugared) {
     leptos_emitter.write_splitted(desugared, output_folder, emitter)
   })
 }
@@ -160,7 +159,7 @@ pub fn process_command_line_args(args: List(String), pipeline: List(Pipe)) -> Ni
       assemble_and_desugar_and_callback(path, pipeline, 0, 0, fn(_) { Nil })
     }
     [path, "--emit-book", emitter, "--output", output_folder] -> {
-      emit_book(path, pipeline, emitter, output_folder)
+      emit_book(path, emitter, output_folder)
     }
     [path, "--emit", emitter, "--output", output_file] -> {
       assemble_and_desugar_and_callback(path, pipeline, -1, -1, fn(desugared) {
