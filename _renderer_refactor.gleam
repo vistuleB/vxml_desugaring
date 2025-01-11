@@ -131,8 +131,8 @@ type Renderer(
   c, // blamed lines -> parsed source parsing error (== WriterlyParseError)
   d, // enum type for VXML Fragment
   e, // splitting error
-  f, // emitting error
-  g, // printing error
+  f, // fragment emitting error
+  g, // fragment printing error
 ) = {
   Renderer(
     assembler: BlamedLinesAssembler(a),
