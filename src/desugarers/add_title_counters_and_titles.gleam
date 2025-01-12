@@ -23,56 +23,51 @@ fn param_transform(
     V(blame, tag, _, children) -> {
       let new_node = {
         tuples
-        |> list.map_fold(from: node, with: fn(current_node, tuple) -> #(
-          VXML,
-          Nil,
-        ) {
-          let #(parent, counter_name, _, _, _) = tuple
-          let assert V(_, _, current_attributes, _) = current_node
-          case parent == tag {
-            False -> #(current_node, Nil)
-            True -> {
-              let new_attribute =
-                BlamedAttribute(blame, "counter", counter_name)
-              #(
-                V(blame, tag, [new_attribute, ..current_attributes], children),
-                Nil,
-              )
+        |> list.fold(
+          from: node,
+          with: fn(current_node, tuple) -> VXML {
+            let #(parent, counter_name, _, _, _) = tuple
+            let assert V(_, _, current_attributes, _) = current_node
+            case parent == tag {
+              False -> current_node
+              True -> {
+                let new_attribute =
+                  BlamedAttribute(blame, "counter", counter_name)
+                V(blame, tag, [new_attribute, ..current_attributes], children)
+              }
             }
           }
-        })
-        |> pair.first
+        )
       }
       let newest_node = {
         tuples
-        |> list.map_fold(from: new_node, with: fn(current_node, tuple) -> #(
-          VXML,
-          Nil,
-        ) {
-          let #(tag_that_declared_counter, counter_name, node_name, pre, post) =
-            tuple
-          case
-            node_name == tag
-            && list.any(ancestors, fn(ancestor) {
-              let assert V(_, name, _, _) = ancestor
-              name == tag_that_declared_counter
-            })
-          {
-            False -> #(current_node, Nil)
-            True -> {
-              let assert V(_, _, newest_attributes, current_children) =
-                current_node
-              let new_children = [
-                T(blame, [
-                  BlamedContent(blame, pre <> "::++" <> counter_name <> post),
-                ]),
-                ..current_children
-              ]
-              #(V(blame, tag, newest_attributes, new_children), Nil)
+        |> list.fold(
+          from: new_node,
+          with: fn(current_node, tuple) -> VXML {
+            let #(tag_that_declared_counter, counter_name, node_name, pre, post) =
+              tuple
+            case
+              node_name == tag
+              && list.any(ancestors, fn(ancestor) {
+                let assert V(_, ancestor_tag, _, _) = ancestor
+                ancestor_tag == tag_that_declared_counter
+              })
+            {
+              False -> current_node
+              True -> {
+                let assert V(_, _, newest_attributes, current_children) =
+                  current_node
+                let new_children = [
+                  T(blame, [
+                    BlamedContent(blame, pre <> "::++" <> counter_name <> post),
+                  ]),
+                  ..current_children
+                ]
+                V(blame, tag, newest_attributes, new_children)
+              }
             }
           }
-        })
-        |> pair.first
+        )
       }
       Ok(newest_node)
     }

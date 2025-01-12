@@ -15,16 +15,16 @@ fn update_attributes(
   attributes: List(BlamedAttribute),
   extra: Extra,
 ) -> List(BlamedAttribute) {
-  list.map_fold(
+  list.fold(
     over: extra,
     from: attributes,
     with: fn(
       current_attributes: List(BlamedAttribute),
       tag_attr_name_pair: #(String, String),
-    ) -> #(List(BlamedAttribute), Nil) {
+    ) -> List(BlamedAttribute) {
       let #(tag_name, attr_name) = tag_attr_name_pair
       case tag_name == "" || tag_name == tag {
-        False -> #(current_attributes, Nil)
+        False -> current_attributes
         True -> {
           list.map(
             current_attributes,
@@ -40,14 +40,12 @@ fn update_attributes(
                   }
                 }
               }
-            },
+            }
           )
-          |> pair.new(Nil)
         }
       }
-    },
+    }
   )
-  |> pair.first
 }
 
 fn transform_param(node: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
