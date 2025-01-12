@@ -24,7 +24,6 @@ type CounterInstance {
     counter_type: CounterType,
     name: String,
     current_value: String,
-    // handle_assignments: Dict(String, String),
   )
 }
 

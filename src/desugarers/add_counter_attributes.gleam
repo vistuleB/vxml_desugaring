@@ -4,7 +4,6 @@ import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
@@ -55,9 +54,9 @@ fn introduce_new_counter_nodes_for_parent(
     Error(_) -> counting_state
     Ok(tag_infos) -> {
       tag_infos
-      |> list.map_fold(
+      |> list.fold(
         from: counting_state,
-        with: fn(current_dict, tag_info) -> #(CountingState, Nil) {
+        with: fn(current_dict, tag_info) -> CountingState {
           let #(tag, counter_name, counter_initial_value) = tag_info
           case dict.get(current_dict, tag) {
             Error(Nil) -> {
@@ -73,10 +72,8 @@ fn introduce_new_counter_nodes_for_parent(
               dict.insert(current_dict, tag, new_tag_dict)
             }
           }
-          |> pair.new(Nil)
-        },
+        }
       )
-      |> pair.first
     }
   }
 }
@@ -107,55 +104,49 @@ fn revert_new_counter_nodes_for_parent(
   case dict.get(transform_extra, parent) {
     Error(_) -> counting_state_given_from_children
     Ok(tag_infos) -> {
-      list.map_fold(
+      list.fold(
         over: tag_infos,
         from: counting_state_given_from_children,
-        with: fn(current_dict, tag_info) -> #(CountingState, Nil) {
+        with: fn(current_dict, tag_info) -> CountingState {
           io.debug(current_dict)
           let #(tag, counter_name, _) = tag_info
           case dict.get(original_counting_state, tag) {
-            Error(Nil) -> #(dict.delete(current_dict, tag), Nil)
+            Error(Nil) -> dict.delete(current_dict, tag)
             Ok(original_counter_value_dict) -> {
               let assert Ok(current_name_values_for_tag) =
                 dict.get(current_dict, tag)
               let new_name_values_for_tag = {
                 current_name_values_for_tag
                 |> dict.to_list
-                |> list.map_fold(
+                |> list.fold(
                   from: original_counter_value_dict,
                   with: fn(
                     rewritten_counter_value_dict: Dict(String, Int),
                     pair: #(String, Int),
-                  ) -> #(Dict(String, Int), Nil) {
+                  ) -> Dict(String, Int) {
                     let #(name, value) = pair
                     case name == counter_name {
-                      True -> #(rewritten_counter_value_dict, Nil)
+                      True -> rewritten_counter_value_dict
                       False ->
                         case dict.get(original_counter_value_dict, name) {
-                          Error(Nil) ->
-                            panic as "thought child would not let leak something to us that they created"
-                          Ok(_) -> #(
+                          Ok(_) ->
                             dict.insert(
                               rewritten_counter_value_dict,
                               name,
                               value,
-                            ),
-                            Nil,
-                          )
+                            )
+                          Error(Nil) ->
+                            panic as "thought child would not let leak something to us that they created"
                         }
                     }
-                    |> pair.first
-                    |> pair.new(Nil)
-                  },
+                  }
                 )
-                |> pair.first
               }
-              #(dict.insert(current_dict, tag, new_name_values_for_tag), Nil)
+              dict.insert(current_dict, tag, new_name_values_for_tag)
             }
           }
-        },
+        }
       )
-      |> pair.first
     }
   }
 }
@@ -230,20 +221,16 @@ fn add_new_tag_info(
   }
 }
 
-fn map_folder(
+fn folder(
   dict: Dict(String, List(TagInfoForParent)),
   tuple: #(String, String, String, Int),
-) -> #(Dict(String, List(TagInfoForParent)), Nil) {
+) -> Dict(String, List(TagInfoForParent)) {
   let #(tag, parent, counter_name, counter_initial_value) = tuple
-  #(
-    add_new_tag_info(dict, parent, tag, counter_name, counter_initial_value),
-    Nil,
-  )
+  add_new_tag_info(dict, parent, tag, counter_name, counter_initial_value)
 }
 
 fn transform_extra_dictionary(extra: Extra) -> TransformExtra {
-  list.map_fold(over: extra, from: dict.from_list([]), with: map_folder)
-  |> pair.first
+  list.fold(over: extra, from: dict.from_list([]), with: folder)
 }
 
 //**********************************
