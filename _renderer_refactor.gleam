@@ -139,9 +139,9 @@ type Renderer(
     source_parser: SourceParser(b, c),
     source_converter: SourceToVXMLConverter(b),
     pipeline: List(Pipe),
-    splitter: Splitter(d, e),
-    fragment_emitter: FragmentEmitter(d, f),
-    fragment_printer: FragmentPrinter(g),
+    splitter: Splitter(d, e),                // VXML -> List(VXML)
+    fragment_emitter: FragmentEmitter(d, f), // VXML -> List(BlamedLine)
+    fragment_printer: FragmentPrinter(g),    // List(BlamedLine) & "just prints".... maybe runs prettier!
   )
 }
 

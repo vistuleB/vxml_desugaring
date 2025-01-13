@@ -2,7 +2,7 @@ Missing features:
 
 1. assigning several counters possibly separated by punctuation to a handle, for example
 
-bob<<.::::ChapterCounter.::++ExampleCounter
+bob<<::::ChapterCounter.::++ExampleCounter
 
 should assign the string "3.2" to handle "bob" if ChapterCounter is 3 and ExampleCounter is 2 at that point
 (so writing "Exercise >>bob" will result in "Exercise 3.2", if this is how bob was defined)
@@ -174,9 +174,8 @@ The state will consist of the current dictionary of counter names, types & value
             the line); there should not be an existing attribute `handle <name>` (with or without a
             following value) for this node, otherwise that's an error
 
-            the handle-value dictionary does not need to be updated or recorded in this desugarer,
-            in fact it is still missing crucial info. See "Feature 2." below
-
+            the handle-value dictionary is not recorded in this desugarer; there is still info
+            missing for links and 
 
 ====
 
@@ -184,28 +183,24 @@ Feature 2.
 
 Before replacing ">>handle" occurences:
 
-Figure out the "local path" for each part of the document. (E.g., "chapters/chapter1" or whatever.)
-You can this info to each element with a `handle` attribute; it becomes:
+2a. figure out the "local path" for each part of the document (e.g., "chapters/chapter1" or 
+whatever), that should exist in some ancestor element of each tag (e.g., |> Chapter tag)
 
-    `handle <name> <value> <containing_page_local_path>`
+2b. write a desugarer that generates a unique 'id' attribute for each element that has a 
+handle attribute; the generation can be any stupid way, also random (but unique);
 
-(At this point in the pipeline you should throw a DesugaringError if you find a `handle <name>` attribute
-that is missing a `<value>` field next to to the <name>.)
-
-Next write a desugarer that generates a unique ID for each element that has a "handle" attribute. The
-unique ID can be generated any stupid way, also randomly. The id should be added as a real attribute to
-element. (It will become a real HTML id.)
-
-Thirdly generate a global handle dictionary of the form...
+2c. generate a global handle dictionary of the form...
 
     Dict(name: String, #(value: String, path: String, id: String))
 
 ...mentioned above. 
 
-Now fincally we can replace each >>handle occurrence by the appropriate <a>-tag, with an href!
+2d. replace each >>handle occurrence by the appropriate <a></a>
 
 
 ====
+
+
 
 Feature 3.  ------FUTURE WORK NOT RIGHT NOW-------
 
