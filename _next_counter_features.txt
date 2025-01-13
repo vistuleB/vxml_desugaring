@@ -1,0 +1,226 @@
+Missing features:
+
+1. assigning several counters possibly separated by punctuation to a handle, for example
+
+bob<<.::::ChapterCounter.::++ExampleCounter
+
+should assign the string "3.2" to handle "bob" if ChapterCounter is 3 and ExampleCounter is 2 at that point
+(so writing "Exercise >>bob" will result in "Exercise 3.2", if this is how bob was defined)
+
+2. creating an automatic HTML link (<a></a> tag) to the place a handle was defined, every time a handle is 
+used; in the above example, anytime you type "Exercise >>bob" in the book, the "3.2" in "Exercise 3.2" would
+link to the page/element where the handle is defined, for example, e.g. "chapters/chapter3#e2"
+
+For 2. some important secondary changes need to happen. Specifically:
+
+    - we need to remember where each handle is defined until after the link creation phase is over
+    - we need to assign ids to elements that have handle; the id is != handle (because the handle is
+    the author's private thought, you want to obfuscate that; a hangle might be "shithead_theorem"
+    or sth for example)
+
+For handles one must distinguish three different concepts:
+
+    - ids (HTML element ids, the traditional notion); an id might be either user or auto-generated, and
+    it needs to be unique to the HTML page in which its element lands, but not unique to the entire document (book)
+    - handle names: are unique to entire document
+    - handle values: each handle (name) has an associated value (string, e.g. "3.2"),
+
+A diagram in which "handle" appears at the center of the three concepts:
+
+    page name + element id on page  (e.g., "chapters/chapter3" for the page name and "e3" or "xf2" for the id)
+            |
+            |
+            |
+          handle
+          /   \
+         /     \
+        /       \
+       name     value
+
+Or since the "name" is document-unique, you can think of the set of all handles as a Dict(String, #(String, String, String)):
+
+Dict(String,    #(String,       String,       String))
+//   handle       local path    element id    string value
+//   name         of page       on page       of handle
+
+A third missing feature we will tackle later (not this refactor):
+
+3. automatic linking of certain nearby words, depending on what we tell the desugarer to do; for example instead of
+
+    `Exercise <a href="/chapter3#e3">3.2</a>`
+
+we would like:
+
+    `<a href="/chapter3#e3">Exercise 3.2</a>`
+
+We WILL NOT discuss how to implement feature 3. in this document. Only 1. & 2..
+
+======
+
+Feature 1.
+
+We build a StatefulNodeToNodeTransform.
+
+The state will consist of the current dictionary of counter names, types & values.
+
+- For each non-text node:
+    - For each text node child:
+        - For each blamed_content.content (line of text):
+            - break the line into List(Quirgy) and update the counter dictionary state,
+            where:
+
+                type Quirgy = {
+                    ConnectorPuncutationText(String)                                             // the payload is one of '.', ',', ':', ';', '-', '::', '-'
+                    OtherText(String)                                                            // the payload is not one of '.', ',', ':', ';', '-', '::', '-'
+                    CounterIncrement(counter_name: String, updated_value: String, echo: Bool)  // (actually we will not use 'counter_name' but the code seems more legible if we put it)
+                    HandleAssignment(handle_name: String)
+                }
+
+            For example the line
+            
+                "hello world global_bob<<..::ChapterCounter.local_bob<<::++ExerciseCounter"
+
+            would give the list (I invent the counter values):
+
+                [
+                    OtherText("hello world "),
+                    HandleAssignment("global_bob"),
+                    CounterIncrement("ChapterCounter", "6", False),
+                    ConnectorPuncutationText("."),
+                    HandleAssignment("local_bob"),
+                    CounterIncrement("ExerciseCounter", "7", True),
+                ] : List(Quirgy)
+
+            Note that breaking the line up like this may take several intermediate steps. 
+            (I don't know.)
+
+            - create a function called quirgies_prefix_handle_value:
+
+            fn quirgies_prefix_handle_value(quirgies: List(Quirgy)) -> String {
+                case quirgies {
+                    [] -> ""
+                    [OtherText(_), ..] -> "" // sic: we stop here, do not recurse
+                    [HandleAssignment(_), ..rest] -> quirgies_prefix_handle_value(rest)
+                    [ConnectorPuncutationText(p), ..rest] -> p <> quirgies_prefix_handle_value(rest)
+                    [CounterIncrement(_, updated_value, _), ..rest] -> updated_value <> quirgies_prefix_handle_value(rest)
+                }
+            }
+
+            - with
+
+                type ComputedHandleAssignment = {
+                    ComputedHandleAssignment(handle_name: String, handle_value: String)
+                }
+
+            create a function
+
+                fn quirgies_processor(
+                    quirgies: List(Quirgy),
+                    string_so_far: String,
+                    handle_assignments_so_far: List(ComputedHandleAssignment)
+                ) -> Result(#(String, List(ComputedHandleAssignment)), Nil) {
+                    case quirgies {
+                        [] -> Ok(#(string_so_far, handle_assignments_so_far |> list.reverse))
+                        [HandleAssignment(handle_name), ..rest] ->
+                            case quirgies_prefix_handle_value(rest) -> {
+                                "" -> Error(Nil)
+                                nonempty_value -> quirgies_processor(
+                                    rest,
+                                    string_so_far,
+                                    [ComputedHandleAssignment(handle_name, nonempty_value), ..handle_assignments_so_far]
+                                )
+                            }
+                        [OtherText(t), ..rest] ->
+                            quirgies_processor(
+                                rest,
+                                string_so_far <> t,
+                                handle_assignments_so_far
+                            )
+                        [ConnectorPuncutationText(t), ..rest] ->
+                            quirgies_processor(
+                                rest,
+                                string_so_far <> t,
+                                handle_assignments_so_far
+                            )
+                        [CounterIncrement(_, updated_value, True), ..rest] ->
+                            quirgies_processor(
+                                rest,
+                                string_so_far <> updated_value,
+                                handle_assignments_so_far
+                            )
+                        [CounterIncrement(_, updated_value, False), ..rest] ->
+                            quirgies_processor(
+                                rest,
+                                string_so_far,
+                                handle_assignments_so_far
+                            )
+                    }
+                }
+
+            - use the Error of quirgies_processor to create a DesugaringError (with blame
+            of content line) (of course)
+
+            - in the non-Error return value
+
+                #(String, List(ComputedHandleAssignment))
+
+            of quirgies_processor, the String part will replace the line "content"; and for
+            each ComputedHandleAssignment(name, value) you need to add an attribute:
+
+                `handle <name> <value>`
+
+            to the v-node that we're processing (that's why the loop starts with "for each)
+            non-text node...": we need to be working with the parent of the text node that contained
+            the line); there should not be an existing attribute `handle <name>` (with or without a
+            following value) for this node, otherwise that's an error
+
+            the handle-value dictionary does not need to be updated or recorded in this desugarer,
+            in fact it is still missing crucial info. See "Feature 2." below
+
+
+====
+
+Feature 2.
+
+Before replacing ">>handle" occurences:
+
+Figure out the "local path" for each part of the document. (E.g., "chapters/chapter1" or whatever.)
+You can this info to each element with a `handle` attribute; it becomes:
+
+    `handle <name> <value> <containing_page_local_path>`
+
+(At this point in the pipeline you should throw a DesugaringError if you find a `handle <name>` attribute
+that is missing a `<value>` field next to to the <name>.)
+
+Next write a desugarer that generates a unique ID for each element that has a "handle" attribute. The
+unique ID can be generated any stupid way, also randomly. The id should be added as a real attribute to
+element. (It will become a real HTML id.)
+
+Thirdly generate a global handle dictionary of the form...
+
+    Dict(name: String, #(value: String, path: String, id: String))
+
+...mentioned above. 
+
+Now fincally we can replace each >>handle occurrence by the appropriate <a>-tag, with an href!
+
+
+====
+
+Feature 3.  ------FUTURE WORK NOT RIGHT NOW-------
+
+Make fancier desugarers that can expand the <a>-tag of a handle to contain
+more than just the handle, but some prefix words as well; and other tricks such as "more specific
+links override nearby less specific links", e.g. we will find a way that instead of having
+
+    Exercise >>ch3.>>quadratic_exercise
+
+produce output such as
+
+    Exercise <a href="chapters/chapter3">3</a>.<a href="chapters/chapter3/#zfxe2">2</a>
+
+it will produce something like
+
+    <a href="chapters/chapter3/#zfxe">Exercise 3.2</a>
+
+...!

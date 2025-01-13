@@ -2,7 +2,7 @@
     counter Counter
 
     handle2<<::::Counter
-    handle3<<handle1<<::++Counter
+    handle3<<handle1<<::++Counter::++Counter
 
     |> Exercises
         |> Exercise
@@ -24,8 +24,8 @@
 
     |> padding
 
-        this is >>handle1
-        this is >>handle1
+        handle1 is: >>handle1
+        handle3 is: >>handle3
     $$
     a^2 + b^2
     $$
