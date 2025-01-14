@@ -1,5 +1,6 @@
 import blamedlines.{type Blame, Blame}
 import gleam/int
+import gleam/io
 import gleam/list
 import gleam/option
 import gleam/regexp
@@ -214,6 +215,109 @@ fn get_all_handles_from_match_content(match_content: String) -> List(String) {
   list.reverse(rest)
 }
 
+fn split_expressions(
+  splits: List(String),
+) -> List(#(String, String, String, option.Option(String))) {
+  case splits {
+    [] -> []
+    splits -> {
+      let assert [_, insert_or_not, mutation, counter_name, ..rest] = splits
+
+      let #(split_char, rest) = case list.length(rest) > 1 {
+        True -> {
+          let assert [split_char, ..rest_rest] = rest
+          #(option.Some(split_char), ["", ..rest_rest])
+        }
+        False -> #(option.None, [])
+      }
+
+      [
+        #(insert_or_not, mutation, counter_name, split_char),
+        ..split_expressions(rest)
+      ]
+    }
+  }
+}
+
+fn get_all_counters_from_match_content(
+  match_content: String,
+  // insert or not
+  // mutation
+  // counter name
+  // splits character
+) -> List(#(String, String, String, option.Option(String))) {
+  let assert [last, ..] = string.split(match_content, "<<") |> list.reverse()
+  let assert Ok(re) = regexp.from_string("(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
+  let splits = regexp.split(re, last)
+  split_expressions(splits)
+}
+
+fn handle_counter_expressions(
+  blame: Blame,
+  expressions: List(#(String, String, String, option.Option(String))),
+  // string_output: String,
+  counters: List(CounterInstance),
+  // ignores insert_or_not to be used as value fo handles
+  // outout that will be put in the result
+) -> Result(#(String, String, List(CounterInstance)), DesugaringError) {
+  case expressions {
+    [] -> Ok(#("", "", counters))
+    [#(insert_or_not, mutation, counter_name, split_char), ..rest] -> {
+      case
+        list.find(counters, fn(x: CounterInstance) { x.name == counter_name })
+      {
+        Ok(_) -> {
+          // update counter
+          use updated_counters <- result.try(update_counter(
+            blame,
+            counters,
+            counter_name,
+            mutation,
+          ))
+          let assert Ok(updated_instance) =
+            list.find(updated_counters, fn(x: CounterInstance) {
+              x.name == counter_name
+            })
+
+          use #(rest_handles_value, rest_string_output, updated_counters) <- result.try(
+            handle_counter_expressions(blame, rest, updated_counters),
+          )
+
+          let split_char = case split_char {
+            option.Some(s) -> s
+            option.None -> ""
+          }
+
+          case insert_or_not == "::" {
+            True -> {
+              Ok(#(
+                updated_instance.current_value
+                  <> split_char
+                  <> rest_handles_value,
+                updated_instance.current_value <> rest_string_output,
+                updated_counters,
+              ))
+            }
+            False ->
+              Ok(#(
+                updated_instance.current_value
+                  <> split_char
+                  <> rest_handles_value,
+                rest_string_output,
+                counters,
+              ))
+          }
+        }
+        Error(_) ->
+          Error(DesugaringError(
+            blame,
+            "Counter " <> counter_name <> " is not defined",
+          ))
+      }
+    }
+  }
+}
+
 fn handle_matches(
   blame: Blame,
   matches: List(regexp.Match),
@@ -230,11 +334,14 @@ fn handle_matches(
     }
     [first, ..rest] -> {
       let regexp.Match(content, sub_matches) = first
+      // we need to get all counter expressions from content
+      let assert [_, handle_name, ..] = sub_matches
 
-      let assert [_, handle_name, _, insert_or_not, mutation, counter_name] =
-        sub_matches
-      let assert option.Some(counter_name) = counter_name
-      let assert option.Some(mutation) = mutation
+      let counter_expressions = get_all_counters_from_match_content(content)
+
+      use #(handles_value, expressions_output, updated_counters) <- result.try(
+        handle_counter_expressions(blame, counter_expressions, counters),
+      )
 
       let handle_names = case handle_name {
         option.None -> option.None
@@ -242,52 +349,31 @@ fn handle_matches(
           option.Some(get_all_handles_from_match_content(content))
       }
 
-      case
-        list.find(counters, fn(x: CounterInstance) { x.name == counter_name })
-      {
-        Ok(_) -> {
-          // update counter
-          use counters <- result.try(update_counter(
-            blame,
-            counters,
-            counter_name,
-            mutation,
-          ))
-          let assert Ok(updated_instance) =
-            list.find(counters, fn(x: CounterInstance) {
-              x.name == counter_name
-            })
-          // update handles
-          use updated_handles <- result.try(assign_to_handles(
-            blame,
-            handles,
-            handle_names,
-            updated_instance.current_value,
-          ))
-          // handle rest of matches
-          let assert [first_split, _, _, _, _, _, _, ..rest_splits] = splits
-          use #(str, updated_counters, updated_handles) <- result.try(
-            handle_matches(blame, rest, rest_splits, counters, updated_handles),
-          )
-          // replace counter syntax
-          case insert_or_not == option.Some("::") {
-            True -> {
-              Ok(#(
-                first_split <> updated_instance.current_value <> str,
-                updated_counters,
-                updated_handles,
-              ))
-            }
-            False ->
-              Ok(#(first_split <> str, updated_counters, updated_handles))
-          }
-        }
-        Error(_) ->
-          Error(DesugaringError(
-            blame,
-            "Counter " <> counter_name <> " is not defined",
-          ))
-      }
+      use updated_handles <- result.try(assign_to_handles(
+        blame,
+        handles,
+        handle_names,
+        handles_value,
+      ))
+
+      let assert [first_split, _, _, _, _, _, _, _, _, _, _, _, ..rest_splits] =
+        splits
+      use #(rest_output, updated_counters, updated_handles) <- result.try(
+        handle_matches(
+          blame,
+          rest,
+          rest_splits,
+          updated_counters,
+          updated_handles,
+        ),
+      )
+
+      Ok(#(
+        first_split <> expressions_output <> rest_output,
+        updated_counters,
+        updated_handles,
+      ))
+      // let #(insert_or_not, mutation, counter_name) = exp
     }
   }
 }
@@ -301,13 +387,19 @@ fn counter_regex(
   #(String, List(CounterInstance), List(HandleInstance)),
   DesugaringError,
 ) {
-  // examples
+  // examples 
+
+  // 1) one handle | one counter
+  // ---------------------------
 
   // "more handle<<::::MyCounter more" will result in
   // sub-matches of first match :
   //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("::"), Some   ("MyCounter")]
   // splits:
   //   ["more ", "handle<<", "handle", "<<", "::", "::", "MyCounter", " more"]
+
+  // 2) multiple handles | one counter
+  // ---------------------------------
 
   // "more handle1<<handle2<<::::MyCounter more" will result in
   // content of first match : (only diff between first case) 
@@ -317,13 +409,33 @@ fn counter_regex(
   // splits:
   //   ["more ", "handle2<<", "handle2", "<<", "::", "::", "MyCounter", " more"]
 
+  // 3) 0 handles | one counter
+  // --------------------------
+
   // "more ::::MyCounter more" will result in
   // sub-matches of first match :
   //   [None, None, None, Some("::"), Some("::"), Some   ("MyCounter")]
   // splits:
   //   ["more ", "", "", "", "::", "::", "MyCounter", " more"]
+
+  // 4) x handle | multiple counters + random text
+  // ---------------------------------------------
+
+  // "more handle<<::::MyCounter-::--HisCounter more" will result in
+  // ** content of first match: handle<<::::MyCounter-::--HisCounter
+
+  // sub-matches of first match :
+  //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("::"), Some("MyCounter"), Some("-::++HisCounter"), Some("-"), Some("::"), Some("++"), Some("HisCounter")]
+
+  // splits:
+  //   ["", "handle<<", "handle", "<<", "::", "::", "MyCounter", "-::++HisCounter", "-", "::", "++", "HisCounter", " more"]
+
+  // if there are multiple appearances of last regex part - only last one will be in splits and matches . so we need to use match content to get all of them
+
   let assert Ok(re) =
-    regexp.from_string("((\\w+)(<<))*(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
+    regexp.from_string(
+      "((\\w+)(<<))*(::|\\.\\.)(::|\\+\\+|--)(\\w+)((-|_|.|:|;|::|,)(::|\\.\\.)(::|\\+\\+|--)(\\w+))*",
+    )
 
   let matches = regexp.scan(re, content)
 

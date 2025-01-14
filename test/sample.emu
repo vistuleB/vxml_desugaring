@@ -1,40 +1,10 @@
 |> Book
     counter Counter
+    counter Counter2
+    counter Counter1
 
-    handle2<<::::Counter
-    handle3<<handle1<<::++Counter::++Counter
 
-    |> Exercises
-        |> Exercise
-            handle bob
+    asd handle2<<::::Counter-::++Counter2...::Counter1 asdasd
+    handle3<<handle1<<::++Counter
 
-            Bob is: >>bob
-
-    |> List
-
-        para1
-
-        para2
-
-        |> Grid
-
-            auot1
-            
-            auot1
-
-    |> padding
-
-        handle1 is: >>handle1
-        handle3 is: >>handle3
-    $$
-    a^2 + b^2
-    $$
-    What will happen to ImageRight?
-    |> span
-
-        blue
-    continued
-
-    not continued
-
-    |> ImageRight
+    this is handle2 >>handle2
