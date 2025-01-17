@@ -1,4 +1,5 @@
 import blamedlines.{type Blame, Blame}
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
 import gleam/list
@@ -28,9 +29,11 @@ type CounterInstance {
   )
 }
 
-type HandleInstance {
-  HandleInstance(name: String, value: String)
-}
+pub type HandleInstances =
+  Dict(String, #(String, String, String))
+
+//   handle   local path, element id, string value
+//   name     of page     on page     of handle
 
 fn check_counter_already_defined(
   new_counter_name: String,
@@ -53,21 +56,21 @@ fn check_counter_already_defined(
 
 fn check_handle_already_defined(
   new_handle_name: String,
-  handles: List(HandleInstance),
+  handles: HandleInstances,
   blame: Blame,
 ) -> Result(Nil, DesugaringError) {
-  let existing_handle_names =
-    handles
-    |> list.map(fn(x) { x.name })
-
-  case list.contains(existing_handle_names, new_handle_name) {
-    True ->
+  case dict.get(handles, new_handle_name) {
+    Ok(_) ->
       Error(DesugaringError(
         blame: blame,
         message: "Handle " <> new_handle_name <> " has already been used",
       ))
-    False -> Ok(Nil)
+    Error(_) -> Ok(Nil)
   }
+}
+
+fn generate_unique_id(handles: HandleInstances) {
+  handles |> dict.to_list |> list.length() |> string.inspect()
 }
 
 fn get_counters_from_attributes(
@@ -186,10 +189,10 @@ fn update_counter(
 
 fn assign_to_handles(
   blame: Blame,
-  handles: List(HandleInstance),
+  handles: HandleInstances,
   handle_names: option.Option(List(String)),
   value: String,
-) -> Result(List(HandleInstance), DesugaringError) {
+) -> Result(HandleInstances, DesugaringError) {
   case handle_names {
     option.None -> Ok(handles)
     option.Some(handle_names) -> {
@@ -200,10 +203,14 @@ fn assign_to_handles(
       )
       let handles =
         list.scan(handle_names, handles, fn(acc, handle_name) {
-          list.flatten([acc, [HandleInstance(handle_name, value)]])
+          dict.insert(acc, handle_name, #(
+            generate_unique_id(acc),
+            blame.filename,
+            value,
+          ))
         })
         |> list.last()
-        |> result.unwrap([])
+        |> result.unwrap(dict.from_list([]))
 
       Ok(handles)
     }
@@ -255,10 +262,13 @@ fn get_all_counters_from_match_content(
 fn handle_counter_expressions(
   blame: Blame,
   expressions: List(#(String, String, String, option.Option(String))),
-  // string_output: String,
   counters: List(CounterInstance),
-  // ignores insert_or_not to be used as value fo handles
-  // outout that will be put in the result
+  // ignores insert_or_not  outout that 
+  // to be used as          will be put 
+  // value fo handles       in the result
+  //           |          /
+  //           |         /
+  //           |        /
 ) -> Result(#(String, String, List(CounterInstance)), DesugaringError) {
   case expressions {
     [] -> Ok(#("", "", counters))
@@ -323,11 +333,8 @@ fn handle_matches(
   matches: List(regexp.Match),
   splits: List(String),
   counters: List(CounterInstance),
-  handles: List(HandleInstance),
-) -> Result(
-  #(String, List(CounterInstance), List(HandleInstance)),
-  DesugaringError,
-) {
+  handles: HandleInstances,
+) -> Result(#(String, List(CounterInstance), HandleInstances), DesugaringError) {
   case matches {
     [] -> {
       Ok(#(string.join(splits, ""), counters, handles))
@@ -382,11 +389,8 @@ fn counter_regex(
   blame: Blame,
   content: String,
   counters: List(CounterInstance),
-  handles: List(HandleInstance),
-) -> Result(
-  #(String, List(CounterInstance), List(HandleInstance)),
-  DesugaringError,
-) {
+  handles: HandleInstances,
+) -> Result(#(String, List(CounterInstance), HandleInstances), DesugaringError) {
   // examples 
 
   // 1) one handle | one counter
@@ -447,9 +451,9 @@ fn counter_regex(
 fn update_contents(
   contents: List(BlamedContent),
   counters: List(CounterInstance),
-  handles: List(HandleInstance),
+  handles: HandleInstances,
 ) -> Result(
-  #(List(BlamedContent), List(CounterInstance), List(HandleInstance)),
+  #(List(BlamedContent), List(CounterInstance), HandleInstances),
   DesugaringError,
 ) {
   case contents {
@@ -483,7 +487,7 @@ fn take_existing_counters(
 fn transform_children_recursive(
   children: List(VXML),
   counters: List(CounterInstance),
-  handles: List(HandleInstance),
+  handles: HandleInstances,
 ) {
   case children {
     [] -> Ok(#([], counters, handles))
@@ -502,28 +506,33 @@ fn transform_children_recursive(
 }
 
 fn convert_handles_to_attributes(
-  handles: List(HandleInstance),
+  handles: HandleInstances,
 ) -> List(BlamedAttribute) {
   let blame = Blame("", 0, [])
 
-  list.map(handles, fn(handle) {
+  list.map2(handles |> dict.keys, handles |> dict.values, fn(name, info) {
+    let #(id, path, value) = info
     BlamedAttribute(
       blame: blame,
-      key: "handle_" <> handle.name,
-      value: handle.value,
+      key: "handle_" <> name,
+      value: id <> " | " <> path <> " | " <> value,
     )
   })
+  // list.map(handles, fn(handle) {
+  //   BlamedAttribute(
+  //     blame: blame,
+  //     key: "handle_" <> handle.name,
+  //     value: handle.value,
+  //   )
+  // })
 }
 
 fn counter_transform(
   vxml: VXML,
   counters: List(CounterInstance),
-  handles: List(HandleInstance),
+  handles: HandleInstances,
   is_root: Bool,
-) -> Result(
-  #(VXML, List(CounterInstance), List(HandleInstance)),
-  DesugaringError,
-) {
+) -> Result(#(VXML, List(CounterInstance), HandleInstances), DesugaringError) {
   case vxml {
     V(b, t, attributes, children) -> {
       use new_counters <- result.try(
@@ -571,7 +580,12 @@ fn counter_transform(
 
 pub fn counter_desugarer() -> Pipe {
   #(DesugarerDescription("Counter", option.None, "..."), fn(vxml) {
-    use #(vxml, _, _) <- result.try(counter_transform(vxml, [], [], True))
+    use #(vxml, _, _) <- result.try(counter_transform(
+      vxml,
+      [],
+      dict.new(),
+      True,
+    ))
     Ok(vxml)
   })
 }
