@@ -1,3 +1,4 @@
+import gleam/option.{Some, None}
 import desugarers/rename_when_child_of.{rename_when_child_of}
 import desugarers/absorb_next_sibling_while.{absorb_next_sibling_while}
 import desugarers/add_attributes.{add_attributes}
@@ -30,9 +31,10 @@ import desugarers/group_siblings_not_separated_by_blank_lines.{group_siblings_no
 import desugarers/surround_elements_by.{surround_elements_by}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
+import desugarers/generate_lbp_table_of_contents.{generate_lbp_table_of_contents}
 import infrastructure.{type Pipe} as infra
 
-pub fn pipeline_constructor() -> List(Pipe) {
+pub fn lbp_pipeline() -> List(Pipe) {
   let double_dollar_indexed_regex =
     infra.unescaped_suffix_indexed_regex("\\$\\$")
 
@@ -84,6 +86,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // $$ *********************
     // ************************
+    // 3.
     split_by_indexed_regexes(
       #([#(double_dollar_indexed_regex, "DoubleDollar")], []),
     ),
@@ -93,6 +96,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // AddTitleCounters *******
     // ************************
+    // 7.
     add_title_counters_and_titles_with_handle_assignments([
       #("Chapter", "ExampleCounter", "Example", "*Example ", ".*", "*Example.*"),
       #("Chapter", "NoteCounter", "Note", "_Note ", "._", "_Note._"),
@@ -109,6 +113,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     // ************************
     // VerticalChunk **********
     // ************************
+    // 8.
     surround_elements_by(#(
       [
         "MathBlock", "Image", "Table", "Exercises", "Solution", "Example",
@@ -299,5 +304,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ]),
     // Self closed tags
     add_attributes(#(["col"], [#("is_self_closed", "true")])),
+    generate_lbp_table_of_contents(#("PanelAuthorSuppliedContents", "PanelTitle", "PanelItem", None)),
+    generate_lbp_table_of_contents(#("TOCAuthorSuppliedContents", "TOCTitle", "TOCItem", Some("Spacer"))),
   ]
 }

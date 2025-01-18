@@ -5,9 +5,8 @@ import gleam/list
 import gleam/result
 import gleam/string
 import infrastructure.{
-  type DesugaringError, type Pipe, DesugaringError, get_root, nillify_error,
-  on_error_on_ok,
-}
+  type DesugaringError, type Pipe, DesugaringError
+} as infra
 import leptos_emitter
 import pipeline
 import pipeline_debug.{desugarer_description_star_block, star_block}
@@ -68,14 +67,14 @@ pub fn assemble_and_desugar(
     True -> #(0, list.length(pipeline))
   }
 
-  use lines <- on_error_on_ok(
+  use lines <- infra.on_error_on_ok(
     writerly_parser.assemble_blamed_lines(path),
-    nillify_error("got an error from writerly_parser.assemble_blamed_lines: "),
+    infra.nillify_error("got an error from writerly_parser.assemble_blamed_lines: "),
   )
 
-  use writerlys <- on_error_on_ok(
+  use writerlys <- infra.on_error_on_ok(
     writerly_parser.parse_blamed_lines(lines, False),
-    nillify_error("got an error from writerly_parser.parse_blamed_lines: "),
+    infra.nillify_error("got an error from writerly_parser.parse_blamed_lines: "),
   )
 
   case debug_end >= 1 {
@@ -90,9 +89,9 @@ pub fn assemble_and_desugar(
 
   let vxmls = writerly_parser.writerlys_to_vxmls(writerlys)
 
-  use vxml <- on_error_on_ok(
-    get_root(vxmls),
-    nillify_error("got an error from get_root before starting pipeline: "),
+  use vxml <- infra.on_error_on_ok(
+    infra.get_root(vxmls),
+    infra.nillify_error("got an error from get_root before starting pipeline: "),
   )
 
   case debug_end >= 1 {
@@ -105,9 +104,9 @@ pub fn assemble_and_desugar(
       |> io.print
   }
 
-  use desugared <- on_error_on_ok(
+  use desugared <- infra.on_error_on_ok(
     desugar(vxml, pipeline, 1, debug_start, debug_end),
-    nillify_error("there was a desugaring error"),
+    infra.nillify_error("there was a desugaring error"),
   )
 
   Ok(desugared)
@@ -130,7 +129,7 @@ pub fn emit_book(
   emitter emitter: String,
   output_folder output_folder: String,
 ) {
-  assemble_and_desugar_and_callback(path, pipeline.pipeline_constructor(), -1, -1, fn(desugared) {
+  assemble_and_desugar_and_callback(path, pipeline.lbp_pipeline(), -1, -1, fn(desugared) {
     leptos_emitter.write_splitted(desugared, output_folder, emitter)
   })
 }
@@ -203,5 +202,5 @@ pub fn process_command_line_args(args: List(String), pipeline: List(Pipe)) -> Ni
 
 pub fn main() {
   argv.load().arguments
-  |> process_command_line_args(pipeline.pipeline_constructor())
+  |> process_command_line_args(pipeline.lbp_pipeline())
 }

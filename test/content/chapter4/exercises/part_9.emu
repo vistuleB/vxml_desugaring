@@ -1,5 +1,4 @@
 |> Exercise
-    counter hi
 
     ```python
     hello = hi
