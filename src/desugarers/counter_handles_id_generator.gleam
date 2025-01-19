@@ -31,9 +31,12 @@ fn generate_id_for_handles_transform(
         })
 
       let attributes =
-        has_handles
+        attributes
         |> list.index_map(fn(att, _) {
-          BlamedAttribute(..att, value: id <> " | " <> att.value)
+          case string.starts_with(att.key, "handle_") {
+            True -> BlamedAttribute(..att, value: id <> " | " <> att.value)
+            False -> att
+          }
         })
 
       let id_attribute = case list.is_empty(has_handles) {
