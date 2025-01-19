@@ -1,38 +1,47 @@
 import blamedlines.{type Blame}
+import desugarers/counter_handles_dict_factory.{type HandleInstances}
+import gleam/dict
 import gleam/list
 import gleam/option
 import gleam/regexp
 import gleam/result
 import gleam/string
 import infrastructure.{
-  type DesugaringError, type Pipe, type StatefulDownAndUpNodeToNodeTransform,
-  DesugarerDescription, DesugaringError, StatefulDownAndUpNodeToNodeTransform,
+  type DesugaringError, type Pipe, type StatefulDownAndUpNodeToNodesTransform,
+  DesugarerDescription, DesugaringError, StatefulDownAndUpNodeToNodesTransform,
 } as infra
 import vxml_parser.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
   BlamedContent, T, V,
 }
 
-type HandleInstance {
-  HandleInstance(name: String, value: String)
+fn construct_hyperlink(blame: Blame, handle: #(String, String, String)) {
+  let #(id, filename, value) = handle
+  V(blame, "a", [BlamedAttribute(blame, "href", "/" <> filename <> "#" <> id)], [
+    T(blame, [BlamedContent(blame, value)]),
+  ])
 }
 
 fn handle_handle_matches(
   blame: Blame,
   matches: List(regexp.Match),
   splits: List(String),
-  handles: List(HandleInstance),
-) -> Result(String, DesugaringError) {
+  handles: HandleInstances,
+  //         
+  //
+  //
+  //
+) -> Result(List(VXML), DesugaringError) {
   case matches {
     [] -> {
-      Ok(string.join(splits, ""))
+      Ok([T(blame, [BlamedContent(blame, string.join(splits, " "))])])
     }
     [first, ..rest] -> {
       let regexp.Match(_, sub_matches) = first
 
       let assert [_, handle_name] = sub_matches
       let assert option.Some(handle_name) = handle_name
-      case list.find(handles, fn(x) { x.name == handle_name }) {
+      case dict.get(handles, handle_name) {
         Error(_) ->
           Error(DesugaringError(
             blame,
@@ -46,7 +55,13 @@ fn handle_handle_matches(
             rest_splits,
             handles,
           ))
-          Ok(first_split <> handle.value <> rest_content)
+          Ok(
+            list.flatten([
+              [T(blame, [BlamedContent(blame, first_split)])],
+              [construct_hyperlink(blame, handle)],
+              rest_content,
+            ]),
+          )
         }
       }
     }
@@ -55,8 +70,8 @@ fn handle_handle_matches(
 
 fn print_handle(
   blamed_line: BlamedContent,
-  handles: List(HandleInstance),
-) -> Result(String, DesugaringError) {
+  handles: HandleInstances,
+) -> Result(List(VXML), DesugaringError) {
   let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
 
   let matches = regexp.scan(re, blamed_line.content)
@@ -66,26 +81,28 @@ fn print_handle(
 
 fn print_handle_for_contents(
   contents: List(BlamedContent),
-  handles: List(HandleInstance),
-) -> Result(List(BlamedContent), DesugaringError) {
+  handles: HandleInstances,
+) -> Result(List(VXML), DesugaringError) {
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
       use updated_line <- result.try(print_handle(first, handles))
       use updated_rest <- result.try(print_handle_for_contents(rest, handles))
 
-      Ok([BlamedContent(first.blame, updated_line), ..updated_rest])
+      Ok(list.flatten([updated_line, updated_rest]))
     }
   }
 }
 
 fn get_handles_from_root_attributes(
   attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), List(HandleInstance)) {
+) -> #(List(BlamedAttribute), HandleInstances) {
   let handles =
     list.filter(attributes, fn(att) { string.starts_with(att.key, "handle_") })
-    |> list.map(fn(att) {
-      HandleInstance(string.drop_start(att.key, 7), att.value)
+    |> list.fold(dict.new(), fn(acc, att) {
+      let handle_name = string.drop_start(att.key, 7)
+      let assert [id, filename, value] = att.value |> string.split(" | ")
+      dict.insert(acc, handle_name, #(id, filename, value))
     })
 
   let filtered_attributes =
@@ -97,65 +114,72 @@ fn get_handles_from_root_attributes(
 
 fn counter_handles_transform_to_get_handles(
   vxml: VXML,
-  handles: List(HandleInstance),
-) -> Result(#(VXML, List(HandleInstance)), DesugaringError) {
+  handles: HandleInstances,
+) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   case vxml {
     V(b, t, attributes, c) -> {
       case t == "GrandWrapper" {
-        False -> Ok(#(vxml, handles))
+        False -> Ok(#([vxml], handles))
         True -> {
           let #(filtered_attributes, handles) =
             get_handles_from_root_attributes(attributes)
 
-          Ok(#(V(b, t, filtered_attributes, c), handles))
+          Ok(#([V(b, t, filtered_attributes, c)], handles))
         }
       }
     }
-    _ -> Ok(#(vxml, handles))
+    _ -> Ok(#([vxml], handles))
   }
 }
 
 fn counter_handles_transform_to_replace_handles(
   vxml: VXML,
-  handles: List(HandleInstance),
-) -> Result(#(VXML, List(HandleInstance)), DesugaringError) {
+  handles: HandleInstances,
+) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   case vxml {
     T(b, contents) -> {
       use update_contents <- result.try(print_handle_for_contents(
         contents,
         handles,
       ))
-      Ok(#(T(b, update_contents), handles))
+      Ok(#(update_contents, handles))
     }
     V(_, t, _, children) -> {
       case t == "GrandWrapper" {
-        False -> Ok(#(vxml, handles))
+        False -> Ok(#([vxml], handles))
         True -> {
           let assert [first_child] = children
-          Ok(#(first_child, handles))
+          Ok(#([first_child], handles))
         }
       }
     }
   }
 }
 
-fn counter_handle_transform_factory() -> StatefulDownAndUpNodeToNodeTransform(
-  List(HandleInstance),
+fn counter_handle_transform_factory() -> StatefulDownAndUpNodeToNodesTransform(
+  HandleInstances,
 ) {
-  StatefulDownAndUpNodeToNodeTransform(
+  StatefulDownAndUpNodeToNodesTransform(
     before_transforming_children: fn(vxml, s) {
-      counter_handles_transform_to_get_handles(vxml, s)
+      use #(vxml, handles) <- result.try(
+        counter_handles_transform_to_get_handles(vxml, s),
+      )
+      let assert [vxml] = vxml
+      Ok(#(vxml, handles))
     },
     after_transforming_children: fn(vxml, _, new) {
-      counter_handles_transform_to_replace_handles(vxml, new)
+      use #(vxml, handles) <- result.try(
+        counter_handles_transform_to_replace_handles(vxml, new),
+      )
+      Ok(#(vxml, handles))
     },
   )
 }
 
 fn desugarer_factory() {
-  infra.stateful_down_up_node_to_node_desugarer_factory(
+  infra.stateful_down_up_node_to_nodes_desugarer_factory(
     counter_handle_transform_factory(),
-    [],
+    dict.new(),
   )
 }
 

@@ -1006,6 +1006,113 @@ pub fn stateful_down_up_node_to_node_desugarer_factory(
   }
 }
 
+pub type StatefulDownAndUpNodeToNodesTransform(a) {
+  StatefulDownAndUpNodeToNodesTransform(
+    before_transforming_children: fn(VXML, a) ->
+      Result(#(VXML, a), DesugaringError),
+    after_transforming_children: fn(VXML, a, a) ->
+      Result(#(List(VXML), a), DesugaringError),
+  )
+}
+
+fn stateful_down_up_node_to_nodes_many(
+  state: a,
+  vxmls: List(VXML),
+  transform: StatefulDownAndUpNodeToNodesTransform(a),
+) -> Result(#(List(VXML), a), DesugaringError) {
+  case vxmls {
+    [] -> Ok(#([], state))
+    [first, ..rest] -> {
+      use #(first_transformed, new_state) <- result.then(
+        stateful_down_up_node_to_nodes_one(state, first, transform),
+      )
+      use #(rest_transformed, new_new_state) <- result.then(
+        stateful_down_up_node_to_nodes_many(new_state, rest, transform),
+      )
+      Ok(#(list.flatten([first_transformed, rest_transformed]), new_new_state))
+    }
+  }
+}
+
+fn stateful_down_up_node_to_nodes_apply_first_half(
+  state: a,
+  node: VXML,
+  transform_pair: StatefulDownAndUpNodeToNodesTransform(a),
+) -> Result(#(VXML, a), DesugaringError) {
+  let StatefulDownAndUpNodeToNodesTransform(
+    before_transforming_children: t1,
+    after_transforming_children: _,
+  ) = transform_pair
+  t1(node, state)
+}
+
+fn stateful_down_up_node_to_nodes_apply_second_half(
+  original_state_when_node_entered: a,
+  new_state_after_children_processed: a,
+  node: VXML,
+  transform_pair: StatefulDownAndUpNodeToNodesTransform(a),
+) -> Result(#(List(VXML), a), DesugaringError) {
+  let StatefulDownAndUpNodeToNodesTransform(
+    before_transforming_children: _,
+    after_transforming_children: t2,
+  ) = transform_pair
+  t2(node, original_state_when_node_entered, new_state_after_children_processed)
+}
+
+fn stateful_down_up_node_to_nodes_apply_to_children(
+  state: a,
+  node: VXML,
+  transform_pair: StatefulDownAndUpNodeToNodesTransform(a),
+) -> Result(#(VXML, a), DesugaringError) {
+  case node {
+    T(_, _) -> Ok(#(node, state))
+    V(blame, tag, attrs, children) -> {
+      use #(new_children, new_state) <- result.then(
+        stateful_down_up_node_to_nodes_many(state, children, transform_pair),
+      )
+      Ok(#(V(blame, tag, attrs, new_children), new_state))
+    }
+  }
+}
+
+fn stateful_down_up_node_to_nodes_one(
+  state: a,
+  node: VXML,
+  transform_pair: StatefulDownAndUpNodeToNodesTransform(a),
+) -> Result(#(List(VXML), a), DesugaringError) {
+  use #(new_node, new_state) <- result.then(
+    stateful_down_up_node_to_nodes_apply_first_half(state, node, transform_pair),
+  )
+  use #(new_new_node, new_new_state) <- result.then(
+    stateful_down_up_node_to_nodes_apply_to_children(
+      new_state,
+      new_node,
+      transform_pair,
+    ),
+  )
+  stateful_down_up_node_to_nodes_apply_second_half(
+    state,
+    new_new_state,
+    new_new_node,
+    transform_pair,
+  )
+}
+
+pub fn stateful_down_up_node_to_nodes_desugarer_factory(
+  transform: StatefulDownAndUpNodeToNodesTransform(a),
+  initial_state: a,
+) -> Desugarer {
+  fn(vxml) {
+    case stateful_down_up_node_to_nodes_one(initial_state, vxml, transform) {
+      Error(err) -> Error(err)
+      Ok(#(new_vxml, _)) -> {
+        let assert [new_vxml] = new_vxml
+        Ok(new_vxml)
+      }
+    }
+  }
+}
+
 //**********************************************************************
 //* desugaring efforts #2: depth-first-search, node-to-nodes transform *
 //* ; see 'pub' function(s) below                                      *
