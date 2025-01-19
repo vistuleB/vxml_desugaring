@@ -63,19 +63,53 @@ fn get_handles_from_attributes(
   #(filtered_attributes, extracted_handles)
 }
 
-fn children_loop(children: List(VXML), handles: HandleInstances) {
+fn children_loop(
+  children: List(VXML),
+  handles: HandleInstances,
+  extra: Extra,
+  local_path: String,
+) {
   case children {
     [] -> Ok(#(children, handles))
     [first, ..rest] -> {
       use #(updated_child, updated_handles) <- result.try(
-        handles_dict_factory_transform(first, handles, False),
+        handles_dict_factory_transform(first, handles, False, extra, local_path),
       )
       use #(updated_children, updated_handles) <- result.try(children_loop(
         rest,
         updated_handles,
+        extra,
+        local_path,
       ))
       Ok(#(list.flatten([[updated_child], updated_children]), updated_handles))
     }
+  }
+}
+
+fn update_local_path(
+  node: VXML,
+  extra: Extra,
+  local_path: String,
+) -> Result(String, DesugaringError) {
+  let assert V(b, t, attributes, _) = node
+  case
+    list.find(extra, fn(e) {
+      let #(tag, _) = e
+      tag == t
+    })
+  {
+    Ok(#(_, att_key)) -> {
+      // let assert Ok(BlamedAttribute(_, _, value)) =
+      case attributes |> list.find(fn(att) { att.key == att_key }) {
+        Ok(BlamedAttribute(_, _, value)) -> Ok(value)
+        Error(_) ->
+          Error(DesugaringError(
+            b,
+            "Attribute " <> att_key <> " not found for node " <> t,
+          ))
+      }
+    }
+    Error(_) -> Ok(local_path)
   }
 }
 
@@ -83,9 +117,14 @@ fn handles_dict_factory_transform(
   vxml: VXML,
   handles: HandleInstances,
   is_root: Bool,
+  extra: Extra,
+  local_path: String,
 ) -> Result(#(VXML, HandleInstances), DesugaringError) {
   case vxml {
     V(b, t, attributes, children) -> {
+      // check local path in extra list
+      use local_path <- result.try(update_local_path(vxml, extra, local_path))
+
       let #(attributes, extracted_handles) =
         attributes
         |> get_handles_from_attributes()
@@ -95,13 +134,15 @@ fn handles_dict_factory_transform(
           let #(handle_name, att_value) = handle
           let assert [id, handle_value] = string.split(att_value, " | ")
           use _ <- result.try(check_handle_already_defined(handle_name, acc, b))
-          Ok(dict.insert(acc, handle_name, #(id, b.filename, handle_value)))
+          Ok(dict.insert(acc, handle_name, #(id, local_path, handle_value)))
         }),
       )
 
       use #(updated_children, updated_handles) <- result.try(children_loop(
         children,
         handles,
+        extra,
+        local_path,
       ))
 
       case is_root {
@@ -122,12 +163,22 @@ fn handles_dict_factory_transform(
   }
 }
 
-pub fn handles_dict_factory_desugarer() -> Pipe {
+type Extra =
+  List(#(String, String))
+
+//        ^        ^
+//  tags to      attribute key
+//  get local    that mentions
+//  path from    local path
+
+pub fn handles_dict_factory_desugarer(extra: Extra) -> Pipe {
   #(DesugarerDescription("Handles dictionary factory", None, "..."), fn(vxml) {
     use #(vxml, _) <- result.try(handles_dict_factory_transform(
       vxml,
       dict.new(),
       True,
+      extra,
+      "",
     ))
     Ok(vxml)
   })
