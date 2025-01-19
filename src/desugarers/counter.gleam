@@ -211,6 +211,7 @@ fn assign_to_handles(
 fn handles_as_attributes(
   blame: Blame,
   node: VXML,
+  // handles: List(HandleInstance),
   handle_names: Option(List(String)),
   value: String,
 ) -> VXML {
@@ -340,27 +341,16 @@ fn handle_counter_expressions(
   }
 }
 
-fn construct_span(blame: Blame, value: String) {
-  // let #(id, filename, value) = handle
-  V(blame, "span", [], [T(blame, [BlamedContent(blame, value)])])
-}
-
 fn handle_matches(
   blame: Blame,
   matches: List(regexp.Match),
   splits: List(String),
   counters: List(CounterInstance),
-) -> Result(#(List(VXML), List(CounterInstance)), DesugaringError) {
+  parent: VXML,
+) -> Result(#(String, VXML, List(CounterInstance)), DesugaringError) {
   case matches {
     [] -> {
-      case splits {
-        [] -> Ok(#([], counters))
-        _ ->
-          Ok(#(
-            [T(blame, [BlamedContent(blame, string.join(splits, " "))])],
-            counters,
-          ))
-      }
+      Ok(#(string.join(splits, ""), parent, counters))
     }
     [first, ..rest] -> {
       let regexp.Match(content, sub_matches) = first
@@ -378,24 +368,33 @@ fn handle_matches(
         Some(_) -> Some(get_all_handles_from_match_content(content))
       }
 
-      let span =
-        construct_span(blame, expressions_output)
-        |> handles_as_attributes(blame, _, handle_names, handles_value)
+      let updated_parent =
+        handles_as_attributes(blame, parent, handle_names, handles_value)
+
+      // use updated_handles <- result.try(assign_to_handles(
+      //   blame,
+      //   handles,
+      //   handle_names,
+      //   handles_value,
+      // ))
 
       let assert [first_split, _, _, _, _, _, _, _, _, _, _, _, ..rest_splits] =
         splits
-      use #(rest_output, updated_counters) <- result.try(handle_matches(
-        blame,
-        rest,
-        rest_splits,
+      use #(rest_output, updated_parent, updated_counters) <- result.try(
+        handle_matches(
+          blame,
+          rest,
+          rest_splits,
+          updated_counters,
+          updated_parent,
+        ),
+      )
+
+      Ok(#(
+        first_split <> expressions_output <> rest_output,
+        updated_parent,
         updated_counters,
       ))
-
-      let t = case string.is_empty(first_split) {
-        True -> []
-        False -> [T(blame, [BlamedContent(blame, first_split)])]
-      }
-      Ok(#(list.flatten([t, [span], rest_output]), updated_counters))
       // let #(insert_or_not, mutation, counter_name) = exp
     }
   }
@@ -405,7 +404,8 @@ fn counter_regex(
   blame: Blame,
   content: String,
   counters: List(CounterInstance),
-) -> Result(#(List(VXML), List(CounterInstance)), DesugaringError) {
+  parent: VXML,
+) -> Result(#(String, VXML, List(CounterInstance)), DesugaringError) {
   // examples 
 
   // 1) one handle | one counter
@@ -460,29 +460,32 @@ fn counter_regex(
 
   let splits = regexp.split(re, content)
 
-  handle_matches(blame, matches, splits, counters)
+  handle_matches(blame, matches, splits, counters, parent)
 }
 
 fn update_contents(
-  blame: Blame,
   contents: List(BlamedContent),
   counters: List(CounterInstance),
-) -> Result(#(List(VXML), List(CounterInstance)), DesugaringError) {
+  parent: VXML,
+) -> Result(
+  #(List(BlamedContent), VXML, List(CounterInstance)),
+  DesugaringError,
+) {
   case contents {
-    [] -> Ok(#([T(blame, contents)], counters))
+    [] -> Ok(#(contents, parent, counters))
     [first, ..rest] -> {
-      use #(updated_content, updated_counters) <- result.try(counter_regex(
-        first.blame,
-        first.content,
-        counters,
-      ))
-      use #(rest_content, updated_counters) <- result.try(update_contents(
-        blame,
-        rest,
+      use #(updated_content, updated_parent, updated_counters) <- result.try(
+        counter_regex(first.blame, first.content, counters, parent),
+      )
+      use #(rest_content, updated_parent, updated_counters) <- result.try(
+        update_contents(rest, updated_counters, updated_parent),
+      )
+
+      Ok(#(
+        [BlamedContent(first.blame, updated_content), ..rest_content],
+        updated_parent,
         updated_counters,
       ))
-
-      Ok(#(list.flatten([updated_content, rest_content]), updated_counters))
     }
   }
 }
@@ -497,64 +500,84 @@ fn take_existing_counters(
 }
 
 fn transform_children_recursive(
+  parent: Option(VXML),
   children: List(VXML),
   counters: List(CounterInstance),
-) -> Result(#(List(VXML), List(CounterInstance)), DesugaringError) {
+) -> Result(#(List(VXML), Option(VXML), List(CounterInstance)), DesugaringError) {
   case children {
-    [] -> Ok(#([], counters))
+    [] -> Ok(#([], parent, counters))
     [first, ..rest] -> {
-      use #(updated_first, updated_counters) <- result.try(counter_transform(
-        first,
-        counters,
-      ))
+      use #(updated_first, updated_parent, updated_counters) <- result.try(
+        counter_transform(first, parent, counters),
+      )
       // next children will not have counters that were added by nested children ( because of take_existing_counter)
       // handles will have them
-      use #(updated_rest, updated_counters) <- result.try(
-        transform_children_recursive(rest, updated_counters),
+      use #(updated_rest, updated_parent, updated_counters) <- result.try(
+        transform_children_recursive(updated_parent, rest, updated_counters),
       )
-      Ok(#(list.flatten([updated_first, updated_rest]), updated_counters))
+      Ok(#([updated_first, ..updated_rest], updated_parent, updated_counters))
     }
   }
 }
 
+fn convert_handles_to_attributes(
+  handles: List(HandleInstance),
+) -> List(BlamedAttribute) {
+  let blame = Blame("", 0, [])
+
+  list.map(handles, fn(handle) {
+    BlamedAttribute(
+      blame: blame,
+      key: "handle_" <> handle.name,
+      value: handle.value,
+    )
+  })
+}
+
 fn counter_transform(
   vxml: VXML,
+  parent: Option(VXML),
   counters: List(CounterInstance),
-) -> Result(#(List(VXML), List(CounterInstance)), DesugaringError) {
+) -> Result(#(VXML, Option(VXML), List(CounterInstance)), DesugaringError) {
   case vxml {
     V(b, t, attributes, children) -> {
       use new_counters <- result.try(
         attributes
         |> get_counters_from_attributes(counters),
       )
-      use #(updated_children, updated_counters) <- result.try(
+      use #(updated_children, updated_parent, updated_counters) <- result.try(
         transform_children_recursive(
+          Some(vxml),
           children,
           list.append(counters, new_counters),
         ),
       )
+
+      let updated_attributes = case updated_parent {
+        Some(V(_, _, a, _)) -> a
+        _ -> attributes
+      }
       // let handles_as_attributs = convert_handles_to_attributes(updated_handles)
 
       Ok(#(
-        [V(b, t, attributes, updated_children)],
+        V(b, t, updated_attributes, updated_children),
+        parent,
         take_existing_counters(counters, updated_counters),
       ))
     }
     T(b, contents) -> {
-      use #(updated_contents, updated_counters) <- result.try(update_contents(
-        b,
-        contents,
-        counters,
-      ))
-      Ok(#(updated_contents, updated_counters))
+      let assert Some(parent) = parent
+      use #(updated_contents, updated_parent, updated_counters) <- result.try(
+        update_contents(contents, counters, parent),
+      )
+      Ok(#(T(b, updated_contents), Some(updated_parent), updated_counters))
     }
   }
 }
 
 pub fn counter_desugarer() -> Pipe {
   #(DesugarerDescription("Counter", None, "..."), fn(vxml) {
-    use #(vxml, _) <- result.try(counter_transform(vxml, []))
-    let assert [vxml] = vxml
+    use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
     Ok(vxml)
   })
 }
