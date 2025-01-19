@@ -17,7 +17,7 @@ import vxml_parser.{
 
 fn construct_hyperlink(blame: Blame, handle: #(String, String, String)) {
   let #(id, filename, value) = handle
-  V(blame, "a", [BlamedAttribute(blame, "href", "/" <> filename <> "#" <> id)], [
+  V(blame, "a", [BlamedAttribute(blame, "href", filename <> "#" <> id)], [
     T(blame, [BlamedContent(blame, value)]),
   ])
 }
