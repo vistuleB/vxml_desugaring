@@ -1,4 +1,3 @@
-import desugarers/rename_when_child_of.{rename_when_child_of}
 import desugarers/absorb_next_sibling_while.{absorb_next_sibling_while}
 import desugarers/add_attributes.{add_attributes}
 import desugarers/add_counter_attributes.{add_counter_attributes}
@@ -15,8 +14,14 @@ import desugarers/convert_int_attributes_to_float.{
 }
 import desugarers/counter.{counter_desugarer}
 import desugarers/counter_handles.{counter_handles_desugarer}
+import desugarers/counter_handles_dict_factory.{handles_dict_factory_desugarer}
+import desugarers/counter_handles_id_generator.{generate_id_for_handles}
+import desugarers/define_article_output_path.{define_article_output_path}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/free_children.{free_children}
+import desugarers/group_siblings_not_separated_by_blank_lines.{
+  group_siblings_not_separated_by_blank_lines,
+}
 import desugarers/insert_indent.{insert_indent}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/reinsert_math_dolar.{reinsert_math_dolar}
@@ -25,8 +30,8 @@ import desugarers/remove_empty_lines.{remove_empty_lines}
 import desugarers/remove_vertical_chunks_with_no_text_child.{
   remove_vertical_chunks_with_no_text_child,
 }
+import desugarers/rename_when_child_of.{rename_when_child_of}
 import desugarers/split_by_indexed_regexes.{split_by_indexed_regexes}
-import desugarers/group_siblings_not_separated_by_blank_lines.{group_siblings_not_separated_by_blank_lines}
 import desugarers/surround_elements_by.{surround_elements_by}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/wrap_math_with_no_break.{wrap_math_with_no_break}
@@ -123,7 +128,7 @@ pub fn pipeline_constructor() -> List(Pipe) {
     ),
     rename_when_child_of([
       #("VerticalChunk", "Item", "List"),
-      #("VerticalChunk", "Item", "Grid")
+      #("VerticalChunk", "Item", "Grid"),
     ]),
     unwrap_tags(["WriterlyBlankLine"]),
     remove_vertical_chunks_with_no_text_child(),
@@ -156,12 +161,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ["ClosingDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
       "CentralDisplayItalic",
     )),
-    fold_tags_into_text(
-      [
-        #("OpeningDoubleUnderscore", "__"),
-        #("ClosingDoubleUnderscore", "__"),
-      ],
-    ),
+    fold_tags_into_text([
+      #("OpeningDoubleUnderscore", "__"),
+      #("ClosingDoubleUnderscore", "__"),
+    ]),
     // ************************
     // _| |_ ******************
     // ************************
@@ -179,12 +182,10 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ["ClosingCenterQuote"],
       "CentralDisplay",
     )),
-    fold_tags_into_text(
-      [
-        #("OpeningCenterQuote", "_|"),
-        #("ClosingCenterQuote", "|_"),
-      ],
-    ),
+    fold_tags_into_text([
+      #("OpeningCenterQuote", "_|"),
+      #("ClosingCenterQuote", "|_"),
+    ]),
     // ************************
     // break CentralDisplay &
     // CentralDisplayItalic out
@@ -233,16 +234,14 @@ pub fn pipeline_constructor() -> List(Pipe) {
       ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
       "b",
     )),
-    fold_tags_into_text(
-      [
-        #("OpeningOrClosingUnderscore", "_"),
-        #("OpeningUnderscore", "_"),
-        #("ClosingUnderscore", "_"),
-        #("OpeningOrClosingAsterisk", "*"),
-        #("OpeningAsterisk", "*"),
-        #("ClosingAsterisk", "*"),
-      ],
-    ),
+    fold_tags_into_text([
+      #("OpeningOrClosingUnderscore", "_"),
+      #("OpeningUnderscore", "_"),
+      #("ClosingUnderscore", "_"),
+      #("OpeningOrClosingAsterisk", "*"),
+      #("OpeningAsterisk", "*"),
+      #("ClosingAsterisk", "*"),
+    ]),
     // ************************
     // misc *******************
     // ************************
@@ -250,6 +249,15 @@ pub fn pipeline_constructor() -> List(Pipe) {
     wrap_math_with_no_break(),
     insert_indent(),
     counter_desugarer(),
+    generate_id_for_handles(),
+    define_article_output_path(#("Chapter", "/articles/chapter", "tsx", "path")),
+    define_article_output_path(#(
+      "Bootcamp",
+      "/articles/bootcamp",
+      "tsx",
+      "path",
+    )),
+    handles_dict_factory_desugarer([#("Chapter", "path"), #("Bootcamp", "path")]),
     counter_handles_desugarer(),
     add_exercise_labels(),
     add_counter_attributes([#("Solution", "Exercises", "solution_number", 0)]),
