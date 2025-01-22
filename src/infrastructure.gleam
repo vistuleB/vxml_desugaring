@@ -16,6 +16,17 @@ pub type DesugaringError {
   GetRootError(message: String)
 }
 
+pub fn on_false_on_true(
+  over condition: Bool,
+  with_on_false f1: b,
+  with_on_true f2: fn() -> b,
+) -> b {
+  case condition {
+    False -> f1
+    True -> f2()
+  }
+}
+
 pub fn on_none_on_some(
   over option: Option(a),
   with_on_none f1: b,
