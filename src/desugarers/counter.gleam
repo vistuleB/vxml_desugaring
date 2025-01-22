@@ -182,32 +182,6 @@ fn update_counter(
   })
 }
 
-fn assign_to_handles(
-  blame: Blame,
-  handles: List(HandleInstance),
-  handle_names: Option(List(String)),
-  value: String,
-) -> Result(List(HandleInstance), DesugaringError) {
-  case handle_names {
-    None -> Ok(handles)
-    Some(handle_names) -> {
-      use _ <- result.try(
-        list.try_each(handle_names, fn(handle_name) {
-          check_handle_already_defined(handle_name, handles, blame)
-        }),
-      )
-      let handles =
-        list.scan(handle_names, handles, fn(acc, handle_name) {
-          list.flatten([acc, [HandleInstance(handle_name, value)]])
-        })
-        |> list.last()
-        |> result.unwrap([])
-
-      Ok(handles)
-    }
-  }
-}
-
 fn handles_as_attributes(
   blame: Blame,
   node: VXML,
@@ -317,7 +291,9 @@ fn handle_counter_expressions(
                 updated_instance.current_value
                   <> split_char
                   <> rest_handles_value,
-                updated_instance.current_value <> rest_string_output,
+                updated_instance.current_value
+                  <> split_char
+                  <> rest_string_output,
                 updated_counters,
               ))
             }
