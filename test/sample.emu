@@ -3,8 +3,8 @@
     counter Counter2
     counter Counter1
 
+    |> Chapter
+        |> Example
 
-    asd handle2<<::::Counter-::++Counter2...::Counter1 asdasd
-    handle3<<handle1<<::++Counter
-
-    this is handle2 >>handle2
+            We have $-(10 - 3) = 3 - 10$. 
+            (Because $-7 = -7$, as it would be, haha.)

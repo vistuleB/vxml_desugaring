@@ -7,7 +7,7 @@ import gleam/pair
 import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string
-import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V, type BlamedAttribute}
 
 const ins = string.inspect
 
@@ -16,7 +16,33 @@ pub type DesugaringError {
   GetRootError(message: String)
 }
 
-pub fn on_error_on_ok(res: Result(a, b), f1: fn(b) -> c, f2: fn(a) -> c) -> c {
+pub fn on_false_on_true(
+  over condition: Bool,
+  with_on_false f1: b,
+  with_on_true f2: fn() -> b,
+) -> b {
+  case condition {
+    False -> f1
+    True -> f2()
+  }
+}
+
+pub fn on_none_on_some(
+  over option: Option(a),
+  with_on_none f1: b,
+  with_on_some f2: fn(a) -> b,
+) -> b {
+  case option {
+    None -> f1
+    Some(z) -> f2(z)
+  }
+}
+
+pub fn on_error_on_ok(
+  over res: Result(a, b),
+  with_on_error f1: fn(b) -> c,
+  with_on_ok f2: fn(a) -> c,
+) -> c {
   case res {
     Error(e) -> f1(e)
     Ok(r) -> f2(r)
@@ -541,6 +567,106 @@ pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
 pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
   let Blame(filename, indent, comments) = blame
   Blame(filename, indent, [comment, ..comments])
+}
+
+//**************************************************************
+//* misc (children collecting, inserting, ...)
+//**************************************************************
+
+pub fn drop_ending_slash(path: String) -> String {
+  case string.ends_with(path, "/") {
+    True -> string.drop_end(path, 1)
+    False -> path
+  }
+}
+
+pub fn drop_starting_slash(path: String) -> String {
+  case string.starts_with(path, "/") {
+    True -> string.drop_start(path, 1)
+    False -> path
+  }
+}
+
+pub fn prepend_attribute(vxml: VXML, attr: BlamedAttribute) {
+  let assert V(blame, tag, attrs, children) = vxml
+  V(
+    blame,
+    tag,
+    [attr, ..attrs],
+    children
+  )
+}
+
+pub fn prepend_unique_key_attribute(vxml: VXML, attr: BlamedAttribute) -> Result(VXML, Nil) {
+  case get_attribute_by_name(vxml, attr.key) {
+    Some(_) -> Error(Nil)
+    None -> Ok(prepend_attribute(vxml, attr))
+  }
+}
+
+pub fn prepend_child(vxml: VXML, child: VXML) {
+  let assert V(blame, tag, attributes, children) = vxml
+  V(
+    blame,
+    tag, 
+    attributes,
+    [child, ..children]
+  )
+}
+
+pub fn get_attribute_by_name(vxml: VXML, name: String) -> Option(BlamedAttribute) {
+  let assert V(_, _, blamed_attributes, _) = vxml
+  case list.find(
+    blamed_attributes,
+    fn (blamed_attribute) { blamed_attribute.key == name }
+  ) {
+    Error(Nil) -> None
+    Ok(thing) -> Some(thing)
+  }
+}
+
+pub fn get_children(vxml: VXML) -> List(VXML) {
+  let assert V(_, _, _, children) = vxml
+  children
+}
+
+pub fn tag_equals(vxml: VXML, tag: String) -> Bool {
+  let assert V(_, v_tag, _, _) = vxml
+  v_tag == tag
+}
+
+pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    _ -> tag_equals(vxml, tag)
+  }
+}
+
+pub fn filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
+  let assert V(_, _, _, children) = vxml
+  list.filter(children, condition)
+}
+
+pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
+  filter_children(vxml, is_v_and_tag_equals(_, tag))
+}
+
+pub type SingletonError {
+  MoreThanOne
+  LessThanOne
+}
+
+pub fn read_singleton(z: List(a)) -> Result(a, SingletonError) {
+  case z {
+    [] -> Error(LessThanOne)
+    [one] -> Ok(one)
+    _ -> Error(MoreThanOne)
+  }
+}
+
+pub fn unique_child_with_tag(vxml: VXML, tag: String) -> Result(VXML, SingletonError) {
+  children_with_tag(vxml, tag)
+  |> read_singleton
 }
 
 //**************************************************************

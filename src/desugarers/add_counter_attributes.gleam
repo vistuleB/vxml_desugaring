@@ -108,7 +108,6 @@ fn revert_new_counter_nodes_for_parent(
         over: tag_infos,
         from: counting_state_given_from_children,
         with: fn(current_dict, tag_info) -> CountingState {
-          io.debug(current_dict)
           let #(tag, counter_name, _) = tag_info
           case dict.get(original_counting_state, tag) {
             Error(Nil) -> dict.delete(current_dict, tag)
