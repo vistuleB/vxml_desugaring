@@ -17,7 +17,6 @@ gleam_stdlib = ">= 0.34.0 and < 2.0.0"
 simplifile = ">= 2.2.0 and < 3.0.0"
 argv = ">= 1.0.2 and < 2.0.0"
 gleescript = ">= 1.4.0 and < 2.0.0"
-leptos_emitter = { path = "../../vistuleB/leptos_emitter" }
 vxml_parser = { path = "../../vistuleB/vxml_parser" }
 writerly_parser = { path = "../../vistuleB/writerly_parser" }
 gleam_regexp = ">= 1.0.0 and < 2.0.0"
