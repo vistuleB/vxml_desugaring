@@ -122,11 +122,11 @@ pub type PrinterDebugOptions(d) {
 
 // *************
 // PRETTIFIER(d, g, h)                           // where 'g' is prettifying enum, 'h' is prettifier error type
-// String, #(String, d), g -> Result(Nil, h)     // output_dir, #(local_path, fragment_type), prettifying enum
+// String, #(String, d), g -> Result(String, h)  // output_dir, #(local_path, fragment_type), prettifying enum
 // *************
 
 pub type Prettifier(d, g, h) =
-  fn(String, #(String, d), g) -> Result(Nil, h)
+  fn(String, #(String, d), g) -> Result(String, h)
 
 pub type PrettifierDebugOptions(d, g) {
   PrettifierDebugOptions(debug_print: fn(String, d, g) -> Bool)
@@ -149,11 +149,11 @@ pub fn prettier_prettifier(
   output_dir: String,
   pair: #(String, d),
   prettify: Bool,
-) -> Result(Nil, #(Int, String)) {
-  use <- infra.on_false_on_true(prettify, Ok(Nil))
+) -> Result(String, #(Int, String)) {
+  use <- infra.on_false_on_true(prettify, Ok(""))
   let #(local_path, _) = pair
   run_prettier(".", output_dir <> "/" <> local_path)
-  |> result.map(fn(_) { Nil })
+  |> result.map(fn(_) { "prettified: " <> local_path })
 }
 
 // *************
@@ -519,10 +519,10 @@ pub fn run_renderer(
         )
       {
         Error(e) -> Error(C3(e))
-        Ok(Nil) -> {
-          case debug_options.basic_messages {
+        Ok(message) -> {
+          case debug_options.basic_messages && message != "" {
             False -> Nil
-            True -> io.println("prettified: " <> local_path)
+            True -> io.println(message)
           }
           result
         }
@@ -1021,7 +1021,6 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
   debug_options: RendererDebugOptions(d, g),
   amendments: CommandLineAmendments(g),
 ) -> RendererDebugOptions(d, g) {
-  io.println("say")
   RendererDebugOptions(
     debug_options.basic_messages,
     debug_options.error_messages,

@@ -1,23 +1,12 @@
 import gleam/list
 import gleam/dict.{type Dict}
 import gleam/option
-import gleam/pair
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
   DesugarerDescription,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
-
-fn build_blamed_attributes(
-  blame,
-  attributes: List(#(String, String)),
-) -> List(BlamedAttribute) {
-  attributes
-  |> list.map(fn(attr) {
-    BlamedAttribute(blame, attr |> pair.first, attr |> pair.second)
-  })
-}
+import vxml_parser.{type VXML, T, V}
 
 fn param_transform(
   vxml: VXML,
@@ -25,16 +14,18 @@ fn param_transform(
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
-    V(blame, tag, old_attributes, children) -> {
+    V(blame, tag, attributes, children) -> {
       case dict.get(param, tag) {
-        Ok(new_attributes) -> {
+        Ok(attributes_to_remove) -> {
           Ok(V(
             blame,
             tag,
-            list.flatten([
-              old_attributes,
-              build_blamed_attributes(blame, new_attributes),
-            ]),
+            list.filter(
+              attributes,
+              fn (blamed_attribute) {
+                !list.contains(attributes_to_remove, blamed_attribute.key)
+              },
+            ),
             children,
           ))
         }
@@ -44,16 +35,10 @@ fn param_transform(
   }
 }
 
-type Param = Dict(String, List(#(String, String)))
-
-fn triple_to_pair_pair(t: #(a, b, c)) -> #(a, #(b, c)) {
-  let #(a, b, c) = t
-  #(a, #(b, c))
-}
+type Param = Dict(String, List(String))
 
 fn extra_to_param(extra: Extra) -> Param {
   extra
-  |> list.map(triple_to_pair_pair)
   |> infra.aggregate_on_first
 }
 
@@ -70,12 +55,12 @@ fn desugarer_factory(
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Extra = List(#(String, String, String))
+type Extra = List(#(String, String))
 
-pub fn add_attributes(extra: Extra) -> Pipe {
+pub fn remove_attributes_for_parents(extra: Extra) -> Pipe {
   #(
     DesugarerDescription(
-      "add_attributes",
+      "remove_attributes_for_parents",
       option.Some(string.inspect(extra)),
       "...",
     ),

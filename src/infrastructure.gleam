@@ -1,3 +1,4 @@
+import gleam/dict.{type Dict}
 import blamedlines.{type Blame, Blame}
 import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
 import gleam/io
@@ -80,6 +81,24 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
     T(_, _) -> False
     V(_, t, _, _) -> t == tag
   }
+}
+
+//**************************************************************
+//* dictionary-building functions
+//**************************************************************
+
+pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
+  list.fold(
+    l,
+    dict.from_list([]),
+    fn(d, pair) {
+      let #(a, b) = pair
+      case dict.get(d, a) {
+        Error(Nil) -> dict.insert(d, a, [b])
+        Ok(prev_list) -> dict.insert(d, a, [b, ..prev_list])
+      }
+    }
+  )
 }
 
 //**************************************************************
