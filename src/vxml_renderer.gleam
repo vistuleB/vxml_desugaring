@@ -1,5 +1,7 @@
 import blamedlines.{type BlamedLine}
 import gleam/dict
+import gleam/bool
+import gleam/pair
 import gleam/int
 import gleam/io
 import gleam/list
@@ -619,8 +621,7 @@ pub fn double_dash_keys(
 //********************
 
 pub type CommandLineAmendments(
-  g,
-  // prettifying enum
+  g, // prettifying enum
 ) {
   CommandLineAmendments(
     input_dir: Option(String),
@@ -632,6 +633,7 @@ pub type CommandLineAmendments(
     debug_blamed_lines_fragments_local_paths: List(String),
     debug_printed_string_fragments_local_paths: List(String),
     debug_prettified_string_fragments_local_paths: List(String),
+    assemble_blamed_lines_selector_args: List(#(String, List(#(String, String))))
   )
 }
 
@@ -650,6 +652,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments(g) {
     debug_blamed_lines_fragments_local_paths: [],
     debug_printed_string_fragments_local_paths: [],
     debug_prettified_string_fragments_local_paths: [],
+    assemble_blamed_lines_selector_args: []
   )
 }
 
@@ -667,6 +670,7 @@ fn amend_prettifying_option(
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
+    amendment.assemble_blamed_lines_selector_args,
   )
 }
 
@@ -685,6 +689,7 @@ fn amend_debug_pipeline_range(
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
+    amendment.assemble_blamed_lines_selector_args,
   )
 }
 
@@ -702,6 +707,7 @@ fn amend_debug_pipeline_desugarer_names(
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
+    amendment.assemble_blamed_lines_selector_args,
   )
 }
 
@@ -719,6 +725,7 @@ pub fn amend_debug_blamed_lines_fragments_local_paths(
     list.append(amendment.debug_blamed_lines_fragments_local_paths, names),
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
+    amendment.assemble_blamed_lines_selector_args,
   )
 }
 
@@ -736,6 +743,7 @@ fn amend_debug_printed_string_fragments_local_paths(
     amendment.debug_blamed_lines_fragments_local_paths,
     list.append(amendment.debug_printed_string_fragments_local_paths, names),
     amendment.debug_prettified_string_fragments_local_paths,
+    amendment.assemble_blamed_lines_selector_args,
   )
 }
 
@@ -753,6 +761,25 @@ fn amend_debug_prettified_string_fragments_local_paths(
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     list.append(amendment.debug_prettified_string_fragments_local_paths, names),
+    amendment.assemble_blamed_lines_selector_args,
+  )
+}
+
+fn amend_assemble_blamed_lines_selector_args(
+  amendment: CommandLineAmendments(a),
+  args: List(#(String, List(#(String, String)))),
+) -> CommandLineAmendments(a) {
+  CommandLineAmendments(
+    amendment.input_dir,
+    amendment.output_dir,
+    amendment.prettifying_option,
+    amendment.debug_pipeline_range,
+    amendment.debug_pipeline_desugarer_names,
+    amendment.basic_messages,
+    amendment.debug_blamed_lines_fragments_local_paths,
+    amendment.debug_printed_string_fragments_local_paths,
+    amendment.debug_prettified_string_fragments_local_paths,
+    list.append(amendment.assemble_blamed_lines_selector_args, args |> list.filter(fn(triple){ triple |> pair.second |> list.is_empty |> bool.negate })),
   )
 }
 
@@ -782,6 +809,30 @@ pub type CommandLineError {
   BadDebugPipelineRange(String)
 }
 
+fn parse_attribute_value_args_in_filename(
+  path: String
+) -> #(String, List(#(String, String))) {
+  let pieces = string.split(path, "/") |> list.reverse
+  let assert [filename, ..path_pieces] = pieces
+  let path = path_pieces |> list.reverse |> string.join("/")
+  case string.split(filename, "&") {
+    [filename] -> #(path <> "/" <> filename, [])
+    [filename, ..args] -> {
+      #(
+        path <> "/" <> filename,
+        list.map(
+          args,
+          fn (arg) {
+            let assert [key, value] = string.split(arg, "=")
+            #(key, value)
+          }
+        )
+      )
+    }
+    [] -> panic as "not expecting empty prefix"
+  }
+}
+
 pub fn process_command_line_arguments(
   arguments: List(String),
   prettier_options: List(#(String, g)),
@@ -801,36 +852,44 @@ pub fn process_command_line_arguments(
       "--debug-fragments-bl" -> {
         Ok(amendment |> amend_debug_blamed_lines_fragments_local_paths(values))
       }
+
       "--debug-fragments-printed" -> {
-        Ok(
-          amendment |> amend_debug_printed_string_fragments_local_paths(values),
-        )
+        Ok(amendment |> amend_debug_printed_string_fragments_local_paths(values))
       }
+
       "--debug-fragments-prettified" -> {
-        Ok(
-          amendment
-          |> amend_debug_prettified_string_fragments_local_paths(values),
-        )
+        Ok(amendment |> amend_debug_prettified_string_fragments_local_paths(values))
       }
+
       "--spotlight" -> {
+        let args =
+          list.map(
+            values,
+            parse_attribute_value_args_in_filename,
+          )
+        let paths = list.map(args, pair.first)
         case
-          shellout.command(run: "./spotlight", in: ".", with: values, opt: [])
+          shellout.command(run: "./spotlight", in: ".", with: paths, opt: [])
         {
-          Ok(_) -> Ok(amendment)
+          Ok(_) -> {
+            Ok(amendment|> amend_assemble_blamed_lines_selector_args(args))
+          }
           Error(#(code, message)) -> {
             io.println(
-              "shellout error running spotlight: " <> ins(#(code, message)),
+              "shellout error running spotlight: " <> ins(#(code, message))
             )
             Error(ErrorRunningSpotlight(code, message))
           }
         }
       }
+
       "--debug-pipeline" -> {
         case list.is_empty(values) {
           True -> Ok(amendment |> amend_debug_pipeline_range(0, 0))
           False -> Ok(amendment |> amend_debug_pipeline_desugarer_names(values))
         }
       }
+
       _ -> {
         case string.starts_with(option, "--debug-pipeline-") {
           True -> {

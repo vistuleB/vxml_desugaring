@@ -22,13 +22,8 @@ fn split_next_line_nodes_by_space(rest: List(VXML)) -> Result(List(VXML), Nil) {
                 Ok(#(no_break_str, rest_of_str)) -> {
                   let no_break_text_node =
                     T(b, [BlamedContent(f.blame, no_break_str)])
-
                   let rest_text_node =
-                    T(b, [
-                      BlamedContent(f.blame, " " <> rest_of_str),
-                      ..rest_lines
-                    ])
-
+                    T(b, [BlamedContent(f.blame, " " <> rest_of_str), ..rest_lines])
                   Ok([no_break_text_node, rest_text_node])
                 }
                 Error(_) -> Ok([first])
@@ -41,44 +36,39 @@ fn split_next_line_nodes_by_space(rest: List(VXML)) -> Result(List(VXML), Nil) {
   }
 }
 
-fn wrap_math(children: List(VXML)) -> Result(List(VXML), DesugaringError) {
+fn wrap_math(children: List(VXML)) -> List(VXML) {
   case children {
-    [] -> Ok([])
+    [] -> []
     [first, ..rest] -> {
       case first {
         T(_, _) -> {
-          use rest <- result.try(wrap_math(rest))
-          Ok([first, ..rest])
+          [first, ..wrap_math(rest)]
         }
         V(b, t, _, _) -> {
           case t == "Math" {
             False -> {
-              use rest <- result.try(wrap_math(rest))
-              Ok([first, ..rest])
+              [first, ..wrap_math(rest)]
             }
             True -> {
-              use wrapped_rest <- result.try(wrap_math(rest))
               case split_next_line_nodes_by_space(rest) {
-                Error(_) -> Ok([first, ..wrapped_rest])
+                Error(_) -> {
+                  [first, ..wrap_math(rest)]
+                }
                 Ok(vxmls) -> {
-                  let assert [_, ..rest] = wrapped_rest
+                  let assert [_, ..rest] = wrap_math(rest)
                   case vxmls {
-                    [one] -> Ok([V(b, "NoBreak", [], [first]), one, ..rest])
+                    [one] ->
+                      [first, one, ..rest]
                     [no_break_node, rest_nodes] -> {
                       let assert T(_, [no_break_text]) = no_break_node
-
                       case no_break_text.content {
                         "" ->
-                          Ok([V(b, "NoBreak", [], [first]), rest_nodes, ..rest])
+                          [first, rest_nodes, ..rest]
                         _ ->
-                          Ok([
-                            V(b, "NoBreak", [], [first, no_break_node]),
-                            rest_nodes,
-                            ..rest
-                          ])
+                          [V(b, "NoBreak", [], [first, no_break_node]), rest_nodes, ..rest]
                       }
                     }
-                    _ -> Ok([])
+                    _ -> []
                   }
                 }
               }
@@ -96,8 +86,7 @@ fn wrap_math_with_no_break_transform(
   case node {
     T(_, _) -> Ok(node)
     V(b, t, a, children) -> {
-      use new_children <- result.try(wrap_math(children))
-      Ok(V(b, t, a, new_children))
+      Ok(V(b, t, a, wrap_math(children)))
     }
   }
 }
