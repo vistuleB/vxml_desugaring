@@ -1,0 +1,45 @@
+
+import gleam/option.{None}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError,
+} as infra
+import vxml_parser.{type VXML, T, V,  BlamedContent}
+import gleam/io
+import gleam/list
+
+fn param_transform(vxml: VXML, extra: Extra) -> Result(List(VXML), DesugaringError) {
+  case vxml {
+    T(_, _) -> Ok([vxml])
+    V(blame, tag, attrs, children) -> {
+      let #(del_tag, opening, closing) = extra
+      case del_tag == tag {
+        True -> {
+          let opening = T(blame, [BlamedContent(blame, opening)])
+          let closing = T(blame, [BlamedContent(blame, closing)])
+          Ok(list.flatten([[opening], children, [closing]]))
+        }
+        False -> Ok([vxml])
+      }
+      
+    }
+  }
+}
+
+type Extra =
+  #(String, String, String)
+
+fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
+  param_transform(_, extra)
+}
+
+fn desugarer_factory(extra: Extra) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
+}
+
+pub fn replace_text_parent_by_text_bookends(extra: Extra) -> Pipe {
+  #(
+    DesugarerDescription("replace_text_parent_by_text_bookends", None, "..."),
+    desugarer_factory(extra),
+  )
+}
