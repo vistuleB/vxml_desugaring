@@ -15,8 +15,8 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(List(VXML), DesugaringErr
       let #(del_tag, opening, closing) = extra
       case del_tag == tag {
         True -> {
-          let opening = T(blame, [BlamedContent(blame, opening)])
-          let closing = T(blame, [BlamedContent(blame, closing)])
+          let opening = V(blame, opening, [], [])
+          let closing = V(blame, closing, [], [])
           Ok(list.flatten([[opening], children, [closing]]))
         }
         False -> Ok([vxml])
