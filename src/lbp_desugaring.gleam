@@ -48,21 +48,6 @@ fn test_renderer() {
   )
 }
 
-// need to write 'vanilla_renderer()' in vxml_renderer:
-
-// fn test_renderer() -> vr.Renderer(
-//   Nil,
-//   Nil,
-//   Nil,
-//   Nil,
-//   Nil,
-//   Nil,
-//   Nil,
-//   Nil,
-// ) {
-//   vr.vanilla_renderer()
-// }
-
 pub fn main() {
   test_renderer()
   // io.println("\nthis is an empty shell now; thank u for using\n")

@@ -368,7 +368,7 @@ pub fn run_renderer(
       converted,
       renderer.pipeline,
       debug_options.pipeline_debug_options,
-      0,
+      1,
     ),
     with_on_error: fn(e: DesugaringError) {
       case debug_options.error_messages {
@@ -386,6 +386,30 @@ pub fn run_renderer(
       possible_error_message(debug_options, "splitter error: " <> ins(error))
       Error(SplitterError(error))
     },
+  )
+
+  // blamed line fragments .emu debug printing
+  fragments
+  |> list.each(
+    fn(triple) {
+      let #(local_path, vxml, fragment_type) = triple
+      case debug_options.splitter_debug_options.debug_print(
+        local_path,
+        vxml,
+        fragment_type,
+      ) {
+        False -> Nil
+        True -> {
+          vxml
+          |> vxml_parser.vxml_to_blamed_lines
+          |> blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+            "(" <> ins(list.length(renderer.pipeline)) <> ":splitter_debug_options:" <> local_path <> ")",
+            _
+          )
+          |> io.println
+        }
+      }
+    }
   )
 
   // vxml fragments -> blamed line fragments
@@ -615,6 +639,7 @@ pub type CommandLineAmendments(
     debug_pipeline_range: #(Int, Int),
     debug_pipeline_desugarer_names: List(String),
     basic_messages: Bool,
+    debug_vxml_fragments_local_paths: List(String),
     debug_blamed_lines_fragments_local_paths: List(String),
     debug_printed_string_fragments_local_paths: List(String),
     debug_prettified_string_fragments_local_paths: List(String),
@@ -634,6 +659,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments(g) {
     debug_pipeline_range: #(-1, -1),
     debug_pipeline_desugarer_names: [],
     basic_messages: True,
+    debug_vxml_fragments_local_paths: [],
     debug_blamed_lines_fragments_local_paths: [],
     debug_printed_string_fragments_local_paths: [],
     debug_prettified_string_fragments_local_paths: [],
@@ -652,6 +678,7 @@ fn amend_prettifying_option(
     amendment.debug_pipeline_range,
     amendment.debug_pipeline_desugarer_names,
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
@@ -671,6 +698,7 @@ fn amend_debug_pipeline_range(
     #(start, end),
     amendment.debug_pipeline_desugarer_names,
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
@@ -689,6 +717,26 @@ fn amend_debug_pipeline_desugarer_names(
     amendment.debug_pipeline_range,
     list.append(amendment.debug_pipeline_desugarer_names, names),
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
+    amendment.debug_blamed_lines_fragments_local_paths,
+    amendment.debug_printed_string_fragments_local_paths,
+    amendment.debug_prettified_string_fragments_local_paths,
+    amendment.assemble_blamed_lines_selector_args,
+  )
+}
+
+pub fn amend_debug_vxml_fragments_local_paths(
+  amendment: CommandLineAmendments(a),
+  names: List(String),
+) -> CommandLineAmendments(a) {
+  CommandLineAmendments(
+    amendment.input_dir,
+    amendment.output_dir,
+    amendment.prettifying_option,
+    amendment.debug_pipeline_range,
+    amendment.debug_pipeline_desugarer_names,
+    amendment.basic_messages,
+    list.append(amendment.debug_vxml_fragments_local_paths, names),
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
@@ -707,6 +755,7 @@ pub fn amend_debug_blamed_lines_fragments_local_paths(
     amendment.debug_pipeline_range,
     amendment.debug_pipeline_desugarer_names,
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
     list.append(amendment.debug_blamed_lines_fragments_local_paths, names),
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
@@ -725,6 +774,7 @@ fn amend_debug_printed_string_fragments_local_paths(
     amendment.debug_pipeline_range,
     amendment.debug_pipeline_desugarer_names,
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
     amendment.debug_blamed_lines_fragments_local_paths,
     list.append(amendment.debug_printed_string_fragments_local_paths, names),
     amendment.debug_prettified_string_fragments_local_paths,
@@ -743,6 +793,7 @@ fn amend_debug_prettified_string_fragments_local_paths(
     amendment.debug_pipeline_range,
     amendment.debug_pipeline_desugarer_names,
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     list.append(amendment.debug_prettified_string_fragments_local_paths, names),
@@ -761,6 +812,7 @@ fn amend_assemble_blamed_lines_selector_args(
     amendment.debug_pipeline_range,
     amendment.debug_pipeline_desugarer_names,
     amendment.basic_messages,
+    amendment.debug_vxml_fragments_local_paths,
     amendment.debug_blamed_lines_fragments_local_paths,
     amendment.debug_printed_string_fragments_local_paths,
     amendment.debug_prettified_string_fragments_local_paths,
@@ -777,8 +829,12 @@ pub fn cli_usage() {
   io.println("         -> print output of pipes number x up to y")
   io.println("      --debug-pipeline-<x>")
   io.println("         -> print output of pipe number x")
+  io.println("      --debug-pipeline-last")
+  io.println("         -> print output of last pipe")
   io.println("      --debug-pipeline-0-0")
   io.println("         -> print output of all pipes")
+  io.println("      --debug-fragments-emu <local_path1> <local_path2> ...")
+  io.println("         -> print blamed lines of fragments associated to local paths")
   io.println("      --debug-fragments-bl <local_path1> <local_path2> ...")
   io.println("         -> print blamed lines of local paths")
   io.println("      --debug-fragments-printed <local_path1> <local_path2> ...")
@@ -834,6 +890,10 @@ pub fn process_command_line_arguments(
     use amendment <- result.then(result)
     let #(option, values) = pair
     case option {
+      "--debug-fragments-emu" -> {
+        Ok(amendment |> amend_debug_vxml_fragments_local_paths(values))
+      }
+
       "--debug-fragments-bl" -> {
         Ok(amendment |> amend_debug_blamed_lines_fragments_local_paths(values))
       }
@@ -871,6 +931,13 @@ pub fn process_command_line_arguments(
       "--debug-pipeline" -> {
         case list.is_empty(values) {
           True -> Ok(amendment |> amend_debug_pipeline_range(0, 0))
+          False -> Ok(amendment |> amend_debug_pipeline_desugarer_names(values))
+        }
+      }
+
+      "--debug-pipeline-last" -> {
+        case list.is_empty(values) {
+          True -> Ok(amendment |> amend_debug_pipeline_range(-2, -2))
           False -> Ok(amendment |> amend_debug_pipeline_desugarer_names(values))
         }
       }
@@ -981,6 +1048,7 @@ pub fn amend_renderer_paramaters_by_command_line_amendment(
 pub fn db_amend_pipeline_debug_options(
   options: PipelineDebugOptions,
   amendments: CommandLineAmendments(b),
+  pipeline: List(Pipe),
 ) -> PipelineDebugOptions {
   let PipelineDebugOptions(_, artifact_print, artifact_directory) = options
 
@@ -991,6 +1059,7 @@ pub fn db_amend_pipeline_debug_options(
     fn(step, pipe) {
       { start == 0 && end == 0 }
       || { start <= step && step <= end }
+      || { start == -2 && end == -2 && step == list.length(pipeline)}
       || {
         list.is_empty(names) == False
         && {
@@ -998,6 +1067,29 @@ pub fn db_amend_pipeline_debug_options(
           list.contains(names, description.function_name)
         }
       }
+    },
+    artifact_print,
+    artifact_directory,
+  )
+}
+
+pub fn db_amend_splitter_debug_options(
+  options: SplitterDebugOptions(a),
+  amendments: CommandLineAmendments(b),
+) -> SplitterDebugOptions(a) {
+  let SplitterDebugOptions(
+    previous_condition,
+    artifact_print,
+    artifact_directory,
+  ) = options
+
+  SplitterDebugOptions(
+    fn(local_path, vxml, fragment_type) {
+      previous_condition(local_path, vxml, fragment_type)
+      || list.contains(
+        amendments.debug_vxml_fragments_local_paths,
+        local_path,
+      )
     },
     artifact_print,
     artifact_directory,
@@ -1064,6 +1156,7 @@ pub fn db_amend_prettifier_debug_options(
 pub fn amend_renderer_debug_options_by_command_line_amendment(
   debug_options: RendererDebugOptions(d, g),
   amendments: CommandLineAmendments(g),
+  pipeline: List(Pipe),
 ) -> RendererDebugOptions(d, g) {
   RendererDebugOptions(
     debug_options.basic_messages,
@@ -1074,8 +1167,12 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
     db_amend_pipeline_debug_options(
       debug_options.pipeline_debug_options,
       amendments,
+      pipeline,
     ),
-    debug_options.splitter_debug_options,
+    db_amend_splitter_debug_options(
+      debug_options.splitter_debug_options,
+      amendments
+    ),
     db_amend_emitter_debug_options(
       debug_options.emitter_debug_options,
       amendments,
