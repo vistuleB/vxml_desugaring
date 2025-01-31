@@ -1,7 +1,9 @@
 import desugarers/encode_spaces_in_first_and_last_child.{encode_spaces_in_first_and_last_child}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_bookend_tags.{insert_bookend_tags}
+import desugarers/insert_bookend_text_if_no_attributes.{insert_bookend_text_if_no_attributes}
 import desugarers/unwrap_tags.{unwrap_tags}
+import desugarers/unwrap_tags_if_no_attributes.{unwrap_tags_if_no_attributes}
 import gleam/io
 import infrastructure.{type Pipe}
 // import vxml_renderer as vr
@@ -50,6 +52,15 @@ fn test_pipeline() -> List(Pipe) {
       #("ClosingAsterisk", "*"),
     ]),
     unwrap_tags(["i", "b", "strong"]),
+
+    // NEW VERSION
+    insert_bookend_text_if_no_attributes([
+      #("i", "_", "_"),
+      #("b", "*", "*"),
+      #("strong", "*", "*"),
+    ]),
+    unwrap_tags_if_no_attributes.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
+
   ]
 }
 

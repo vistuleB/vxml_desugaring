@@ -686,13 +686,13 @@ pub fn encode_ending_spaces_in_last_node(
   }
 }
 
-pub fn start_insert_text(node: VXML, text: String) {
+pub fn t_start_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
   let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
   T(blame, [BlamedContent(blame_first, text <> content_first), ..other_lines])
 }
 
-pub fn end_insert_text(node: VXML, text: String) {
+pub fn t_end_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
   let assert [BlamedContent(blame_last, content_last), ..other_lines] =
     lines |> list.reverse
@@ -703,10 +703,58 @@ pub fn end_insert_text(node: VXML, text: String) {
   )
 }
 
-pub fn start_and_end_insert_text(node: VXML, text_start: String, text_end: String) -> VXML {
-  node
-  |> start_insert_text(text_start)
-  |> end_insert_text(text_end)
+pub fn list_start_insert_text(
+  blame: Blame,
+  vxmls: List(VXML),
+  text: String,
+) -> List(VXML) {
+  case vxmls {
+    [T(_, _) as first, ..rest] -> [
+      t_start_insert_text(first, text),
+      ..rest
+    ]
+    _ -> [
+      T(blame, [BlamedContent(blame, text)]),
+      ..vxmls
+    ]
+  }
+}
+
+pub fn list_end_insert_text(
+  blame: Blame,
+  vxmls: List(VXML),
+  text: String,
+) -> List(VXML) {
+  case vxmls |> list.reverse {
+    [T(_, _) as first, ..rest] -> [
+      t_end_insert_text(first, text),
+      ..rest
+    ] |> list.reverse
+    _ -> [
+      T(blame, [BlamedContent(blame, text)]),
+      ..vxmls
+    ] |> list.reverse
+  }
+}
+
+pub fn v_start_insert_text(
+  node: VXML,
+  text: String,
+) -> VXML {
+  let assert V(blame, tag, attrs, children) = node {
+    let children = list_start_insert_text(blame, children, text)
+    V(blame, tag, attrs, children)
+  }
+}
+
+pub fn v_end_insert_text(
+  node: VXML,
+  text: String,
+) -> VXML {
+  let assert V(blame, tag, attrs, children) = node {
+    let children = list_end_insert_text(blame, children, text)
+    V(blame, tag, attrs, children)
+  }
 }
 
 pub fn drop_ending_slash(path: String) -> String {

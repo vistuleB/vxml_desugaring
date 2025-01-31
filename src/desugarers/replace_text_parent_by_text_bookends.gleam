@@ -1,17 +1,15 @@
-
 import gleam/option.{None}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
 import vxml_parser.{type VXML, T, V,  BlamedContent}
-import gleam/io
 import gleam/list
 
 fn param_transform(vxml: VXML, extra: Extra) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
-    V(blame, tag, attrs, children) -> {
+    V(blame, tag, _, children) -> {
       let #(del_tag, opening, closing) = extra
       case del_tag == tag {
         True -> {

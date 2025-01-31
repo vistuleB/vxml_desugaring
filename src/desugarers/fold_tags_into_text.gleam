@@ -108,7 +108,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              [infra.end_insert_text(last_t, replacement_text), ..already_processed]
+              [infra.t_end_insert_text(last_t, replacement_text), ..already_processed]
               |> list.reverse
           }
       }
@@ -142,7 +142,7 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags2texts,
                 already_processed,
-                Some(infra.start_insert_text(first, last_v_text)),
+                Some(infra.t_start_insert_text(first, last_v_text)),
                 None,
                 rest,
               )
@@ -177,7 +177,7 @@ fn fold_tags_into_text_children_accumulator(
                 already_processed,
                 Some(last_line_concatenate_with_first_line(
                   last_t,
-                  infra.start_insert_text(first, text),
+                  infra.t_start_insert_text(first, text),
                 )),
                 None,
                 rest,
@@ -311,7 +311,7 @@ fn fold_tags_into_text_children_accumulator(
                     tags2texts,
                     [
                       first,
-                      infra.end_insert_text(last_t, last_v_text),
+                      infra.t_end_insert_text(last_t, last_v_text),
                       ..already_processed
                     ],
                     None,
@@ -329,7 +329,7 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
-                    Some(infra.end_insert_text(last_t, text)),
+                    Some(infra.t_end_insert_text(last_t, text)),
                     Some(#(first, text)),
                     rest,
                   )
