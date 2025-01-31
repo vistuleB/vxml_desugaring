@@ -592,6 +592,80 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //* misc (children collecting, inserting, ...)
 //**************************************************************
 
+pub fn extract_starting_spaces_from_text(
+  content: String
+) -> #(String, String) {
+  let new_content = string.trim_start(content)
+  let num_spaces = string.length(content) - string.length(new_content)
+  #(string.repeat(" ", num_spaces), new_content)
+}
+
+pub fn extract_ending_spaces_from_text(
+  content: String
+) -> #(String, String) {
+  let new_content = string.trim_end(content)
+  let num_spaces = string.length(content) - string.length(new_content)
+  #(string.repeat(" ", num_spaces), new_content)
+}
+
+pub fn t_extract_starting_spaces(
+  node: VXML
+) -> #(Option(VXML), VXML) {
+  let assert T(blame, blamed_contents) = node
+  let assert [first, ..rest] = blamed_contents
+  case extract_starting_spaces_from_text(first.content) {
+    #("", _) -> #(None, node)
+    #(spaces, not_spaces) -> #(
+      Some(T(first.blame, [BlamedContent(first.blame, spaces)])),
+      T(blame, [BlamedContent(first.blame, not_spaces), ..rest])
+    )
+  }
+}
+
+pub fn t_extract_ending_spaces(
+  node: VXML
+) -> #(Option(VXML), VXML) {
+  let assert T(blame, blamed_contents) = node
+  let assert [first, ..rest] = blamed_contents |> list.reverse
+  case extract_ending_spaces_from_text(first.content) {
+    #("", _) -> #(None, node)
+    #(spaces, not_spaces) -> #(
+      Some(T(first.blame, [BlamedContent(first.blame, spaces)])),
+      T(blame, [BlamedContent(first.blame, not_spaces), ..rest] |> list.reverse)
+    )
+  }
+}
+
+pub fn v_extract_starting_spaces(
+  node: VXML
+) -> #(Option(VXML), VXML) {
+  let assert V(blame, tag, attrs, children) = node
+  case children {
+    [T(_, _) as first, ..rest] -> {
+      case t_extract_starting_spaces(first) {
+        #(None, _) -> #(None, node)
+        #(Some(guy), first) -> #(Some(guy), V(blame, tag, attrs, [first, ..rest]))
+      }
+    }
+    _ -> #(None, node)
+  }
+}
+
+pub fn v_extract_ending_spaces(
+  node: VXML
+) -> #(Option(VXML), VXML) {
+  let assert V(blame, tag, attrs, children) = node
+  case children |> list.reverse {
+    [T(_, _) as first, ..rest] -> {
+      case t_extract_ending_spaces(first) {
+        #(None, _) -> #(None, node)
+        #(Some(guy), first) -> #(Some(guy), V(blame, tag, attrs, [first, ..rest] |> list.reverse))
+      }
+    }
+    _ -> #(None, node)
+  }
+}
+
 pub fn encode_starting_spaces_in_string(
   content: String
 ) -> String {
