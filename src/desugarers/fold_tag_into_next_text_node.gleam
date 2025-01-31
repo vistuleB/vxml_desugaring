@@ -1,16 +1,14 @@
-
 import gleam/option.{None, type Option, Some}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
 import vxml_parser.{type VXML, T, V,  BlamedContent, type BlamedContent}
-import gleam/list
-import blamedlines.{type Blame}
 
-fn append_to_next_text_node(b: Blame, fold_as: String, node: VXML) -> List(VXML) {
+fn append_to_next_text_node(fold_as: String, node: VXML) -> List(VXML) {
   case node {
     T(b, contents) -> {
+      // JOHN: use infra.start_insert_text for this case
       case contents {
         [] -> [T(b, [BlamedContent(b, fold_as)])]
         [BlamedContent(blame, content), ..rest_contents] -> {
@@ -38,8 +36,8 @@ fn param_transform(
     V(_, tag, _, _) if tag == tag_to_fold -> Ok([])
     _ -> {
       case previous_siblings_before_mapping {
-        [V(blame, tag, _, _), ..] if tag == tag_to_fold -> {
-          let vxmls = append_to_next_text_node(blame, fold_as, vxml)
+        [V(_, tag, _, _), ..] if tag == tag_to_fold -> {
+          let vxmls = append_to_next_text_node(fold_as, vxml)
           Ok(vxmls)
         }
         _ -> Ok([vxml])

@@ -668,7 +668,7 @@ pub fn encode_starting_spaces_in_first_node(
   case vxmls {
     [] -> []
     [first, ..rest] -> [
-      first |> encode_starting_spaces_if_text
+      first |> encode_starting_spaces_if_text,
       ..rest
     ]
   }
@@ -680,7 +680,7 @@ pub fn encode_ending_spaces_in_last_node(
   case vxmls |> list.reverse {
     [] -> []
     [last, ..rest] -> [
-      last |> encode_ending_spaces_if_text
+      last |> encode_ending_spaces_if_text,
       ..rest
     ] |> list.reverse
   }

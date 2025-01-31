@@ -40,7 +40,7 @@ fn desugarer_factory(param: Param) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-fn build_param(extra: Extra) -> Param {
+fn param(extra: Extra) -> Param {
   extra
   |> list.map(
     fn (triple) {
@@ -51,12 +51,11 @@ fn build_param(extra: Extra) -> Param {
 }
 
 type Param = List(#(String, #(String, String)))
-
 type Extra = List(#(String, String, String))
 
-pub fn insert_first_and_last_child_tags(extra: Extra) -> Pipe {
+pub fn insert_bookend_tags(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("insert_first_and_last_child_tags", option.None, "..."),
-    desugarer_factory(extra |> build_param),
+    DesugarerDescription("insert_bookend_tags", option.None, "..."),
+    desugarer_factory(extra |> param),
   )
 }

@@ -1,6 +1,6 @@
 import desugarers/encode_spaces_in_first_and_last_child.{encode_spaces_in_first_and_last_child}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
-import desugarers/insert_first_and_last_child_tags.{insert_first_and_last_child_tags}
+import desugarers/insert_bookend_tags.{insert_bookend_tags}
 import desugarers/unwrap_tags.{unwrap_tags}
 import gleam/io
 import infrastructure.{type Pipe}
@@ -35,7 +35,10 @@ fn test_pipeline() -> List(Pipe) {
     //
     // but for now I wrote this:
     encode_spaces_in_first_and_last_child(["i", "b", "strong"]),
-    insert_first_and_last_child_tags([
+
+
+    // from here on the <i> -> _..._ pipeline is correct:
+    insert_bookend_tags([
       #("i", "OpeningUnderscore", "ClosingUnderscore"),
       #("b", "OpeningAsterisk", "ClosingAsterisk"),
       #("strong", "OpeningAsterisk", "ClosingAsterisk"),
