@@ -1,3 +1,5 @@
+import argv
+import desugarers/extract_starting_and_ending_spaces.{extract_starting_and_ending_spaces}
 import desugarers/encode_spaces_in_first_and_last_child.{encode_spaces_in_first_and_last_child}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_bookend_tags.{insert_bookend_tags}
@@ -6,40 +8,14 @@ import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/unwrap_tags_if_no_attributes.{unwrap_tags_if_no_attributes}
 import gleam/io
 import infrastructure.{type Pipe}
-// import vxml_renderer as vr
+import default_renderer as dr
+import vxml_renderer as vr
 
 // got lazy and didn't finish writing test facilities for a pipeline
 // (would need to )
 fn test_pipeline() -> List(Pipe) {
   [
-    // this first desugarer is actually not what we want,
-    // we should probably have something like...
-    // "extricate_starting_and_ending_spaces_as_sibilings"
-    // ...that turns...
-    //
-    // <> i
-    //   <>
-    //     "  two spaces at start, "
-    //   <>
-    //     "two spaces at end  "
-    //
-    // ...into...
-    //
-    // <>
-    //   "  "
-    // <> i
-    //   <>
-    //      "two spaces at start, "
-    //   <>
-    //      "two spaces at end"
-    // <>
-    //   "  "
-    //
-    // but for now I wrote this:
-    encode_spaces_in_first_and_last_child(["i", "b", "strong"]),
-
-
-    // from here on the <i> -> _..._ pipeline is correct:
+    // OLD SUGGESTION:
     insert_bookend_tags([
       #("i", "OpeningUnderscore", "ClosingUnderscore"),
       #("b", "OpeningAsterisk", "ClosingAsterisk"),
@@ -53,7 +29,8 @@ fn test_pipeline() -> List(Pipe) {
     ]),
     unwrap_tags(["i", "b", "strong"]),
 
-    // NEW VERSION
+    // NEW SUGGESTION:
+    extract_starting_and_ending_spaces(["i", "b", "strong"]),
     insert_bookend_text_if_no_attributes([
       #("i", "_", "_"),
       #("b", "*", "*"),
@@ -62,6 +39,13 @@ fn test_pipeline() -> List(Pipe) {
     unwrap_tags_if_no_attributes.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
 
   ]
+}
+
+fn test_renderer() {
+  dr.run_default_renderer(
+    test_pipeline(),
+    argv.load().arguments,
+  )
 }
 
 // need to write 'vanilla_renderer()' in vxml_renderer:
@@ -80,5 +64,6 @@ fn test_pipeline() -> List(Pipe) {
 // }
 
 pub fn main() {
-  io.println("\nthis is an empty shell now; thank u for using\n")
+  test_renderer()
+  // io.println("\nthis is an empty shell now; thank u for using\n")
 }

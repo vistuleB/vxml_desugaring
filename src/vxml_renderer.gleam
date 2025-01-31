@@ -163,38 +163,23 @@ pub fn prettier_prettifier(
 // *************
 
 pub type Renderer(
-  a,
-  b,
-  c,
-  d,
-  e,
-  f,
-  g,
-  h,
-  // blamed line assembly error type
-  // parsed source type (== Writerly)
-  // source parsing error type (== WriterlyParseError)
-  // VXML Fragment enum type
-  // splitting error type
-  // fragment emitting error type
-  // prettifying enum type
-  // prettifying error type
+  a, // blamed line assembly error type
+  b, // parsed source type (== Writerly)
+  c, // source parsing error type (== WriterlyParseError)
+  d, // VXML Fragment enum type
+  e, // splitting error type
+  f, // fragment emitting error type
+  g, // prettifying enum type
+  h, // prettifying error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),
-    // file/directory -> List(BlamedLine)
-    source_parser: SourceParser(b, c),
-    // List(BlamedLine) -> parsed source
-    parsed_source_converter: ParsedSourceConverter(b),
-    // parsed source -> List(VXML)
-    pipeline: List(Pipe),
-    // VXML -> ... -> VXML
-    splitter: Splitter(d, e),
-    // VXML -> List(#(String, VXML, d))
-    emitter: Emitter(d, f),
-    // #(String, VXML, d) -> #(String, List(BlamedLine), d)
-    prettifier: Prettifier(d, g, h),
-    // String, #(String, d), g -> Nil
+    assembler: BlamedLinesAssembler(a),                // file/directory -> List(BlamedLine)
+    source_parser: SourceParser(b, c),                 // List(BlamedLine) -> parsed source
+    parsed_source_converter: ParsedSourceConverter(b), // parsed source -> List(VXML)
+    pipeline: List(Pipe),                              // VXML -> ... -> VXML
+    splitter: Splitter(d, e),                          // VXML -> List(#(String, VXML, d))
+    emitter: Emitter(d, f),                            // #(String, VXML, d) -> #(String, List(BlamedLine), d)
+    prettifier: Prettifier(d, g, h),                   // String, #(String, d), g -> Nil
   )
 }
 
@@ -312,7 +297,7 @@ pub type RendererError(a, c, e, f, h) {
   PipelineError(DesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(
-    List(ThreePossibilities(f, simplifile.FileError, h)),
+    List(ThreePossibilities(f, String, h)),
   )
   ArtifactPrintingError(String)
 }
@@ -503,7 +488,7 @@ pub fn run_renderer(
           }
           Ok(#(local_path, fragment_type))
         }
-        Error(file_error) -> Error(C2(file_error))
+        Error(file_error) -> Error(C2({file_error |> ins} <> " on path " <> output_dir <> "/" <> local_path))
       }
     })
 
