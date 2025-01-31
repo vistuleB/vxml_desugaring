@@ -3,7 +3,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
-import vxml_parser.{type VXML, T, V,  BlamedContent}
+import vxml_parser.{type VXML, T, V}
 import gleam/list
 
 fn param_transform(vxml: VXML, extra: Extra) -> Result(List(VXML), DesugaringError) {
