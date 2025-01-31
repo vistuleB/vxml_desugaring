@@ -592,6 +592,123 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //* misc (children collecting, inserting, ...)
 //**************************************************************
 
+pub fn encode_starting_spaces_in_string(
+  content: String
+) -> String {
+  let new_content = string.trim_start(content)
+  let num_spaces = string.length(content) - string.length(new_content)
+  string.repeat("&ensp;", num_spaces) <> new_content
+}
+
+pub fn encode_ending_spaces_in_string(
+  content: String
+) -> String {
+  let new_content = string.trim_end(content)
+  let num_spaces = string.length(content) - string.length(new_content)
+  new_content <> string.repeat("&ensp;", num_spaces)
+}
+
+pub fn encode_starting_spaces_in_blamed_content(
+  blamed_content: BlamedContent
+) -> BlamedContent {
+  BlamedContent(
+    blamed_content.blame,
+    blamed_content.content |> encode_starting_spaces_in_string
+  )
+}
+
+pub fn encode_ending_spaces_in_blamed_content(
+  blamed_content: BlamedContent
+) -> BlamedContent {
+  BlamedContent(
+    blamed_content.blame,
+    blamed_content.content |> encode_ending_spaces_in_string
+  )
+}
+
+pub fn encode_starting_spaces_if_text(
+  vxml: VXML,
+) -> VXML {
+  case vxml {
+    V(_, _, _, _) -> vxml
+    T(blame, blamed_contents) -> {
+      let assert [first, ..rest] = blamed_contents
+      T(
+        blame,
+        [
+          first |> encode_starting_spaces_in_blamed_content,
+          ..rest
+        ]
+      )
+    }
+  }
+}
+
+pub fn encode_ending_spaces_if_text(
+  vxml: VXML,
+) -> VXML {
+  case vxml {
+    V(_, _, _, _) -> vxml
+    T(blame, blamed_contents) -> {
+      let assert [last, ..rest] = {blamed_contents |> list.reverse }
+      T(
+        blame,
+        [
+          last |> encode_ending_spaces_in_blamed_content,
+          ..rest
+        ] |> list.reverse
+      )
+    }
+  }
+}
+
+pub fn encode_starting_spaces_in_first_node(
+  vxmls: List(VXML)
+) -> List(VXML) {
+  case vxmls {
+    [] -> []
+    [first, ..rest] -> [
+      first |> encode_starting_spaces_if_text
+      ..rest
+    ]
+  }
+}
+
+pub fn encode_ending_spaces_in_last_node(
+  vxmls: List(VXML)
+) -> List(VXML) {
+  case vxmls |> list.reverse {
+    [] -> []
+    [last, ..rest] -> [
+      last |> encode_ending_spaces_if_text
+      ..rest
+    ] |> list.reverse
+  }
+}
+
+pub fn start_insert_text(node: VXML, text: String) {
+  let assert T(blame, lines) = node
+  let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
+  T(blame, [BlamedContent(blame_first, text <> content_first), ..other_lines])
+}
+
+pub fn end_insert_text(node: VXML, text: String) {
+  let assert T(blame, lines) = node
+  let assert [BlamedContent(blame_last, content_last), ..other_lines] =
+    lines |> list.reverse
+  T(
+    blame,
+    [BlamedContent(blame_last, content_last <> text), ..other_lines]
+      |> list.reverse,
+  )
+}
+
+pub fn start_and_end_insert_text(node: VXML, text_start: String, text_end: String) -> VXML {
+  node
+  |> start_insert_text(text_start)
+  |> end_insert_text(text_end)
+}
+
 pub fn drop_ending_slash(path: String) -> String {
   case string.ends_with(path, "/") {
     True -> string.drop_end(path, 1)

@@ -1,11 +1,14 @@
 import gleam/dict
 import gleam/list
 import gleam/option
+import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
   DesugarerDescription,
 } as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
+
+const ins = string.inspect
 
 type Where {
   First
@@ -13,19 +16,19 @@ type Where {
   Both
 }
 
-fn insert_dolar(node: VXML, dolar: String, where: Where) -> List(VXML) {
+fn insert_dollar(node: VXML, dollar: String, where: Where) -> List(VXML) {
   case node {
     T(blame, contents) -> {
       case where {
-        First -> [T(blame, [BlamedContent(blame, dolar), ..contents])]
-        Last -> [T(blame, list.append(contents, [BlamedContent(blame, dolar)]))]
+        First -> [T(blame, [BlamedContent(blame, dollar), ..contents])]
+        Last -> [T(blame, list.append(contents, [BlamedContent(blame, dollar)]))]
         Both -> [
           T(
             blame,
             list.flatten([
-              [BlamedContent(blame, dolar)],
+              [BlamedContent(blame, dollar)],
               contents,
-              [BlamedContent(blame, dolar)],
+              [BlamedContent(blame, dollar)],
             ]),
           ),
         ]
@@ -33,38 +36,39 @@ fn insert_dolar(node: VXML, dolar: String, where: Where) -> List(VXML) {
     }
     V(blame, _, _, _) -> {
       case where {
-        First -> [T(blame, [BlamedContent(blame, dolar)]), node]
-        Last -> [node, T(blame, [BlamedContent(blame, dolar)])]
+        First -> [T(blame, [BlamedContent(blame, dollar)]), node]
+        Last -> [node, T(blame, [BlamedContent(blame, dollar)])]
         Both -> [
-          T(blame, [BlamedContent(blame, dolar)]),
+          T(blame, [BlamedContent(blame, dollar)]),
           node,
-          T(blame, [BlamedContent(blame, dolar)]),
+          T(blame, [BlamedContent(blame, dollar)]),
         ]
       }
     }
   }
 }
 
-fn update_children(nodes: List(VXML), dolar: String) -> List(VXML) {
+fn update_children(nodes: List(VXML), dollar: String) -> List(VXML) {
   let assert [first, ..rest] = nodes
   let last = list.last(rest)
 
   case last {
     Ok(last) -> {
+      panic as {"more than 1 child in node:" <> ins(nodes) }
       let assert [_, ..in_between_reversed] = rest |> list.reverse()
       list.flatten([
-        insert_dolar(first, dolar, First),
+        insert_dollar(first, dollar, First),
         in_between_reversed |> list.reverse(),
-        insert_dolar(last, dolar, Last),
+        insert_dollar(last, dollar, Last),
       ])
     }
     Error(_) -> {
-      insert_dolar(first, dolar, Both)
+      insert_dollar(first, dollar, Both)
     }
   }
 }
 
-fn reinsert_math_dolar_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   let math_map = dict.from_list([#("Math", "$"), #("MathBlock", "$$")])
 
   case vxml {
@@ -81,16 +85,16 @@ fn reinsert_math_dolar_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
 }
 
 fn transform_factory() -> NodeToNodeTransform {
-  reinsert_math_dolar_transform(_)
+  param_transform(_)
 }
 
 fn desugarer_factory() -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory())
 }
 
-pub fn reinsert_math_dolar() -> Pipe {
+pub fn reinsert_math_dollar() -> Pipe {
   #(
-    DesugarerDescription("reinsert_math_dolar", option.None, "..."),
+    DesugarerDescription("reinsert_math_dollar", option.None, "..."),
     desugarer_factory(),
   )
 }

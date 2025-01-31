@@ -1,31 +1,13 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, get_blame,
+  DesugarerDescription, DesugaringError,
 } as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
-
-fn left_absorb_text(node: VXML, text: String) {
-  let assert T(blame, lines) = node
-  let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
-  T(blame, [BlamedContent(blame_first, text <> content_first), ..other_lines])
-}
-
-fn right_absorb_text(node: VXML, text: String) {
-  let assert T(blame, lines) = node
-  let assert [BlamedContent(blame_last, content_last), ..other_lines] =
-    lines |> list.reverse
-  T(
-    blame,
-    [BlamedContent(blame_last, content_last <> text), ..other_lines]
-      |> list.reverse,
-  )
-}
 
 fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   let assert T(blame1, lines1) = node1

@@ -10,23 +10,6 @@ import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
 
-fn left_absorb_text(node: VXML, text: String) {
-  let assert T(blame, lines) = node
-  let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
-  T(blame, [BlamedContent(blame_first, text <> content_first), ..other_lines])
-}
-
-fn right_absorb_text(node: VXML, text: String) {
-  let assert T(blame, lines) = node
-  let assert [BlamedContent(blame_last, content_last), ..other_lines] =
-    lines |> list.reverse
-  T(
-    blame,
-    [BlamedContent(blame_last, content_last <> text), ..other_lines]
-      |> list.reverse,
-  )
-}
-
 fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   let assert T(blame1, lines1) = node1
   let assert T(_, lines2) = node2
@@ -125,7 +108,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              [right_absorb_text(last_t, replacement_text), ..already_processed]
+              [infra.end_insert_text(last_t, replacement_text), ..already_processed]
               |> list.reverse
           }
       }
@@ -159,7 +142,7 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags2texts,
                 already_processed,
-                Some(left_absorb_text(first, last_v_text)),
+                Some(infra.start_insert_text(first, last_v_text)),
                 None,
                 rest,
               )
@@ -194,7 +177,7 @@ fn fold_tags_into_text_children_accumulator(
                 already_processed,
                 Some(last_line_concatenate_with_first_line(
                   last_t,
-                  left_absorb_text(first, text),
+                  infra.start_insert_text(first, text),
                 )),
                 None,
                 rest,
@@ -328,7 +311,7 @@ fn fold_tags_into_text_children_accumulator(
                     tags2texts,
                     [
                       first,
-                      right_absorb_text(last_t, last_v_text),
+                      infra.end_insert_text(last_t, last_v_text),
                       ..already_processed
                     ],
                     None,
@@ -346,7 +329,7 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
-                    Some(right_absorb_text(last_t, text)),
+                    Some(infra.end_insert_text(last_t, text)),
                     Some(#(first, text)),
                     rest,
                   )
