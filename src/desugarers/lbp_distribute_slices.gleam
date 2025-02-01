@@ -1,14 +1,11 @@
 import gleam/list
 import gleam/io
-import gleam/option.{type Option, None}
-import gleam/string
+import gleam/option.{None}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type EarlyReturnNodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, type EarlyReturn, Continue, GoBack
+  type Desugarer, type EarlyReturnNodeToNodeTransform, type Pipe,
+  DesugarerDescription, type EarlyReturn, Continue, GoBack
 } as infra
-import vxml_parser.{type VXML, BlamedContent, T, V, BlamedAttribute}
-
-const ins = string.inspect
+import vxml_parser.{type VXML, T, V, BlamedAttribute}
 
 fn is_known_outer_element(
   vxml: VXML

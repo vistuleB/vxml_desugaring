@@ -1,18 +1,13 @@
 import argv
 import desugarers/extract_starting_and_ending_spaces.{extract_starting_and_ending_spaces}
-import desugarers/encode_spaces_in_first_and_last_child.{encode_spaces_in_first_and_last_child}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_bookend_tags.{insert_bookend_tags}
 import desugarers/insert_bookend_text_if_no_attributes.{insert_bookend_text_if_no_attributes}
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/unwrap_tags_if_no_attributes.{unwrap_tags_if_no_attributes}
-import gleam/io
 import infrastructure.{type Pipe}
 import default_renderer as dr
-import vxml_renderer as vr
 
-// got lazy and didn't finish writing test facilities for a pipeline
-// (would need to )
 fn test_pipeline() -> List(Pipe) {
   [
     // OLD SUGGESTION:

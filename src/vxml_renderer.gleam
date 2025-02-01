@@ -672,17 +672,8 @@ fn amend_prettifying_option(
   val: g,
 ) -> CommandLineAmendments(g) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    Some(val),
-    amendment.debug_pipeline_range,
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    amendment.debug_blamed_lines_fragments_local_paths,
-    amendment.debug_printed_string_fragments_local_paths,
-    amendment.debug_prettified_string_fragments_local_paths,
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    prettifying_option: Some(val),
   )
 }
 
@@ -692,17 +683,8 @@ fn amend_debug_pipeline_range(
   end: Int,
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    #(start, end),
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    amendment.debug_blamed_lines_fragments_local_paths,
-    amendment.debug_printed_string_fragments_local_paths,
-    amendment.debug_prettified_string_fragments_local_paths,
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    debug_pipeline_range: #(start, end),
   )
 }
 
@@ -711,17 +693,8 @@ fn amend_debug_pipeline_desugarer_names(
   names: List(String),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    amendment.debug_pipeline_range,
-    list.append(amendment.debug_pipeline_desugarer_names, names),
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    amendment.debug_blamed_lines_fragments_local_paths,
-    amendment.debug_printed_string_fragments_local_paths,
-    amendment.debug_prettified_string_fragments_local_paths,
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    debug_pipeline_desugarer_names: list.append(amendment.debug_pipeline_desugarer_names, names),
   )
 }
 
@@ -730,17 +703,8 @@ pub fn amend_debug_vxml_fragments_local_paths(
   names: List(String),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    amendment.debug_pipeline_range,
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    list.append(amendment.debug_vxml_fragments_local_paths, names),
-    amendment.debug_blamed_lines_fragments_local_paths,
-    amendment.debug_printed_string_fragments_local_paths,
-    amendment.debug_prettified_string_fragments_local_paths,
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    debug_vxml_fragments_local_paths: list.append(amendment.debug_vxml_fragments_local_paths, names),
   )
 }
 
@@ -749,17 +713,8 @@ pub fn amend_debug_blamed_lines_fragments_local_paths(
   names: List(String),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    amendment.debug_pipeline_range,
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    list.append(amendment.debug_blamed_lines_fragments_local_paths, names),
-    amendment.debug_printed_string_fragments_local_paths,
-    amendment.debug_prettified_string_fragments_local_paths,
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    debug_blamed_lines_fragments_local_paths: list.append(amendment.debug_blamed_lines_fragments_local_paths, names),
   )
 }
 
@@ -768,17 +723,8 @@ fn amend_debug_printed_string_fragments_local_paths(
   names: List(String),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    amendment.debug_pipeline_range,
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    amendment.debug_blamed_lines_fragments_local_paths,
-    list.append(amendment.debug_printed_string_fragments_local_paths, names),
-    amendment.debug_prettified_string_fragments_local_paths,
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    debug_printed_string_fragments_local_paths: list.append(amendment.debug_printed_string_fragments_local_paths, names),
   )
 }
 
@@ -787,17 +733,8 @@ fn amend_debug_prettified_string_fragments_local_paths(
   names: List(String),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    amendment.debug_pipeline_range,
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    amendment.debug_blamed_lines_fragments_local_paths,
-    amendment.debug_printed_string_fragments_local_paths,
-    list.append(amendment.debug_prettified_string_fragments_local_paths, names),
-    amendment.assemble_blamed_lines_selector_args,
+    ..amendment,
+    debug_prettified_string_fragments_local_paths: list.append(amendment.debug_prettified_string_fragments_local_paths, names),
   )
 }
 
@@ -806,17 +743,11 @@ fn amend_assemble_blamed_lines_selector_args(
   args: List(#(String, List(#(String, String)))),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
-    amendment.input_dir,
-    amendment.output_dir,
-    amendment.prettifying_option,
-    amendment.debug_pipeline_range,
-    amendment.debug_pipeline_desugarer_names,
-    amendment.basic_messages,
-    amendment.debug_vxml_fragments_local_paths,
-    amendment.debug_blamed_lines_fragments_local_paths,
-    amendment.debug_printed_string_fragments_local_paths,
-    amendment.debug_prettified_string_fragments_local_paths,
-    list.append(amendment.assemble_blamed_lines_selector_args, args |> list.filter(fn(triple){ triple |> pair.second |> list.is_empty |> bool.negate })),
+    ..amendment,
+    assemble_blamed_lines_selector_args: list.append(
+      amendment.assemble_blamed_lines_selector_args,
+      args |> list.filter(fn(triple){ triple |> pair.second |> list.is_empty |> bool.negate })
+    ),
   )
 }
 
