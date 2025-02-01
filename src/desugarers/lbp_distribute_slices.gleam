@@ -19,9 +19,14 @@ fn is_known_outer_element(
         [
           "Book",
           "Chapter",
+          "Bootcamp",
           "Section",
           "TOCAuthorSuppliedContent",
           "PanelAuthorSuppliedContent",
+          "Example",
+          "Exercises",
+          "Exercise",
+          "Solution",
         ],
         tag
       ) {
@@ -43,6 +48,18 @@ fn is_known_inner_element(
           "div", 
           "p",
           "table",
+          "ul",
+          "ol",
+          "MathBlock",
+          "Spacer",
+          "StarDivider",
+          "CentralDisplayItalic",
+          "CentralDisplay",
+          "Pause",
+          "Image",
+          "Grid",
+          "Table",
+          "List",
         ],
         tag
       ) {
@@ -78,8 +95,7 @@ fn param_transform(
     }
   )
 
-  io.println("unclassified element:")
-  io.println(vxml |> infra.digest)
+  io.println("unclassified element: " <> {vxml |> infra.digest})
 
   GoBack(vxml)
 }

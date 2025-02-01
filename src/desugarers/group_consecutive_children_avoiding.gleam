@@ -50,7 +50,7 @@ fn param_transform(
           fn(consecutive_siblings) {
           V(
             consecutive_siblings |> infra.assert_get_first_blame,
-            io.debug(wrapper_tag),
+            wrapper_tag,
             [],
             consecutive_siblings,
           )
