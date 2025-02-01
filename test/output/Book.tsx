@@ -1,16 +1,14 @@
 const Article = () => {
   return (
     <Book
-         title=""
-         mobile_title="">
+      title=""
+      mobile_title="">
       <WriterlyBlankLine />
-      <Chapter
-           title="Derivatives">
+      <Chapter title="Derivatives">
         <WriterlyBlankLine />
         <Exercises>
           <Exercise>
-            <WriterlyCodeBlock
-                 language="python">
+            <WriterlyCodeBlock language="python">
               hello = hi
             </WriterlyCodeBlock>
             <WriterlyBlurb>
@@ -20,14 +18,12 @@ const Article = () => {
             <WriterlyBlurb>
               Glory
             </WriterlyBlurb>
-            <test
-                 src="hi" />
+            <test src="hi" />
             <WriterlyBlurb>
               _ in time,
               test{" "}
             </WriterlyBlurb>
-            <InlineImage
-                 src="hi" />
+            <InlineImage src="hi" />
             <WriterlyBlurb>
               *exa*mine_ 
               how long it would take__

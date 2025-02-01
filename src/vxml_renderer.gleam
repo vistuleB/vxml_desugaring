@@ -322,8 +322,8 @@ pub fn run_renderer(
   let parameters = sanitize_output_dir(parameters)
 
   use assembled <- infra.on_error_on_ok(
-    over: renderer.assembler(parameters.input_dir),
-    with_on_error: fn(error_a) {
+    renderer.assembler(parameters.input_dir),
+    fn(error_a) {
       case debug_options.error_messages {
         True -> io.println("renderer.assembler error: " <> ins(error_a))
         _ -> Nil
@@ -988,10 +988,10 @@ pub fn db_amend_pipeline_debug_options(
 
   PipelineDebugOptions(
     fn(step, pipe) {
-      { start == 0 && end == 0 }
-      || { start <= step && step <= end }
-      || { start == -2 && end == -2 && step == list.length(pipeline)}
-      || {
+      { start == 0 && end == 0 } ||
+      { start <= step && step <= end } ||
+      { start == -2 && end == -2 && step == list.length(pipeline)} ||
+      {
         list.is_empty(names) == False
         && {
           let #(description, _) = pipe

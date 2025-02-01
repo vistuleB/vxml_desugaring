@@ -1,7 +1,6 @@
 import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option
 import gleam/string

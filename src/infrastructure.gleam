@@ -123,6 +123,26 @@ pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
   )
 }
 
+pub fn triples_to_pairs(
+  l: List(#(a, b, c))
+) -> List(#(a, #(b, c))) {
+  l
+  |> list.map(
+    fn (triple) {
+      let #(a, b, c) = triple
+      #(a, #(b, c))
+    }
+  )
+}
+
+pub fn triples_to_dict(
+  l: List(#(a, b, c))
+) -> Dict(a, #(b, c)) {
+  l
+  |> triples_to_pairs
+  |> dict.from_list
+}
+
 //**************************************************************
 //* either-or functions
 //**************************************************************
