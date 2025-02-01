@@ -27,7 +27,7 @@ fn param_transform(node: VXML) -> Result(VXML, DesugaringError) {
         children
         |> infra.either_or_misceginator(infra.is_text_node)
         |> infra.regroup_eithers_no_empty_lists
-        |> infra.either_or_mapper(
+        |> infra.map_either_ors(
           fn(either: List(VXML)) -> VXML { concatenate_lines_in(either) },
           fn(or: VXML) -> VXML { or },
         )

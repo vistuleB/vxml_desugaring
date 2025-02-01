@@ -25,7 +25,7 @@ fn param_transform(
       children
       |> infra.either_or_misceginator(child_must_escape(_, tag, extra))
       |> infra.regroup_ors
-      |> infra.either_or_mapper(
+      |> infra.map_either_ors(
         fn(either: VXML) -> VXML { either },
         fn(or: List(VXML)) -> VXML { V(blame, tag, attributes, or) },
       )

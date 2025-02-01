@@ -28,6 +28,28 @@ pub fn on_false_on_true(
   }
 }
 
+pub fn on_true_on_false(
+  over condition: Bool,
+  with_on_true f1: b,
+  with_on_false f2: fn() -> b,
+) -> b {
+  case condition {
+    True -> f1
+    False -> f2()
+  }
+}
+
+pub fn on_lazy_true_on_false(
+  over condition: Bool,
+  with_on_true f1: fn() -> b,
+  with_on_false f2: fn() -> b,
+) -> b {
+  case condition {
+    True -> f1()
+    False -> f2()
+  }
+}
+
 pub fn on_none_on_some(
   over option: Option(a),
   with_on_none f1: b,
@@ -214,25 +236,39 @@ pub fn regroup_ors_no_empty_lists(
   })
 }
 
-pub fn either_or_function_combinant(
+pub fn on_either_on_or(
+  t: EitherOr(a, b),
   fn1: fn(a) -> c,
   fn2: fn(b) -> c,
-) -> fn(EitherOr(a, b)) -> c {
-  fn(thing) {
-    case thing {
-      Either(a) -> fn1(a)
-      Or(b) -> fn2(b)
-    }
+) -> c {
+  case t {
+    Either(a) -> fn1(a)
+    Or(b) -> fn2(b)
   }
 }
 
-pub fn either_or_mapper(
+pub fn map_ors(
+  ze_list: List(EitherOr(a, b)),
+  f: fn(b) -> c,
+) -> List(EitherOr(a, c)) {
+  ze_list
+  |> list.map(
+    fn(thing) {
+      case thing {
+        Either(load) -> Either(load)
+        Or(b) -> Or(f(b))
+      }
+    }
+  )
+}
+
+pub fn map_either_ors(
   ze_list: List(EitherOr(a, b)),
   fn1: fn(a) -> c,
   fn2: fn(b) -> c,
 ) -> List(c) {
   ze_list
-  |> list.map(either_or_function_combinant(fn1, fn2))
+  |> list.map(on_either_on_or(_, fn1, fn2))
 }
 
 pub fn either_or_misceginator(
@@ -357,7 +393,7 @@ fn replace_regex_by_tag_in_lines_indexed_group_version(
   ))
   |> list.flatten
   |> regroup_eithers
-  |> either_or_mapper(
+  |> map_either_ors(
     fn(blamed_contents) {
       let assert [BlamedContent(blame, _), ..] = blamed_contents
       T(blame, blamed_contents)
@@ -429,7 +465,7 @@ fn replace_regex_by_tag_in_lines(
   |> list.map(line_split_into_list_either_content_or_blame(_, re))
   |> list.flatten
   |> regroup_eithers
-  |> either_or_mapper(
+  |> map_either_ors(
     fn(blamed_contents) {
       let assert [BlamedContent(blame, _), ..] = blamed_contents
       T(blame, blamed_contents)
@@ -506,7 +542,7 @@ fn replace_delimiter_pattern_by_tag_in_lines(
   )
   |> list.flatten
   |> regroup_eithers
-  |> either_or_mapper(
+  |> map_either_ors(
     fn(blamed_contents) {
       let assert [BlamedContent(blame, _), ..] = blamed_contents
       T(blame, blamed_contents)
@@ -591,6 +627,80 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //**************************************************************
 //* misc (children collecting, inserting, ...)
 //**************************************************************
+
+pub fn remove_lines_while_empty(
+  l: List(BlamedContent)
+) -> List(BlamedContent) {
+  case l {
+    [] -> []
+    [first, ..rest] -> case first.content {
+      "" -> remove_lines_while_empty(rest)
+      _ -> l
+    }
+  }
+}
+
+pub fn t_remove_starting_empty_lines(
+  vxml: VXML
+) -> Option(VXML) {
+  let assert T(blame, lines) = vxml
+  let lines = remove_lines_while_empty(lines)
+  case lines {
+    [] -> None
+    _ -> Some(T(blame, lines))
+  }
+}
+
+pub fn t_remove_ending_empty_lines(
+  vxml: VXML
+) -> Option(VXML) {
+  let assert T(blame, lines) = vxml
+  let lines = remove_lines_while_empty(lines |> list.reverse) |> list.reverse
+  case lines {
+    [] -> None
+    _ -> Some(T(blame, lines))
+  }
+}
+
+pub fn v_remove_starting_empty_lines(
+  vxml: VXML
+) -> VXML {
+  let assert V(blame, tag, attrs, children) = vxml
+  let children = case children {
+    [T(_, _) as first, ..rest] -> {
+      case t_remove_starting_empty_lines(first) {
+        Some(guy) -> [guy, ..rest]
+        None -> rest
+      }
+    }
+    _ -> children
+  }
+  V(blame, tag, attrs, children)
+}
+
+pub fn v_remove_ending_empty_lines(
+  vxml: VXML
+) -> VXML {
+  let assert V(blame, tag, attrs, children) = vxml
+  let children = case children |> list.reverse {
+    [T(_, _) as first, ..rest] -> {
+      case t_remove_ending_empty_lines(first) {
+        Some(guy) -> [guy, ..rest] |> list.reverse
+        None -> rest |> list.reverse
+      }
+    }
+    _ -> children
+  }
+  V(blame, tag, attrs, children)
+}
+
+pub fn v_remove_starting_and_ending_empty_lines(
+  vxml: VXML
+) -> VXML {
+  vxml
+  |> v_remove_starting_empty_lines
+  |> v_remove_ending_empty_lines
+}
 
 pub fn extract_starting_spaces_from_text(
   content: String
@@ -925,6 +1035,13 @@ pub fn read_singleton(z: List(a)) -> Result(a, SingletonError) {
 pub fn unique_child_with_tag(vxml: VXML, tag: String) -> Result(VXML, SingletonError) {
   children_with_tag(vxml, tag)
   |> read_singleton
+}
+
+pub fn digest(vxml: VXML) -> String {
+  case vxml {
+    V(_, tag, _, _) -> "V(_, " <> tag <> ", _, _)"
+    T(_, _) -> "T(_, _)"
+  }
 }
 
 //**************************************************************
@@ -1552,8 +1669,8 @@ pub fn node_to_nodes_desugarer_factory(
 //**************************************************************
 
 pub type EarlyReturn(a) {
-  DoNotRecurse(a)
-  Recurse(a)
+  GoBack(a)
+  Continue(a)
   Err(DesugaringError)
 }
 
@@ -1576,8 +1693,8 @@ fn early_return_node_to_node_desugar_one(
   transform: EarlyReturnNodeToNodeTransform,
 ) -> Result(VXML, DesugaringError) {
   case transform(node, ancestors) {
-    DoNotRecurse(new_node) -> Ok(new_node)
-    Recurse(new_node) -> {
+    GoBack(new_node) -> Ok(new_node)
+    Continue(new_node) -> {
       case new_node {
         T(_, _) -> Ok(new_node)
         V(blame, tag, attrs, children) -> {

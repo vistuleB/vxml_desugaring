@@ -14,8 +14,9 @@ packages = [
   { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
   { name = "snag", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "7E9F06390040EB5FAB392CE642771484136F2EC103A92AE11BA898C8167E6E17" },
   { name = "tom", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "tom", source = "hex", outer_checksum = "228E667239504B57AD05EC3C332C930391592F6C974D0EFECF32FFD0F3629A27" },
-  { name = "vxml_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_stdlib", "simplifile"], source = "local", path = "../../vistuleB/vxml_parser" },
+  { name = "vxml_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_stdlib", "simplifile", "xmlm"], source = "local", path = "../../vistuleB/vxml_parser" },
   { name = "writerly_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_stdlib", "simplifile", "vxml_parser"], source = "local", path = "../../vistuleB/writerly_parser" },
+  { name = "xmlm", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "xmlm", source = "hex", outer_checksum = "295F483E1A930DC4C45ED0F07C3466C0A7381972C3C2FC64D66BD2FBB307ED6A" },
 ]
 
 [requirements]
@@ -29,3 +30,4 @@ shellout = { version = ">= 1.6.0 and < 2.0.0" }
 simplifile = { version = ">= 2.2.0 and < 3.0.0" }
 vxml_parser = { path = "../../vistuleB/vxml_parser" }
 writerly_parser = { path = "../../vistuleB/writerly_parser" }
+xmlm = { version = ">= 1.0.0 and < 2.0.0" }
