@@ -42,9 +42,6 @@ fn is_known_inner_element(
     V(_, tag, _, _) -> {
       case list.contains(
         [
-          "div", 
-          "p",
-          "table",
           "ul",
           "ol",
           "MathBlock",
@@ -52,10 +49,8 @@ fn is_known_inner_element(
           "StarDivider",
           "CentralDisplayItalic",
           "CentralDisplay",
-          "Pause",
           "Image",
           "Grid",
-          "Table",
           "List",
         ],
         tag
@@ -66,6 +61,21 @@ fn is_known_inner_element(
     }
     T(_, _) -> True
   }
+}
+
+fn is_known_other_element(
+  vxml: VXML
+) -> Bool {
+  let assert V(_, tag, _, _) = vxml
+  list.contains(
+    [
+      "Table",
+      "table",
+      "Pause",
+      "p"
+    ],
+    tag
+  )
 }
 
 fn param_transform(
@@ -90,6 +100,11 @@ fn param_transform(
         )
       )
     }
+  )
+
+  use <- infra.on_true_on_false(
+    is_known_other_element(vxml),
+    GoBack(vxml),
   )
 
   io.println("unclassified element: " <> {vxml |> infra.digest})

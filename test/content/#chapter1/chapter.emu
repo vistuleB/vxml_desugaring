@@ -277,7 +277,7 @@
         src images/325.svg
         line 1.5
         offset_y -10px
-        
+
     $$
     (a + b)(C + D) = (a + b)C + (a + b)D
     $$
