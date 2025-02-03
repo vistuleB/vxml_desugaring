@@ -40,7 +40,7 @@ fn desugarer_factory() -> Desugarer {
 
 pub fn insert_indent() -> Pipe {
   #(
-    DesugarerDescription("insert_indent_desugarer", option.None, "..."),
+    DesugarerDescription("insert_indent", option.None, "..."),
     desugarer_factory(),
   )
 }

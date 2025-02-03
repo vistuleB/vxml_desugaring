@@ -1030,6 +1030,11 @@ pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
   }
 }
 
+pub fn get_tag(vxml: VXML) -> String {
+  let assert V(_, tag, _, _) = vxml
+  tag
+}
+
 pub fn filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
   let assert V(_, _, _, children) = vxml
   list.filter(children, condition)
