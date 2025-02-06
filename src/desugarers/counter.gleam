@@ -1,6 +1,5 @@
 import blamedlines.{type Blame, Blame}
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/regexp
@@ -28,10 +27,6 @@ type CounterInstance {
   )
 }
 
-type HandleInstance {
-  HandleInstance(name: String, value: String)
-}
-
 fn check_counter_already_defined(
   new_counter_name: String,
   counters: List(CounterInstance),
@@ -46,25 +41,6 @@ fn check_counter_already_defined(
       Error(DesugaringError(
         blame: blame,
         message: "Counter " <> new_counter_name <> " has already been used",
-      ))
-    False -> Ok(Nil)
-  }
-}
-
-fn check_handle_already_defined(
-  new_handle_name: String,
-  handles: List(HandleInstance),
-  blame: Blame,
-) -> Result(Nil, DesugaringError) {
-  let existing_handle_names =
-    handles
-    |> list.map(fn(x) { x.name })
-
-  case list.contains(existing_handle_names, new_handle_name) {
-    True ->
-      Error(DesugaringError(
-        blame: blame,
-        message: "Handle " <> new_handle_name <> " has already been used",
       ))
     False -> Ok(Nil)
   }
@@ -494,20 +470,6 @@ fn transform_children_recursive(
       Ok(#([updated_first, ..updated_rest], updated_parent, updated_counters))
     }
   }
-}
-
-fn convert_handles_to_attributes(
-  handles: List(HandleInstance),
-) -> List(BlamedAttribute) {
-  let blame = Blame("", 0, [])
-
-  list.map(handles, fn(handle) {
-    BlamedAttribute(
-      blame: blame,
-      key: "handle_" <> handle.name,
-      value: handle.value,
-    )
-  })
 }
 
 fn counter_transform(

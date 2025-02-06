@@ -17,6 +17,13 @@ pub type DesugaringError {
   GetRootError(message: String)
 }
 
+pub fn is_singleton(z: List(a)) -> Bool {
+  case z {
+    [_] -> True
+    _ -> False
+  }
+}
+
 pub fn on_false_on_true(
   over condition: Bool,
   with_on_false f1: b,
@@ -50,6 +57,17 @@ pub fn on_lazy_true_on_false(
   }
 }
 
+pub fn on_lazy_false_on_true(
+  over condition: Bool,
+  with_on_false f1: fn() -> b,
+  with_on_true f2: fn() -> b,
+) -> b {
+  case condition {
+    False -> f1()
+    True -> f2()
+  }
+}
+
 pub fn on_none_on_some(
   over option: Option(a),
   with_on_none f1: b,
@@ -70,6 +88,38 @@ pub fn on_error_on_ok(
     Error(e) -> f1(e)
     Ok(r) -> f2(r)
   }
+}
+
+pub fn on_empty_on_nonempty(
+  l: List(a),
+  f1: c,
+  f2: fn(a, List(a)) -> c,
+) -> c {
+  case l {
+    [] -> f1
+    [first, ..rest] -> f2(first, rest)
+  }
+}
+
+pub fn on_lazy_empty_on_nonempty(
+  l: List(a),
+  f1: fn() -> c,
+  f2: fn(a, List(a)) -> c,
+) -> c {
+  case l {
+    [] -> f1()
+    [first, ..rest] -> f2(first, rest)
+  }
+}
+
+pub fn io_debug_digests(
+  vxmls: List(VXML),
+  announce: String,
+) -> List(VXML) {
+  io.print(announce <> ": ")
+  list.each(vxmls, fn(vxml) { io.print(digest(vxml)) })
+  io.println("")
+  vxmls
 }
 
 pub fn announce_error(message: String) -> fn(e) -> Nil {
@@ -958,6 +1008,81 @@ pub fn v_end_insert_text(
   let assert V(blame, tag, attrs, children) = node {
     let children = list_end_insert_text(blame, children, text)
     V(blame, tag, attrs, children)
+  }
+}
+
+// "word" == "non-whitespace" == empty string if string ends with
+// whitespace
+//
+// returns:                -> #(everything_before, after_last_space)
+fn break_out_last_word(input: String) -> #(String, String) {
+  case input |> string.reverse |> string.split_once(" ") {
+    Ok(#(yoro, rest)) -> #(
+      {" " <> rest} |> string.reverse,
+      yoro |> string.reverse,
+    )
+    _ -> #(
+      "",
+      input
+    )
+  }
+}
+
+// "word" == "non-whitespace" == empty string if string startss with
+// whitespace
+//
+// returns:                -> #(before_first_space, everything_afterwards)
+fn break_out_first_word(input: String) -> #(String, String) {
+  case input |> string.split_once(" ") {
+    Ok(#(yoro, rest)) -> #(yoro, " " <> rest)
+    _ -> #(input, "")
+  }
+}
+
+// "word" == "non-whitespace" == empty string if node ends with
+// whitespace
+//
+// returns                                           #(node leftover with last word taken out, Option(new T(_, _) containing last word))
+pub fn extract_last_word_from_t_node_if_t(vxml: VXML) -> #(VXML, Option(VXML)) {
+  case vxml {
+    V(_, _, _, _) -> #(vxml, None)
+    T(blame, contents) -> {
+      let reversed = contents |> list.reverse
+      let assert [last, ..rest] = reversed
+      case break_out_last_word(last.content) {
+        #(_, "") -> #(vxml, None)
+        #(before_last_word, last_word) -> {
+          let contents = [BlamedContent(last.blame, before_last_word), ..rest] |> list.reverse
+          #(
+            T(blame, contents),
+            Some(T(last.blame, [BlamedContent(last.blame, last_word)]))
+          )
+        }
+      }
+    }
+  }
+}
+
+// "word" == "non-whitespace" == empty string if node starts with
+// whitespace
+//
+// returns                                            #(Option(new T(_, _) containing first word), node leftover with word taken out)
+pub fn extract_first_word_from_t_node_if_t(vxml: VXML) -> #(Option(VXML), VXML) {
+  case vxml {
+    V(_, _, _, _) -> #(None, vxml)
+    T(blame, contents) -> {
+      let assert [first, ..rest] = contents
+      case break_out_first_word(first.content) {
+        #("", _) -> #(None, vxml)
+        #(first_word, after_first_word) -> {
+          let contents = [BlamedContent(first.blame, after_first_word), ..rest]
+          #(
+            Some(T(first.blame, [BlamedContent(first.blame, first_word)])),
+            T(blame, contents)
+          )
+        }
+      }
+    }
   }
 }
 

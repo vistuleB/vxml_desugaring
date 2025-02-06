@@ -1,83 +1,62 @@
-import gleam/option
-import gleam/result
-import gleam/string
+import gleam/list
+import gleam/option.{Some}
 import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
   DesugarerDescription, DesugaringError,
 } as infra
-import vxml_parser.{type VXML, BlamedContent, T, V}
+import vxml_parser.{type VXML, T, V}
 
-fn split_next_line_nodes_by_space(rest: List(VXML)) -> Result(List(VXML), Nil) {
-  case rest {
-    [] -> Error(Nil)
-    [first, ..] -> {
-      case first {
-        V(_, _, _, _) -> Error(Nil)
-        T(b, a) -> {
-          case a {
-            [] -> Error(Nil)
-            [f, ..rest_lines] -> {
-              let splits_res = f.content |> string.split_once(" ")
-              case splits_res {
-                Ok(#(no_break_str, rest_of_str)) -> {
-                  let no_break_text_node =
-                    T(b, [BlamedContent(f.blame, no_break_str)])
-                  let rest_text_node =
-                    T(b, [BlamedContent(f.blame, " " <> rest_of_str), ..rest_lines])
-                  Ok([no_break_text_node, rest_text_node])
-                }
-                Error(_) -> Ok([first])
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
+fn wrap_second_element_if_its_math_and_recurse(children: List(VXML)) -> List(VXML) {
+  use first, after_first <- infra.on_lazy_empty_on_nonempty(
+    children,
+    fn() { [] }
+  )
 
-fn wrap_math(children: List(VXML)) -> List(VXML) {
-  case children {
-    [] -> []
-    [first, ..rest] -> {
-      case first {
-        T(_, _) -> {
-          [first, ..wrap_math(rest)]
-        }
-        V(b, t, _, _) -> {
-          case t == "Math" {
-            False -> {
-              [first, ..wrap_math(rest)]
-            }
-            True -> {
-              case split_next_line_nodes_by_space(rest) {
-                Error(_) -> {
-                  [first, ..wrap_math(rest)]
-                }
-                Ok(vxmls) -> {
-                  let assert [_, ..rest] = wrap_math(rest)
-                  case vxmls {
-                    [one] ->
-                      [first, one, ..rest]
-                    [no_break_node, rest_nodes] -> {
-                      let assert T(_, [no_break_text]) = no_break_node
-                      case no_break_text.content {
-                        "" ->
-                          [first, rest_nodes, ..rest]
-                        _ ->
-                          [V(b, "NoBreak", [], [first, no_break_node]), rest_nodes, ..rest]
-                      }
-                    }
-                    _ -> []
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  use math, after_second <- infra.on_lazy_empty_on_nonempty(
+    after_first,
+    fn() { children }
+  )
+
+  use <- infra.on_lazy_false_on_true(
+    infra.is_v_and_tag_equals(math, "Math"),
+    fn() {[first, ..wrap_second_element_if_its_math_and_recurse([math, ..after_second])]}
+  )
+
+  let #(first, last_word_of_first) = infra.extract_last_word_from_t_node_if_t(first)
+
+  use third, after_third <- infra.on_lazy_empty_on_nonempty(
+    after_second,
+    fn() {[
+      first,
+      V(
+        math.blame,
+        "NoBreak",
+        [],
+        [
+          last_word_of_first,
+          Some(math)
+        ] |> option.values
+      ),
+      ..wrap_second_element_if_its_math_and_recurse(after_second)
+    ]}
+  )
+
+  let #(first_word_of_third, third) = infra.extract_first_word_from_t_node_if_t(third)
+
+  [
+    first,
+    V(
+      math.blame,
+      "NoBreak",
+      [],
+      [
+        last_word_of_first,
+        Some(math),
+        first_word_of_third
+      ] |> option.values
+    ),
+    ..wrap_second_element_if_its_math_and_recurse([third, ..after_third])
+  ]
 }
 
 fn wrap_math_with_no_break_transform(
@@ -86,7 +65,16 @@ fn wrap_math_with_no_break_transform(
   case node {
     T(_, _) -> Ok(node)
     V(b, t, a, children) -> {
-      Ok(V(b, t, a, wrap_math(children)))
+      Ok(
+        V(
+          b,
+          t,
+          a,
+          [V(b, "Dummy", [], []), ..children]
+          |> wrap_second_element_if_its_math_and_recurse
+          |> list.drop(1)
+        )
+      )
     }
   }
 }
