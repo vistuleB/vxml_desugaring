@@ -688,7 +688,8 @@
 
         |> Solution
 
-            This is true, as illustrated by the following pair of lines:
+            This is true, as illustrated by the following
+            pair of lines:
 
             |> Image
                 src images/55.svg
@@ -699,16 +700,12 @@
                     _attached false
                     offset_y 5rem
                     offset_x -1.3rem
-                    use_squiggle_on_mobile false
 
                 |> ImageLeft
                     src images/57.svg
                     _attached false
-                    offset_x -7rem
-                    offset_y 0.5rem
-                    y bottom
-                    img_position bottom
-                    use_squiggle_on_mobile false
+                    offset_x -8rem
+                    offset_y 30em
 
             In more detail, the two triangles are related
             by a $90^\circ$ rotation and so, likewise,

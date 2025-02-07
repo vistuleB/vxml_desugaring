@@ -756,6 +756,8 @@ pub fn cli_usage() {
   io.println("")
   io.println("      --spotlight <path1> <path2> ...")
   io.println("         -> spotlight the given paths before assembling")
+  io.println("      --debug-pipeline <name1> <name2> ...")
+  io.println("         -> print output of pipes with given names")
   io.println("      --debug-pipeline-<x>-<y>")
   io.println("         -> print output of pipes number x up to y")
   io.println("      --debug-pipeline-<x>")
