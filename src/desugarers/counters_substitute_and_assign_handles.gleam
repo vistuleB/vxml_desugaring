@@ -161,7 +161,6 @@ fn update_counter(
 fn handles_as_attributes(
   blame: Blame,
   node: VXML,
-  // handles: List(HandleInstance),
   handle_names: Option(List(String)),
   value: String,
 ) -> VXML {
@@ -495,7 +494,6 @@ fn counter_transform(
         Some(V(_, _, a, _)) -> a
         _ -> attributes
       }
-      // let handles_as_attributs = convert_handles_to_attributes(updated_handles)
 
       Ok(#(
         V(b, t, updated_attributes, updated_children),
@@ -513,8 +511,8 @@ fn counter_transform(
   }
 }
 
-pub fn counter_desugarer() -> Pipe {
-  #(DesugarerDescription("Counter", None, "..."), fn(vxml) {
+pub fn counters_substitute_and_assign_handles() -> Pipe {
+  #(DesugarerDescription("counters_substitute_and_assign_handles", None, "..."), fn(vxml) {
     use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
     Ok(vxml)
   })

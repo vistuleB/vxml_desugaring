@@ -15,7 +15,7 @@ fn generate_id(blame: Blame) {
   <> string.inspect(int.random(9999))
 }
 
-fn generate_id_for_handles_transform(
+fn transform(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -48,16 +48,16 @@ fn generate_id_for_handles_transform(
 }
 
 fn transform_factory() -> infra.NodeToNodeTransform {
-  generate_id_for_handles_transform(_)
+  transform(_)
 }
 
 fn desugarer_factory() -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory())
 }
 
-pub fn generate_id_for_handles() -> Pipe {
+pub fn handles_generate_ids() -> Pipe {
   #(
-    DesugarerDescription("Unique Id generator for handles", None, "..."),
+    DesugarerDescription("handles_generate_ids", None, "unique Id generator for handles"),
     desugarer_factory(),
   )
 }

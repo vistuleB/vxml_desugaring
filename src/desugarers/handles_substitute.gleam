@@ -1,6 +1,5 @@
 import blamedlines.{type Blame}
-import desugarers/counter_handles_dict_factory.{type HandleInstances}
-import gleam/dict
+import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/regexp
@@ -15,6 +14,11 @@ import vxml_parser.{
   BlamedContent, T, V,
 }
 
+type HandleInstances =
+  Dict(String, #(String, String, String))
+//   handle   local path, element id, string value
+//   name     of page     on page     of handle
+
 fn construct_hyperlink(blame: Blame, handle: #(String, String, String)) {
   let #(id, filename, value) = handle
   V(blame, "a", [BlamedAttribute(blame, "href", filename <> "#" <> id)], [
@@ -27,10 +31,6 @@ fn handle_handle_matches(
   matches: List(regexp.Match),
   splits: List(String),
   handles: HandleInstances,
-  //         
-  //
-  //
-  //
 ) -> Result(List(VXML), DesugaringError) {
   case matches {
     [] -> {
@@ -183,9 +183,9 @@ fn desugarer_factory() {
   )
 }
 
-pub fn counter_handles_desugarer() -> Pipe {
+pub fn handles_substitute() -> Pipe {
   #(
-    DesugarerDescription("counter_handles", option.None, "..."),
+    DesugarerDescription("handles_substitute", option.None, "..."),
     desugarer_factory(),
   )
 }

@@ -3,15 +3,15 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{None}
 import gleam/result
+import gleam/pair
 import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
 }
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
-pub type HandleInstances =
+type HandleInstances =
   Dict(String, #(String, String, String))
-
 //   handle   local path, element id, string value
 //   name     of page     on page     of handle
 
@@ -47,7 +47,6 @@ fn check_handle_already_defined(
 
 fn get_handles_from_attributes(
   attributes: List(BlamedAttribute),
-  // handles: HandleInstances,
 ) -> #(List(BlamedAttribute), List(#(String, String))) {
   let extracted_handles =
     list.filter(attributes, fn(att) { string.starts_with(att.key, "handle_") })
@@ -165,21 +164,14 @@ fn handles_dict_factory_transform(
 
 type Extra =
   List(#(String, String))
-
 //        ^        ^
 //  tags to      attribute key
 //  get local    that mentions
 //  path from    local path
 
-pub fn handles_dict_factory_desugarer(extra: Extra) -> Pipe {
-  #(DesugarerDescription("Handles dictionary factory", None, "..."), fn(vxml) {
-    use #(vxml, _) <- result.try(handles_dict_factory_transform(
-      vxml,
-      dict.new(),
-      True,
-      extra,
-      "",
-    ))
+pub fn handles_generate_dictionary(extra: Extra) -> Pipe {
+  #(DesugarerDescription("handles_generate_dictionary", None, "..."), fn(vxml) {
+    use #(vxml, _) <- result.try(handles_dict_factory_transform(vxml, dict.new(), True, extra, ""))
     Ok(vxml)
   })
 }
