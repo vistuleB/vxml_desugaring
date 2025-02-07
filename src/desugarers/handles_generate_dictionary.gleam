@@ -3,7 +3,6 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{None}
 import gleam/result
-import gleam/pair
 import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
