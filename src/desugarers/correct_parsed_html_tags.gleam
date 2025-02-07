@@ -1,4 +1,3 @@
-
 import gleam/option.{None}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
@@ -6,7 +5,6 @@ import infrastructure.{
 } as infra
 import vxml_parser.{type VXML, T, V}
 import gleam/string
-import gleam/io
 
 
 fn correct_tag(tag: String) {

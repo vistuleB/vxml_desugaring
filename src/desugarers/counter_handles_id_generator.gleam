@@ -1,9 +1,7 @@
 import blamedlines.{type Blame, Blame}
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/option.{None}
-import gleam/result
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,

@@ -50,17 +50,15 @@ fn insert_dollar(node: VXML, dollar: String, where: Where) -> List(VXML) {
 
 fn update_children(nodes: List(VXML), dollar: String) -> List(VXML) {
   let assert [first, ..rest] = nodes
-  let last = list.last(rest)
-
-  case last {
-    Ok(last) -> {
+  case list.last(rest) {
+    Ok(_) -> {
       panic as {"more than 1 child in node:" <> ins(nodes) }
-      let assert [_, ..in_between_reversed] = rest |> list.reverse()
-      list.flatten([
-        insert_dollar(first, dollar, First),
-        in_between_reversed |> list.reverse(),
-        insert_dollar(last, dollar, Last),
-      ])
+      // let assert [_, ..in_between_reversed] = rest |> list.reverse
+      // list.flatten([
+      //   insert_dollar(first, dollar, First),
+      //   in_between_reversed |> list.reverse(),
+      //   insert_dollar(last, dollar, Last),
+      // ])
     }
     Error(_) -> {
       insert_dollar(first, dollar, Both)

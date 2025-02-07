@@ -1,16 +1,13 @@
 
-import gleam/option.{None, type Option, Some}
+import gleam/option.{None}
+import gleam/list
+import vxml_parser.{type VXML, T, V,  BlamedContent, type BlamedContent}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
-import vxml_parser.{type VXML, T, V,  BlamedContent, type BlamedContent}
-import blamedlines.{type Blame}
 
-import gleam/io
-import gleam/list
-
-fn append_to_prev_text_node(b: Blame, fold_as: String, node: VXML) -> List(VXML) {
+fn append_to_prev_text_node(fold_as: String, node: VXML) -> List(VXML) {
   case node {
     T(b, contents) -> {
       case contents {
@@ -40,8 +37,8 @@ fn param_transform(
     V(_, tag, _, _) if tag == tag_to_fold -> Ok([])
     _ -> {
       case following_siblings_before_mapping {
-        [V(blame, tag, _, _), ..] if tag == tag_to_fold -> {
-          let vxmls = append_to_prev_text_node(blame, fold_as, vxml)
+        [V(_, tag, _, _), ..] if tag == tag_to_fold -> {
+          let vxmls = append_to_prev_text_node(fold_as, vxml)
           Ok(vxmls)
         }
         _ -> Ok([vxml])

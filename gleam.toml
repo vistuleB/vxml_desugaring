@@ -22,7 +22,7 @@ writerly_parser = { path = "../../vistuleB/writerly_parser" }
 gleam_regexp = ">= 1.0.0 and < 2.0.0"
 shellout = ">= 1.6.0 and < 2.0.0"
 xmlm = ">= 1.0.0 and < 2.0.0"
+blamedlines = ">= 1.0.0 and < 2.0.0"
 
 [dev-dependencies]
 gleeunit = ">= 1.0.0 and < 2.0.0"
-blamedlines = { path = "../../vistuleB/blamedlines"}

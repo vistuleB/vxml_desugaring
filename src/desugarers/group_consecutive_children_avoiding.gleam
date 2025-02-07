@@ -1,11 +1,9 @@
-import blamedlines.{type Blame}
-import gleam/io
 import gleam/list
 import gleam/string
 import gleam/option.{Some}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, type EarlyReturn, Continue, GoBack, type EitherOr, Either, Or
+  type Desugarer, type Pipe, DesugarerDescription,
+  type EarlyReturn, Continue, GoBack,
 } as infra
 import vxml_parser.{type VXML, T, V}
 

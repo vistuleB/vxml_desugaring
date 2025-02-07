@@ -6,7 +6,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
   DesugarerDescription, DesugaringError
 } as infra
-import blamedlines.{type Blame, BlamedLine}
+import blamedlines.{type Blame}
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect

@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
   DesugarerDescription,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml_parser.{type VXML, V}
 
 fn param_transform(vxml: VXML, extra: Param) -> Result(VXML, DesugaringError) {
   case vxml {

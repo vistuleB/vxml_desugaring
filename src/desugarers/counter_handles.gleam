@@ -137,7 +137,7 @@ fn counter_handles_transform_to_replace_handles(
   handles: HandleInstances,
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   case vxml {
-    T(b, contents) -> {
+    T(_, contents) -> {
       use update_contents <- result.try(print_handle_for_contents(
         contents,
         handles,
