@@ -15,6 +15,13 @@ fn blame_us(note: String) -> Blame {
   Blame("generate_ti2_toc:" <> note, -1, [])
 }
 
+fn prepand_0(number: String) {
+  case string.length(number) {
+    1 -> "0" <> number
+    _ -> number
+  }
+}
+
 fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) -> Result(VXML, DesugaringError) {
   let tp = "Chapter"
 
@@ -35,6 +42,11 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) ->
     None -> label_attr
   }
 
+  let link = 
+    number_attribute.value |> string.split(".") |> list.map(prepand_0) |> string.join("-") 
+    <> "-" 
+    <> label_attr.value |> string.replace(" ", "-")
+
   Ok(V(
     item_blame,
     chapter_link_component_name,
@@ -42,7 +54,7 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) ->
       BlamedAttribute(label_attr.blame, "label", label_attr.value),
       BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
       BlamedAttribute(number_attribute.blame, "number", number_attribute.value),
-      BlamedAttribute(blame_us("L45"), "href", tp <> ins(count)),
+      BlamedAttribute(blame_us("L45"), "href", link),
     ],
     []
   ))
