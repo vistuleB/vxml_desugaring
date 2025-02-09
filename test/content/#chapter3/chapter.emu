@@ -779,6 +779,7 @@
 
     |> ImageRight
         src images/svg_ch3_a1_x1_cloud.svg
+        offset_x 5em
 
     for all $x$, and 
 
@@ -788,6 +789,7 @@
 
     |> ImageRight
         src images/svg_ch3_a0_x0_cloud.svg
+        offset_x 5em
 
     for all $x$ (even $x = 0$), namely.
 

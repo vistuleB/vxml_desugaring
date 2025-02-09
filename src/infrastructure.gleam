@@ -112,6 +112,27 @@ pub fn on_lazy_empty_on_nonempty(
   }
 }
 
+pub fn on_v_on_t(
+  node: VXML,
+  f1: fn(Blame, String, List(BlamedAttribute), List(VXML)) -> c,
+  f2: fn(Blame, List(BlamedContent)) -> c,
+) -> c {
+  case node {
+    V(blame, tag, attributes, children) -> f1(blame, tag, attributes, children)
+    T(blame, blamed_contents) -> f2(blame, blamed_contents)
+  }
+}
+
+pub fn on_v_identity_on_t(
+  node: VXML,
+  f2: fn(Blame, List(BlamedContent)) -> VXML
+) -> VXML {
+  case node {
+    V(_, _, _, _) -> node
+    T(blame, blamed_contents) -> f2(blame, blamed_contents)
+  }
+}
+
 pub fn io_debug_digests(
   vxmls: List(VXML),
   announce: String,
@@ -520,6 +541,36 @@ pub fn replace_regexes_by_tags_param_transform_indexed_group_version(
   rules: List(#(RegexWithIndexedGroup, String)),
 ) -> Result(List(VXML), DesugaringError) {
   Ok(replace_regexes_by_tags_in_nodes_indexed_group_version([node], rules))
+}
+
+fn find_replace_in_blamed_content(
+  blamed_content: BlamedContent,
+  list_pairs: List(#(String, String))
+) -> BlamedContent {
+  use #(first_from, first_to), rest <- on_empty_on_nonempty(list_pairs, blamed_content)
+  BlamedContent(
+    blamed_content.blame,
+    string.replace(blamed_content.content, first_from, first_to)
+  )
+  |> find_replace_in_blamed_content(rest)
+}
+
+pub fn find_replace_in_node(
+  node: VXML,
+  list_pairs: List(#(String, String))
+) -> VXML {
+  use blame, blamed_contents <- on_v_identity_on_t(node)
+  T(
+    blame,
+    blamed_contents |> list.map(find_replace_in_blamed_content(_, list_pairs))
+  )
+}
+
+pub fn find_replace_in_node_transform_version(
+  node: VXML,
+  list_pairs: List(#(String, String))
+) -> Result(List(VXML), DesugaringError) {
+  [find_replace_in_node(node, list_pairs)] |> Ok
 }
 
 //**************************************************************
