@@ -176,6 +176,14 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
   }
 }
 
+pub fn contains_tag(vxmls: List(VXML), tag: String) -> Bool {
+  vxmls |> list.any(is_tag(_, tag))
+}
+
+pub fn contains_one_of_tags(vxmls: List(VXML), tags: List(String)) -> Bool {
+  tags |> list.any(contains_tag(vxmls, _))
+}
+
 //**************************************************************
 //* dictionary-building functions
 //**************************************************************
