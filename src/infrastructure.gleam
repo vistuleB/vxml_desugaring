@@ -1138,6 +1138,17 @@ pub fn get_attribute_by_name(vxml: VXML, name: String) -> Option(BlamedAttribute
   }
 }
 
+pub fn has_attribute(vxml: VXML, name: String, value: String) -> Bool {
+  let assert V(_, _, blamed_attributes, _) = vxml
+  case list.find(
+    blamed_attributes,
+    fn (blamed_attribute) { blamed_attribute.key == name && blamed_attribute.value == value }
+  ) {
+    Error(Nil) -> False
+    Ok(_) -> True
+  }
+}
+
 pub fn get_children(vxml: VXML) -> List(VXML) {
   let assert V(_, _, _, children) = vxml
   children
@@ -1155,6 +1166,15 @@ pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
   }
 }
 
+pub fn is_v_and_has_attr(vxml: VXML, key: String, value: String) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    _ -> {
+      has_attribute(vxml, key, value)
+    }
+  }
+}
+
 pub fn get_tag(vxml: VXML) -> String {
   let assert V(_, tag, _, _) = vxml
   tag
@@ -1167,6 +1187,10 @@ pub fn filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
 
 pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
   filter_children(vxml, is_v_and_tag_equals(_, tag))
+}
+
+pub fn children_with_attr(vxml: VXML, key: String, value: String) -> List(VXML) {
+  filter_children(vxml, is_v_and_has_attr(_, key, value))
 }
 
 pub type SingletonError {
