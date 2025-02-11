@@ -1,5 +1,6 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
@@ -37,9 +38,6 @@ fn param_transform(
   }
 }
 
-type Extra =
-  #(String, String)
-
 fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
   fn(node, ancestors, s1, s2, s3) {
     param_transform(node, ancestors, s1, s2, s3, extra)
@@ -50,9 +48,12 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extra))
 }
 
+type Extra =
+  #(String, String)
+
 pub fn unwrap_tag_when_child_of_tag(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("split_vertical_chunks_desugarer", None, "..."),
+    DesugarerDescription("unwrap_tag_when_child_of_tag", option.Some(extra |> ins), "..."),
     desugarer_factory(extra),
   )
 }

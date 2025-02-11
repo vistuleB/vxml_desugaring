@@ -7,36 +7,6 @@ import infrastructure.{
 } as infra
 import vxml_parser.{type VXML, T, V}
 
-// fn param_transform_v2(
-//   node: VXML,
-//   ancestors: List(VXML),
-//   _: List(VXML),
-//   _: List(VXML),
-//   _: List(VXML),
-//   param: Param
-// ) -> Result(VXML, DesugaringError) {
-//   case node {
-//     T(_, _) -> Ok(node)
-//     V(blame, tag, attrs, children) -> {
-//       case dict.get(param, tag) -> {
-//         Error(Nil) -> Ok(node)
-//         Ok(inner_dict) -> {
-//           case list.first(ancestors) {
-//             Error(Nil) -> Ok(node)
-//             Ok(parent) -> {
-//               let assert V(_, parent_tag, _, _) = parent
-//               case dict.get(inner_dict, parent_tag) {
-//                 Error(Nil) -> Ok(node)
-//                 Ok(new_name) -> Ok(V(blame, new_name, attrs, children))
-//               }
-//             }
-//           }
-//         }
-//       }
-//     }
-//   }
-// }
-
 fn param_transform(
   vxml: VXML, 
   param: Param
@@ -68,7 +38,7 @@ fn param_transform(
   }
 }
 
-fn convert_extra_to_param(extra: Extra) -> Param {
+fn param(extra: Extra) -> Param {
   extra
   |> list.fold(
     from: dict.from_list([]),
@@ -97,6 +67,14 @@ fn convert_extra_to_param(extra: Extra) -> Param {
   )
 }
 
+fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
+  param_transform(_, extra |> param)
+}
+
+fn desugarer_factory(extra: Extra) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(extra))
+}
+
 type Param = Dict(String, Dict(String, String))
 
 type Extra =
@@ -104,15 +82,6 @@ type Extra =
 //********************************
 //    old_name, new_name, parent
 //********************************
-
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  let param = convert_extra_to_param(extra)
-  param_transform(_, param)
-}
-
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
-}
 
 pub fn rename_when_child_of(extra: Extra) -> Pipe {
   #(

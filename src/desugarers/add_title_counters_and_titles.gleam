@@ -1,13 +1,11 @@
 import gleam/list
 import gleam/option.{Some}
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError,
 } as infra
 import vxml_parser.{type VXML, BlamedAttribute, BlamedContent, T, V}
-
-const ins = string.inspect
 
 fn param_transform(
   node: VXML,
@@ -73,6 +71,16 @@ fn param_transform(
   }
 }
 
+fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
+  fn(node, ancestors, s1, s2, s3) {
+    param_transform(node, ancestors, s1, s2, s3, extra)
+  }
+}
+
+fn desugarer_factory(extra: Extra) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
+}
+
 //**********************************
 // type Extra = List(#(String,         String,       String,        String,         String))
 //                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter
@@ -84,16 +92,6 @@ fn param_transform(
 
 type Extra =
   List(#(String, String, String, String, String))
-
-fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
-  fn(node, ancestors, s1, s2, s3) {
-    param_transform(node, ancestors, s1, s2, s3, extra)
-  }
-}
-
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
-}
 
 pub fn add_title_counters_and_titles(extra: Extra) -> Pipe {
   #(
