@@ -36,9 +36,18 @@ fn desugarer_factory() -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory())
 }
 
+/// for each text node, removes each line whose
+/// content is the empty string & destroys 
+/// text nodes that end up with 0 lines
 pub fn remove_empty_lines() -> Pipe {
   #(
-    DesugarerDescription("remove_empty_lines", option.None, "..."),
+    DesugarerDescription(
+      "remove_empty_lines",
+      option.None,
+      "for each text node, removes each line whose
+content is the empty string & destroys 
+text nodes that end up with 0 lines"
+    ),
     desugarer_factory(),
   )
 }

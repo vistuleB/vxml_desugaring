@@ -25,10 +25,25 @@ fn matches_a_key_value_pair(
 
 type Extra =
   List(#(String, String))
+//       ↖       ↖
+//       key     value
 
-pub fn remove_outside_subtrees_matching_one_key_value_pair(extra: Extra) -> Pipe {
+/// filters by identifying nodes whose attributes
+/// match at least one of the given #(key, value)
+/// pairs. (OR not AND); keeps only nodes that
+/// are descendants of such nodes, or ancestors
+/// of such nodes
+pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("remove_outside_subtrees_matching_one_key_value_pair", option.Some(extra |> ins), "..."),
+    DesugarerDescription(
+      "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair",
+      option.Some(extra |> ins),
+      "filters by identifying nodes whose attributes
+match at least one of the given #(key, value)
+pairs. (OR not AND); keeps only nodes that
+are descendants of such nodes, or ancestors
+of such nodes"
+    ),
     case extra {
       [] -> fn(vxml) { Ok(vxml) }
       _ -> remove_outside_subtrees(fn (vxml) { matches_a_key_value_pair(vxml, extra) }) |> pair.second
