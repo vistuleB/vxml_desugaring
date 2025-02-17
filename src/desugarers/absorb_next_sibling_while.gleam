@@ -94,9 +94,6 @@ fn param_transform(node: VXML, pairs: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-type Param =
-  Dict(String, List(String))
-
 fn extra_2_param(extra: Extra) -> Param {
   list.fold(
     over: extra,
@@ -119,6 +116,17 @@ fn extra_2_param(extra: Extra) -> Param {
   )
 }
 
+fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
+  param_transform(_, param)
+}
+
+fn desugarer_factory(param: Param) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+
+type Param =
+  Dict(String, List(String))
+
 //**********************************
 // type Extra = List(#(String,            String))
 //                       ↖ tag that         ↖ tag that will
@@ -128,17 +136,22 @@ fn extra_2_param(extra: Extra) -> Param {
 type Extra =
   List(#(String, String))
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
-}
-
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
-}
-
+/// if the arguments are [#(\"Tag1\", \"Child1\"),
+/// (\"Tag1\", \"Child1\")] then will cause Tag1
+/// nodes to absorb all subsequent Child1 & Child2
+/// nodes, as long as they come immediately after
+/// Tag1 (in any order)"
 pub fn absorb_next_sibling_while(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("absorb_next_sibling_while", Some(ins(extra)), "..."),
+    DesugarerDescription(
+      "absorb_next_sibling_while",
+      Some(ins(extra)),
+"if the arguments are [#(\"Tag1\", \"Child1\"),
+(\"Tag1\", \"Child1\")] then will cause Tag1
+nodes to absorb all subsequent Child1 & Child2
+nodes, as long as they come immediately after
+Tag1 (in any order)"
+    ),
     desugarer_factory(extra_2_param(extra)),
   )
 }

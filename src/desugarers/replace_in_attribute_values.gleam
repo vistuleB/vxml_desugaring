@@ -51,9 +51,18 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 type Extra =
   List(#(String, String))
 
+/// performs exact match find-replace in every
+/// attribute value of every node using the
+/// 'string.replace' function
 pub fn replace_in_attribute_values(extra: Extra) -> Pipe {
   #(
-    DesugarerDescription("replace_in_attribute_values", Some(ins(extra)), "..."),
+    DesugarerDescription(
+      "replace_in_attribute_values",
+      Some(ins(extra)),
+      "performs exact match find-replace in every
+attribute value of every node using the
+'string.replace' function"
+    ),
     desugarer_factory(extra),
   )
 }
