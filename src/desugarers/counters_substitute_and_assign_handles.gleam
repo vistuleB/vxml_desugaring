@@ -1,3 +1,4 @@
+import gleam/float
 import blamedlines.{type Blame, Blame}
 import gleam/int
 import gleam/list
@@ -24,6 +25,7 @@ type CounterInstance {
     counter_type: CounterType,
     name: String,
     current_value: String,
+    step: Float
   )
 }
 
@@ -46,6 +48,37 @@ fn check_counter_already_defined(
   }
 }
 
+fn parse_value(blame: Blame, value: String, message: String) -> Result(Float, DesugaringError) {
+  case int.parse(value) {
+    Ok(i) -> Ok(int.to_float(i))
+    Error(_) -> {
+      case float.parse(value) {
+        Ok(f) -> Ok(f)
+        Error(_) -> Error(DesugaringError(blame, message))
+      }
+    }
+  }
+}
+
+fn handle_att_value(blame: Blame, value: String) -> Result(#(String, Option(String), Option(Float)), DesugaringError) {
+  let splits = string.split(value, " ")
+  case splits {
+    [counter_name, default_value, step] ->{
+      use _ <- result.try(parse_value(blame, default_value, "Default value for counter "<> counter_name <>" must be a number"))
+      use step <- result.try(parse_value(blame, step, "Step for counter "<> counter_name <>" must be a number"))
+
+      Ok(#(counter_name, Some(default_value), Some(step)))
+    }
+    [counter_name, default_value] ->{
+      use _ <- result.try(parse_value(blame, default_value, "Default value for counter "<> counter_name <>" must be a number"))
+      
+      Ok(#(counter_name, Some(default_value), None))
+    }
+    [counter_name] -> Ok(#(counter_name, None, None))
+    _ -> Error(DesugaringError(blame, "Counter attribute must have a name"))
+  }
+}
+
 fn get_counters_from_attributes(
   attributes: List(BlamedAttribute),
   counters: List(CounterInstance),
@@ -54,10 +87,24 @@ fn get_counters_from_attributes(
     [] -> Ok([])
     [first, ..rest] -> {
       let att = case first.key {
-        "counter" -> Some(CounterInstance(ArabicCounter, first.value, "0"))
-        "roman_counter" -> Some(CounterInstance(RomanCounter, first.value, "."))
-        _ -> None
+        "counter" -> {
+          use #(counter_name, default_value, step) <- result.try(handle_att_value(
+            first.blame,
+            first.value,
+          ))
+
+          Ok(Some(CounterInstance(ArabicCounter, counter_name, option.unwrap(default_value, "0"), option.unwrap(step, 1.))))
+        }
+        "roman_counter" ->{
+          use #(counter_name, default_value, step) <- result.try(handle_att_value(
+            first.blame,
+            first.value,
+          ))
+          Ok(Some(CounterInstance(RomanCounter, counter_name, option.unwrap(default_value, "."), option.unwrap(step, 1.))))
+          }
+        _ -> Ok(None)
       }
+      use att <- result.try(att)
 
       case get_counters_from_attributes(rest, counters) {
         Ok(res) -> {
@@ -77,25 +124,35 @@ fn get_counters_from_attributes(
   }
 }
 
+
 fn mutate(
   blame: Blame,
   counter_type: CounterType,
   value: String,
-  mutate_by: Int,
+  mutate_by: Float,
 ) -> Result(String, DesugaringError) {
   case counter_type {
     ArabicCounter -> {
-      let assert Ok(int_val) = int.parse(value)
-      case int_val + mutate_by < 0 {
+      let assert Ok(float_val) = parse_value(blame, value, "")
+
+      let sum = float.sum([float_val, mutate_by]) |> float.to_precision(2)
+      case sum <. 0.0 {
         True ->
           Error(DesugaringError(
             blame,
             "Counter can't be decremented to less than 0",
           ))
-        False -> Ok(string.inspect(int_val + mutate_by))
+        False ->{
+          case float.ceiling(sum) == sum { // remove trailing zero
+            True -> Ok(string.inspect(float.round(sum)))
+            False -> Ok(string.inspect(sum))
+          }
+        }
       }
     }
     RomanCounter -> {
+      let assert Ok(mutate_by) = mutate_by |> string.inspect() |> int.parse()
+
       let int_value = case value {
         "." ->
           value
@@ -137,7 +194,7 @@ fn update_counter(
               blame,
               x.counter_type,
               x.current_value,
-              1,
+              x.step,
             ))
             Ok(CounterInstance(..x, current_value: new_value))
           }
@@ -146,7 +203,7 @@ fn update_counter(
               blame,
               x.counter_type,
               x.current_value,
-              -1,
+              x.step *. -1.,
             ))
             Ok(CounterInstance(..x, current_value: new_value))
           }
@@ -321,13 +378,6 @@ fn handle_matches(
 
       let updated_parent =
         handles_as_attributes(blame, parent, handle_names, handles_value)
-
-      // use updated_handles <- result.try(assign_to_handles(
-      //   blame,
-      //   handles,
-      //   handle_names,
-      //   handles_value,
-      // ))
 
       let assert [first_split, _, _, _, _, _, _, _, _, _, _, _, ..rest_splits] =
         splits
