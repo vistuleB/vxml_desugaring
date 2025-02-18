@@ -37,10 +37,6 @@ pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
   T(blame, list.reverse([last_line, ..updated_rest]))
 }
 
-pub fn trim_ending_and_starting_spaces_except_last_line_and_first_line(vxml: VXML) {
-  vxml |> trim_starting_spaces_except_first_line |> trim_ending_spaces_except_last_line
-}
-
 fn map_with_special_first_last_internal(l: List(a), fun: fn(a, Bool, Bool) -> b) -> List(b) {
  case l {
     [] -> []
