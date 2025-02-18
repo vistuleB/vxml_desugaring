@@ -17,6 +17,29 @@ pub type DesugaringError {
   GetRootError(message: String)
 }
 
+pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
+  let assert T(blame, lines) = vxml
+  let assert [first_line, ..rest] = lines
+  let updated_rest = rest |> list.map(fn(line) { 
+    BlamedContent(..line, content: string.trim_start(line.content)) 
+  })
+
+  T(blame, [first_line, ..updated_rest])
+}
+
+pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
+  let assert T(blame, lines) = vxml
+  let assert [last_line, ..rest] = lines |> list.reverse()
+  let updated_rest = rest |> list.map(fn(line) { 
+    BlamedContent(..line, content: string.trim_end(line.content)) 
+  }) 
+
+  T(blame, list.reverse([last_line, ..updated_rest]))
+}
+
+pub fn trim_ending_and_starting_spaces_except_last_line_and_first_line(vxml: VXML) {
+  vxml |> trim_starting_spaces_except_first_line |> trim_ending_spaces_except_last_line
+}
 
 fn map_with_special_first_last_internal(l: List(a), fun: fn(a, Bool, Bool) -> b) -> List(b) {
  case l {
