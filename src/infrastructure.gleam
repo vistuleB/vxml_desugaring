@@ -1293,6 +1293,20 @@ pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
   filter_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
+pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
+  case vxml {
+    T(_, _) -> []
+    V(_, _, _, children) -> {
+      let children_with_tag = children_with_tag(vxml, tag)
+
+       list.flatten([
+        children_with_tag,
+        list.map(children, descendants_with_tag(_, tag)) |> list.flatten
+      ])
+    }
+  }
+}
+
 pub fn children_with_attr(vxml: VXML, key: String, value: String) -> List(VXML) {
   filter_children(vxml, is_v_and_has_attr(_, key, value))
 }
