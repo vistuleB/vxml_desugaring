@@ -325,7 +325,7 @@ pub fn run_renderer(
     renderer.assembler(parameters.input_dir),
     fn(error_a) {
       case debug_options.error_messages {
-        True -> io.println("renderer.assembler error: " <> ins(error_a))
+        True -> io.println("renderer.assembler error on input_dir " <> parameters.input_dir <> ": " <> ins(error_a))
         _ -> Nil
       }
       Error(AssemblyError(error_a))

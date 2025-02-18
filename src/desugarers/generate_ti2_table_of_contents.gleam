@@ -95,11 +95,11 @@ fn the_desugarer(
   chapter_link_component_name : String,
   _: Option(String),
 ) -> Result(VXML, DesugaringError) {
-  let chapters = infra.children_with_tag(root, "Chapter")
+  let sections = infra.descendants_with_tag(root, "Section")
 
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
-        chapters
+        sections
         |> list.index_map(
           fn(chapter : VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) }
         )
@@ -107,7 +107,6 @@ fn the_desugarer(
     },
     with_on_error: Error
   )
-
 
   let chapters_div = div_with_id_title_and_menu_items(
     "Chapters",
