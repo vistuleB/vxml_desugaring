@@ -17,6 +17,32 @@ pub type DesugaringError {
   GetRootError(message: String)
 }
 
+
+fn map_with_special_first_last_internal(l: List(a), fun: fn(a, Bool, Bool) -> b) -> List(b) {
+ case l {
+    [] -> []
+    [last] -> {
+      [fun(last, False, True)]
+    }
+    [el, ..rest] -> {
+      [fun(el, False, False), ..map_with_special_first_last_internal(rest, fun)]
+    }
+ }
+}
+
+
+pub fn map_with_special_first_last(l: List(a), fun: fn(a, Bool, Bool) -> b) -> List(b) {
+  case l {
+    [] -> []
+    [one] -> {
+      [fun(one, True, True)]
+    }
+    [first, ..rest] -> {
+      [fun(first, True, False), ..map_with_special_first_last_internal(rest, fun)]
+    }
+  }
+}
+
 pub fn is_singleton(z: List(a)) -> Bool {
   case z {
     [_] -> True
