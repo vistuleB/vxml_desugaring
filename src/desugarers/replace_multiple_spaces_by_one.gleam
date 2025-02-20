@@ -1,6 +1,7 @@
 
 
 import gleam/string
+import gleam/list
 import gleam/option.{None}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
@@ -17,7 +18,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
           case first.content |> string.starts_with(" ") {
             True -> {
               let new_line = " " <> first.content |> string.trim_start()
-              Ok(T(blame, [vxml_parser.BlamedContent(first.blame, new_line), ..lines]))
+              Ok(T(blame, [vxml_parser.BlamedContent(first.blame, new_line), ..list.drop(lines, 1)]))
             }
             False -> Ok(vxml)
           }
