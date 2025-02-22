@@ -168,6 +168,17 @@ pub fn on_v_on_t(
   }
 }
 
+pub fn on_t_on_v(
+  node: VXML,
+  f1: fn(Blame, List(BlamedContent)) -> c,
+  f2: fn(Blame, String, List(BlamedAttribute), List(VXML)) -> c,
+) -> c {
+  case node {
+    T(blame, blamed_contents) -> f1(blame, blamed_contents)
+    V(blame, tag, attributes, children) -> f2(blame, tag, attributes, children)
+  }
+}
+
 pub fn on_v_identity_on_t(
   node: VXML,
   f2: fn(Blame, List(BlamedContent)) -> VXML
@@ -247,6 +258,18 @@ pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
   )
 }
 
+pub fn quadruples_to_pairs_pairs(
+  l: List(#(a, b, c, d))
+) -> List(#(#(a, b), #(c, d))) {
+  l
+  |> list.map(
+    fn (quad) {
+      let #(a, b, c, d) = quad
+      #(#(a, b), #(c, d))
+    }
+  )
+}
+
 pub fn triples_to_pairs(
   l: List(#(a, b, c))
 ) -> List(#(a, #(b, c))) {
@@ -265,6 +288,14 @@ pub fn triples_to_dict(
   l
   |> triples_to_pairs
   |> dict.from_list
+}
+
+pub fn triples_to_aggregated_dict(
+  l: List(#(a, b, c))
+) -> Dict(a, List(#(b, c))) {
+  l
+  |> triples_to_pairs
+  |> aggregate_on_first
 }
 
 //**************************************************************
@@ -1229,6 +1260,11 @@ pub fn prepend_child(vxml: VXML, child: VXML) {
     attributes,
     [child, ..children]
   )
+}
+
+pub fn get_attribute_keys(attrs: List(BlamedAttribute)) -> List(String) {
+  attrs
+  |> list.map(fn(attr) { attr.key })
 }
 
 pub fn get_attribute_by_name(vxml: VXML, name: String) -> Option(BlamedAttribute) {

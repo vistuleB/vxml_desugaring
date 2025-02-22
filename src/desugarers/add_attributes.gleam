@@ -44,19 +44,9 @@ fn param_transform(
   }
 }
 
-type Param = Dict(String, List(#(String, String)))
-
-fn triple_to_pair_pair(t: #(a, b, c)) -> #(a, #(b, c)) {
-  let #(a, b, c) = t
-  #(a, #(b, c))
-}
-
 fn extra_to_param(extra: Extra) -> Param {
-  extra
-  |> list.map(triple_to_pair_pair)
-  |> infra.aggregate_on_first
+  extra |> infra.triples_to_aggregated_dict
 }
-
 
 fn transform_factory(
   param: Param,
@@ -70,7 +60,10 @@ fn desugarer_factory(
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
+type Param = Dict(String, List(#(String, String)))
+
 type Extra = List(#(String, String, String))
+//                  tag     attr    value
 
 pub fn add_attributes(extra: Extra) -> Pipe {
   #(
