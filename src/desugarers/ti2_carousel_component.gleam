@@ -1,5 +1,6 @@
 
 
+import gleam/io
 import gleam/option.{None}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
@@ -19,6 +20,11 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
           over: infra.has_attribute(vxml, "data-slide", "next"),
           with_on_true: Ok(T(blame, [])),
         )
+        io.debug(infra.get_attribute_by_name(vxml, "data-slide-to"))
+        use <- infra.on_true_on_false(
+          over: infra.get_attribute_by_name(vxml, "data-slide-to") |> option.is_some,
+          with_on_true: Ok(T(blame, [])),
+        )
         // carousel 
         use <- infra.on_true_on_false(
           over: !{ infra.has_attribute(vxml, "class", "carousel") },
@@ -27,7 +33,13 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
         // vxml is node with carousel class
         // get only images from children
         let images = infra.descendants_with_tag(vxml, "img")
-        let carousel_node = V(blame, "Carousel", [], images)
+
+        let attributes = infra.on_true_on_false(
+          over: infra.has_attribute(vxml, "id", "cyk-demo"),
+          with_on_true: [vxml_parser.BlamedAttribute(blame, "jumpToLast", "true")],
+          with_on_false: fn(){[]},
+        )
+        let carousel_node = V(blame, "Carousel", attributes, images)
         Ok(carousel_node)
     }
     _  -> Ok(vxml)
