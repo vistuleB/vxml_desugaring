@@ -1,5 +1,7 @@
+import gleam/pair
+import gleam/int
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import gleam/string
 import infrastructure.{
@@ -22,7 +24,7 @@ fn prepand_0(number: String) {
   }
 }
 
-fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) -> Result(VXML, DesugaringError) {
+fn chapter_link(chapter_link_component_name : String, item: VXML, section_index: Int) -> Result(VXML, DesugaringError) {
   let tp = "Chapter"
 
   let item_blame = infra.get_blame(item)
@@ -42,7 +44,6 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) ->
     with_on_none: Error(DesugaringError(item_blame, tp <> " missing number attribute"))
   )
 
-
   let link = 
     "lecture-notes/"
     <> number_attribute.value |> string.split(".") |> list.map(prepand_0) |> string.join("-") 
@@ -50,16 +51,22 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) ->
     <> href_attr.value |> string.replace(" ", "-")
     <> ".html"
 
+  // number span should always increament . for example we have sub-chapters 05-05-a and 05-05-b . so number span should be 5.5 and 5.6 for each
+  let assert [chapter_number, ..] =  number_attribute.value |> string.split(".")
+  
   let number_span = V(item_blame, "span", [], [
-    T(blame_us("L53"), [BlamedContent(blame_us("L53"), number_attribute.value <> " - ")])
+    T(blame_us("L53"), [BlamedContent(blame_us("L53"), chapter_number <> "." <> ins(section_index) <> " - ")])
   ])
+
+  
+
   let a = V(item_blame, "a", [
     BlamedAttribute(blame_us("L57"), "href", link)
   ], [
     T(item_blame, [BlamedContent(item_blame, label_attr.value)])
   ])
 
-  let sub_chapter_number = number_attribute.value |> string.split(".") |> list.last() |> result.unwrap("0")
+  let sub_chapter_number = ins(section_index)
   let margin_left = infra.on_true_on_false(
     sub_chapter_number == "0",
     "0",
@@ -79,6 +86,26 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) ->
       a
     ]
   ))
+}
+
+fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
+  let tp = "Chapter"
+
+  let item_blame = infra.get_blame(item)
+
+  use number_attribute <- infra.on_none_on_some(
+    infra.get_attribute_by_name(item, "number"),
+    with_on_none: Error(DesugaringError(item_blame, tp <> " missing number attribute"))
+  )
+
+
+  let assert [section_number, ..] =  number_attribute.value |> string.split(".") |> list.reverse()
+  let assert Ok(section_number) = int.parse(section_number)
+
+  case section_number == 0 {
+    True -> Ok(0)
+    False -> Ok(count + 1)
+  }
 }
 
 
@@ -112,13 +139,20 @@ fn the_desugarer(
   _: Option(String),
 ) -> Result(VXML, DesugaringError) {
   let sections = infra.descendants_with_tag(root, "section")
-
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
         sections
-        |> list.index_map(
-          fn(chapter : VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) }
-        )
+        |> list.map_fold(
+          0,
+          fn(acc, chapter : VXML) { 
+            // get section index
+            case get_section_index(chapter, acc) {
+              Ok(section_index) -> #(section_index ,chapter_link(chapter_link_component_name, chapter, section_index))
+              Error(error) -> #(acc, Error(error))
+            }
+          }
+        ) 
+        |> pair.second
         |> result.all
     },
     with_on_error: Error
