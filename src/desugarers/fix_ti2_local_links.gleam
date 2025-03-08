@@ -17,12 +17,12 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
         Ok(vxml)
       )
       use <- infra.on_false_on_true(
-        string.starts_with(href.value, "./"),
+        string.starts_with(href.value, "../../demo"),
         Ok(vxml)
       )
       let atts = atts |> list.map(fn(att) {
         case att.key {
-          "href" -> vxml_parser.BlamedAttribute(att.blame, "href", att.value |> string.replace(".html", ""))
+          "href" -> vxml_parser.BlamedAttribute(att.blame, "href", att.value |> string.replace("../../demos", "https://www.tu-chemnitz.de/informatik/theoretische-informatik/demos"))
           _ -> att
         }
       })

@@ -44,8 +44,34 @@ fn updated_node(
   V(blame, tag, attributes, new_children)
 }
 
+fn get_handle_name_from_parent(
+  ancestors: List(VXML),
+  should_assign_to_handle: Bool,
+) -> Option(String) {
+  case should_assign_to_handle {
+    True -> {
+      let assert [parent, ..] = ancestors
+      case parent {
+        V(_, _, _, _) ->{ 
+          use handle <- infra.on_none_on_some(
+            infra.get_attribute_by_name(parent, "id"),
+            None
+          )
+          Some(handle.value)
+        }
+        _ -> None
+      }
+    }
+    False -> None
+  }
+}
+
 fn param_transform(
   vxml: VXML,
+  ancestors: List(VXML),
+  _: List(VXML),
+  _: List(VXML),
+  _: List(VXML),
   extra: Extra,
 ) -> Result(VXML, DesugaringError) {
   let #(counter_command, #(key, value), prefixes, wrapper) = extra
@@ -53,51 +79,61 @@ fn param_transform(
   case vxml {
     T(_, _) -> Ok(vxml)
     V(_, _, _, children) -> {
-      
-     case infra.has_attribute(vxml, key, value) {
-        False -> Ok(vxml)
-        True -> {
-          // get first text node
-          case children {
-            [T(t_blame, blamed_contents), ..] -> {
-              let assert [first_line, ..] = blamed_contents
-              let found_prefix = list.find(prefixes, fn (prefix) {
-                string.starts_with(first_line.content, prefix)
-              })
+      use <- infra.on_false_on_true(
+        over: infra.has_attribute(vxml, key, value),
+        with_on_false: Ok(vxml)
+      )
 
-              case found_prefix, list.is_empty(prefixes) {
-                Ok(found_prefix), _ ->  {
-                  let blamed_cc = BlamedContent(first_line.blame, " " <> counter_command <> " ")
-                  let blamed_prefix = BlamedContent(first_line.blame, found_prefix)
-                  let rest = BlamedContent(first_line.blame, string.length(found_prefix) |> string.drop_start(first_line.content, _))
 
-                  updated_node(vxml, Some(blamed_prefix), #(blamed_cc, wrapper), rest) |> Ok
-                }
-                Error(_), True -> {
-                  let blamed_cc = BlamedContent(t_blame, counter_command <> " ")
-                  updated_node(vxml, None, #(blamed_cc, wrapper), first_line) |> Ok
-                }
-                Error(_), False -> Ok(vxml)
-              }
+        // get first text node
+      case children {
+        [T(t_blame, blamed_contents), ..] -> {
+          let assert [first_line, ..] = blamed_contents
+          let found_prefix = list.find(prefixes, fn (prefix) {
+            string.starts_with(first_line.content, prefix)
+          })
+
+          case found_prefix, list.is_empty(prefixes) {
+            Ok(found_prefix), _ ->  {
+              let blamed_cc = BlamedContent(first_line.blame, counter_command)
+              let blamed_prefix = BlamedContent(first_line.blame, found_prefix)
+              let rest = BlamedContent(first_line.blame, string.length(found_prefix) |> string.drop_start(first_line.content, _))
+
+              updated_node(vxml, Some(blamed_prefix), #(blamed_cc, wrapper), rest) |> Ok
             }
-            _ -> Ok(vxml)
+            Error(_), True -> {
+              let blamed_cc = BlamedContent(t_blame, counter_command)
+              updated_node(vxml, None, #(blamed_cc, wrapper), first_line) |> Ok
+            }
+            Error(_), False -> Ok(vxml)
           }
         }
-     }
+        _ -> Ok(vxml)
+      }
     }
   }
-}
-
-fn transform_factory(
-  extra: Extra,
-) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
 }
 
 fn desugarer_factory(
   extra: Extra,
 ) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+  infra.node_to_node_fancy_desugarer_factory(
+    fn(
+      vxml: VXML,
+      ancestors: List(VXML),
+      previous_siblings_before_mapping: List(VXML),
+      previous_siblings_after_mapping: List(VXML),
+      following_siblings_before_mapping: List(VXML),
+    ) {
+      param_transform(
+        vxml,
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+        extra
+      )
+    })
 }
 
 type Extra = #(String, #(String, String), List(String), Option(String))
