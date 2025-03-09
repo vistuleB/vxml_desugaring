@@ -6,7 +6,7 @@ import infrastructure as infra
 const ins = string.inspect
 
 // ************************
-// Pipeline printing
+// pipeline printing
 // ************************
 
 const star_line_length = 53
