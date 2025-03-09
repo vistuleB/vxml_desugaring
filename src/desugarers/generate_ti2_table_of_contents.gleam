@@ -29,17 +29,17 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) ->
 
   use label_attr <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "title_gr"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing title_gr attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents)" <> tp <> " missing title_gr attribute"))
   )
 
   use href_attr <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "title_en"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing title_en attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents)" <> tp <> " missing title_en attribute"))
   )
 
   use number_attribute <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "number"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing number attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents)" <> tp <> " missing number attribute"))
   )
 
   let on_mobile_attr = case infra.get_attribute_by_name(item, "on_mobile") {

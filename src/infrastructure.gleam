@@ -639,15 +639,26 @@ fn find_replace_in_blamed_content(
   |> find_replace_in_blamed_content(rest)
 }
 
-pub fn find_replace_in_node(
+pub fn find_replace_in_t(
   node: VXML,
-  list_pairs: List(#(String, String))
-) -> VXML {
-  use blame, blamed_contents <- on_v_identity_on_t(node)
+  list_pairs: List(#(String, String)),
+) {
+  let assert T(blame, blamed_contents) = node
   T(
     blame,
     blamed_contents |> list.map(find_replace_in_blamed_content(_, list_pairs))
   )
+
+}
+
+pub fn find_replace_in_node(
+  node: VXML,
+  list_pairs: List(#(String, String))
+) -> VXML {
+  case node {
+    T(_, _) -> find_replace_in_t(node, list_pairs)
+    _ -> node
+  }
 }
 
 pub fn find_replace_in_node_transform_version(

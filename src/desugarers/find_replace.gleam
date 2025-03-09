@@ -17,6 +17,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 type Extra =
   #(List(#(String, String)), List(String))
+//         from    to        keep_out_of
 
 pub fn find_replace(extra: Extra) -> Pipe {
   #(

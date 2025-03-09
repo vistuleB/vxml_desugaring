@@ -93,11 +93,11 @@ fn param_transform(
             string.starts_with(first_line.content, prefix)
           })
 
-          case found_prefix, list.is_empty(prefixes) {
-            Ok(found_prefix), _ ->  {
-              let blamed_cc = BlamedContent(first_line.blame, counter_command)
-              let blamed_prefix = BlamedContent(first_line.blame, found_prefix)
-              let rest = BlamedContent(first_line.blame, string.length(found_prefix) |> string.drop_start(first_line.content, _))
+              case found_prefix, list.is_empty(prefixes) {
+                Ok(found_prefix), _ ->  {
+                  let blamed_cc = BlamedContent(first_line.blame, counter_command)
+                  let blamed_prefix = BlamedContent(first_line.blame, found_prefix)
+                  let rest = BlamedContent(first_line.blame, string.length(found_prefix) |> string.drop_start(first_line.content, _))
 
               updated_node(vxml, Some(blamed_prefix), #(blamed_cc, wrapper), rest) |> Ok
             }
