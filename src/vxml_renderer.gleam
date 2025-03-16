@@ -826,6 +826,11 @@ fn parse_attribute_value_args_in_filename(
   dir_name: String
 ) -> List(#(String, String, String)) {
   
+  let #(path, args) = case string.split(path, "&") {
+    [path, ..args] -> #(path, args)
+    [] -> panic as "did not expect empty prefix"
+  }
+
   let pieces = string.split(path, "/") |> list.reverse
   let assert [filename, ..path_pieces] = pieces
   let filename = infra.on_true_on_false(
@@ -839,19 +844,14 @@ fn parse_attribute_value_args_in_filename(
     True -> ""
     False -> path <> "/"
   }
-  case string.split(filename, "&") {
-    [filename] -> [#(path <> filename, "", "")]
-    [filename, ..args] -> {
-      list.map(
-          args,
-          fn (arg) {
-            let assert [key, value] = string.split(arg, "=")
-            #(path <> filename, key, value)
-          }
-        ) 
-    }
-    [] -> panic as "not expecting empty prefix"
-  }
+
+   list.map(
+      args,
+      fn (arg) {
+        let assert [key, value] = string.split(arg, "=")
+        #(path <> filename, key, value)
+      }
+    ) 
 }
 
 pub fn process_command_line_arguments(
