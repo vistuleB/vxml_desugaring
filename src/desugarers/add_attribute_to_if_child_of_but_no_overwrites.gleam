@@ -1,7 +1,6 @@
 import gleam/list
 import gleam/dict.{type Dict}
 import gleam/option
-import gleam/pair
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe,

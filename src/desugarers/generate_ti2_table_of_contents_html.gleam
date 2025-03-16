@@ -31,17 +31,17 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, section_index:
 
   use label_attr <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "title_gr"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing title_gr attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents_html) " <> tp <> " missing title_gr attribute"))
   )
 
   use href_attr <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "title_en"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing title_en attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents_html) " <> tp <> " missing title_en attribute"))
   )
 
   use number_attribute <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "number"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing number attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents_html) " <> tp <> " missing number attribute"))
   )
 
   let link = 
@@ -90,14 +90,12 @@ fn chapter_link(chapter_link_component_name : String, item: VXML, section_index:
 
 fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
   let tp = "Chapter"
-
   let item_blame = infra.get_blame(item)
 
   use number_attribute <- infra.on_none_on_some(
     infra.get_attribute_by_name(item, "number"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing number attribute"))
+    with_on_none: Error(DesugaringError(item_blame, "(generate_ti2_table_of_contents_html) " <> tp <> " missing number attribute (b)"))
   )
-
 
   let assert [section_number, ..] =  number_attribute.value |> string.split(".") |> list.reverse()
   let assert Ok(section_number) = int.parse(section_number)
@@ -107,7 +105,6 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
     False -> Ok(count + 1)
   }
 }
-
 
 fn div_with_id_title_and_menu_items(
   id: String,
@@ -181,10 +178,10 @@ fn the_desugarer(
 // - third string: optional tag name for spacer between two groups of chapter links
 type Extra = #(String, String, Option(String))
 
-pub fn generate_ti2_table_of_contents(extra: Extra) -> Pipe {
+pub fn generate_ti2_table_of_contents_html(extra: Extra) -> Pipe {
   let #(tag, chapter_link_component_name, maybe_spacer) = extra
   #(
-    DesugarerDescription("generate_ti2_table_of_contents", option.None, "..."),
+    DesugarerDescription("generate_ti2_table_of_contents_html", option.None, "..."),
     fn (vxml) {
       the_desugarer(
         vxml,

@@ -332,14 +332,19 @@ pub fn run_renderer(
     },
   )
 
+  io.println("-- assembling blamed lines (" <> parameters.input_dir <> ") --")
+
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
-    True ->
+    True -> {
       io.println(blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
         "(assembled)",
         assembled,
       ))
+    }
   }
+
+  io.println("-- parsing source (" <> parameters.input_dir <> ") --")
 
   use source: b <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -351,6 +356,8 @@ pub fn run_renderer(
       Error(SourceParserError(error))
     },
   )
+
+  io.println("-- converting source to VXML (" <> parameters.input_dir <> ") --")
 
   use converted <- infra.on_error_on_ok(
     over: infra.get_root(renderer.parsed_source_converter(source)),
@@ -412,10 +419,14 @@ pub fn run_renderer(
     }
   )
 
+  io.println("-- converting vxml fragments to blamed line fragments --")
+
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
     |> list.map(renderer.emitter)
+
+  io.println("-- (after conversion) --")
 
   // blamed line fragments debug printing
   fragments
@@ -442,6 +453,8 @@ pub fn run_renderer(
       }
     }
   })
+
+  io.println("-- converting blamed line fragments to strings --")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -493,6 +506,8 @@ pub fn run_renderer(
       }
     }
   })
+
+  io.println("-- printing fragments --")
 
   // printing string fragments (list.map to record errors)
   let fragments =
@@ -636,6 +651,7 @@ pub type CommandLineAmendments(
     input_dir: Option(String),
     output_dir: Option(String),
     prettifying_option: Option(g),
+    debug_assembled_input: Bool,
     debug_pipeline_range: #(Int, Int),
     debug_pipeline_desugarer_names: List(String),
     basic_messages: Bool,
@@ -657,6 +673,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments(g) {
     input_dir: None,
     output_dir: None,
     prettifying_option: None,
+    debug_assembled_input: False,
     debug_pipeline_range: #(-1, -1),
     debug_pipeline_desugarer_names: [],
     basic_messages: True,
@@ -676,6 +693,16 @@ fn amend_prettifying_option(
   CommandLineAmendments(
     ..amendment,
     prettifying_option: Some(val),
+  )
+}
+
+fn amend_debug_assembled_input(
+  amendment: CommandLineAmendments(g),
+  val: Bool,
+) -> CommandLineAmendments(g) {
+  CommandLineAmendments(
+    ..amendment,
+    debug_assembled_input: val,
   )
 }
 
@@ -765,6 +792,8 @@ pub fn cli_usage() {
   io.println("")
   io.println("      --spotlight <path1> <path2> ...")
   io.println("         -> spotlight the given paths before assembling")
+  io.println("      --debug-assembled-input <name1> <name2> ...")
+  io.println("         -> print assembled blamed lines before parsing")
   io.println("      --debug-pipeline <name1> <name2> ...")
   io.println("         -> print output of pipes with given names")
   io.println("      --debug-pipeline-<x>-<y>")
@@ -842,6 +871,14 @@ pub fn process_command_line_arguments(
     use amendment <- result.then(result)
     let #(option, values) = pair
     case option {
+      "--debug-assembled-input" -> {
+        Ok(amendment |> amend_debug_assembled_input(True))
+      }
+
+      "--debug-assembled" -> {
+        Ok(amendment |> amend_debug_assembled_input(True))
+      }
+
       "--debug-fragments-emu" -> {
         Ok(amendment |> amend_debug_vxml_fragments_local_paths(values))
       }
@@ -984,6 +1021,16 @@ pub fn amend_renderer_paramaters_by_command_line_amendment(
 // AMENDING RENDERER DEBUG OPTIONS BY COMMAND LINE AMENDMENTS
 //********************
 
+pub fn db_amend_assembler_debug_options(
+  options: BlamedLinesAssemblerDebugOptions,
+  amendments: CommandLineAmendments(b),
+) -> BlamedLinesAssemblerDebugOptions {
+  BlamedLinesAssemblerDebugOptions(
+    ..options,
+    debug_print: amendments.debug_assembled_input
+  )
+}
+
 pub fn db_amend_pipeline_debug_options(
   options: PipelineDebugOptions,
   amendments: CommandLineAmendments(b),
@@ -1097,10 +1144,14 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
   amendments: CommandLineAmendments(g),
   pipeline: List(Pipe),
 ) -> RendererDebugOptions(d, g) {
+  io.println("inside amend_renderer_debug_options_by_command_line_amendment")
   RendererDebugOptions(
     debug_options.basic_messages,
     debug_options.error_messages,
-    debug_options.assembler_debug_options,
+    db_amend_assembler_debug_options(
+      debug_options.assembler_debug_options,
+      amendments,
+    ),
     debug_options.source_parser_debug_options,
     debug_options.source_emitter_debug_options,
     db_amend_pipeline_debug_options(
@@ -1204,20 +1255,18 @@ pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d, g) {
 pub fn empty_renderer_debug_options(
   artifact_directory: String,
 ) -> RendererDebugOptions(d, g) {
-  RendererDebugOptions(
+  let res = RendererDebugOptions(
     basic_messages: True,
     error_messages: True,
     assembler_debug_options: empty_assembler_debug_options(artifact_directory),
-    source_parser_debug_options: empty_source_parser_debug_options(
-      artifact_directory,
-    ),
-    source_emitter_debug_options: empty_source_emitter_debug_options(
-      artifact_directory,
-    ),
+    source_parser_debug_options: empty_source_parser_debug_options(artifact_directory),
+    source_emitter_debug_options: empty_source_emitter_debug_options(artifact_directory),
     pipeline_debug_options: empty_pipeline_debug_options(artifact_directory),
     splitter_debug_options: empty_splitter_debug_options(artifact_directory),
     emitter_debug_options: empty_emitter_debug_options(artifact_directory),
     printer_debug_options: empty_printer_debug_options(),
     prettifier_debug_options: empty_prettifier_debug_options(),
   )
+  io.println("end of empty_renderer_debug_options")
+  res
 }
