@@ -823,29 +823,15 @@ pub type CommandLineError {
 
 fn parse_attribute_value_args_in_filename(
   path: String,
-  dir_name: String
 ) -> List(#(String, String, String)) {
-  
-  let #(path, args) = case string.split(path, "&") {
-    [path, ..args] -> #(path, args)
-    [] -> panic as "did not expect empty prefix"
-  }
-
-  let pieces = string.split(path, "/") |> list.reverse
-  let assert [filename, ..path_pieces] = pieces
-  let path = path_pieces |> list.reverse |> string.join("/")
-  let path = case string.is_empty(path) {
-    True -> ""
-    False -> path <> "/"
-  }
-
+  let assert [path, ..args] = string.split(path, "&")
   case args {
-    [] -> [#(path <> filename, "", "")]
+    [] -> [#(path, "", "")]
     _ -> list.map(
       args,
       fn (arg) {
         let assert [key, value] = string.split(arg, "=")
-        #(path <> filename, key, value)
+        #(path, key, value)
       }
     ) 
   }
@@ -894,10 +880,9 @@ pub fn process_command_line_arguments(
 
       "--spotlight" -> {
         let args =
-          list.map(
-            values,
-            fn(x) {parse_attribute_value_args_in_filename(x, input_dir)},
-          ) |> list.flatten()
+          values
+          |> list.map(parse_attribute_value_args_in_filename)
+          |> list.flatten()
         Ok(amendment |> amend_spotlight_args(io.debug(args)))
       }
 
