@@ -833,25 +833,22 @@ fn parse_attribute_value_args_in_filename(
 
   let pieces = string.split(path, "/") |> list.reverse
   let assert [filename, ..path_pieces] = pieces
-  let filename = infra.on_true_on_false(
-    over: infra.drop_ending_slash(path) == infra.drop_ending_slash(dir_name),
-    with_on_true: "",
-    with_on_false: fn() { filename }
-  )
   let path = path_pieces |> list.reverse |> string.join("/")
-  let path = dir_name |> string.length |> string.drop_start(path, _)
   let path = case string.is_empty(path) {
     True -> ""
     False -> path <> "/"
   }
 
-   list.map(
+  case args {
+    [] -> [#(path <> filename, "", "")]
+    _ -> list.map(
       args,
       fn (arg) {
         let assert [key, value] = string.split(arg, "=")
         #(path <> filename, key, value)
       }
     ) 
+  }
 }
 
 pub fn process_command_line_arguments(
