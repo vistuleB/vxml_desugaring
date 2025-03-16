@@ -59,7 +59,7 @@ pub fn run_default_renderer(
   arguments: List(String),
 ) {
   use amendments <- infra.on_error_on_ok(
-    vr.process_command_line_arguments(arguments, [#("--prettier", True)]),
+    vr.process_command_line_arguments(arguments, [#("--prettier", True)], "test/content"),
     fn (error) {
       io.println("")
       io.println("command line error: " <> ins(error))
@@ -80,7 +80,7 @@ pub fn run_default_renderer(
     Bool,
     #(Int, String),
   ) = vr.Renderer(
-    assembler: wp.assemble_blamed_lines_advanced_mode(_, amendments.assemble_blamed_lines_selector_args),
+    assembler: wp.assemble_blamed_lines_advanced_mode(_, amendments.spotlight_args_files),
     source_parser: wp.parse_blamed_lines,
     parsed_source_converter: wp.writerlys_to_vxmls,
     pipeline: pipeline,

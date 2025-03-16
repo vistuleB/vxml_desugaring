@@ -643,7 +643,8 @@ pub type CommandLineAmendments(
     debug_blamed_lines_fragments_local_paths: List(String),
     debug_printed_string_fragments_local_paths: List(String),
     debug_prettified_string_fragments_local_paths: List(String),
-    assemble_blamed_lines_selector_args: List(#(String, List(#(String, String))))
+    spotlight_args: List(#(String, String, String)),
+    spotlight_args_files: List(String)
   )
 }
 
@@ -663,7 +664,8 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments(g) {
     debug_blamed_lines_fragments_local_paths: [],
     debug_printed_string_fragments_local_paths: [],
     debug_prettified_string_fragments_local_paths: [],
-    assemble_blamed_lines_selector_args: []
+    spotlight_args: [],
+    spotlight_args_files: []
   )
 }
 
@@ -738,15 +740,22 @@ fn amend_debug_prettified_string_fragments_local_paths(
   )
 }
 
-fn amend_assemble_blamed_lines_selector_args(
+fn amend_spotlight_args(
   amendment: CommandLineAmendments(a),
-  args: List(#(String, List(#(String, String)))),
+  args: List(#(String, String, String)),
 ) -> CommandLineAmendments(a) {
   CommandLineAmendments(
     ..amendment,
-    assemble_blamed_lines_selector_args: list.append(
-      amendment.assemble_blamed_lines_selector_args,
-      args |> list.filter(fn(triple){ triple |> pair.second |> list.is_empty |> bool.negate })
+    spotlight_args: list.append(
+      amendment.spotlight_args,
+      args
+    ),
+     spotlight_args_files: list.append(
+      amendment.spotlight_args_files,
+      args |> list.map(fn(a){
+        let #(path, _, _) = a
+        path
+      })
     ),
   )
 }
@@ -784,24 +793,33 @@ pub type CommandLineError {
 }
 
 fn parse_attribute_value_args_in_filename(
-  path: String
-) -> #(String, List(#(String, String))) {
+  path: String,
+  dir_name: String
+) -> List(#(String, String, String)) {
+  
   let pieces = string.split(path, "/") |> list.reverse
   let assert [filename, ..path_pieces] = pieces
+  let filename = infra.on_true_on_false(
+    over: infra.drop_ending_slash(path) == infra.drop_ending_slash(dir_name),
+    with_on_true: "",
+    with_on_false: fn() { filename }
+  )
   let path = path_pieces |> list.reverse |> string.join("/")
+  let path = dir_name |> string.length |> string.drop_start(path, _)
+  let path = case string.is_empty(path) {
+    True -> ""
+    False -> path <> "/"
+  }
   case string.split(filename, "&") {
-    [filename] -> #(path <> "/" <> filename, [])
+    [filename] -> [#(path <> filename, "", "")]
     [filename, ..args] -> {
-      #(
-        path <> "/" <> filename,
-        list.map(
+      list.map(
           args,
           fn (arg) {
             let assert [key, value] = string.split(arg, "=")
-            #(key, value)
+            #(path <> filename, key, value)
           }
-        )
-      )
+        ) 
     }
     [] -> panic as "not expecting empty prefix"
   }
@@ -810,6 +828,7 @@ fn parse_attribute_value_args_in_filename(
 pub fn process_command_line_arguments(
   arguments: List(String),
   prettier_options: List(#(String, g)),
+  input_dir: String
 ) -> Result(CommandLineAmendments(g), CommandLineError) {
   use list_key_values <- infra.on_error_on_ok(
     double_dash_keys(arguments),
@@ -843,22 +862,9 @@ pub fn process_command_line_arguments(
         let args =
           list.map(
             values,
-            parse_attribute_value_args_in_filename,
-          )
-        let paths = list.map(args, pair.first)
-        case
-          shellout.command(run: "./spotlight", in: ".", with: paths, opt: [])
-        {
-          Ok(_) -> {
-            Ok(amendment|> amend_assemble_blamed_lines_selector_args(args))
-          }
-          Error(#(code, message)) -> {
-            io.println(
-              "shellout error running spotlight: " <> ins(#(code, message))
-            )
-            Error(ErrorRunningSpotlight(code, message))
-          }
-        }
+            fn(x) {parse_attribute_value_args_in_filename(x, input_dir)},
+          ) |> list.flatten()
+        Ok(amendment |> amend_spotlight_args(io.debug(args)))
       }
 
       "--debug-pipeline" -> {
