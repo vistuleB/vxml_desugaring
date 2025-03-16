@@ -883,7 +883,7 @@ pub fn process_command_line_arguments(
           values
           |> list.map(parse_attribute_value_args_in_filename)
           |> list.flatten()
-        Ok(amendment |> amend_spotlight_args(io.debug(args)))
+        Ok(amendment |> amend_spotlight_args(args))
       }
 
       "--debug-pipeline" -> {
