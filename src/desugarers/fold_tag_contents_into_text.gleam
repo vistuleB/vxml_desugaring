@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -362,7 +359,7 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> NodeToNodeTransform {
+fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   param_transform(_, extra)
 }
 
@@ -376,8 +373,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 type Extra = List(String)
 
 pub fn fold_tag_contents_into_text(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

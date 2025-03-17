@@ -4,10 +4,7 @@ import gleam/list
 import gleam/option
 import gleam/order
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodesTransform, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type Splits {
@@ -412,7 +409,7 @@ pub fn split_delimiters_chunks_transform(
 
 fn transform_factory(
   extra: #(String, String, String, Bool, List(String)),
-) -> NodeToNodesTransform {
+) -> infra.NodeToNodesTransform {
   split_delimiters_chunks_transform(_, extra)
 }
 
@@ -425,12 +422,8 @@ fn desugarer_factory(
 pub fn split_delimiters_chunks_desugarer(
   extra: #(String, String, String, Bool, List(String)),
 ) -> Pipe {
-  #(
-    DesugarerDescription(
-      "split_delimiters_chunks_desugarer",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("split_delimiters_chunks_desugarer", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

@@ -3,10 +3,7 @@ import gleam/list
 import gleam/result
 import gleam/string.{inspect as ins}
 import blamedlines
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V, type BlamedAttribute, BlamedAttribute }
 
 fn lookup_attributes_by_key(
@@ -124,8 +121,8 @@ type Extra =
 //********************************
 
 pub fn merge_parent_attributes_into_child(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("merge_parent_attributes_into_child", option.Some(extra |> ins), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("merge_parent_attributes_into_child", option.Some(extra |> ins), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

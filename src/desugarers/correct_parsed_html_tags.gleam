@@ -1,8 +1,5 @@
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 import gleam/string
 
@@ -29,8 +26,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn correct_parsed_html_tags() -> Pipe {
-  #(
-    DesugarerDescription("correct_parsed_html_tags", None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("correct_parsed_html_tags", None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

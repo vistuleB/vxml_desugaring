@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn replace_value(value: String, replacement: String) -> String {
@@ -64,7 +61,7 @@ fn change_attribute_value_param_transform(
 type Extra =
   List(#(String, String))
 
-fn transform_factory(extra: Extra) -> NodeToNodeTransform {
+fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   change_attribute_value_param_transform(_, extra)
 }
 
@@ -73,12 +70,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn change_attribute_value(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "change_attribute_value",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription( "change_attribute_value", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

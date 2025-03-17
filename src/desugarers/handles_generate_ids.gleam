@@ -3,10 +3,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{None}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
 fn generate_id(blame: Blame) {
@@ -56,8 +53,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn handles_generate_ids() -> Pipe {
-  #(
-    DesugarerDescription("handles_generate_ids", None, "unique Id generator for handles"),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("handles_generate_ids", None, "unique Id generator for handles"),
+    desugarer: desugarer_factory(),
   )
 }

@@ -1,10 +1,7 @@
 import gleam/list
-import gleam/dict.{type Dict}
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V, type BlamedContent, BlamedContent, BlamedAttribute}
 
 fn line_to_tooltip_span(
@@ -63,12 +60,8 @@ fn desugarer_factory(
 type Extra = String
 
 pub fn break_lines_into_span_tooltips(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "break_lines_into_span_tooltips",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("break_lines_into_span_tooltips", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

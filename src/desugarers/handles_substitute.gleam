@@ -5,10 +5,7 @@ import gleam/option
 import gleam/regexp
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, type StatefulDownAndUpNodeToNodesTransform,
-  DesugarerDescription, DesugaringError, StatefulDownAndUpNodeToNodesTransform,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
   BlamedContent, T, V,
@@ -156,10 +153,10 @@ fn counter_handles_transform_to_replace_handles(
   }
 }
 
-fn counter_handle_transform_factory() -> StatefulDownAndUpNodeToNodesTransform(
+fn counter_handle_transform_factory() -> infra.StatefulDownAndUpNodeToNodesTransform(
   HandleInstances,
 ) {
-  StatefulDownAndUpNodeToNodesTransform(
+  infra.StatefulDownAndUpNodeToNodesTransform(
     before_transforming_children: fn(vxml, s) {
       use #(vxml, handles) <- result.try(
         counter_handles_transform_to_get_handles(vxml, s),
@@ -176,7 +173,7 @@ fn counter_handle_transform_factory() -> StatefulDownAndUpNodeToNodesTransform(
   )
 }
 
-fn desugarer_factory() {
+fn desugarer_factory() -> Desugarer {
   infra.stateful_down_up_node_to_nodes_desugarer_factory(
     counter_handle_transform_factory(),
     dict.new(),
@@ -184,8 +181,8 @@ fn desugarer_factory() {
 }
 
 pub fn handles_substitute() -> Pipe {
-  #(
-    DesugarerDescription("handles_substitute", option.None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("handles_substitute", option.None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

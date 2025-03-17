@@ -1,16 +1,11 @@
 import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{
   type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V,
 }
-
-const ins = string.inspect
 
 fn filter_out_handle_attributes(
   attributes: List(BlamedAttribute),
@@ -172,20 +167,6 @@ fn param_transform(
   }
 }
 
-type ManyStrings =
-  #(String, String, String, String, String, String)
-
-//**********************************
-// type Extra = List(#(String,         String,       String,        String,         String,             String))
-//                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter      ↖ fallback phrase
-//                         ancestor        name          to add         phrase          phrase              if element is encountered
-//                         tag that                      title to                                           parent/ancestor that holds
-//                         contains                                                                         counter
-//                         counter
-//**********************************
-type Extra =
-  List(ManyStrings)
-
 fn check_uniqueness_generic(list: List(a)) -> Option(a) {
   case list {
     [] -> None
@@ -216,16 +197,26 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
 }
 
+type ManyStrings =
+  #(String, String, String, String, String, String)
+
+//**********************************
+// type Extra = List(#(String,         String,       String,        String,         String,             String))
+//                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter      ↖ fallback phrase
+//                         ancestor        name          to add         phrase          phrase              if element is encountered
+//                         tag that                      title to                                           parent/ancestor that holds
+//                         contains                                                                         counter
+//                         counter
+//**********************************
+type Extra =
+  List(ManyStrings)
+
 pub fn add_title_counters_and_titles_with_handle_assignments(
   extra: Extra,
 ) -> Pipe {
-  #(
-    DesugarerDescription(
-      "add_title_counters_and_titles_with_handle_assignments",
-      Some(ins(extra)),
-      "...",
-    ),
-    case check_uniqueness_extra(extra) {
+  Pipe(
+    description: DesugarerDescription("add_title_counters_and_titles_with_handle_assignments", Some(ins(extra)), "..."),
+    desugarer: case check_uniqueness_extra(extra) {
       Some(pair) -> {
         fn(vxml) {
           Error(DesugaringError(

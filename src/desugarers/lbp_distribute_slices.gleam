@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/io
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type EarlyReturnNodeToNodeTransform, type Pipe,
-  DesugarerDescription, type EarlyReturn, Continue, GoBack
-} as infra
+import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
 import vxml_parser.{type VXML, T, V, BlamedAttribute}
 
 fn is_known_outer_element(
@@ -81,17 +78,17 @@ fn is_known_other_element(
 fn param_transform(
   vxml: VXML,
   _: List(VXML)
-) -> EarlyReturn(VXML) {
+) -> infra.EarlyReturn(VXML) {
   use <- infra.on_true_on_false(
     is_known_outer_element(vxml),
-    Continue(vxml)
+    infra.Continue(vxml)
   )
 
   use <- infra.on_lazy_true_on_false(
     is_known_inner_element(vxml),
     fn() {
       let blame = vxml |> infra.get_blame
-      GoBack(
+      infra.GoBack(
         V(
           blame,
           "div",
@@ -104,15 +101,15 @@ fn param_transform(
 
   use <- infra.on_true_on_false(
     is_known_other_element(vxml),
-    GoBack(vxml),
+    infra.GoBack(vxml),
   )
 
   io.println("unclassified element: " <> {vxml |> infra.digest})
 
-  GoBack(vxml)
+  infra.GoBack(vxml)
 }
 
-fn transform_factory() -> EarlyReturnNodeToNodeTransform {
+fn transform_factory() -> infra.EarlyReturnNodeToNodeTransform {
   param_transform
 }
 
@@ -121,8 +118,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn lbp_distribute_slices() -> Pipe {
-  #(
-    DesugarerDescription("lbp_distribute_slices", None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("lbp_distribute_slices", None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

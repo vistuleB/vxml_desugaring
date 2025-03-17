@@ -3,10 +3,7 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/pair
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 const ins = string.inspect
@@ -142,16 +139,12 @@ type Extra =
 /// nodes, as long as they come immediately after
 /// Tag1 (in any order)"
 pub fn absorb_next_sibling_while(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "absorb_next_sibling_while",
-      Some(ins(extra)),
-"if the arguments are [#(\"Tag1\", \"Child1\"),
+  Pipe(
+    description: DesugarerDescription("absorb_next_sibling_while", Some(ins(extra)), "if the arguments are [#(\"Tag1\", \"Child1\"),
 (\"Tag1\", \"Child1\")] then will cause Tag1
 nodes to absorb all subsequent Child1 & Child2
 nodes, as long as they come immediately after
-Tag1 (in any order)"
-    ),
-    desugarer_factory(extra_2_param(extra)),
+Tag1 (in any order)"),
+    desugarer: desugarer_factory(extra_2_param(extra)),
   )
 }

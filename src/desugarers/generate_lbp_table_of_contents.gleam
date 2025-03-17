@@ -2,10 +2,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import blamedlines.{type Blame, Blame}
 import vxml_parser.{type VXML, V, BlamedAttribute}
 
@@ -92,11 +89,14 @@ fn div_with_id_title_and_menu_items(
 
 fn the_desugarer(
   root: VXML,
-  table_of_contents_tag: String,
-  type_of_chapters_title_component_name: String,
-  chapter_link_component_name : String,
-  maybe_spacer: Option(String),
+  extra: Extra,
 ) -> Result(VXML, DesugaringError) {
+  let #(
+    table_of_contents_tag,
+    type_of_chapters_title_component_name, 
+    chapter_link_component_name, 
+    maybe_spacer
+  ) = extra
   let chapters = infra.children_with_tag(root, "Chapter")
   let bootcamps = infra.children_with_tag(root, "Bootcamp")
 
@@ -164,24 +164,15 @@ fn the_desugarer(
   )
 }
 
+type Extra = #(String, String, String, Option(String))
 // - first string: tag name for table of contents
 // - second string: tag name of "big title" (Chapters, Bootcamps)
 // - third string: tag name for individual chapter links
 // - third string: optional tag name for spacer between two groups of chapter links
-type Extra = #(String, String, String, Option(String))
 
 pub fn generate_lbp_table_of_contents(extra: Extra) -> Pipe {
-  let #(tag, type_of_chapters_title_component_name, chapter_link_component_name, maybe_spacer) = extra
-  #(
-    DesugarerDescription("generate_lbp_table_of_contents", option.None, "..."),
-    fn (vxml) {
-      the_desugarer(
-        vxml,
-        tag,
-        type_of_chapters_title_component_name,
-        chapter_link_component_name,
-        maybe_spacer
-      )
-    },
+  Pipe(
+    description: DesugarerDescription("generate_lbp_table_of_contents", option.None, "..."),
+    desugarer: the_desugarer(_, extra),
   )
 }

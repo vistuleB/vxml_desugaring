@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, Some, None}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V, BlamedContent, type BlamedContent}
 
 fn updated_node(
@@ -103,12 +100,8 @@ type Extra = #(String, #(String, String), List(String), Option(String))
 ///  - list of strings before counter command
 ///  - A wrapper tag to wrap the counter command string
 pub fn insert_ti2_counter_commands(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "insert_ti2_counter_commands",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("insert_ti2_counter_commands", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

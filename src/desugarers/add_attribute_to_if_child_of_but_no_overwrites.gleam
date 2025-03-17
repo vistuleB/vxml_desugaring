@@ -2,11 +2,8 @@ import gleam/list
 import gleam/dict.{type Dict}
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe,
-  DesugarerDescription,
-} as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 fn param_transform(
   vxml: VXML,
@@ -83,12 +80,8 @@ type Extra = List(#(String, String, String, String))
 //                  tag     parent  attr    value
 
 pub fn add_attribute_to_if_child_of_but_no_overwrites(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "add_attribute_to_if_child_of_but_no_overwrites",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra |> extra_to_param),
+  Pipe(
+    description: DesugarerDescription("add_attribute_to_if_child_of_but_no_overwrites", option.Some(string.inspect(extra)), "...",),
+    desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }

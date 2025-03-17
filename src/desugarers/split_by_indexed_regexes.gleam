@@ -1,16 +1,11 @@
 import gleam/option.{Some}
-import gleam/string
-import infrastructure.{
-  type Desugarer, type NodeToNodesFancyTransform, type Pipe,
-  DesugarerDescription,
-} as infra
-
-const ins = string.inspect
+import gleam/string.{inspect as ins}
+import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
 
 type Extras =
   #(List(#(infra.RegexWithIndexedGroup, String)), List(String))
 
-fn transform_factory(extras: Extras) -> NodeToNodesFancyTransform {
+fn transform_factory(extras: Extras) -> infra.NodeToNodesFancyTransform {
   let #(regexes_and_tags, forbidden_parents) = extras
   infra.replace_regexes_by_tags_param_transform_indexed_group_version(
     _,
@@ -24,8 +19,8 @@ fn desugarer_factory(extras: Extras) -> Desugarer {
 }
 
 pub fn split_by_indexed_regexes(extras: Extras) -> Pipe {
-  #(
-    DesugarerDescription("split_by_indexed_regexes", Some(ins(extras)), "..."),
-    desugarer_factory(extras),
+  Pipe(
+    description: DesugarerDescription("split_by_indexed_regexes", Some(ins(extras)), "..."),
+    desugarer: desugarer_factory(extras),
   )
 }

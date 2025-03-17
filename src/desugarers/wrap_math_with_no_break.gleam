@@ -1,9 +1,6 @@
 import gleam/list
 import gleam/option.{Some}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn wrap_second_element_if_its_math_and_recurse(children: List(VXML)) -> List(VXML) {
@@ -79,7 +76,7 @@ fn wrap_math_with_no_break_transform(
   }
 }
 
-fn transform_factory() -> NodeToNodeTransform {
+fn transform_factory() -> infra.NodeToNodeTransform {
   wrap_math_with_no_break_transform
 }
 
@@ -88,8 +85,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn wrap_math_with_no_break() -> Pipe {
-  #(
-    DesugarerDescription("wrap_math_with_no_break", option.None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("wrap_math_with_no_break", option.None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(
@@ -52,8 +49,8 @@ type Extra =
   #(String, String)
 
 pub fn unwrap_tag_when_child_of_tag(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("unwrap_tag_when_child_of_tag", option.Some(extra |> ins), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("unwrap_tag_when_child_of_tag", option.Some(extra |> ins), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

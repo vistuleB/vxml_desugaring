@@ -4,9 +4,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn produce_attributes_and_increase_counters_for_tag(
@@ -294,12 +292,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn add_counter_attributes(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "add_counter_attributes",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("add_counter_attributes", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

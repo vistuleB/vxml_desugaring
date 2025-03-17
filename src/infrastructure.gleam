@@ -1,6 +1,5 @@
 import gleam/dict.{type Dict}
 import blamedlines.{type Blame, Blame}
-import codepoints.{type DelimiterPattern, delimiter_pattern_string_split}
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -11,11 +10,6 @@ import gleam/string
 import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V, type BlamedAttribute}
 
 const ins = string.inspect
-
-pub type DesugaringError {
-  DesugaringError(blame: Blame, message: String)
-  GetRootError(message: String)
-}
 
 pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
   let assert T(blame, lines) = vxml
@@ -117,6 +111,17 @@ pub fn on_none_on_some(
   over option: Option(a),
   with_on_none f1: b,
   with_on_some f2: fn(a) -> b,
+) -> b {
+  case option {
+    None -> f1
+    Some(z) -> f2(z)
+  }
+}
+
+pub fn on_some_on_none(
+  over option: Option(a),
+  with_on_some f2: fn(a) -> b,
+  with_on_none f1: b,
 ) -> b {
   case option {
     None -> f1
@@ -546,16 +551,6 @@ fn line_split_into_list_either_content_or_blame(
   |> list.intersperse(Or(blame))
 }
 
-fn line_split_into_list_either_content_or_blame_delimiter_pattern_version(
-  line: BlamedContent,
-  pattern: DelimiterPattern,
-) -> List(EitherOr(BlamedContent, Blame)) {
-  let BlamedContent(blame, content) = line
-  delimiter_pattern_string_split(content, pattern)
-  |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
-  |> list.intersperse(Or(blame))
-}
-
 fn replace_regex_by_tag_in_lines_indexed_group_version(
   lines: List(BlamedContent),
   re: RegexWithIndexedGroup,
@@ -744,78 +739,88 @@ pub fn replace_regexes_by_tags_param_transform(
 //* delimiter_pattern splitting
 //**************************************************************
 
-fn replace_delimiter_pattern_by_tag_in_lines(
-  lines: List(BlamedContent),
-  pattern: DelimiterPattern,
-  tag: String,
-) -> List(VXML) {
-  lines
-  |> list.map(
-    line_split_into_list_either_content_or_blame_delimiter_pattern_version(
-      _,
-      pattern,
-    ),
-  )
-  |> list.flatten
-  |> regroup_eithers
-  |> map_either_ors(
-    fn(blamed_contents) {
-      let assert [BlamedContent(blame, _), ..] = blamed_contents
-      T(blame, blamed_contents)
-    },
-    fn(blame) { V(blame, tag, [], []) },
-  )
-}
+// fn line_split_into_list_either_content_or_blame_delimiter_pattern_version(
+//   line: BlamedContent,
+//   pattern: DelimiterPattern,
+// ) -> List(EitherOr(BlamedContent, Blame)) {
+//   let BlamedContent(blame, content) = line
+//   delimiter_pattern_string_split(content, pattern)
+//   |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
+//   |> list.intersperse(Or(blame))
+// }
 
-fn replace_delimiter_pattern_by_tag_in_node(
-  node: VXML,
-  pattern: DelimiterPattern,
-  tag: String,
-) -> List(VXML) {
-  case node {
-    V(_, _, _, _) -> [node]
-    T(_, lines) -> {
-      replace_delimiter_pattern_by_tag_in_lines(lines, pattern, tag)
-    }
-  }
-}
+// fn replace_delimiter_pattern_by_tag_in_lines(
+//   lines: List(BlamedContent),
+//   pattern: DelimiterPattern,
+//   tag: String,
+// ) -> List(VXML) {
+//   lines
+//   |> list.map(
+//     line_split_into_list_either_content_or_blame_delimiter_pattern_version(
+//       _,
+//       pattern,
+//     ),
+//   )
+//   |> list.flatten
+//   |> regroup_eithers
+//   |> map_either_ors(
+//     fn(blamed_contents) {
+//       let assert [BlamedContent(blame, _), ..] = blamed_contents
+//       T(blame, blamed_contents)
+//     },
+//     fn(blame) { V(blame, tag, [], []) },
+//   )
+// }
 
-fn replace_delimiter_pattern_by_tag_in_nodes(
-  nodes: List(VXML),
-  pattern: DelimiterPattern,
-  tag: String,
-) -> List(VXML) {
-  nodes
-  |> list.map(replace_delimiter_pattern_by_tag_in_node(_, pattern, tag))
-  |> list.flatten
-}
+// fn replace_delimiter_pattern_by_tag_in_node(
+//   node: VXML,
+//   pattern: DelimiterPattern,
+//   tag: String,
+// ) -> List(VXML) {
+//   case node {
+//     V(_, _, _, _) -> [node]
+//     T(_, lines) -> {
+//       replace_delimiter_pattern_by_tag_in_lines(lines, pattern, tag)
+//     }
+//   }
+// }
 
-fn replace_delimiter_patterns_by_tags_in_nodes(
-  nodes: List(VXML),
-  rules: List(#(DelimiterPattern, String)),
-) -> List(VXML) {
-  case rules {
-    [] -> nodes
-    [#(pattern, tag), ..rest] ->
-      replace_delimiter_pattern_by_tag_in_nodes(nodes, pattern, tag)
-      |> replace_delimiter_patterns_by_tags_in_nodes(rest)
-  }
-}
+// fn replace_delimiter_pattern_by_tag_in_nodes(
+//   nodes: List(VXML),
+//   pattern: DelimiterPattern,
+//   tag: String,
+// ) -> List(VXML) {
+//   nodes
+//   |> list.map(replace_delimiter_pattern_by_tag_in_node(_, pattern, tag))
+//   |> list.flatten
+// }
 
-pub fn replace_delimiter_pattern_by_tag_param_transform(
-  node: VXML,
-  pattern: DelimiterPattern,
-  tag: String,
-) -> Result(List(VXML), DesugaringError) {
-  Ok(replace_delimiter_pattern_by_tag_in_node(node, pattern, tag))
-}
+// fn replace_delimiter_patterns_by_tags_in_nodes(
+//   nodes: List(VXML),
+//   rules: List(#(DelimiterPattern, String)),
+// ) -> List(VXML) {
+//   case rules {
+//     [] -> nodes
+//     [#(pattern, tag), ..rest] ->
+//       replace_delimiter_pattern_by_tag_in_nodes(nodes, pattern, tag)
+//       |> replace_delimiter_patterns_by_tags_in_nodes(rest)
+//   }
+// }
 
-pub fn replace_delimiter_patterns_by_tags_param_transform(
-  node: VXML,
-  rules: List(#(DelimiterPattern, String)),
-) -> Result(List(VXML), DesugaringError) {
-  Ok(replace_delimiter_patterns_by_tags_in_nodes([node], rules))
-}
+// pub fn replace_delimiter_pattern_by_tag_param_transform(
+//   node: VXML,
+//   pattern: DelimiterPattern,
+//   tag: String,
+// ) -> Result(List(VXML), DesugaringError) {
+//   Ok(replace_delimiter_pattern_by_tag_in_node(node, pattern, tag))
+// }
+
+// pub fn replace_delimiter_patterns_by_tags_param_transform(
+//   node: VXML,
+//   rules: List(#(DelimiterPattern, String)),
+// ) -> Result(List(VXML), DesugaringError) {
+//   Ok(replace_delimiter_patterns_by_tags_in_nodes([node], rules))
+// }
 
 //**************************************************************
 //* blame etracting function                                   *
@@ -2060,9 +2065,14 @@ pub fn early_return_node_to_node_desugarer_factory(
   early_return_node_to_node_desugar_one(_, [], transform)
 }
 
-//*****************
-//* pipeline type *
-//*****************
+//*********
+//* types *
+//*********
+
+pub type DesugaringError {
+  DesugaringError(blame: Blame, message: String)
+  GetRootError(message: String)
+}
 
 pub type Desugarer =
   fn(VXML) -> Result(VXML, DesugaringError)
@@ -2075,5 +2085,9 @@ pub type DesugarerDescription {
   )
 }
 
-pub type Pipe =
-  #(DesugarerDescription, Desugarer)
+pub type Pipe {
+  Pipe(
+    description: DesugarerDescription,
+    desugarer: Desugarer,
+  )
+}

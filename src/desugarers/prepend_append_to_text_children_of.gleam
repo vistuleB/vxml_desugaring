@@ -2,10 +2,7 @@ import gleam/list
 import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import blamedlines.{type Blame}
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
@@ -101,7 +98,7 @@ type Param =
 // - String: parent tag
 type Extra = List(#(String, String, String))
 
-fn transform_factory(param: Param) -> NodeToNodeTransform {
+fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
   param_transform(_, param)
 }
 
@@ -110,8 +107,8 @@ fn desugarer_factory(param: Param) -> Desugarer {
 }
 
 pub fn prepend_append_to_text_children_of(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("prepend_append_to_text_children_of", Some(ins(extra)), "..."),
-    desugarer_factory(extra |> extra_to_param),
+  Pipe(
+    description: DesugarerDescription("prepend_append_to_text_children_of", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }

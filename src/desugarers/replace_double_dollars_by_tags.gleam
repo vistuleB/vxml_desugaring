@@ -1,9 +1,7 @@
 import gleam/option
-import infrastructure.{
-  type Desugarer, type NodeToNodesTransform, type Pipe, DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
 
-fn transform_factory() -> NodeToNodesTransform {
+fn transform_factory() -> infra.NodeToNodesTransform {
   infra.replace_regex_by_tag_param_transform_indexed_group_version(
     _,
     infra.unescaped_suffix_indexed_regex("\\$\\$"),
@@ -16,8 +14,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn replace_double_dollars_by_tags() -> Pipe {
-  #(
-    DesugarerDescription("replace_dd_by_tags", option.None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("replace_dd_by_tags", option.None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

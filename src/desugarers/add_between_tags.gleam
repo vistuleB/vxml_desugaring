@@ -3,10 +3,7 @@ import gleam/list
 import gleam/pair
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedAttribute, V}
 
 fn add_in_list(
@@ -78,8 +75,8 @@ type Extra =
   List(#(#(String, String), String, List(#(String, String))))
 
 pub fn add_between_tags(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("add_between_tags", Some(ins(extra)), "..."),
-    desugarer_factory(extra |> param)
+  Pipe(
+    description: DesugarerDescription("add_between_tags", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra |> param),
   )
 }

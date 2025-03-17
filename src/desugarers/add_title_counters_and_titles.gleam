@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn param_transform(
@@ -94,12 +91,8 @@ type Extra =
   List(#(String, String, String, String, String))
 
 pub fn add_title_counters_and_titles(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "add_title_counters_and_titles",
-      Some(ins(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("add_title_counters_and_titles", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

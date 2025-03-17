@@ -1,15 +1,10 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import blamedlines.{type Blame, Blame}
 import vxml_parser.{type VXML, V, BlamedAttribute}
-
-const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
   Blame("generate_ti2_toc:" <> note, -1, [])
@@ -22,7 +17,7 @@ fn prepand_0(number: String) {
   }
 }
 
-fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) -> Result(VXML, DesugaringError) {
+fn chapter_link(chapter_link_component_name : String, item: VXML, _: Int) -> Result(VXML, DesugaringError) {
   let tp = "Chapter"
 
   let item_blame = infra.get_blame(item)
@@ -91,12 +86,10 @@ fn div_with_id_title_and_menu_items(
 
 fn the_desugarer(
   root: VXML,
-  table_of_contents_tag: String,
-  chapter_link_component_name : String,
-  _: Option(String),
+  extra: Extra,
 ) -> Result(VXML, DesugaringError) {
+  let #(table_of_contents_tag, chapter_link_component_name) = extra
   let sections = infra.descendants_with_tag(root, "Section")
-
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
         sections
@@ -126,22 +119,14 @@ fn the_desugarer(
   )
 }
 
+type Extra = #(String, String)
 // - first string: tag name for table of contents
 // - second string: tag name for individual chapter links
 // - third string: optional tag name for spacer between two groups of chapter links
-type Extra = #(String, String, Option(String))
 
 pub fn generate_ti2_table_of_contents(extra: Extra) -> Pipe {
-  let #(tag, chapter_link_component_name, maybe_spacer) = extra
-  #(
-    DesugarerDescription("generate_ti2_table_of_contents", option.None, "..."),
-    fn (vxml) {
-      the_desugarer(
-        vxml,
-        tag,
-        chapter_link_component_name,
-        maybe_spacer
-      )
-    },
+  Pipe(
+    description: DesugarerDescription("generate_ti2_table_of_contents", option.None, "..."),
+    desugarer: the_desugarer(_, extra),
   )
 }

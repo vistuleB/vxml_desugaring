@@ -2,9 +2,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 const ins = string.inspect
@@ -78,12 +76,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn convert_int_attributes_to_float(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "convert_int_attributes_to_float",
-      Some(ins(extra)),
-      "...",
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("convert_int_attributes_to_float", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

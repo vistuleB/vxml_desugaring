@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/string
 import gleam/option.{Some}
-import infrastructure.{
-  type Desugarer, type Pipe, DesugarerDescription,
-  type EarlyReturn, Continue, GoBack,
-} as infra
+import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
 import vxml_parser.{type VXML, T, V}
 
 const ins = string.inspect
@@ -20,23 +17,23 @@ fn param_transform(
   vxml: VXML,
   _: List(VXML),
   extra: Extra,
-) -> EarlyReturn(VXML) {
+) -> infra.EarlyReturn(VXML) {
   let #(
     wrapper_tag,
     forbidden_to_include,
     forbidden_to_enter,
   ) = extra
   case vxml {
-    T(_, _) -> GoBack(vxml)
+    T(_, _) -> infra.GoBack(vxml)
     V(blame, tag, attrs, children) -> {
       use <- infra.on_true_on_false(
         list.contains(forbidden_to_enter, tag),
-        GoBack(vxml)
+        infra.GoBack(vxml)
       )
 
       use <- infra.on_true_on_false(
         tag == wrapper_tag,
-        Continue(vxml)
+        infra.Continue(vxml)
       )
 
       let children =
@@ -54,7 +51,7 @@ fn param_transform(
           )
         })
 
-      Continue(V(blame, tag, attrs, children))
+      infra.Continue(V(blame, tag, attrs, children))
     }
   }
 }
@@ -76,16 +73,12 @@ type Extra =
   #(String, List(String), List(String))
 
 pub fn group_consecutive_children_avoiding(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "group_consecutive_children_avoiding",
-      Some(ins(extra)),
-      "wrap consecutive children whose tags
+  Pipe(
+    description: DesugarerDescription("group_consecutive_children_avoiding", Some(ins(extra)), "wrap consecutive children whose tags
 are not in the excluded list inside
 of a designated parent tag; stay
 out of subtrees rooted at tags
-in the second argument"
-    ),
-    desugarer_factory(extra),
+in the second argument"),
+    desugarer: desugarer_factory(extra),
   )
 }

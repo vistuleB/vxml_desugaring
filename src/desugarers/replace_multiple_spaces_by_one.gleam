@@ -1,13 +1,8 @@
-
-
 import gleam/string
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
-import vxml_parser.{type VXML, T, V}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import vxml_parser.{type VXML, T }
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {
@@ -29,7 +24,6 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-
 fn transform_factory() -> infra.NodeToNodeTransform {
   param_transform
 }
@@ -39,8 +33,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn replace_multiple_spaces_by_one() -> Pipe {
-  #(
-    DesugarerDescription("replace_multiple_spaces_by_one", None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("replace_multiple_spaces_by_one", None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

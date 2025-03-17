@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 const ins = string.inspect
@@ -54,8 +51,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn free_children(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("free_children", Some(ins(extra)), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("free_children", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

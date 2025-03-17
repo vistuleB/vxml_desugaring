@@ -2,10 +2,7 @@ import gleam/dict
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -82,7 +79,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory() -> NodeToNodeTransform {
+fn transform_factory() -> infra.NodeToNodeTransform {
   param_transform(_)
 }
 
@@ -91,8 +88,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn reinsert_math_dollar() -> Pipe {
-  #(
-    DesugarerDescription("reinsert_math_dollar", option.None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("reinsert_math_dollar", option.None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

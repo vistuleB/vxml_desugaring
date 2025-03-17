@@ -2,10 +2,7 @@ import gleam/list
 import gleam/pair
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, V, T, type BlamedAttribute }
 
 fn matches_all_key_value_pairs(
@@ -56,8 +53,8 @@ type Extra =
   List(#(String, List(#(String, String))))
 
 pub fn unwrap_tags_if_attributes_match(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("unwrap_tags_if_attributes_match", Some(ins(extra)), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("unwrap_tags_if_attributes_match", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

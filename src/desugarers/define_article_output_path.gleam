@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{None}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe,
-  type StatefulNodeToNodeTransform, DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
 fn define_article_output_path_transform(
@@ -34,9 +31,8 @@ fn define_article_output_path_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> StatefulNodeToNodeTransform(Int) {
+fn transform_factory(extra: Extra) -> infra.StatefulNodeToNodeTransform(Int) {
   fn(vxml, s) { define_article_output_path_transform(vxml, extra, s) }
-  // define_article_output_path_transform(_, extra)
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
@@ -45,11 +41,13 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 type Extra =
   #(String, String, String, String)
-
-//        ^         ^       ^       ^
-//       Tag     File     file       attribute key
-//               Path     extension
+//     ^         ^       ^       ^
+//    Tag     File     file       attribute key
+//            Path     extension
 
 pub fn define_article_output_path(extra: Extra) -> Pipe {
-  #(DesugarerDescription("", None, "..."), desugarer_factory(extra))
+  Pipe(
+    description: DesugarerDescription("", None, "..."),
+    desugarer: desugarer_factory(extra)
+  )
 }

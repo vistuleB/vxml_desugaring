@@ -1,13 +1,7 @@
-
-
-import gleam/io
 import gleam/regexp
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V, BlamedContent}
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
@@ -18,6 +12,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
           over: infra.has_attribute(vxml, "class", "chapterTitle") || infra.has_attribute(vxml, "class", "subChapterTitle"),
           with_on_false: Ok(vxml),
         )
+
         let assert [T(t_blame, [BlamedContent(l_blame, first_text_node_line), ..rest_contents]), ..rest_children] = children
         let assert Ok(re) = regexp.from_string("^(\\d+)(\\.(\\d+)?)?\\s")  regexp.check(re, first_text_node_line)
 
@@ -25,15 +20,16 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
           over: regexp.check(re, first_text_node_line),
           with_on_false: Ok(vxml),
         )
+
         let new_line = regexp.replace(re, first_text_node_line, "")
         let contents = T(t_blame, [BlamedContent(l_blame, new_line), ..list.drop(rest_contents, 1)])
         let children = [contents, ..list.drop(rest_children, 1)]
+
         Ok(V(blame, t, atts, children))
     }
     _  -> Ok(vxml)
   }
 }
-
 
 fn transform_factory() -> infra.NodeToNodeTransform {
   param_transform
@@ -44,8 +40,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn remove_chapter_number_from_title() -> Pipe {
-  #(
-    DesugarerDescription("remove_chapter_number_from_title", None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("remove_chapter_number_from_title", None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

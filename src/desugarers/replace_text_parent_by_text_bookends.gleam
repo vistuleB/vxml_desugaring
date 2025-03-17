@@ -1,8 +1,5 @@
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 import gleam/list
 
@@ -36,8 +33,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn replace_text_parent_by_text_bookends(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("replace_text_parent_by_text_bookends", None, "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("replace_text_parent_by_text_bookends", None, "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

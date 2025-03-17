@@ -1,11 +1,8 @@
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type NodeToNodesFancyTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
 
-fn transform_factory(extra: Extra) -> NodeToNodesFancyTransform {
+fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
   let #(string_pairs, forbidden_parents) = extra
   infra.find_replace_in_node_transform_version(_, string_pairs)
   |> infra.prevent_node_to_nodes_transform_inside(forbidden_parents)
@@ -20,8 +17,8 @@ type Extra =
 //         from    to        keep_out_of
 
 pub fn find_replace(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("find_replace", Some(ins(extra)), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("find_replace", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

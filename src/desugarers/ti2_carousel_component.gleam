@@ -1,11 +1,5 @@
-
-
-import gleam/io
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
@@ -20,7 +14,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
           over: infra.has_attribute(vxml, "data-slide", "next"),
           with_on_true: Ok(T(blame, [])),
         )
-        io.debug(infra.get_attribute_by_name(vxml, "data-slide-to"))
+        infra.get_attribute_by_name(vxml, "data-slide-to")
         use <- infra.on_true_on_false(
           over: infra.get_attribute_by_name(vxml, "data-slide-to") |> option.is_some,
           with_on_true: Ok(T(blame, [])),
@@ -46,7 +40,6 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-
 fn transform_factory() -> infra.NodeToNodeTransform {
   param_transform
 }
@@ -56,8 +49,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn ti2_carousel_component() -> Pipe {
-  #(
-    DesugarerDescription("ti2_carousel_component", None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("ti2_carousel_component", None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

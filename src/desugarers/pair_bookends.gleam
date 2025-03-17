@@ -1,13 +1,8 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, append_blame_comment, get_blame,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
-
-const ins = string.inspect
 
 fn pair_bookends_children_accumulator(
   opening: List(String),
@@ -155,9 +150,9 @@ fn pair_bookends_children_accumulator(
                 enclosing,
                 [
                   V(
-                    get_blame(dude)
-                      |> append_blame_comment(
-                        "paired with " <> ins(get_blame(first)),
+                    infra.get_blame(dude)
+                      |> infra.append_blame_comment(
+                        "paired with " <> ins(infra.get_blame(first)),
                       ),
                     enclosing,
                     [],
@@ -197,9 +192,9 @@ fn pair_bookends_children_accumulator(
                 enclosing,
                 [
                   V(
-                    get_blame(dude)
-                      |> append_blame_comment(
-                        "paired with " <> ins(get_blame(first)),
+                    infra.get_blame(dude)
+                      |> infra.append_blame_comment(
+                        "paired with " <> ins(infra.get_blame(first)),
                       ),
                     enclosing,
                     [],
@@ -240,9 +235,7 @@ fn param_transform(
   }
 }
 
-fn transform_factory(
-  extras: #(List(String), List(String), String),
-) -> NodeToNodeTransform {
+fn transform_factory(extras: #(List(String), List(String), String)) -> infra.NodeToNodeTransform {
   let #(opening, closing, enclosing) = extras
   param_transform(_, opening, closing, enclosing)
 }
@@ -252,8 +245,8 @@ fn desugarer_factory(extras: #(List(String), List(String), String)) -> Desugarer
 }
 
 pub fn pair_bookends(extras: #(List(String), List(String), String)) -> Pipe {
-  #(
-    DesugarerDescription("pair_bookends", option.None, "..."),
-    desugarer_factory(extras),
+  Pipe(
+    description: DesugarerDescription("pair_bookends", Some(ins(extras)), "..."),
+    desugarer: desugarer_factory(extras),
   )
 }

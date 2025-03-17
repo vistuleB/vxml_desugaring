@@ -3,10 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/option
 import gleam/pair
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn build_blamed_attributes(
@@ -48,15 +45,11 @@ fn extra_to_param(extra: Extra) -> Param {
   extra |> infra.triples_to_aggregated_dict
 }
 
-fn transform_factory(
-  param: Param,
-) -> NodeToNodeTransform {
+fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
   param_transform(_, param)
 }
 
-fn desugarer_factory(
-  param: Param,
-) -> Desugarer {
+fn desugarer_factory(param: Param) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
@@ -66,12 +59,8 @@ type Extra = List(#(String, String, String))
 //                  tag     attr    value
 
 pub fn add_attributes(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "add_attributes",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra |> extra_to_param),
+  Pipe(
+    description: DesugarerDescription("add_attributes", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }

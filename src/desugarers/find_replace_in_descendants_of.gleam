@@ -1,10 +1,7 @@
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import gleam/list
-import infrastructure.{
-  type Desugarer, type NodeToNodeFancyTransform, type Pipe,
-  DesugarerDescription
-} as infra
+import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
 import vxml_parser.{type VXML, T, V }
 
 fn param_transform(
@@ -34,7 +31,7 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> NodeToNodeFancyTransform {
+fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
   fn (vxml, ancestors, s1, s2, s3) { param_transform(vxml, ancestors, s1, s2, s3, extra) }
 }
 
@@ -48,8 +45,8 @@ type Extra = List(
 )
 
 pub fn find_replace_in_descendants_of(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("find_replace_in_descendants_of", Some(ins(extra)), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("find_replace_in_descendants_of", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

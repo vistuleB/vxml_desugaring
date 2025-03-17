@@ -2,7 +2,7 @@ import gleam/list
 import gleam/string.{inspect as ins}
 import gleam/option
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe,
+  type Desugarer, type DesugaringError, type Pipe, Pipe,
   DesugarerDescription, DesugaringError,
 } as infra
 import vxml_parser.{type VXML, V, T}
@@ -56,8 +56,8 @@ type Extra =
   fn(VXML) -> Bool
 
 pub fn remove_outside_subtrees(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("remove_outside_subtrees", option.Some(extra |> ins), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("remove_outside_subtrees", option.Some(extra |> ins), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

@@ -1,9 +1,6 @@
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V,  BlamedContent, type BlamedContent}
 
 const ins = string.inspect
@@ -53,8 +50,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn fold_tag_into_next_text_node(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("fold_tag_into_next_text_node", Some(extra |> ins), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("fold_tag_into_next_text_node", Some(extra |> ins), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

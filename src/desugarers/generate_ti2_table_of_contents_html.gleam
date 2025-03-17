@@ -1,13 +1,10 @@
 import gleam/pair
 import gleam/int
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe,
-  DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import blamedlines.{type Blame, Blame}
 import vxml_parser.{type VXML, V, T, BlamedAttribute, BlamedContent}
 
@@ -131,10 +128,12 @@ fn div_with_id_title_and_menu_items(
 
 fn the_desugarer(
   root: VXML,
-  table_of_contents_tag: String,
-  chapter_link_component_name : String,
-  _: Option(String),
+  extra: Extra,
 ) -> Result(VXML, DesugaringError) {
+  let #(
+    table_of_contents_tag,
+    chapter_link_component_name,
+  ) = extra
   let sections = infra.descendants_with_tag(root, "section")
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
@@ -164,7 +163,7 @@ fn the_desugarer(
     infra.prepend_child(
       root,
       V(
-        blame_us("L104"),
+        blame_us("L169"),
         table_of_contents_tag,
         [],
         [chapters_div]
@@ -173,22 +172,13 @@ fn the_desugarer(
   )
 }
 
+type Extra = #(String, String)
 // - first string: tag name for table of contents
 // - second string: tag name for individual chapter links
-// - third string: optional tag name for spacer between two groups of chapter links
-type Extra = #(String, String, Option(String))
 
 pub fn generate_ti2_table_of_contents_html(extra: Extra) -> Pipe {
-  let #(tag, chapter_link_component_name, maybe_spacer) = extra
-  #(
-    DesugarerDescription("generate_ti2_table_of_contents_html", option.None, "..."),
-    fn (vxml) {
-      the_desugarer(
-        vxml,
-        tag,
-        chapter_link_component_name,
-        maybe_spacer
-      )
-    },
+  Pipe(
+    description: DesugarerDescription("generate_ti2_table_of_contents_html", option.None, "..."),
+    desugarer: the_desugarer(_, extra),
   )
 }

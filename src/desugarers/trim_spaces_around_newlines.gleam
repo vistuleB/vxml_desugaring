@@ -1,9 +1,6 @@
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
-import vxml_parser.{type VXML, T, V}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import vxml_parser.{type VXML, T }
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {
@@ -25,8 +22,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 pub fn trim_spaces_around_newlines() -> Pipe {
-  #(
-    DesugarerDescription("trim_spaces_around_newlines", None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("trim_spaces_around_newlines", None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

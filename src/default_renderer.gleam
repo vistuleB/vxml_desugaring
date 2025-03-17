@@ -2,11 +2,14 @@ import gleam/option.{ Some }
 import gleam/list
 import gleam/io
 import gleam/string
+import gleam/result
 import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import writerly_parser as wp
 import blamedlines.{type BlamedLine, type Blame, BlamedLine, Blame}
 import vxml_parser.{type VXML, V}
+import desugarers/filter_nodes_by_attributes
+
 
 const ins = string.inspect
 
@@ -16,6 +19,29 @@ type EmitterError = Nil
 
 fn blame_us(message: String) -> Blame {
   Blame(message, -1, [])
+}
+
+pub fn default_source_parser(
+  lines: List(BlamedLine),
+  spotlight_args: List(#(String, String, String))
+) -> Result(VXML, vr.RendererError(a, String, c, d, e)) {
+  use writerlys <- result.then(
+    wp.parse_blamed_lines(lines)
+    |> result.map_error(fn(e) { vr.SourceParserError(ins(e)) })
+  )
+
+  use vxml <- result.then(
+    wp.writerlys_to_vxmls(writerlys)
+    |> infra.get_root
+    |> result.map_error(vr.SourceParserError)
+  )
+
+  use filtered_vxml <- result.then(
+    filter_nodes_by_attributes.filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+    |> result.map_error(fn(e: infra.DesugaringError) { vr.SourceParserError(ins(e)) })
+  )
+
+  Ok(filtered_vxml)
 }
 
 pub fn default_splitter(root: VXML) -> Result(List(#(String, VXML, FragmentType)), SplitterError) {
@@ -59,7 +85,8 @@ pub fn run_default_renderer(
   arguments: List(String),
 ) {
   use amendments <- infra.on_error_on_ok(
-    vr.process_command_line_arguments(arguments, [#("--prettier", True)], "test/content"),
+    vr.process_command_line_arguments(arguments, [#("--prettier", True)]),
+
     fn (error) {
       io.println("")
       io.println("command line error: " <> ins(error))
@@ -72,8 +99,8 @@ pub fn run_default_renderer(
   let renderer :
   vr.Renderer(
     wp.FileOrParseError,
-    List(wp.Writerly),
-    wp.WriterlyParseError,
+    // List(wp.Writerly),
+    vr.RendererError(VXML, String, c, d, e),
     Nil,
     Nil,
     Nil,
@@ -81,8 +108,8 @@ pub fn run_default_renderer(
     #(Int, String),
   ) = vr.Renderer(
     assembler: wp.assemble_blamed_lines_advanced_mode(_, amendments.spotlight_args_files),
-    source_parser: wp.parse_blamed_lines,
-    parsed_source_converter: wp.writerlys_to_vxmls,
+    source_parser: default_source_parser(_, amendments.spotlight_args),
+    // parsed_source_converter: wp.writerlys_to_vxmls,
     pipeline: pipeline,
     splitter: default_splitter,
     emitter: default_emitter,

@@ -2,10 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription, DesugaringError, get_blame,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -29,7 +26,7 @@ fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
 }
 
 fn turn_into_text_node(node: VXML, text: String) -> VXML {
-  let blame = get_blame(node)
+  let blame = infra.get_blame(node)
   T(blame, [BlamedContent(blame, text)])
 }
 
@@ -359,7 +356,7 @@ fn param_transform(
   }
 }
 
-fn transform_factory(param: Param) -> NodeToNodeTransform {
+fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
   param_transform(_, param)
 }
 
@@ -375,8 +372,8 @@ type Param = Dict(String, String)
 type Extra = List(#(String, String))
 
 pub fn fold_tags_into_text(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("fold_tags_into_text", Some(ins(extra)), "..."),
-    desugarer_factory(extra |> dict.from_list),
+  Pipe(
+    description: DesugarerDescription("fold_tags_into_text", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra |> dict.from_list),
   )
 }

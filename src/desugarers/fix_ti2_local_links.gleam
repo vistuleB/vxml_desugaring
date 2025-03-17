@@ -1,11 +1,7 @@
 import gleam/string
-import gleam/pair
 import gleam/list
 import gleam/option
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
@@ -33,7 +29,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory() -> NodeToNodeTransform {
+fn transform_factory() -> infra.NodeToNodeTransform {
   param_transform(_)
 }
 
@@ -41,11 +37,9 @@ fn desugarer_factory() -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory())
 }
 
-
-
 pub fn fix_ti2_local_links() -> Pipe {
-  #(
-    DesugarerDescription("fix_ti2_local_links", option.None, "..."),
-    desugarer_factory(),
+  Pipe(
+    description: DesugarerDescription("fix_ti2_local_links", option.None, "..."),
+    desugarer: desugarer_factory(),
   )
 }

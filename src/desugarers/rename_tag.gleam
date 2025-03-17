@@ -1,8 +1,5 @@
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
@@ -36,8 +33,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn rename_tag(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("rename_tag", None, "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("rename_tag", None, "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

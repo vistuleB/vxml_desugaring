@@ -2,10 +2,7 @@ import gleam/option.{Some}
 import gleam/list
 import gleam/string.{inspect as ins}
 import vxml_parser.{type VXML, type BlamedAttribute, BlamedAttribute, V, T}
-import infrastructure.{
-  type Desugarer, type Pipe,
-  DesugarerDescription, type DesugaringError
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 
 fn replacer(
   mister: BlamedAttribute,
@@ -55,14 +52,10 @@ type Extra =
 /// attribute value of every node using the
 /// 'string.replace' function
 pub fn replace_in_attribute_values(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "replace_in_attribute_values",
-      Some(ins(extra)),
-      "performs exact match find-replace in every
+  Pipe(
+    description: DesugarerDescription("replace_in_attribute_values", Some(ins(extra)), "performs exact match find-replace in every
 attribute value of every node using the
-'string.replace' function"
-    ),
-    desugarer_factory(extra),
+'string.replace' function"),
+    desugarer: desugarer_factory(extra),
   )
 }

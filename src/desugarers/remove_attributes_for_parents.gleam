@@ -2,10 +2,7 @@ import gleam/list
 import gleam/dict.{type Dict}
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(
@@ -43,9 +40,7 @@ fn extra_to_param(extra: Extra) -> Param {
 }
 
 
-fn transform_factory(
-  param: Param,
-) -> NodeToNodeTransform {
+fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
   param_transform(_, param)
 }
 
@@ -58,12 +53,8 @@ fn desugarer_factory(
 type Extra = List(#(String, String))
 
 pub fn remove_attributes_for_parents(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "remove_attributes_for_parents",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra |> extra_to_param),
+  Pipe(
+    description: DesugarerDescription("remove_attributes_for_parents", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }

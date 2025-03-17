@@ -2,10 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodesFancyTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn surround_elements_by_transform(
@@ -65,7 +62,7 @@ fn extra_to_param(extra: Extra) -> Param {
   |> dict.from_list
 }
 
-fn transform_factory(params: Param) -> NodeToNodesFancyTransform {
+fn transform_factory(params: Param) -> infra.NodeToNodesFancyTransform {
   fn (node, ancestors, _, _, _) {
     surround_elements_by_transform(node, ancestors, params)
   }
@@ -76,12 +73,8 @@ fn desugarer_factory(params: Param) -> Desugarer {
 }
 
 pub fn surround_elements_by(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "surround_elements_by",
-      option.Some(string.inspect(extra)),
-      "...",
-    ),
-    desugarer_factory(extra_to_param(extra)),
+  Pipe(
+    description: DesugarerDescription("surround_elements_by", option.Some(string.inspect(extra)), "..."),
+    desugarer: desugarer_factory(extra_to_param(extra)),
   )
 }

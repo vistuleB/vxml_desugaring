@@ -4,9 +4,7 @@ import gleam/list
 import gleam/option.{None}
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
-}
+import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError, }
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
@@ -97,7 +95,6 @@ fn update_local_path(
     })
   {
     Ok(#(_, att_key)) -> {
-      // let assert Ok(BlamedAttribute(_, _, value)) =
       case attributes |> list.find(fn(att) { att.key == att_key }) {
         Ok(BlamedAttribute(_, _, value)) -> Ok(value)
         Error(_) ->
@@ -157,6 +154,7 @@ fn handles_dict_factory_transform(
         }
       }
     }
+
     _ -> Ok(#(vxml, handles))
   }
 }
@@ -169,8 +167,10 @@ type Extra =
 //  path from    local path
 
 pub fn handles_generate_dictionary(extra: Extra) -> Pipe {
-  #(DesugarerDescription("handles_generate_dictionary", None, "..."), fn(vxml) {
-    use #(vxml, _) <- result.try(handles_dict_factory_transform(vxml, dict.new(), True, extra, ""))
-    Ok(vxml)
-  })
+  Pipe(
+    description: DesugarerDescription("handles_generate_dictionary", None, "..."), 
+    desugarer: fn(vxml) {
+      use #(vxml, _) <- result.try(handles_dict_factory_transform(vxml, dict.new(), True, extra, ""))
+      Ok(vxml)
+    })
 }

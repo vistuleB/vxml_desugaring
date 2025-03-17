@@ -3,10 +3,7 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/pair
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect
@@ -79,8 +76,8 @@ fn desugarer_factory(param: Param) -> Desugarer {
 }
 
 pub fn add_before_tags_but_not_first_child_tags(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("add_before_tags_but_not_first_child_tags", Some(ins(extra)), "..."),
-    desugarer_factory(extra |> param)
+  Pipe(
+    description: DesugarerDescription("add_before_tags_but_not_first_child_tags", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra |> param),
   )
 }

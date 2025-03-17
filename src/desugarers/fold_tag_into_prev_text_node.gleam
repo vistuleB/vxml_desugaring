@@ -2,10 +2,7 @@
 import gleam/option.{None}
 import gleam/list
 import vxml_parser.{type VXML, T, V,  BlamedContent, type BlamedContent}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 
 fn append_to_prev_text_node(fold_as: String, node: VXML) -> List(VXML) {
   case node {
@@ -61,8 +58,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn fold_tag_into_prev_text_node(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("fold_tag_into_prev_text_node", None, "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("fold_tag_into_prev_text_node", None, "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

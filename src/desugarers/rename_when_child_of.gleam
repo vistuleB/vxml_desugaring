@@ -1,10 +1,7 @@
 import gleam/option.{None}
 import gleam/dict.{type Dict}
 import gleam/list
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(
@@ -84,8 +81,8 @@ type Extra =
 //********************************
 
 pub fn rename_when_child_of(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("rename_when_child_of", None, "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("rename_when_child_of", None, "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

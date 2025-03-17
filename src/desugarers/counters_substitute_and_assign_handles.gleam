@@ -6,9 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
-}
+import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError }
 import roman
 import vxml_parser.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
@@ -562,8 +560,11 @@ fn counter_transform(
 }
 
 pub fn counters_substitute_and_assign_handles() -> Pipe {
-  #(DesugarerDescription("counters_substitute_and_assign_handles", None, "..."), fn(vxml) {
-    use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
-    Ok(vxml)
-  })
+  Pipe(
+    description: DesugarerDescription("counters_substitute_and_assign_handles", None, "..."),
+    desugarer: fn(vxml) {
+      use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
+      Ok(vxml)
+    }
+  )
 }

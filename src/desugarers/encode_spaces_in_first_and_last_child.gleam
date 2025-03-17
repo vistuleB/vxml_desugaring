@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type NodeToNodeTransform, type Pipe,
-  DesugarerDescription,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, T, V}
 
 const ins = string.inspect
@@ -32,7 +29,7 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(extra: Extra) -> NodeToNodeTransform {
+fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   param_transform(_, extra)
 }
 
@@ -43,12 +40,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 type Extra = List(String)
 
 pub fn encode_spaces_in_first_and_last_child(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription(
-      "encode_spaces_in_first_and_last_child",
-      option.Some(ins(extra)),
-      "..."
-    ),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("encode_spaces_in_first_and_last_child", option.Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }

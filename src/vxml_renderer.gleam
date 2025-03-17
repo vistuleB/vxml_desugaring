@@ -6,7 +6,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
@@ -15,7 +15,7 @@ import vxml_parser.{type VXML}
 const ins = string.inspect
 
 // *************
-// BLAMED LINES ASSEMBLER(a)                     // 'a' is assembler error type
+// SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
 // file/directory -> List(BlamedLine)
 // *************
 
@@ -31,31 +31,15 @@ pub type BlamedLinesAssemblerDebugOptions {
 }
 
 // *************
-// SOURCE PARSER(b, c)                           // 'b' is type of parsed source (Writerly), 'c' is parser error type
+// SOURCE PARSER(c)                                // 'c' is parser error type
 // List(BlamedLines) -> parsed source
 // *************
 
-pub type SourceParser(b, c) =
-  fn(List(BlamedLine)) -> Result(b, c)
+pub type SourceParser(c) =
+  fn(List(BlamedLine)) -> Result(VXML, c)
 
 pub type SourceParserDebugOptions {
   SourceParserDebugOptions(
-    debug_print: Bool,
-    artifact_print: Bool,
-    artifact_directory: String,
-  )
-}
-
-// *************
-// PARSED SOURCE CONVERTER(b)                    // 'b' is type of parsed source (Writerly)
-// b -> List(VXML)
-// *************
-
-pub type ParsedSourceConverter(b) =
-  fn(b) -> List(VXML)
-
-pub type ParsedSourceConverterDebugOptions {
-  ParsedSourceConverterDebugOptions(
     debug_print: Bool,
     artifact_print: Bool,
     artifact_directory: String,
@@ -162,8 +146,7 @@ pub fn prettier_prettifier(
 
 pub type Renderer(
   a, // blamed line assembly error type
-  b, // parsed source type (== Writerly)
-  c, // source parsing error type (== WriterlyParseError)
+  c, // source parsing error type
   d, // VXML Fragment enum type
   e, // splitting error type
   f, // fragment emitting error type
@@ -172,8 +155,7 @@ pub type Renderer(
 ) {
   Renderer(
     assembler: BlamedLinesAssembler(a),                // file/directory -> List(BlamedLine)
-    source_parser: SourceParser(b, c),                 // List(BlamedLine) -> parsed source
-    parsed_source_converter: ParsedSourceConverter(b), // parsed source -> List(VXML)
+    source_parser: SourceParser(c),                 // List(BlamedLine) -> parsed source
     pipeline: List(Pipe),                              // VXML -> ... -> VXML
     splitter: Splitter(d, e),                          // VXML -> List(#(String, VXML, d))
     emitter: Emitter(d, f),                            // #(String, VXML, d) -> #(String, List(BlamedLine), d)
@@ -191,7 +173,6 @@ pub type RendererDebugOptions(d, g) {
     error_messages: Bool,
     assembler_debug_options: BlamedLinesAssemblerDebugOptions,
     source_parser_debug_options: SourceParserDebugOptions,
-    source_emitter_debug_options: ParsedSourceConverterDebugOptions,
     pipeline_debug_options: PipelineDebugOptions,
     splitter_debug_options: SplitterDebugOptions(d),
     emitter_debug_options: EmitterDebugOptions(d),
@@ -224,17 +205,15 @@ fn pipeline_runner(
 ) -> Result(VXML, DesugaringError) {
   case pipeline {
     [] -> Ok(vxml)
-    [#(desugarer_desc, desugarer) as pipe, ..rest] -> {
+    [ pipe, ..rest ] -> {
       case pipeline_debug_options.debug_print(step, pipe) {
         False -> Nil
         True ->
-          io.print(pipeline_debug.desugarer_description_star_block(
-            desugarer_desc,
-            step,
-          ))
+          pipeline_debug.desugarer_description_star_block(pipe.description, step)
+          |> io.print
       }
 
-      case desugarer(vxml) {
+      case pipe.desugarer(vxml) {
         Ok(vxml) -> {
           case pipeline_debug_options.debug_print(step, pipe) {
             False -> Nil
@@ -311,7 +290,7 @@ pub type ThreePossibilities(f, g, h) {
 // *************
 
 pub fn run_renderer(
-  renderer: Renderer(a, b, c, d, e, f, g, h),
+  renderer: Renderer(a, c, d, e, f, g, h),
   parameters: RendererParameters(g),
   debug_options: RendererDebugOptions(d, g),
 ) -> Result(Nil, RendererError(a, c, e, f, h)) {
@@ -344,7 +323,7 @@ pub fn run_renderer(
 
   io.println("-- parsing source (" <> parameters.input_dir <> ") --")
 
-  use source: b <- infra.on_error_on_ok(
+  use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
     with_on_error: fn(error: c) {
       case debug_options.error_messages {
@@ -355,22 +334,9 @@ pub fn run_renderer(
     },
   )
 
-  io.println("-- converting source to VXML (" <> parameters.input_dir <> ") --")
-
-  use converted <- infra.on_error_on_ok(
-    over: infra.get_root(renderer.parsed_source_converter(source)),
-    with_on_error: fn(message: String) {
-      case debug_options.error_messages {
-        True -> io.println("renderer.get_root(parsed_source): " <> message)
-        _ -> Nil
-      }
-      Error(GetRootError(message))
-    },
-  )
-
   use desugared <- infra.on_error_on_ok(
     over: pipeline_runner(
-      converted,
+      parsed,
       renderer.pipeline,
       debug_options.pipeline_debug_options,
       1,
@@ -838,7 +804,6 @@ fn parse_attribute_value_args_in_filename(
 pub fn process_command_line_arguments(
   arguments: List(String),
   prettier_options: List(#(String, g)),
-  input_dir: String
 ) -> Result(CommandLineAmendments(g), CommandLineError) {
   use list_key_values <- infra.on_error_on_ok(
     double_dash_keys(arguments),
@@ -1026,13 +991,7 @@ pub fn db_amend_pipeline_debug_options(
       { start == 0 && end == 0 } ||
       { start <= step && step <= end } ||
       { start == -2 && end == -2 && step == list.length(pipeline)} ||
-      {
-        list.is_empty(names) == False
-        && {
-          let #(description, _) = pipe
-          list.contains(names, description.function_name)
-        }
-      }
+      { list.is_empty(names) == False && list.contains(names, pipe.description.function_name) }
     },
     artifact_print,
     artifact_directory,
@@ -1133,7 +1092,6 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
       amendments,
     ),
     debug_options.source_parser_debug_options,
-    debug_options.source_emitter_debug_options,
     db_amend_pipeline_debug_options(
       debug_options.pipeline_debug_options,
       amendments,
@@ -1182,15 +1140,15 @@ pub fn empty_source_parser_debug_options(
   )
 }
 
-pub fn empty_source_emitter_debug_options(
-  artifact_directory: String,
-) -> ParsedSourceConverterDebugOptions {
-  ParsedSourceConverterDebugOptions(
-    debug_print: True,
-    artifact_print: False,
-    artifact_directory: artifact_directory,
-  )
-}
+// pub fn empty_source_emitter_debug_options(
+//   artifact_directory: String,
+// ) -> ParsedSourceConverterDebugOptions {
+//   ParsedSourceConverterDebugOptions(
+//     debug_print: True,
+//     artifact_print: False,
+//     artifact_directory: artifact_directory,
+//   )
+// }
 
 pub fn empty_pipeline_debug_options(
   artifact_directory: String,
@@ -1240,7 +1198,6 @@ pub fn empty_renderer_debug_options(
     error_messages: True,
     assembler_debug_options: empty_assembler_debug_options(artifact_directory),
     source_parser_debug_options: empty_source_parser_debug_options(artifact_directory),
-    source_emitter_debug_options: empty_source_emitter_debug_options(artifact_directory),
     pipeline_debug_options: empty_pipeline_debug_options(artifact_directory),
     splitter_debug_options: empty_splitter_debug_options(artifact_directory),
     emitter_debug_options: empty_emitter_debug_options(artifact_directory),

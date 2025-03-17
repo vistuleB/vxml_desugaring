@@ -2,10 +2,7 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
 import vxml_parser.{type VXML, V}
 
 fn param_transform(
@@ -56,8 +53,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 pub fn unwrap_tags_if_descendants_of(extra: Extra) -> Pipe {
-  #(
-    DesugarerDescription("unwrap_tags_if_descendants_of", Some(ins(extra)), "..."),
-    desugarer_factory(extra),
+  Pipe(
+    description: DesugarerDescription("unwrap_tags_if_descendants_of", Some(ins(extra)), "..."),
+    desugarer: desugarer_factory(extra),
   )
 }
