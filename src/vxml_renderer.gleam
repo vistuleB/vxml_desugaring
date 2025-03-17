@@ -1,7 +1,5 @@
 import blamedlines.{type BlamedLine}
 import gleam/dict
-import gleam/bool
-import gleam/pair
 import gleam/int
 import gleam/io
 import gleam/list
