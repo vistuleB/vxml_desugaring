@@ -1,5 +1,5 @@
-import blamedlines.{type BlamedLine}
-import gleam/dict
+import blamedlines.{type BlamedLine} as bl
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
 import gleam/list
@@ -10,7 +10,9 @@ import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
-import vxml_parser.{type VXML}
+import vxml_parser.{type VXML} as vp
+import writerly_parser as wp
+import desugarers/filter_nodes_by_attributes.{filter_nodes_by_attributes}
 
 const ins = string.inspect
 
@@ -43,6 +45,61 @@ pub type SourceParserDebugOptions {
     debug_print: Bool,
     artifact_print: Bool,
     artifact_directory: String,
+  )
+}
+
+// ******************************
+// default source parsers
+// ******************************
+
+pub fn default_writerly_source_parser(
+  lines: List(BlamedLine),
+  spotlight_args: List(#(String, String, String))
+) -> Result(VXML, RendererError(a, String, c, d, e)) {
+  use writerlys <- result.then(
+    wp.parse_blamed_lines(lines)
+    |> result.map_error(fn(e) { SourceParserError(ins(e)) })
+  )
+
+  use vxml <- result.then(
+    wp.writerlys_to_vxmls(writerlys)
+    |> infra.get_root
+    |> result.map_error(SourceParserError)
+  )
+
+  use filtered_vxml <- result.then(
+    filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+    |> result.map_error(fn(e) { SourceParserError(ins(e)) })
+  )
+
+  Ok(filtered_vxml)
+}
+
+pub fn default_html_source_parser(
+  lines: List(BlamedLine),
+  spotlight_args: List(#(String, String, String))
+) -> Result(VXML, RendererError(a, String, b, c, d)) { 
+  let path = bl.first_blame_filename(lines) |> result.unwrap("")
+
+  use vxml <- result.then(
+    bl.blamed_lines_to_string(lines)
+    |> vp.xmlm_based_html_parser(path) 
+    |> result.map_error(fn(e) { 
+      case e {
+        vp.XMLMIOError(s) -> SourceParserError(s)
+        vp.XMLMParseError(s) -> SourceParserError(s)
+      }
+    })
+  )
+
+  filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+  |> result.map_error(
+    fn(e: infra.DesugaringError) { 
+      case e {
+        infra.DesugaringError(_, message) -> SourceParserError(message)
+        infra.GetRootError(message) -> SourceParserError(message)
+      }
+    }
   )
 }
 
@@ -105,15 +162,15 @@ pub type PrinterDebugOptions(d) {
 }
 
 // *************
-// PRETTIFIER(d, g, h)                           // where 'g' is prettifying enum, 'h' is prettifier error type
-// String, #(String, d), g -> Result(String, h)  // output_dir, #(local_path, fragment_type), prettifying enum
+// PRETTIFIER(d, h)                              // where 'd' is fragment type, 'h' is prettifier error type
+// String, #(String, d) -> Result(String, h)     // output_dir, #(local_path, fragment_type)
 // *************
 
-pub type Prettifier(d, g, h) =
-  fn(String, #(String, d), g) -> Result(String, h)
+pub type Prettifier(d, h) =
+  fn(String, #(String, d)) -> Result(String, h)
 
-pub type PrettifierDebugOptions(d, g) {
-  PrettifierDebugOptions(debug_print: fn(String, d, g) -> Bool)
+pub type PrettifierDebugOptions(d) {
+  PrettifierDebugOptions(debug_print: fn(String, d) -> Bool)
 }
 
 //********************
@@ -132,12 +189,26 @@ pub fn run_prettier(in: String, path: String) -> Result(String, #(Int, String)) 
 pub fn prettier_prettifier(
   output_dir: String,
   pair: #(String, d),
-  prettify: Bool,
 ) -> Result(String, #(Int, String)) {
-  use <- infra.on_false_on_true(prettify, Ok(""))
   let #(local_path, _) = pair
   run_prettier(".", output_dir <> "/" <> local_path)
   |> result.map(fn(_) { "prettified: " <> local_path })
+}
+
+pub fn guarded_prettier_prettifier(
+  user_args: Dict(String, List(String)),
+) -> fn(String, #(String, d)) -> Result(String, #(Int, String)) {
+  case dict.get(user_args, "--prettier") {
+    Error(Nil) -> fn(_, _) { Ok("") }
+    Ok(_) -> prettier_prettifier
+  }
+}
+
+pub fn empty_prettifier(
+  _: String,
+  _: #(String, d),
+) -> Result(String, Nil) {
+  Ok("")
 }
 
 // *************
@@ -150,16 +221,15 @@ pub type Renderer(
   d, // VXML Fragment enum type
   e, // splitting error type
   f, // fragment emitting error type
-  g, // prettifying enum type
   h, // prettifying error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),                // file/directory -> List(BlamedLine)
-    source_parser: SourceParser(c),                 // List(BlamedLine) -> parsed source
-    pipeline: List(Pipe),                              // VXML -> ... -> VXML
-    splitter: Splitter(d, e),                          // VXML -> List(#(String, VXML, d))
-    emitter: Emitter(d, f),                            // #(String, VXML, d) -> #(String, List(BlamedLine), d)
-    prettifier: Prettifier(d, g, h),                   // String, #(String, d), g -> Nil
+    assembler: BlamedLinesAssembler(a),                // file/directory -> List(BlamedLine)                     Result w/ error type a
+    source_parser: SourceParser(c),                    // List(BlamedLine) -> VXML                               Result w/ error type c
+    pipeline: List(Pipe),                              // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
+    splitter: Splitter(d, e),                          // VXML -> List(#(String, VXML, d))                       Result w/ error type e
+    emitter: Emitter(d, f),                            // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
+    prettifier: Prettifier(d, h),                      // String, #(String, d) -> Nil                            Result w/ error type h
   )
 }
 
@@ -167,7 +237,7 @@ pub type Renderer(
 // RENDERER DEBUG OPTIONS(d)
 // *************
 
-pub type RendererDebugOptions(d, g) {
+pub type RendererDebugOptions(d) {
   RendererDebugOptions(
     basic_messages: Bool,
     error_messages: Bool,
@@ -177,7 +247,7 @@ pub type RendererDebugOptions(d, g) {
     splitter_debug_options: SplitterDebugOptions(d),
     emitter_debug_options: EmitterDebugOptions(d),
     printer_debug_options: PrinterDebugOptions(d),
-    prettifier_debug_options: PrettifierDebugOptions(d, g),
+    prettifier_debug_options: PrettifierDebugOptions(d),
   )
 }
 
@@ -185,11 +255,10 @@ pub type RendererDebugOptions(d, g) {
 // RENDERER PARAMETERS(g)
 // *************
 
-pub type RendererParameters(g) {
+pub type RendererParameters {
   RendererParameters(
     input_dir: String,
     output_dir: Option(String),
-    prettifying_option: g,
   )
 }
 
@@ -217,7 +286,7 @@ fn pipeline_runner(
         Ok(vxml) -> {
           case pipeline_debug_options.debug_print(step, pipe) {
             False -> Nil
-            True -> vxml_parser.debug_print_vxml("(" <> ins(step) <> ")", vxml)
+            True -> vp.debug_print_vxml("(" <> ins(step) <> ")", vxml)
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
@@ -228,8 +297,8 @@ fn pipeline_runner(
 }
 
 pub fn sanitize_output_dir(
-  parameters: RendererParameters(g),
-) -> RendererParameters(g) {
+  parameters: RendererParameters,
+) -> RendererParameters {
   let output_dir = case parameters.output_dir {
     None -> None
     Some(string) -> Some(infra.drop_ending_slash(string))
@@ -238,7 +307,6 @@ pub fn sanitize_output_dir(
   RendererParameters(
     input_dir: parameters.input_dir,
     output_dir: output_dir,
-    prettifying_option: parameters.prettifying_option,
   )
 }
 
@@ -254,7 +322,7 @@ pub fn output_dir_local_path_printer(
 }
 
 pub fn possible_error_message(
-  debug_options: RendererDebugOptions(d, g),
+  debug_options: RendererDebugOptions(d),
   message: String,
 ) -> Nil {
   case debug_options.error_messages {
@@ -290,9 +358,9 @@ pub type ThreePossibilities(f, g, h) {
 // *************
 
 pub fn run_renderer(
-  renderer: Renderer(a, c, d, e, f, g, h),
-  parameters: RendererParameters(g),
-  debug_options: RendererDebugOptions(d, g),
+  renderer: Renderer(a, c, d, e, f, h),
+  parameters: RendererParameters,
+  debug_options: RendererDebugOptions(d),
 ) -> Result(Nil, RendererError(a, c, e, f, h)) {
   io.println("")
 
@@ -314,7 +382,7 @@ pub fn run_renderer(
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
     True -> {
-      io.println(blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+      io.println(bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
         "(assembled)",
         assembled,
       ))
@@ -372,8 +440,8 @@ pub fn run_renderer(
         False -> Nil
         True -> {
           vxml
-          |> vxml_parser.vxml_to_blamed_lines
-          |> blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+          |> vp.vxml_to_blamed_lines
+          |> bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
             "(" <> ins(list.length(renderer.pipeline)) <> ":splitter_debug_options:" <> local_path <> ")",
             _
           )
@@ -407,7 +475,7 @@ pub fn run_renderer(
         {
           False -> Nil
           True -> {
-            blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+            bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
               "(emitter_debug_options:" <> local_path <> ")",
               blamed_lines,
             )
@@ -435,7 +503,7 @@ pub fn run_renderer(
         Ok(#(local_path, lines, fragment_type)) -> {
           Ok(#(
             local_path,
-            blamedlines.blamed_lines_to_string(lines),
+            bl.blamed_lines_to_string(lines),
             fragment_type,
           ))
         }
@@ -505,7 +573,6 @@ pub fn run_renderer(
         renderer.prettifier(
           output_dir,
           #(local_path, fragment_type),
-          parameters.prettifying_option,
         )
       {
         Error(e) -> Error(C3(e))
@@ -530,7 +597,6 @@ pub fn run_renderer(
       debug_options.prettifier_debug_options.debug_print(
         local_path,
         fragment_type,
-        parameters.prettifying_option,
       )
     {
       False -> Nil
@@ -608,13 +674,10 @@ pub fn double_dash_keys(
 // COMMAND LINE AMENDMENTS
 //********************
 
-pub type CommandLineAmendments(
-  g, // prettifying enum
-) {
+pub type CommandLineAmendments {
   CommandLineAmendments(
     input_dir: Option(String),
     output_dir: Option(String),
-    prettifying_option: Option(g),
     debug_assembled_input: Bool,
     debug_pipeline_range: #(Int, Int),
     debug_pipeline_desugarer_names: List(String),
@@ -624,7 +687,8 @@ pub type CommandLineAmendments(
     debug_printed_string_fragments_local_paths: List(String),
     debug_prettified_string_fragments_local_paths: List(String),
     spotlight_args: List(#(String, String, String)),
-    spotlight_args_files: List(String)
+    spotlight_args_files: List(String),
+    user_args: Dict(String, List(String)),
   )
 }
 
@@ -632,11 +696,10 @@ pub type CommandLineAmendments(
 // BUILDING COMMAND LINE AMENDMENTS FROM COMMAND LINE ARGS
 //********************
 
-pub fn empty_command_line_amendments() -> CommandLineAmendments(g) {
+pub fn empty_command_line_amendments() -> CommandLineAmendments {
   CommandLineAmendments(
     input_dir: None,
     output_dir: None,
-    prettifying_option: None,
     debug_assembled_input: False,
     debug_pipeline_range: #(-1, -1),
     debug_pipeline_desugarer_names: [],
@@ -646,103 +709,105 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments(g) {
     debug_printed_string_fragments_local_paths: [],
     debug_prettified_string_fragments_local_paths: [],
     spotlight_args: [],
-    spotlight_args_files: []
-  )
-}
-
-fn amend_prettifying_option(
-  amendment: CommandLineAmendments(g),
-  val: g,
-) -> CommandLineAmendments(g) {
-  CommandLineAmendments(
-    ..amendment,
-    prettifying_option: Some(val),
+    spotlight_args_files: [],
+    user_args: dict.from_list([]),
   )
 }
 
 fn amend_debug_assembled_input(
-  amendment: CommandLineAmendments(g),
+  amendments: CommandLineAmendments,
   val: Bool,
-) -> CommandLineAmendments(g) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
+    ..amendments,
     debug_assembled_input: val,
   )
 }
 
 fn amend_debug_pipeline_range(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   start: Int,
   end: Int,
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
+    ..amendments,
     debug_pipeline_range: #(start, end),
   )
 }
 
 fn amend_debug_pipeline_desugarer_names(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   names: List(String),
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
-    debug_pipeline_desugarer_names: list.append(amendment.debug_pipeline_desugarer_names, names),
+    ..amendments,
+    debug_pipeline_desugarer_names: list.append(amendments.debug_pipeline_desugarer_names, names),
   )
 }
 
 pub fn amend_debug_vxml_fragments_local_paths(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   names: List(String),
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
-    debug_vxml_fragments_local_paths: list.append(amendment.debug_vxml_fragments_local_paths, names),
+    ..amendments,
+    debug_vxml_fragments_local_paths: list.append(amendments.debug_vxml_fragments_local_paths, names),
   )
 }
 
 pub fn amend_debug_blamed_lines_fragments_local_paths(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   names: List(String),
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
-    debug_blamed_lines_fragments_local_paths: list.append(amendment.debug_blamed_lines_fragments_local_paths, names),
+    ..amendments,
+    debug_blamed_lines_fragments_local_paths: list.append(amendments.debug_blamed_lines_fragments_local_paths, names),
   )
 }
 
 fn amend_debug_printed_string_fragments_local_paths(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   names: List(String),
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
-    debug_printed_string_fragments_local_paths: list.append(amendment.debug_printed_string_fragments_local_paths, names),
+    ..amendments,
+    debug_printed_string_fragments_local_paths: list.append(amendments.debug_printed_string_fragments_local_paths, names),
   )
 }
 
 fn amend_debug_prettified_string_fragments_local_paths(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   names: List(String),
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
-    debug_prettified_string_fragments_local_paths: list.append(amendment.debug_prettified_string_fragments_local_paths, names),
+    ..amendments,
+    debug_prettified_string_fragments_local_paths: list.append(amendments.debug_prettified_string_fragments_local_paths, names),
+  )
+}
+
+fn amend_user_args(
+  amendments: CommandLineAmendments,
+  key: String,
+  values: List(String),
+) -> CommandLineAmendments {
+  CommandLineAmendments(
+    ..amendments,
+    user_args: dict.insert(amendments.user_args, key, values)
   )
 }
 
 fn amend_spotlight_args(
-  amendment: CommandLineAmendments(a),
+  amendments: CommandLineAmendments,
   args: List(#(String, String, String)),
-) -> CommandLineAmendments(a) {
+) -> CommandLineAmendments {
   CommandLineAmendments(
-    ..amendment,
+    ..amendments,
     spotlight_args: list.append(
-      amendment.spotlight_args,
+      amendments.spotlight_args,
       args
     ),
      spotlight_args_files: list.append(
-      amendment.spotlight_args_files,
+      amendments.spotlight_args_files,
       args |> list.map(fn(a){
         let #(path, _, _) = a
         path
@@ -803,42 +868,40 @@ fn parse_attribute_value_args_in_filename(
 
 pub fn process_command_line_arguments(
   arguments: List(String),
-  prettier_options: List(#(String, g)),
-) -> Result(CommandLineAmendments(g), CommandLineError) {
+  xtra_keys: List(String),
+) -> Result(CommandLineAmendments, CommandLineError) {
   use list_key_values <- infra.on_error_on_ok(
     double_dash_keys(arguments),
     fn(bad_key) { Error(ExpectedDoubleDashString(bad_key)) },
   )
 
-  let prettier_options_dict = dict.from_list(prettier_options)
-
   list_key_values
   |> list.fold(Ok(empty_command_line_amendments()), fn(result, pair) {
-    use amendment <- result.then(result)
+    use amendments <- result.then(result)
     let #(option, values) = pair
     case option {
       "--debug-assembled-input" -> {
-        Ok(amendment |> amend_debug_assembled_input(True))
+        Ok(amendments |> amend_debug_assembled_input(True))
       }
 
       "--debug-assembled" -> {
-        Ok(amendment |> amend_debug_assembled_input(True))
+        Ok(amendments |> amend_debug_assembled_input(True))
       }
 
       "--debug-fragments-emu" -> {
-        Ok(amendment |> amend_debug_vxml_fragments_local_paths(values))
+        Ok(amendments |> amend_debug_vxml_fragments_local_paths(values))
       }
 
       "--debug-fragments-bl" -> {
-        Ok(amendment |> amend_debug_blamed_lines_fragments_local_paths(values))
+        Ok(amendments |> amend_debug_blamed_lines_fragments_local_paths(values))
       }
 
       "--debug-fragments-printed" -> {
-        Ok(amendment |> amend_debug_printed_string_fragments_local_paths(values))
+        Ok(amendments |> amend_debug_printed_string_fragments_local_paths(values))
       }
 
       "--debug-fragments-prettified" -> {
-        Ok(amendment |> amend_debug_prettified_string_fragments_local_paths(values))
+        Ok(amendments |> amend_debug_prettified_string_fragments_local_paths(values))
       }
 
       "--spotlight" -> {
@@ -846,20 +909,20 @@ pub fn process_command_line_arguments(
           values
           |> list.map(parse_attribute_value_args_in_filename)
           |> list.flatten()
-        Ok(amendment |> amend_spotlight_args(args))
+        Ok(amendments |> amend_spotlight_args(args))
       }
 
       "--debug-pipeline" -> {
         case list.is_empty(values) {
-          True -> Ok(amendment |> amend_debug_pipeline_range(0, 0))
-          False -> Ok(amendment |> amend_debug_pipeline_desugarer_names(values))
+          True -> Ok(amendments |> amend_debug_pipeline_range(0, 0))
+          False -> Ok(amendments |> amend_debug_pipeline_desugarer_names(values))
         }
       }
 
       "--debug-pipeline-last" -> {
         case list.is_empty(values) {
-          True -> Ok(amendment |> amend_debug_pipeline_range(-2, -2))
-          False -> Ok(amendment |> amend_debug_pipeline_desugarer_names(values))
+          True -> Ok(amendments |> amend_debug_pipeline_range(-2, -2))
+          False -> Ok(amendments |> amend_debug_pipeline_desugarer_names(values))
         }
       }
 
@@ -875,7 +938,7 @@ pub fn process_command_line_arguments(
                 case int.parse(b), int.parse(c) {
                   Ok(debug_start), Ok(debug_end) -> {
                     Ok(
-                      amendment
+                      amendments
                       |> amend_debug_pipeline_range(debug_start, debug_end),
                     )
                   }
@@ -887,7 +950,7 @@ pub fn process_command_line_arguments(
                 case int.parse(b) {
                   Ok(debug_start) -> {
                     Ok(
-                      amendment
+                      amendments
                       |> amend_debug_pipeline_range(debug_start, debug_start),
                     )
                   }
@@ -897,18 +960,11 @@ pub fn process_command_line_arguments(
               _ -> Error(BadDebugPipelineRange(option))
             }
           }
+
           False -> {
-            case dict.get(prettier_options_dict, option) {
-              Error(Nil) -> Error(UnwantedOptionArgument(option))
-              Ok(prettifying_option) -> {
-                case values {
-                  [] ->
-                    Ok(
-                      amendment |> amend_prettifying_option(prettifying_option),
-                    )
-                  [first, ..] -> Error(UnwantedOptionArgument(first))
-                }
-              }
+            case list.contains(xtra_keys, option) {
+              False -> Error(UnwantedOptionArgument(option))
+              True -> Ok(amendments |> amend_user_args(option, values))
             }
           }
         }
@@ -923,7 +979,7 @@ pub fn process_command_line_arguments(
 
 fn pr_amend_input_dir(
   input_dir: String,
-  amendments: CommandLineAmendments(g),
+  amendments: CommandLineAmendments,
 ) -> String {
   case amendments.input_dir {
     None -> input_dir
@@ -933,7 +989,7 @@ fn pr_amend_input_dir(
 
 fn pr_amend_output_dir(
   output_dir: Option(String),
-  amendments: CommandLineAmendments(g),
+  amendments: CommandLineAmendments,
 ) -> Option(String) {
   case amendments.input_dir {
     None -> output_dir
@@ -941,24 +997,13 @@ fn pr_amend_output_dir(
   }
 }
 
-fn pr_amend_prettifying_option(
-  prettifying_option: g,
-  amendments: CommandLineAmendments(g),
-) -> g {
-  case amendments.prettifying_option {
-    None -> prettifying_option
-    Some(other) -> other
-  }
-}
-
 pub fn amend_renderer_paramaters_by_command_line_amendment(
-  parameters: RendererParameters(g),
-  amendments: CommandLineAmendments(g),
-) -> RendererParameters(g) {
+  parameters: RendererParameters,
+  amendments: CommandLineAmendments,
+) -> RendererParameters {
   RendererParameters(
     pr_amend_input_dir(parameters.input_dir, amendments),
     pr_amend_output_dir(parameters.output_dir, amendments),
-    pr_amend_prettifying_option(parameters.prettifying_option, amendments),
   )
 }
 
@@ -968,7 +1013,7 @@ pub fn amend_renderer_paramaters_by_command_line_amendment(
 
 pub fn db_amend_assembler_debug_options(
   options: BlamedLinesAssemblerDebugOptions,
-  amendments: CommandLineAmendments(b),
+  amendments: CommandLineAmendments,
 ) -> BlamedLinesAssemblerDebugOptions {
   BlamedLinesAssemblerDebugOptions(
     ..options,
@@ -978,7 +1023,7 @@ pub fn db_amend_assembler_debug_options(
 
 pub fn db_amend_pipeline_debug_options(
   options: PipelineDebugOptions,
-  amendments: CommandLineAmendments(b),
+  amendments: CommandLineAmendments,
   pipeline: List(Pipe),
 ) -> PipelineDebugOptions {
   let PipelineDebugOptions(_, artifact_print, artifact_directory) = options
@@ -1000,7 +1045,7 @@ pub fn db_amend_pipeline_debug_options(
 
 pub fn db_amend_splitter_debug_options(
   options: SplitterDebugOptions(a),
-  amendments: CommandLineAmendments(b),
+  amendments: CommandLineAmendments,
 ) -> SplitterDebugOptions(a) {
   let SplitterDebugOptions(
     previous_condition,
@@ -1023,7 +1068,7 @@ pub fn db_amend_splitter_debug_options(
 
 pub fn db_amend_emitter_debug_options(
   options: EmitterDebugOptions(a),
-  amendments: CommandLineAmendments(b),
+  amendments: CommandLineAmendments,
 ) -> EmitterDebugOptions(a) {
   let EmitterDebugOptions(
     previous_condition,
@@ -1046,7 +1091,7 @@ pub fn db_amend_emitter_debug_options(
 
 pub fn db_amend_printed_debug_options(
   options: PrinterDebugOptions(d),
-  amendments: CommandLineAmendments(g),
+  amendments: CommandLineAmendments,
 ) -> PrinterDebugOptions(d) {
   let PrinterDebugOptions(previous_condition) = options
 
@@ -1062,14 +1107,14 @@ pub fn db_amend_printed_debug_options(
 }
 
 pub fn db_amend_prettifier_debug_options(
-  options: PrettifierDebugOptions(d, g),
-  amendments: CommandLineAmendments(g),
-) -> PrettifierDebugOptions(d, g) {
+  options: PrettifierDebugOptions(d),
+  amendments: CommandLineAmendments,
+) -> PrettifierDebugOptions(d) {
   let PrettifierDebugOptions(previous_condition) = options
 
-  PrettifierDebugOptions(fn(local_path, fragment_type, prettifying_enum) {
+  PrettifierDebugOptions(fn(local_path, fragment_type) {
     {
-      previous_condition(local_path, fragment_type, prettifying_enum)
+      previous_condition(local_path, fragment_type)
       || list.contains(
         amendments.debug_prettified_string_fragments_local_paths,
         local_path,
@@ -1079,10 +1124,10 @@ pub fn db_amend_prettifier_debug_options(
 }
 
 pub fn amend_renderer_debug_options_by_command_line_amendment(
-  debug_options: RendererDebugOptions(d, g),
-  amendments: CommandLineAmendments(g),
+  debug_options: RendererDebugOptions(d),
+  amendments: CommandLineAmendments,
   pipeline: List(Pipe),
-) -> RendererDebugOptions(d, g) {
+) -> RendererDebugOptions(d) {
   io.println("inside amend_renderer_debug_options_by_command_line_amendment")
   RendererDebugOptions(
     debug_options.basic_messages,
@@ -1140,16 +1185,6 @@ pub fn empty_source_parser_debug_options(
   )
 }
 
-// pub fn empty_source_emitter_debug_options(
-//   artifact_directory: String,
-// ) -> ParsedSourceConverterDebugOptions {
-//   ParsedSourceConverterDebugOptions(
-//     debug_print: True,
-//     artifact_print: False,
-//     artifact_directory: artifact_directory,
-//   )
-// }
-
 pub fn empty_pipeline_debug_options(
   artifact_directory: String,
 ) -> PipelineDebugOptions {
@@ -1184,15 +1219,15 @@ pub fn empty_printer_debug_options() -> PrinterDebugOptions(d) {
   PrinterDebugOptions(debug_print: fn(_local_path, _fragment_type: d) { False })
 }
 
-pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d, g) {
+pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
   PrettifierDebugOptions(
-    debug_print: fn(_local_path, _fragment_type, _prettifying_option) { False },
+    debug_print: fn(_local_path, _fragment_type) { False },
   )
 }
 
 pub fn empty_renderer_debug_options(
   artifact_directory: String,
-) -> RendererDebugOptions(d, g) {
+) -> RendererDebugOptions(d) {
   let res = RendererDebugOptions(
     basic_messages: True,
     error_messages: True,
