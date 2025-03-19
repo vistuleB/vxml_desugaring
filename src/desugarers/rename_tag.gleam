@@ -1,5 +1,8 @@
 import gleam/option.{None}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {

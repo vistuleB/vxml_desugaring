@@ -2,7 +2,10 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{
   type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V,
 }
@@ -215,7 +218,11 @@ pub fn add_title_counters_and_titles_with_handle_assignments(
   extra: Extra,
 ) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_title_counters_and_titles_with_handle_assignments", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "add_title_counters_and_titles_with_handle_assignments",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: case check_uniqueness_extra(extra) {
       Some(pair) -> {
         fn(vxml) {

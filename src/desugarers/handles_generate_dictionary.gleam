@@ -4,11 +4,14 @@ import gleam/list
 import gleam/option.{None}
 import gleam/result
 import gleam/string
-import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError, }
+import infrastructure.{
+  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
+}
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
   Dict(String, #(String, String, String))
+
 //   handle   local path, element id, string value
 //   name     of page     on page     of handle
 
@@ -161,6 +164,7 @@ fn handles_dict_factory_transform(
 
 type Extra =
   List(#(String, String))
+
 //        ^        ^
 //  tags to      attribute key
 //  get local    that mentions
@@ -168,9 +172,20 @@ type Extra =
 
 pub fn handles_generate_dictionary(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("handles_generate_dictionary", None, "..."), 
+    description: DesugarerDescription(
+      "handles_generate_dictionary",
+      None,
+      "...",
+    ),
     desugarer: fn(vxml) {
-      use #(vxml, _) <- result.try(handles_dict_factory_transform(vxml, dict.new(), True, extra, ""))
+      use #(vxml, _) <- result.try(handles_dict_factory_transform(
+        vxml,
+        dict.new(),
+        True,
+        extra,
+        "",
+      ))
       Ok(vxml)
-    })
+    },
+  )
 }

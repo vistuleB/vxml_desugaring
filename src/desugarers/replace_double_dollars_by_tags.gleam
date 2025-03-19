@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
+import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
 
 fn transform_factory() -> infra.NodeToNodesTransform {
   infra.replace_regex_by_tag_param_transform_indexed_group_version(

@@ -1,10 +1,11 @@
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML}
 
-fn param_transform(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
+fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   Ok(vxml)
 }
 
@@ -12,8 +13,7 @@ fn transform_factory() -> infra.NodeToNodeTransform {
   param_transform
 }
 
-fn desugarer_factory(
-) -> Desugarer {
+fn desugarer_factory() -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory())
 }
 

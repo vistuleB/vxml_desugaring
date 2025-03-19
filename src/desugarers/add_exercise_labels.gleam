@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 fn add_exercise_labels_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
@@ -29,7 +32,7 @@ fn add_exercise_labels_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
 }
 
 fn transform_factory() -> infra.NodeToNodeTransform {
-  add_exercise_labels_transform(_)
+  add_exercise_labels_transform
 }
 
 fn desugarer_factory() -> Desugarer {

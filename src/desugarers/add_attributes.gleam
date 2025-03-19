@@ -1,9 +1,12 @@
-import gleam/list
 import gleam/dict.{type Dict}
+import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn build_blamed_attributes(
@@ -16,10 +19,7 @@ fn build_blamed_attributes(
   })
 }
 
-fn param_transform(
-  vxml: VXML,
-  param: Param,
-) -> Result(VXML, DesugaringError) {
+fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, old_attributes, children) -> {
@@ -53,14 +53,21 @@ fn desugarer_factory(param: Param) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Param = Dict(String, List(#(String, String)))
+type Param =
+  Dict(String, List(#(String, String)))
 
-type Extra = List(#(String, String, String))
+type Extra =
+  List(#(String, String, String))
+
 //                  tag     attr    value
 
 pub fn add_attributes(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_attributes", option.Some(string.inspect(extra)), "..."),
+    description: DesugarerDescription(
+      "add_attributes",
+      option.Some(string.inspect(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }

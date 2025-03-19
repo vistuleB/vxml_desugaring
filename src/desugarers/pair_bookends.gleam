@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn pair_bookends_children_accumulator(
@@ -235,7 +238,9 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extras: #(List(String), List(String), String)) -> infra.NodeToNodeTransform {
+fn transform_factory(
+  extras: #(List(String), List(String), String),
+) -> infra.NodeToNodeTransform {
   let #(opening, closing, enclosing) = extras
   param_transform(_, opening, closing, enclosing)
 }

@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -105,7 +108,13 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              [last_line_concatenate_with_first_line(last_t, inside_text_node(last_v)), ..already_processed]
+              [
+                last_line_concatenate_with_first_line(
+                  last_t,
+                  inside_text_node(last_v),
+                ),
+                ..already_processed
+              ]
               |> list.reverse
           }
       }
@@ -139,7 +148,10 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags,
                 already_processed,
-                Some(last_line_concatenate_with_first_line(inside_text_node(last_v), first)),
+                Some(last_line_concatenate_with_first_line(
+                  inside_text_node(last_v),
+                  first,
+                )),
                 None,
                 rest,
               )
@@ -176,7 +188,7 @@ fn fold_tags_into_text_children_accumulator(
                   last_t,
                   last_line_concatenate_with_first_line(
                     inside_text_node(last_v),
-                    first
+                    first,
                   ),
                 )),
                 None,
@@ -235,11 +247,7 @@ fn fold_tags_into_text_children_accumulator(
                   // *
                   fold_tags_into_text_children_accumulator(
                     tags,
-                    [
-                      first,
-                      inside_text_node(last_v),
-                      ..already_processed
-                    ],
+                    [first, inside_text_node(last_v), ..already_processed],
                     None,
                     None,
                     rest,
@@ -311,7 +319,10 @@ fn fold_tags_into_text_children_accumulator(
                     tags,
                     [
                       first,
-                      last_line_concatenate_with_first_line(last_t, inside_text_node(last_v)),
+                      last_line_concatenate_with_first_line(
+                        last_t,
+                        inside_text_node(last_v),
+                      ),
                       ..already_processed
                     ],
                     None,
@@ -329,7 +340,10 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     already_processed,
-                    Some(last_line_concatenate_with_first_line(last_t, inside_text_node(last_v))),
+                    Some(last_line_concatenate_with_first_line(
+                      last_t,
+                      inside_text_node(last_v),
+                    )),
                     Some(first),
                     rest,
                   )
@@ -339,21 +353,12 @@ fn fold_tags_into_text_children_accumulator(
   }
 }
 
-fn param_transform(
-  node: VXML,
-  tags: Extra,
-) -> Result(VXML, DesugaringError) {
+fn param_transform(node: VXML, tags: Extra) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       let new_children =
-        fold_tags_into_text_children_accumulator(
-          tags,
-          [],
-          None,
-          None,
-          children,
-        )
+        fold_tags_into_text_children_accumulator(tags, [], None, None, children)
       Ok(V(blame, tag, attrs, new_children))
     }
   }
@@ -370,11 +375,16 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 //*********************************
 // list of tags whose contents should
 // be folded into surrounding text
-type Extra = List(String)
+type Extra =
+  List(String)
 
 pub fn fold_tag_contents_into_text(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "fold_tag_contents_into_text",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

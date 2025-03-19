@@ -1,15 +1,15 @@
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/pair
 import gleam/option.{Some}
+import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
-import vxml_parser.{type VXML, BlamedAttribute, V, T}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
+import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
-fn add_in_list(
-  children: List(VXML),
-  param: Param,
-) -> List(VXML) {
+fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
   case children {
     [V(_, first_tag, _, _) as first, T(_, _) as second, ..rest] -> {
       case dict.get(param, first_tag) {
@@ -21,7 +21,9 @@ fn add_in_list(
             V(
               blame,
               new_element_tag,
-              list.map(new_element_attributes, fn(pair) { BlamedAttribute(blame, pair |> pair.first, pair |> pair.second ) }),
+              list.map(new_element_attributes, fn(pair) {
+                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
+              }),
               [],
             ),
             second,
@@ -38,12 +40,7 @@ fn add_in_list(
 fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attributes, children) ->
-      Ok(V(
-        blame,
-        tag,
-        attributes,
-        add_in_list(children, param),
-      ))
+      Ok(V(blame, tag, attributes, add_in_list(children, param)))
     _ -> Ok(node)
   }
 }
@@ -75,7 +72,11 @@ type Extra =
 
 pub fn add_between_tag_and_text_node(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_between_tag_and_text_node", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "add_between_tag_and_text_node",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra |> param),
   )
 }

@@ -4,7 +4,10 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedAttribute, V}
 
 type Param =
@@ -82,7 +85,11 @@ fn desugarer_factory(param: Param) -> Desugarer {
 
 pub fn add_spacer_divs_between(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_spacer_divs_between", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "add_spacer_divs_between",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: fn(root) {
       case build_dictionary(infra.get_blame(root), extra) {
         Error(err) -> Error(err)

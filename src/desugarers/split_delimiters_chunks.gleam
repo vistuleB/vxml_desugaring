@@ -4,7 +4,10 @@ import gleam/list
 import gleam/option
 import gleam/order
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type Splits {
@@ -423,7 +426,11 @@ pub fn split_delimiters_chunks_desugarer(
   extra: #(String, String, String, Bool, List(String)),
 ) -> Pipe {
   Pipe(
-    description: DesugarerDescription("split_delimiters_chunks_desugarer", option.Some(string.inspect(extra)), "..."),
+    description: DesugarerDescription(
+      "split_delimiters_chunks_desugarer",
+      option.Some(string.inspect(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

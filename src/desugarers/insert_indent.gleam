@@ -1,5 +1,8 @@
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
 pub fn insert_indent_transform(
@@ -14,14 +17,19 @@ pub fn insert_indent_transform(
     V(blame, "VerticalChunk", attrs, children) -> {
       case previous_unmapped_siblings {
         [V(_, "VerticalChunk", _, _), ..] -> {
-          case infra.contains_one_of_tags(ancestors, ["CentralDisplay", "CentralDisplayItalic"]) {
+          case
+            infra.contains_one_of_tags(ancestors, [
+              "CentralDisplay", "CentralDisplayItalic",
+            ])
+          {
             True -> Ok(node)
-            False -> Ok(V(
-              blame,
-              "VerticalChunk",
-              [BlamedAttribute(blame, "indent", "true"), ..attrs],
-              children,
-            ))
+            False ->
+              Ok(V(
+                blame,
+                "VerticalChunk",
+                [BlamedAttribute(blame, "indent", "true"), ..attrs],
+                children,
+              ))
           }
         }
         _ -> Ok(node)

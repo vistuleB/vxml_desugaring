@@ -4,7 +4,10 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn produce_attributes_and_increase_counters_for_tag(
@@ -69,7 +72,7 @@ fn introduce_new_counter_nodes_for_parent(
               dict.insert(current_dict, tag, new_tag_dict)
             }
           }
-        }
+        },
       )
     }
   }
@@ -135,13 +138,13 @@ fn revert_new_counter_nodes_for_parent(
                             panic as "thought child would not let leak something to us that they created"
                         }
                     }
-                  }
+                  },
                 )
               }
               dict.insert(current_dict, tag, new_name_values_for_tag)
             }
           }
-        }
+        },
       )
     }
   }
@@ -293,7 +296,11 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 pub fn add_counter_attributes(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_counter_attributes", option.Some(string.inspect(extra)), "..."),
+    description: DesugarerDescription(
+      "add_counter_attributes",
+      option.Some(string.inspect(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

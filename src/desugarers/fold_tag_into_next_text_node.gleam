@@ -1,7 +1,10 @@
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
-import vxml_parser.{type VXML, T, V,  BlamedContent, type BlamedContent}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
+import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
 
@@ -18,10 +21,10 @@ fn param_transform(
   previous_siblings_before_mapping: List(VXML),
   _: List(VXML),
   _: List(VXML),
-  extra: Extra
-  ) -> Result(List(VXML), DesugaringError) {
+  extra: Extra,
+) -> Result(List(VXML), DesugaringError) {
   let #(tag_to_fold, fold_as) = extra
-  
+
   case vxml {
     V(_, tag, _, _) if tag == tag_to_fold -> Ok([])
     _ -> {
@@ -35,12 +38,12 @@ fn param_transform(
     }
   }
 }
- 
+
 type Extra =
   #(String, String)
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
-   fn(node, ancestors, s1, s2, s3) {
+  fn(node, ancestors, s1, s2, s3) {
     param_transform(node, ancestors, s1, s2, s3, extra)
   }
 }
@@ -51,7 +54,11 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 pub fn fold_tag_into_next_text_node(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("fold_tag_into_next_text_node", Some(extra |> ins), "..."),
+    description: DesugarerDescription(
+      "fold_tag_into_next_text_node",
+      Some(extra |> ins),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

@@ -3,30 +3,29 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/pair
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect
 
-fn add_in_list(
-  children: List(VXML),
-  param: Param,
-) -> List(VXML) {
+fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
   case children {
     [first, V(blame, tag, _, _) as second, ..rest] -> {
       case dict.get(param, tag) {
-        Error(Nil) -> [
-          first,
-          ..add_in_list([second, ..rest], param)
-        ]
+        Error(Nil) -> [first, ..add_in_list([second, ..rest], param)]
         Ok(#(new_element_tag, new_element_attributes)) -> {
           [
             first,
             V(
               blame,
               new_element_tag,
-              list.map(new_element_attributes, fn(pair) { BlamedAttribute(blame, pair |> pair.first, pair |> pair.second ) }),
-              []
+              list.map(new_element_attributes, fn(pair) {
+                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
+              }),
+              [],
             ),
             ..add_in_list([second, ..rest], param)
           ]
@@ -77,7 +76,11 @@ fn desugarer_factory(param: Param) -> Desugarer {
 
 pub fn add_after_tags_but_not_first_child_tags(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_after_tags_but_not_first_child_tags", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "add_after_tags_but_not_first_child_tags",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra |> param),
   )
 }

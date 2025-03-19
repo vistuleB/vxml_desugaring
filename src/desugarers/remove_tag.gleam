@@ -1,6 +1,9 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, V}
 
 fn remove_tag_transform(
@@ -27,7 +30,11 @@ fn desugarer_factory(extra: List(String)) -> Desugarer {
 
 pub fn remove_tag_desugarer(extra: List(String)) -> Pipe {
   Pipe(
-    description: DesugarerDescription("remove_tag_desugarer", option.None, "..."),
+    description: DesugarerDescription(
+      "remove_tag_desugarer",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

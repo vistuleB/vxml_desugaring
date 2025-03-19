@@ -1,7 +1,10 @@
-import gleam/pair
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import gleam/pair
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, V}
 
 fn param_transform(vxml: VXML, extra: Param) -> Result(VXML, DesugaringError) {
@@ -31,20 +34,25 @@ fn desugarer_factory(param: Param) -> Desugarer {
 
 fn param(extra: Extra) -> Param {
   extra
-  |> list.map(
-    fn (triple) {
-      let #(a, b, c) = triple
-      #(a, #(b, c))
-    }
-  )
+  |> list.map(fn(triple) {
+    let #(a, b, c) = triple
+    #(a, #(b, c))
+  })
 }
 
-type Param = List(#(String, #(String, String)))
-type Extra = List(#(String, String, String))
+type Param =
+  List(#(String, #(String, String)))
+
+type Extra =
+  List(#(String, String, String))
 
 pub fn insert_bookend_text_if_no_attributes(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("insert_bookend_text_if_no_attributes", option.None, "..."),
+    description: DesugarerDescription(
+      "insert_bookend_text_if_no_attributes",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(extra |> param),
   )
 }

@@ -1,6 +1,6 @@
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
+import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
 
 type Extras =
   #(List(#(infra.RegexWithIndexedGroup, String)), List(String))
@@ -20,7 +20,11 @@ fn desugarer_factory(extras: Extras) -> Desugarer {
 
 pub fn split_by_indexed_regexes(extras: Extras) -> Pipe {
   Pipe(
-    description: DesugarerDescription("split_by_indexed_regexes", Some(ins(extras)), "..."),
+    description: DesugarerDescription(
+      "split_by_indexed_regexes",
+      Some(ins(extras)),
+      "...",
+    ),
     desugarer: desugarer_factory(extras),
   )
 }

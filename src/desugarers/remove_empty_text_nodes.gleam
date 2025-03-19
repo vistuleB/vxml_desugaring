@@ -1,6 +1,9 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn content_is_nonempty(blamed_content: BlamedContent) {
@@ -35,7 +38,11 @@ fn desugarer_factory() -> Desugarer {
 
 pub fn remove_empty_text_nodes() -> Pipe {
   Pipe(
-    description: DesugarerDescription("remove_empty_text_nodes", option.None, "..."),
+    description: DesugarerDescription(
+      "remove_empty_text_nodes",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(),
   )
 }

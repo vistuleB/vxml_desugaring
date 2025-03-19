@@ -4,7 +4,10 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type IgnoreWhen {
@@ -32,7 +35,8 @@ const delimiters = [
     "i",
     True,
     IgnoreWhen(before: ["(", "[", "{", "\\"], after: [")", "]", "}"]),
-  ), Delimiter("$", "Math", False, IgnoreWhen(["\\"], [])),
+  ),
+  Delimiter("$", "Math", False, IgnoreWhen(["\\"], [])),
 ]
 
 fn look_for_closing_delimiter(
@@ -251,7 +255,11 @@ fn desugarer_factory() -> Desugarer {
 
 pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {
   Pipe(
-    description: DesugarerDescription("split_content_by_low_level_delimiters_desugarer", option.None, "..."),
+    description: DesugarerDescription(
+      "split_content_by_low_level_delimiters_desugarer",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(),
   )
 }

@@ -2,7 +2,10 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -105,7 +108,10 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              [infra.t_end_insert_text(last_t, replacement_text), ..already_processed]
+              [
+                infra.t_end_insert_text(last_t, replacement_text),
+                ..already_processed
+              ]
               |> list.reverse
           }
       }
@@ -364,16 +370,22 @@ fn desugarer_factory(param: Param) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Param = Dict(String, String)
+type Param =
+  Dict(String, String)
 
 //*********************************
 // - first string is tag name
 // - second string is replacement value to use
-type Extra = List(#(String, String))
+type Extra =
+  List(#(String, String))
 
 pub fn fold_tags_into_text(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("fold_tags_into_text", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "fold_tags_into_text",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra |> dict.from_list),
   )
 }

@@ -1,6 +1,6 @@
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type Pipe, Pipe, DesugarerDescription } as infra
+import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
   let #(string_pairs, forbidden_parents) = extra
@@ -14,6 +14,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 type Extra =
   #(List(#(String, String)), List(String))
+
 //         from    to        keep_out_of
 
 pub fn find_replace(extra: Extra) -> Pipe {

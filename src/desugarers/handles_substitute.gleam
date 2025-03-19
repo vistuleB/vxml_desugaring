@@ -5,7 +5,10 @@ import gleam/option
 import gleam/regexp
 import gleam/result
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
   BlamedContent, T, V,
@@ -13,6 +16,7 @@ import vxml_parser.{
 
 type HandleInstances =
   Dict(String, #(String, String, String))
+
 //   handle   local path, element id, string value
 //   name     of page     on page     of handle
 

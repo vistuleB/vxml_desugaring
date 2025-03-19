@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, V}
 
 fn param_transform(
@@ -31,7 +34,11 @@ type Extra =
 
 pub fn unwrap_tags_if_no_attributes(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap_tags_if_no_attributes", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "unwrap_tags_if_no_attributes",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

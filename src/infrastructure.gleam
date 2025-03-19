@@ -1,5 +1,5 @@
-import gleam/dict.{type Dict}
 import blamedlines.{type Blame, Blame}
+import gleam/dict.{type Dict}
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -7,16 +7,20 @@ import gleam/pair
 import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string
-import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V, type BlamedAttribute}
+import vxml_parser.{
+  type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V,
+}
 
 const ins = string.inspect
 
 pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
   let assert T(blame, lines) = vxml
   let assert [first_line, ..rest] = lines
-  let updated_rest = rest |> list.map(fn(line) { 
-    BlamedContent(..line, content: string.trim_start(line.content)) 
-  })
+  let updated_rest =
+    rest
+    |> list.map(fn(line) {
+      BlamedContent(..line, content: string.trim_start(line.content))
+    })
 
   T(blame, [first_line, ..updated_rest])
 }
@@ -24,15 +28,19 @@ pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
 pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
   let assert T(blame, lines) = vxml
   let assert [last_line, ..rest] = lines |> list.reverse()
-  let updated_rest = rest |> list.map(fn(line) { 
-    BlamedContent(..line, content: string.trim_end(line.content)) 
-  }) 
-
+  let updated_rest =
+    rest
+    |> list.map(fn(line) {
+      BlamedContent(..line, content: string.trim_end(line.content))
+    })
   T(blame, list.reverse([last_line, ..updated_rest]))
 }
 
-fn map_with_special_first_last_internal(l: List(a), fun: fn(a, Bool, Bool) -> b) -> List(b) {
- case l {
+fn map_with_special_first_last_internal(
+  l: List(a),
+  fun: fn(a, Bool, Bool) -> b,
+) -> List(b) {
+  case l {
     [] -> []
     [last] -> {
       [fun(last, False, True)]
@@ -40,18 +48,23 @@ fn map_with_special_first_last_internal(l: List(a), fun: fn(a, Bool, Bool) -> b)
     [el, ..rest] -> {
       [fun(el, False, False), ..map_with_special_first_last_internal(rest, fun)]
     }
- }
+  }
 }
 
-
-pub fn map_with_special_first_last(l: List(a), fun: fn(a, Bool, Bool) -> b) -> List(b) {
+pub fn map_with_special_first_last(
+  l: List(a),
+  fun: fn(a, Bool, Bool) -> b,
+) -> List(b) {
   case l {
     [] -> []
     [one] -> {
       [fun(one, True, True)]
     }
     [first, ..rest] -> {
-      [fun(first, True, False), ..map_with_special_first_last_internal(rest, fun)]
+      [
+        fun(first, True, False),
+        ..map_with_special_first_last_internal(rest, fun)
+      ]
     }
   }
 }
@@ -140,11 +153,7 @@ pub fn on_error_on_ok(
   }
 }
 
-pub fn on_empty_on_nonempty(
-  l: List(a),
-  f1: c,
-  f2: fn(a, List(a)) -> c,
-) -> c {
+pub fn on_empty_on_nonempty(l: List(a), f1: c, f2: fn(a, List(a)) -> c) -> c {
   case l {
     [] -> f1
     [first, ..rest] -> f2(first, rest)
@@ -186,7 +195,7 @@ pub fn on_t_on_v(
 
 pub fn on_v_identity_on_t(
   node: VXML,
-  f2: fn(Blame, List(BlamedContent)) -> VXML
+  f2: fn(Blame, List(BlamedContent)) -> VXML,
 ) -> VXML {
   case node {
     V(_, _, _, _) -> node
@@ -194,10 +203,7 @@ pub fn on_v_identity_on_t(
   }
 }
 
-pub fn io_debug_digests(
-  vxmls: List(VXML),
-  announce: String,
-) -> List(VXML) {
+pub fn io_debug_digests(vxmls: List(VXML), announce: String) -> List(VXML) {
   io.print(announce <> ": ")
   list.each(vxmls, fn(vxml) { io.print(digest(vxml)) })
   io.println("")
@@ -250,54 +256,40 @@ pub fn contains_one_of_tags(vxmls: List(VXML), tags: List(String)) -> Bool {
 //**************************************************************
 
 pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
-  list.fold(
-    l,
-    dict.from_list([]),
-    fn(d, pair) {
-      let #(a, b) = pair
-      case dict.get(d, a) {
-        Error(Nil) -> dict.insert(d, a, [b])
-        Ok(prev_list) -> dict.insert(d, a, [b, ..prev_list])
-      }
+  list.fold(l, dict.from_list([]), fn(d, pair) {
+    let #(a, b) = pair
+    case dict.get(d, a) {
+      Error(Nil) -> dict.insert(d, a, [b])
+      Ok(prev_list) -> dict.insert(d, a, [b, ..prev_list])
     }
-  )
+  })
 }
 
 pub fn quadruples_to_pairs_pairs(
-  l: List(#(a, b, c, d))
+  l: List(#(a, b, c, d)),
 ) -> List(#(#(a, b), #(c, d))) {
   l
-  |> list.map(
-    fn (quad) {
-      let #(a, b, c, d) = quad
-      #(#(a, b), #(c, d))
-    }
-  )
+  |> list.map(fn(quad) {
+    let #(a, b, c, d) = quad
+    #(#(a, b), #(c, d))
+  })
 }
 
-pub fn triples_to_pairs(
-  l: List(#(a, b, c))
-) -> List(#(a, #(b, c))) {
+pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
   l
-  |> list.map(
-    fn (triple) {
-      let #(a, b, c) = triple
-      #(a, #(b, c))
-    }
-  )
+  |> list.map(fn(triple) {
+    let #(a, b, c) = triple
+    #(a, #(b, c))
+  })
 }
 
-pub fn triples_to_dict(
-  l: List(#(a, b, c))
-) -> Dict(a, #(b, c)) {
+pub fn triples_to_dict(l: List(#(a, b, c))) -> Dict(a, #(b, c)) {
   l
   |> triples_to_pairs
   |> dict.from_list
 }
 
-pub fn triples_to_aggregated_dict(
-  l: List(#(a, b, c))
-) -> Dict(a, List(#(b, c))) {
+pub fn triples_to_aggregated_dict(l: List(#(a, b, c))) -> Dict(a, List(#(b, c))) {
   l
   |> triples_to_pairs
   |> aggregate_on_first
@@ -416,11 +408,7 @@ pub fn regroup_ors_no_empty_lists(
   })
 }
 
-pub fn on_either_on_or(
-  t: EitherOr(a, b),
-  fn1: fn(a) -> c,
-  fn2: fn(b) -> c,
-) -> c {
+pub fn on_either_on_or(t: EitherOr(a, b), fn1: fn(a) -> c, fn2: fn(b) -> c) -> c {
   case t {
     Either(a) -> fn1(a)
     Or(b) -> fn2(b)
@@ -432,14 +420,12 @@ pub fn map_ors(
   f: fn(b) -> c,
 ) -> List(EitherOr(a, c)) {
   ze_list
-  |> list.map(
-    fn(thing) {
-      case thing {
-        Either(load) -> Either(load)
-        Or(b) -> Or(f(b))
-      }
+  |> list.map(fn(thing) {
+    case thing {
+      Either(load) -> Either(load)
+      Or(b) -> Or(f(b))
     }
-  )
+  })
 }
 
 pub fn map_either_ors(
@@ -557,10 +543,9 @@ fn replace_regex_by_tag_in_lines_indexed_group_version(
   tag: String,
 ) -> List(VXML) {
   lines
-  |> list.map(line_split_into_list_either_content_or_blame_indexed_group_version(
-    _,
-    re,
-  ))
+  |> list.map(
+    line_split_into_list_either_content_or_blame_indexed_group_version(_, re),
+  )
   |> list.flatten
   |> regroup_eithers
   |> map_either_ors(
@@ -624,31 +609,30 @@ pub fn replace_regexes_by_tags_param_transform_indexed_group_version(
 
 fn find_replace_in_blamed_content(
   blamed_content: BlamedContent,
-  list_pairs: List(#(String, String))
+  list_pairs: List(#(String, String)),
 ) -> BlamedContent {
-  use #(first_from, first_to), rest <- on_empty_on_nonempty(list_pairs, blamed_content)
+  use #(first_from, first_to), rest <- on_empty_on_nonempty(
+    list_pairs,
+    blamed_content,
+  )
   BlamedContent(
     blamed_content.blame,
-    string.replace(blamed_content.content, first_from, first_to)
+    string.replace(blamed_content.content, first_from, first_to),
   )
   |> find_replace_in_blamed_content(rest)
 }
 
-pub fn find_replace_in_t(
-  node: VXML,
-  list_pairs: List(#(String, String)),
-) {
+pub fn find_replace_in_t(node: VXML, list_pairs: List(#(String, String))) {
   let assert T(blame, blamed_contents) = node
   T(
     blame,
-    blamed_contents |> list.map(find_replace_in_blamed_content(_, list_pairs))
+    blamed_contents |> list.map(find_replace_in_blamed_content(_, list_pairs)),
   )
-
 }
 
 pub fn find_replace_in_node(
   node: VXML,
-  list_pairs: List(#(String, String))
+  list_pairs: List(#(String, String)),
 ) -> VXML {
   case node {
     T(_, _) -> find_replace_in_t(node, list_pairs)
@@ -658,7 +642,7 @@ pub fn find_replace_in_node(
 
 pub fn find_replace_in_node_transform_version(
   node: VXML,
-  list_pairs: List(#(String, String))
+  list_pairs: List(#(String, String)),
 ) -> Result(List(VXML), DesugaringError) {
   [find_replace_in_node(node, list_pairs)] |> Ok
 }
@@ -849,21 +833,18 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //* misc (children collecting, inserting, ...)
 //**************************************************************
 
-pub fn remove_lines_while_empty(
-  l: List(BlamedContent)
-) -> List(BlamedContent) {
+pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
     [] -> []
-    [first, ..rest] -> case first.content {
-      "" -> remove_lines_while_empty(rest)
-      _ -> l
-    }
+    [first, ..rest] ->
+      case first.content {
+        "" -> remove_lines_while_empty(rest)
+        _ -> l
+      }
   }
 }
 
-pub fn t_remove_starting_empty_lines(
-  vxml: VXML
-) -> Option(VXML) {
+pub fn t_remove_starting_empty_lines(vxml: VXML) -> Option(VXML) {
   let assert T(blame, lines) = vxml
   let lines = remove_lines_while_empty(lines)
   case lines {
@@ -872,9 +853,7 @@ pub fn t_remove_starting_empty_lines(
   }
 }
 
-pub fn t_remove_ending_empty_lines(
-  vxml: VXML
-) -> Option(VXML) {
+pub fn t_remove_ending_empty_lines(vxml: VXML) -> Option(VXML) {
   let assert T(blame, lines) = vxml
   let lines = remove_lines_while_empty(lines |> list.reverse) |> list.reverse
   case lines {
@@ -883,9 +862,7 @@ pub fn t_remove_ending_empty_lines(
   }
 }
 
-pub fn v_remove_starting_empty_lines(
-  vxml: VXML
-) -> VXML {
+pub fn v_remove_starting_empty_lines(vxml: VXML) -> VXML {
   let assert V(blame, tag, attrs, children) = vxml
   let children = case children {
     [T(_, _) as first, ..rest] -> {
@@ -899,9 +876,7 @@ pub fn v_remove_starting_empty_lines(
   V(blame, tag, attrs, children)
 }
 
-pub fn v_remove_ending_empty_lines(
-  vxml: VXML
-) -> VXML {
+pub fn v_remove_ending_empty_lines(vxml: VXML) -> VXML {
   let assert V(blame, tag, attrs, children) = vxml
   let children = case children |> list.reverse {
     [T(_, _) as first, ..rest] -> {
@@ -915,179 +890,149 @@ pub fn v_remove_ending_empty_lines(
   V(blame, tag, attrs, children)
 }
 
-pub fn v_remove_starting_and_ending_empty_lines(
-  vxml: VXML
-) -> VXML {
+pub fn v_remove_starting_and_ending_empty_lines(vxml: VXML) -> VXML {
   vxml
   |> v_remove_starting_empty_lines
   |> v_remove_ending_empty_lines
 }
 
-pub fn extract_starting_spaces_from_text(
-  content: String
-) -> #(String, String) {
+pub fn extract_starting_spaces_from_text(content: String) -> #(String, String) {
   let new_content = string.trim_start(content)
   let num_spaces = string.length(content) - string.length(new_content)
   #(string.repeat(" ", num_spaces), new_content)
 }
 
-pub fn extract_ending_spaces_from_text(
-  content: String
-) -> #(String, String) {
+pub fn extract_ending_spaces_from_text(content: String) -> #(String, String) {
   let new_content = string.trim_end(content)
   let num_spaces = string.length(content) - string.length(new_content)
   #(string.repeat(" ", num_spaces), new_content)
 }
 
-pub fn t_extract_starting_spaces(
-  node: VXML
-) -> #(Option(VXML), VXML) {
+pub fn t_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert T(blame, blamed_contents) = node
   let assert [first, ..rest] = blamed_contents
   case extract_starting_spaces_from_text(first.content) {
     #("", _) -> #(None, node)
     #(spaces, not_spaces) -> #(
       Some(T(first.blame, [BlamedContent(first.blame, spaces)])),
-      T(blame, [BlamedContent(first.blame, not_spaces), ..rest])
+      T(blame, [BlamedContent(first.blame, not_spaces), ..rest]),
     )
   }
 }
 
-pub fn t_extract_ending_spaces(
-  node: VXML
-) -> #(Option(VXML), VXML) {
+pub fn t_extract_ending_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert T(blame, blamed_contents) = node
   let assert [first, ..rest] = blamed_contents |> list.reverse
   case extract_ending_spaces_from_text(first.content) {
     #("", _) -> #(None, node)
     #(spaces, not_spaces) -> #(
       Some(T(first.blame, [BlamedContent(first.blame, spaces)])),
-      T(blame, [BlamedContent(first.blame, not_spaces), ..rest] |> list.reverse)
+      T(blame, [BlamedContent(first.blame, not_spaces), ..rest] |> list.reverse),
     )
   }
 }
 
-pub fn v_extract_starting_spaces(
-  node: VXML
-) -> #(Option(VXML), VXML) {
+pub fn v_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert V(blame, tag, attrs, children) = node
   case children {
     [T(_, _) as first, ..rest] -> {
       case t_extract_starting_spaces(first) {
         #(None, _) -> #(None, node)
-        #(Some(guy), first) -> #(Some(guy), V(blame, tag, attrs, [first, ..rest]))
+        #(Some(guy), first) -> #(
+          Some(guy),
+          V(blame, tag, attrs, [first, ..rest]),
+        )
       }
     }
     _ -> #(None, node)
   }
 }
 
-pub fn v_extract_ending_spaces(
-  node: VXML
-) -> #(Option(VXML), VXML) {
+pub fn v_extract_ending_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert V(blame, tag, attrs, children) = node
   case children |> list.reverse {
     [T(_, _) as first, ..rest] -> {
       case t_extract_ending_spaces(first) {
         #(None, _) -> #(None, node)
-        #(Some(guy), first) -> #(Some(guy), V(blame, tag, attrs, [first, ..rest] |> list.reverse))
+        #(Some(guy), first) -> #(
+          Some(guy),
+          V(blame, tag, attrs, [first, ..rest] |> list.reverse),
+        )
       }
     }
     _ -> #(None, node)
   }
 }
 
-pub fn encode_starting_spaces_in_string(
-  content: String
-) -> String {
+pub fn encode_starting_spaces_in_string(content: String) -> String {
   let new_content = string.trim_start(content)
   let num_spaces = string.length(content) - string.length(new_content)
   string.repeat("&ensp;", num_spaces) <> new_content
 }
 
-pub fn encode_ending_spaces_in_string(
-  content: String
-) -> String {
+pub fn encode_ending_spaces_in_string(content: String) -> String {
   let new_content = string.trim_end(content)
   let num_spaces = string.length(content) - string.length(new_content)
   new_content <> string.repeat("&ensp;", num_spaces)
 }
 
 pub fn encode_starting_spaces_in_blamed_content(
-  blamed_content: BlamedContent
+  blamed_content: BlamedContent,
 ) -> BlamedContent {
   BlamedContent(
     blamed_content.blame,
-    blamed_content.content |> encode_starting_spaces_in_string
+    blamed_content.content |> encode_starting_spaces_in_string,
   )
 }
 
 pub fn encode_ending_spaces_in_blamed_content(
-  blamed_content: BlamedContent
+  blamed_content: BlamedContent,
 ) -> BlamedContent {
   BlamedContent(
     blamed_content.blame,
-    blamed_content.content |> encode_ending_spaces_in_string
+    blamed_content.content |> encode_ending_spaces_in_string,
   )
 }
 
-pub fn encode_starting_spaces_if_text(
-  vxml: VXML,
-) -> VXML {
+pub fn encode_starting_spaces_if_text(vxml: VXML) -> VXML {
   case vxml {
     V(_, _, _, _) -> vxml
     T(blame, blamed_contents) -> {
       let assert [first, ..rest] = blamed_contents
-      T(
-        blame,
-        [
-          first |> encode_starting_spaces_in_blamed_content,
-          ..rest
-        ]
-      )
+      T(blame, [first |> encode_starting_spaces_in_blamed_content, ..rest])
     }
   }
 }
 
-pub fn encode_ending_spaces_if_text(
-  vxml: VXML,
-) -> VXML {
+pub fn encode_ending_spaces_if_text(vxml: VXML) -> VXML {
   case vxml {
     V(_, _, _, _) -> vxml
     T(blame, blamed_contents) -> {
-      let assert [last, ..rest] = {blamed_contents |> list.reverse }
+      let assert [last, ..rest] = {
+        blamed_contents |> list.reverse
+      }
       T(
         blame,
-        [
-          last |> encode_ending_spaces_in_blamed_content,
-          ..rest
-        ] |> list.reverse
+        [last |> encode_ending_spaces_in_blamed_content, ..rest]
+          |> list.reverse,
       )
     }
   }
 }
 
-pub fn encode_starting_spaces_in_first_node(
-  vxmls: List(VXML)
-) -> List(VXML) {
+pub fn encode_starting_spaces_in_first_node(vxmls: List(VXML)) -> List(VXML) {
   case vxmls {
     [] -> []
-    [first, ..rest] -> [
-      first |> encode_starting_spaces_if_text,
-      ..rest
-    ]
+    [first, ..rest] -> [first |> encode_starting_spaces_if_text, ..rest]
   }
 }
 
-pub fn encode_ending_spaces_in_last_node(
-  vxmls: List(VXML)
-) -> List(VXML) {
+pub fn encode_ending_spaces_in_last_node(vxmls: List(VXML)) -> List(VXML) {
   case vxmls |> list.reverse {
     [] -> []
-    [last, ..rest] -> [
-      last |> encode_ending_spaces_if_text,
-      ..rest
-    ] |> list.reverse
+    [last, ..rest] ->
+      [last |> encode_ending_spaces_if_text, ..rest]
+      |> list.reverse
   }
 }
 
@@ -1114,14 +1059,8 @@ pub fn list_start_insert_text(
   text: String,
 ) -> List(VXML) {
   case vxmls {
-    [T(_, _) as first, ..rest] -> [
-      t_start_insert_text(first, text),
-      ..rest
-    ]
-    _ -> [
-      T(blame, [BlamedContent(blame, text)]),
-      ..vxmls
-    ]
+    [T(_, _) as first, ..rest] -> [t_start_insert_text(first, text), ..rest]
+    _ -> [T(blame, [BlamedContent(blame, text)]), ..vxmls]
   }
 }
 
@@ -1131,32 +1070,26 @@ pub fn list_end_insert_text(
   text: String,
 ) -> List(VXML) {
   case vxmls |> list.reverse {
-    [T(_, _) as first, ..rest] -> [
-      t_end_insert_text(first, text),
-      ..rest
-    ] |> list.reverse
-    _ -> [
-      T(blame, [BlamedContent(blame, text)]),
-      ..vxmls
-    ] |> list.reverse
+    [T(_, _) as first, ..rest] ->
+      [t_end_insert_text(first, text), ..rest]
+      |> list.reverse
+    _ ->
+      [T(blame, [BlamedContent(blame, text)]), ..vxmls]
+      |> list.reverse
   }
 }
 
-pub fn v_start_insert_text(
-  node: VXML,
-  text: String,
-) -> VXML {
-  let assert V(blame, tag, attrs, children) = node {
+pub fn v_start_insert_text(node: VXML, text: String) -> VXML {
+  let assert V(blame, tag, attrs, children) = node
+  {
     let children = list_start_insert_text(blame, children, text)
     V(blame, tag, attrs, children)
   }
 }
 
-pub fn v_end_insert_text(
-  node: VXML,
-  text: String,
-) -> VXML {
-  let assert V(blame, tag, attrs, children) = node {
+pub fn v_end_insert_text(node: VXML, text: String) -> VXML {
+  let assert V(blame, tag, attrs, children) = node
+  {
     let children = list_end_insert_text(blame, children, text)
     V(blame, tag, attrs, children)
   }
@@ -1169,13 +1102,10 @@ pub fn v_end_insert_text(
 fn break_out_last_word(input: String) -> #(String, String) {
   case input |> string.reverse |> string.split_once(" ") {
     Ok(#(yoro, rest)) -> #(
-      {" " <> rest} |> string.reverse,
+      { " " <> rest } |> string.reverse,
       yoro |> string.reverse,
     )
-    _ -> #(
-      "",
-      input
-    )
+    _ -> #("", input)
   }
 }
 
@@ -1203,10 +1133,12 @@ pub fn extract_last_word_from_t_node_if_t(vxml: VXML) -> #(VXML, Option(VXML)) {
       case break_out_last_word(last.content) {
         #(_, "") -> #(vxml, None)
         #(before_last_word, last_word) -> {
-          let contents = [BlamedContent(last.blame, before_last_word), ..rest] |> list.reverse
+          let contents =
+            [BlamedContent(last.blame, before_last_word), ..rest]
+            |> list.reverse
           #(
             T(blame, contents),
-            Some(T(last.blame, [BlamedContent(last.blame, last_word)]))
+            Some(T(last.blame, [BlamedContent(last.blame, last_word)])),
           )
         }
       }
@@ -1229,7 +1161,7 @@ pub fn extract_first_word_from_t_node_if_t(vxml: VXML) -> #(Option(VXML), VXML) 
           let contents = [BlamedContent(first.blame, after_first_word), ..rest]
           #(
             Some(T(first.blame, [BlamedContent(first.blame, first_word)])),
-            T(blame, contents)
+            T(blame, contents),
           )
         }
       }
@@ -1253,15 +1185,13 @@ pub fn drop_starting_slash(path: String) -> String {
 
 pub fn prepend_attribute(vxml: VXML, attr: BlamedAttribute) {
   let assert V(blame, tag, attrs, children) = vxml
-  V(
-    blame,
-    tag,
-    [attr, ..attrs],
-    children
-  )
+  V(blame, tag, [attr, ..attrs], children)
 }
 
-pub fn prepend_unique_key_attribute(vxml: VXML, attr: BlamedAttribute) -> Result(VXML, Nil) {
+pub fn prepend_unique_key_attribute(
+  vxml: VXML,
+  attr: BlamedAttribute,
+) -> Result(VXML, Nil) {
   case get_attribute_by_name(vxml, attr.key) {
     Some(_) -> Error(Nil)
     None -> Ok(prepend_attribute(vxml, attr))
@@ -1270,12 +1200,7 @@ pub fn prepend_unique_key_attribute(vxml: VXML, attr: BlamedAttribute) -> Result
 
 pub fn prepend_child(vxml: VXML, child: VXML) {
   let assert V(blame, tag, attributes, children) = vxml
-  V(
-    blame,
-    tag, 
-    attributes,
-    [child, ..children]
-  )
+  V(blame, tag, attributes, [child, ..children])
 }
 
 pub fn get_attribute_keys(attrs: List(BlamedAttribute)) -> List(String) {
@@ -1283,12 +1208,16 @@ pub fn get_attribute_keys(attrs: List(BlamedAttribute)) -> List(String) {
   |> list.map(fn(attr) { attr.key })
 }
 
-pub fn get_attribute_by_name(vxml: VXML, name: String) -> Option(BlamedAttribute) {
+pub fn get_attribute_by_name(
+  vxml: VXML,
+  name: String,
+) -> Option(BlamedAttribute) {
   let assert V(_, _, blamed_attributes, _) = vxml
-  case list.find(
-    blamed_attributes,
-    fn (blamed_attribute) { blamed_attribute.key == name }
-  ) {
+  case
+    list.find(blamed_attributes, fn(blamed_attribute) {
+      blamed_attribute.key == name
+    })
+  {
     Error(Nil) -> None
     Ok(thing) -> Some(thing)
   }
@@ -1296,10 +1225,11 @@ pub fn get_attribute_by_name(vxml: VXML, name: String) -> Option(BlamedAttribute
 
 pub fn has_attribute(vxml: VXML, name: String, value: String) -> Bool {
   let assert V(_, _, blamed_attributes, _) = vxml
-  case list.find(
-    blamed_attributes,
-    fn (blamed_attribute) { blamed_attribute.key == name && blamed_attribute.value == value }
-  ) {
+  case
+    list.find(blamed_attributes, fn(blamed_attribute) {
+      blamed_attribute.key == name && blamed_attribute.value == value
+    })
+  {
     Error(Nil) -> False
     Ok(_) -> True
   }
@@ -1345,14 +1275,17 @@ pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
   filter_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
-pub fn index_filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(#(VXML, Int)) {
+pub fn index_filter_children(
+  vxml: VXML,
+  condition: fn(VXML) -> Bool,
+) -> List(#(VXML, Int)) {
   let assert V(_, _, _, children) = vxml
-  children 
+  children
   |> list.index_map(fn(v, idx) { #(v, idx) })
-  |> list.filter(fn(node) { 
+  |> list.filter(fn(node) {
     let #(v, _) = node
     condition(v)
-   })
+  })
 }
 
 pub fn index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
@@ -1365,9 +1298,9 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
     V(_, _, _, children) -> {
       let children_with_tag = children_with_tag(vxml, tag)
 
-       list.flatten([
+      list.flatten([
         children_with_tag,
-        list.map(children, descendants_with_tag(_, tag)) |> list.flatten
+        list.map(children, descendants_with_tag(_, tag)) |> list.flatten,
       ])
     }
   }
@@ -1390,7 +1323,10 @@ pub fn read_singleton(z: List(a)) -> Result(a, SingletonError) {
   }
 }
 
-pub fn unique_child_with_tag(vxml: VXML, tag: String) -> Result(VXML, SingletonError) {
+pub fn unique_child_with_tag(
+  vxml: VXML,
+  tag: String,
+) -> Result(VXML, SingletonError) {
   children_with_tag(vxml, tag)
   |> read_singleton
 }
@@ -1987,7 +1923,7 @@ fn depth_first_node_to_nodes_desugar_many(
   vxmls
   |> list.map(depth_first_node_to_nodes_desugar_one(_, transform))
   |> result.all
-  |> result.map(list.flatten(_))
+  |> result.map(list.flatten)
 }
 
 fn depth_first_node_to_nodes_desugar_one(
@@ -2100,8 +2036,5 @@ pub type DesugarerDescription {
 }
 
 pub type Pipe {
-  Pipe(
-    description: DesugarerDescription,
-    desugarer: Desugarer,
-  )
+  Pipe(description: DesugarerDescription, desugarer: Desugarer)
 }

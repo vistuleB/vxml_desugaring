@@ -1,6 +1,9 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn is_text(child: VXML) {
@@ -40,7 +43,11 @@ fn desugarer_factory() -> Desugarer {
 
 pub fn remove_vertical_chunks_with_no_text_child() -> Pipe {
   Pipe(
-    description: DesugarerDescription("remove_vertical_chunks_with_no_text_child", option.None, "..."),
+    description: DesugarerDescription(
+      "remove_vertical_chunks_with_no_text_child",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(),
   )
 }

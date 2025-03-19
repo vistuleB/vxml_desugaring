@@ -1,6 +1,9 @@
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn param_transform(
@@ -49,7 +52,11 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 pub fn unwrap_tag_when_child_of_tags(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("split_vertical_chunks_desugarer", None, "..."),
+    description: DesugarerDescription(
+      "split_vertical_chunks_desugarer",
+      None,
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

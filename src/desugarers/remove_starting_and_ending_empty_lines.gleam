@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 const ins = string.inspect
@@ -30,11 +33,16 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
-type Extra = List(String)
+type Extra =
+  List(String)
 
 pub fn remove_starting_and_ending_empty_lines(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("remove_starting_and_ending_empty_lines", option.Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "remove_starting_and_ending_empty_lines",
+      option.Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

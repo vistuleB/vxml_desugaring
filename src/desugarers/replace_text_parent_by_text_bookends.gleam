@@ -1,9 +1,15 @@
-import gleam/option.{None}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
-import vxml_parser.{type VXML, T, V}
 import gleam/list
+import gleam/option.{None}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
+import vxml_parser.{type VXML, T, V}
 
-fn param_transform(vxml: VXML, extra: Extra) -> Result(List(VXML), DesugaringError) {
+fn param_transform(
+  vxml: VXML,
+  extra: Extra,
+) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
     V(blame, tag, _, children) -> {
@@ -16,7 +22,6 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(List(VXML), DesugaringErr
         }
         False -> Ok([vxml])
       }
-      
     }
   }
 }
@@ -34,7 +39,11 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 
 pub fn replace_text_parent_by_text_bookends(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("replace_text_parent_by_text_bookends", None, "..."),
+    description: DesugarerDescription(
+      "replace_text_parent_by_text_bookends",
+      None,
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

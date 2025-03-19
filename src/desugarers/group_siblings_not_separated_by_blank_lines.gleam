@@ -1,8 +1,11 @@
 import blamedlines.{type Blame}
 import gleam/list
-import gleam/string.{inspect as ins}
 import gleam/option.{Some}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn lists_of_non_blank_line_chunks(
@@ -24,10 +27,7 @@ pub fn chunk_constructor(
   V(blame, wrapper, [], children)
 }
 
-fn param_transform(
-  vxml: VXML,
-  wrapper: String,
-) -> Result(VXML, DesugaringError) {
+fn param_transform(vxml: VXML, wrapper: String) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
@@ -65,11 +65,15 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 /// tags in the second 'List(String)' argument
 pub fn group_siblings_not_separated_by_blank_lines(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("group_siblings_not_separated_by_blank_lines", Some(ins(extra)), "wrap siblings that are not separated by
+    description: DesugarerDescription(
+      "group_siblings_not_separated_by_blank_lines",
+      Some(ins(extra)),
+      "wrap siblings that are not separated by
 WriterlyBlankLine inside a designated tag
 and remove WriterlyBlankLine elements;
 stays out of subtrees designated by
-tags in the second 'List(String)' argument"),
+tags in the second 'List(String)' argument",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

@@ -1,9 +1,12 @@
-import gleam/list
+import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
+import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
-import blamedlines.{type Blame}
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -12,10 +15,9 @@ fn substitute_blames_in(node: VXML, new_blame: Blame) -> VXML {
   let assert T(_, blamed_contents) = node
   T(
     new_blame,
-    list.map(
-      blamed_contents,
-      fn(blamed_content) { BlamedContent(new_blame, blamed_content.content)}
-    )
+    list.map(blamed_contents, fn(blamed_content) {
+      BlamedContent(new_blame, blamed_content.content)
+    }),
   )
 }
 
@@ -37,30 +39,27 @@ fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   )
 }
 
-fn param_transform(
-  node: VXML,
-  param: Param
-) -> Result(VXML, DesugaringError) {
+fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       case dict.get(param, tag) {
         Error(Nil) -> Ok(node)
         Ok(#(v1, v2)) -> {
-          let new_children = 
-            list.map(
-              children,
-              fn (child) {
-                case child {
-                  V(_, _, _, _) -> child
-                  T(blame, _) -> {
-                    substitute_blames_in(v1, blame)
-                    |> last_line_concatenate_with_first_line(child)
-                    |> last_line_concatenate_with_first_line(substitute_blames_in(v2, blame))
-                  }
+          let new_children =
+            list.map(children, fn(child) {
+              case child {
+                V(_, _, _, _) -> child
+                T(blame, _) -> {
+                  substitute_blames_in(v1, blame)
+                  |> last_line_concatenate_with_first_line(child)
+                  |> last_line_concatenate_with_first_line(substitute_blames_in(
+                    v2,
+                    blame,
+                  ))
                 }
               }
-            )
+            })
           Ok(V(blame, tag, attrs, new_children))
         }
       }
@@ -70,22 +69,26 @@ fn param_transform(
 
 fn extra_to_param(extra: Extra) -> Param {
   extra
-  |> list.map(
-    fn (tuple) {
-      let #(t1, t2, tag) = tuple
-      let contents1 = string.split(t1, "\n")
-      let contents2 = string.split(t2, "\n")
-      let v1 = T(
+  |> list.map(fn(tuple) {
+    let #(t1, t2, tag) = tuple
+    let contents1 = string.split(t1, "\n")
+    let contents2 = string.split(t2, "\n")
+    let v1 =
+      T(
         infra.no_blame,
-        list.map(contents1, fn (content) {BlamedContent(infra.no_blame, content)})
+        list.map(contents1, fn(content) {
+          BlamedContent(infra.no_blame, content)
+        }),
       )
-      let v2 = T(
+    let v2 =
+      T(
         infra.no_blame,
-        list.map(contents2, fn (content) {BlamedContent(infra.no_blame, content)})
+        list.map(contents2, fn(content) {
+          BlamedContent(infra.no_blame, content)
+        }),
       )
-      #(tag, #(v1, v2))
-    }
-  )
+    #(tag, #(v1, v2))
+  })
   |> dict.from_list
 }
 
@@ -96,7 +99,8 @@ type Param =
 // - String: text to prepend
 // - String: text to append
 // - String: parent tag
-type Extra = List(#(String, String, String))
+type Extra =
+  List(#(String, String, String))
 
 fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
   param_transform(_, param)
@@ -108,7 +112,11 @@ fn desugarer_factory(param: Param) -> Desugarer {
 
 pub fn prepend_append_to_text_children_of(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("prepend_append_to_text_children_of", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "prepend_append_to_text_children_of",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }

@@ -1,11 +1,11 @@
 import gleam/list
-import gleam/string.{inspect as ins}
 import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, Pipe,
-  DesugarerDescription, DesugaringError,
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, V, T}
+import vxml_parser.{type VXML, T, V}
 
 fn param_transform(
   vxml: VXML,
@@ -16,12 +16,15 @@ fn param_transform(
   extra: Extra,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
-    T(_, _) -> case list.any(ancestors, extra) {
-      True -> Ok([vxml])
-      False -> Ok([])
-    }
+    T(_, _) ->
+      case list.any(ancestors, extra) {
+        True -> Ok([vxml])
+        False -> Ok([])
+      }
     V(_, _, _, children) -> {
-      case !list.is_empty(children) || list.any(ancestors, extra) || extra(vxml) {
+      case
+        !list.is_empty(children) || list.any(ancestors, extra) || extra(vxml)
+      {
         True -> Ok([vxml])
         False -> Ok([])
       }
@@ -30,22 +33,7 @@ fn param_transform(
 }
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
-  fn (
-    vxml,
-    a,
-    s1,
-    s2,
-    s3,
-  ) { 
-    param_transform(
-      vxml,
-      a,
-      s1,
-      s2,
-      s3,
-      extra,
-    )
-  }
+  fn(vxml, a, s1, s2, s3) { param_transform(vxml, a, s1, s2, s3, extra) }
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
@@ -57,7 +45,11 @@ type Extra =
 
 pub fn remove_outside_subtrees(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("remove_outside_subtrees", option.Some(extra |> ins), "..."),
+    description: DesugarerDescription(
+      "remove_outside_subtrees",
+      option.Some(extra |> ins),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

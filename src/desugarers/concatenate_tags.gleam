@@ -1,13 +1,13 @@
 import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, V}
 
-fn concatenate_tags_in_list(
-  vxmls: List(VXML),
-  extra: Extra,
-) -> List(VXML) {
+fn concatenate_tags_in_list(vxmls: List(VXML), extra: Extra) -> List(VXML) {
   case vxmls {
     [] -> []
     [V(_, tag1, _, _) as v1, V(_, tag2, _, _) as v2, ..rest] -> {
@@ -20,17 +20,10 @@ fn concatenate_tags_in_list(
   }
 }
 
-fn param_transform(
-  node: VXML,
-  extra: Extra,
-) -> Result(VXML, DesugaringError) {
+fn param_transform(node: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   case node {
-    V(blame, tag, attrs, children) -> Ok(V(
-      blame,
-      tag,
-      attrs,
-      children |> concatenate_tags_in_list(extra)
-    ))
+    V(blame, tag, attrs, children) ->
+      Ok(V(blame, tag, attrs, children |> concatenate_tags_in_list(extra)))
     _ -> Ok(node)
   }
 }
@@ -48,7 +41,11 @@ type Extra =
 
 pub fn concatenate_tags(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("concatenate_tags", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "concatenate_tags",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }

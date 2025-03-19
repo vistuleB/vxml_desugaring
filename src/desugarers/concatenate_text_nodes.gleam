@@ -1,6 +1,9 @@
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn concatenate_lines_in(nodes: List(VXML)) -> VXML {
@@ -35,7 +38,7 @@ fn param_transform(node: VXML) -> Result(VXML, DesugaringError) {
 }
 
 fn transform_factory() -> infra.NodeToNodeTransform {
-  param_transform(_)
+  param_transform
 }
 
 fn desugarer_factory() -> Desugarer {

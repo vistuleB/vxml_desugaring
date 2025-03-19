@@ -2,7 +2,10 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
@@ -110,7 +113,11 @@ fn desugarer_factory() -> Desugarer {
 
 pub fn pair_double_dollars_together_desugarer() -> Pipe {
   Pipe(
-    description: DesugarerDescription("pair_double_dollars_together_desugarer", option.None, "..."),
+    description: DesugarerDescription(
+      "pair_double_dollars_together_desugarer",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(),
   )
 }

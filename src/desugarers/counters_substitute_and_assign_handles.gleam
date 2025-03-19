@@ -1,12 +1,14 @@
-import gleam/float
 import blamedlines.{type Blame, Blame}
+import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
 import gleam/string
-import infrastructure.{ type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError }
+import infrastructure.{
+  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
+}
 import roman
 import vxml_parser.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
@@ -23,7 +25,7 @@ type CounterInstance {
     counter_type: CounterType,
     name: String,
     current_value: String,
-    step: Float
+    step: Float,
   )
 }
 
@@ -46,7 +48,11 @@ fn check_counter_already_defined(
   }
 }
 
-fn parse_value(blame: Blame, value: String, message: String) -> Result(Float, DesugaringError) {
+fn parse_value(
+  blame: Blame,
+  value: String,
+  message: String,
+) -> Result(Float, DesugaringError) {
   case int.parse(value) {
     Ok(i) -> Ok(int.to_float(i))
     Error(_) -> {
@@ -58,18 +64,33 @@ fn parse_value(blame: Blame, value: String, message: String) -> Result(Float, De
   }
 }
 
-fn handle_att_value(blame: Blame, value: String) -> Result(#(String, Option(String), Option(Float)), DesugaringError) {
+fn handle_att_value(
+  blame: Blame,
+  value: String,
+) -> Result(#(String, Option(String), Option(Float)), DesugaringError) {
   let splits = string.split(value, " ")
   case splits {
-    [counter_name, default_value, step] ->{
-      use _ <- result.try(parse_value(blame, default_value, "Default value for counter "<> counter_name <>" must be a number"))
-      use step <- result.try(parse_value(blame, step, "Step for counter "<> counter_name <>" must be a number"))
+    [counter_name, default_value, step] -> {
+      use _ <- result.try(parse_value(
+        blame,
+        default_value,
+        "Default value for counter " <> counter_name <> " must be a number",
+      ))
+      use step <- result.try(parse_value(
+        blame,
+        step,
+        "Step for counter " <> counter_name <> " must be a number",
+      ))
 
       Ok(#(counter_name, Some(default_value), Some(step)))
     }
-    [counter_name, default_value] ->{
-      use _ <- result.try(parse_value(blame, default_value, "Default value for counter "<> counter_name <>" must be a number"))
-      
+    [counter_name, default_value] -> {
+      use _ <- result.try(parse_value(
+        blame,
+        default_value,
+        "Default value for counter " <> counter_name <> " must be a number",
+      ))
+
       Ok(#(counter_name, Some(default_value), None))
     }
     [counter_name] -> Ok(#(counter_name, None, None))
@@ -86,20 +107,32 @@ fn get_counters_from_attributes(
     [first, ..rest] -> {
       let att = case first.key {
         "counter" -> {
-          use #(counter_name, default_value, step) <- result.try(handle_att_value(
-            first.blame,
-            first.value,
-          ))
+          use #(counter_name, default_value, step) <- result.try(
+            handle_att_value(first.blame, first.value),
+          )
 
-          Ok(Some(CounterInstance(ArabicCounter, counter_name, option.unwrap(default_value, "0"), option.unwrap(step, 1.))))
+          Ok(
+            Some(CounterInstance(
+              ArabicCounter,
+              counter_name,
+              option.unwrap(default_value, "0"),
+              option.unwrap(step, 1.0),
+            )),
+          )
         }
-        "roman_counter" ->{
-          use #(counter_name, default_value, step) <- result.try(handle_att_value(
-            first.blame,
-            first.value,
-          ))
-          Ok(Some(CounterInstance(RomanCounter, counter_name, option.unwrap(default_value, "."), option.unwrap(step, 1.))))
-          }
+        "roman_counter" -> {
+          use #(counter_name, default_value, step) <- result.try(
+            handle_att_value(first.blame, first.value),
+          )
+          Ok(
+            Some(CounterInstance(
+              RomanCounter,
+              counter_name,
+              option.unwrap(default_value, "."),
+              option.unwrap(step, 1.0),
+            )),
+          )
+        }
         _ -> Ok(None)
       }
       use att <- result.try(att)
@@ -122,7 +155,6 @@ fn get_counters_from_attributes(
   }
 }
 
-
 fn mutate(
   blame: Blame,
   counter_type: CounterType,
@@ -140,8 +172,9 @@ fn mutate(
             blame,
             "Counter can't be decremented to less than 0",
           ))
-        False ->{
-          case float.ceiling(sum) == sum { // remove trailing zero
+        False -> {
+          case float.ceiling(sum) == sum {
+            // remove trailing zero
             True -> Ok(string.inspect(float.round(sum)))
             False -> Ok(string.inspect(sum))
           }
@@ -201,7 +234,7 @@ fn update_counter(
               blame,
               x.counter_type,
               x.current_value,
-              x.step *. -1.,
+              x.step *. -1.0,
             ))
             Ok(CounterInstance(..x, current_value: new_value))
           }
@@ -561,10 +594,14 @@ fn counter_transform(
 
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
-    description: DesugarerDescription("counters_substitute_and_assign_handles", None, "..."),
+    description: DesugarerDescription(
+      "counters_substitute_and_assign_handles",
+      None,
+      "...",
+    ),
     desugarer: fn(vxml) {
       use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
       Ok(vxml)
-    }
+    },
   )
 }

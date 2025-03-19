@@ -2,7 +2,10 @@ import gleam/dict
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -18,7 +21,9 @@ fn insert_dollar(node: VXML, dollar: String, where: Where) -> List(VXML) {
     T(blame, contents) -> {
       case where {
         First -> [T(blame, [BlamedContent(blame, dollar), ..contents])]
-        Last -> [T(blame, list.append(contents, [BlamedContent(blame, dollar)]))]
+        Last -> [
+          T(blame, list.append(contents, [BlamedContent(blame, dollar)])),
+        ]
         Both -> [
           T(
             blame,
@@ -49,7 +54,7 @@ fn update_children(nodes: List(VXML), dollar: String) -> List(VXML) {
   let assert [first, ..rest] = nodes
   case list.last(rest) {
     Ok(_) -> {
-      panic as {"more than 1 child in node:" <> ins(nodes) }
+      panic as { "more than 1 child in node:" <> ins(nodes) }
       // let assert [_, ..in_between_reversed] = rest |> list.reverse
       // list.flatten([
       //   insert_dollar(first, dollar, First),
@@ -80,7 +85,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
 }
 
 fn transform_factory() -> infra.NodeToNodeTransform {
-  param_transform(_)
+  param_transform
 }
 
 fn desugarer_factory() -> Desugarer {
@@ -89,7 +94,11 @@ fn desugarer_factory() -> Desugarer {
 
 pub fn reinsert_math_dollar() -> Pipe {
   Pipe(
-    description: DesugarerDescription("reinsert_math_dollar", option.None, "..."),
+    description: DesugarerDescription(
+      "reinsert_math_dollar",
+      option.None,
+      "...",
+    ),
     desugarer: desugarer_factory(),
   )
 }

@@ -1,7 +1,10 @@
 import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
+import infrastructure.{
+  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  DesugaringError, Pipe,
+} as infra
 import vxml_parser.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn param_transform(
@@ -17,51 +20,45 @@ fn param_transform(
     V(blame, tag, _, children) -> {
       let new_node = {
         tuples
-        |> list.fold(
-          from: node,
-          with: fn(current_node, tuple) -> VXML {
-            let #(parent, counter_name, _, _, _) = tuple
-            let assert V(_, _, current_attributes, _) = current_node
-            case parent == tag {
-              False -> current_node
-              True -> {
-                let new_attribute =
-                  BlamedAttribute(blame, "counter", counter_name)
-                V(blame, tag, [new_attribute, ..current_attributes], children)
-              }
+        |> list.fold(from: node, with: fn(current_node, tuple) -> VXML {
+          let #(parent, counter_name, _, _, _) = tuple
+          let assert V(_, _, current_attributes, _) = current_node
+          case parent == tag {
+            False -> current_node
+            True -> {
+              let new_attribute =
+                BlamedAttribute(blame, "counter", counter_name)
+              V(blame, tag, [new_attribute, ..current_attributes], children)
             }
           }
-        )
+        })
       }
       let newest_node = {
         tuples
-        |> list.fold(
-          from: new_node,
-          with: fn(current_node, tuple) -> VXML {
-            let #(tag_that_declared_counter, counter_name, node_name, pre, post) =
-              tuple
-            case
-              node_name == tag
-              && list.any(ancestors, fn(ancestor) {
-                let assert V(_, ancestor_tag, _, _) = ancestor
-                ancestor_tag == tag_that_declared_counter
-              })
-            {
-              False -> current_node
-              True -> {
-                let assert V(_, _, newest_attributes, current_children) =
-                  current_node
-                let new_children = [
-                  T(blame, [
-                    BlamedContent(blame, pre <> "::++" <> counter_name <> post),
-                  ]),
-                  ..current_children
-                ]
-                V(blame, tag, newest_attributes, new_children)
-              }
+        |> list.fold(from: new_node, with: fn(current_node, tuple) -> VXML {
+          let #(tag_that_declared_counter, counter_name, node_name, pre, post) =
+            tuple
+          case
+            node_name == tag
+            && list.any(ancestors, fn(ancestor) {
+              let assert V(_, ancestor_tag, _, _) = ancestor
+              ancestor_tag == tag_that_declared_counter
+            })
+          {
+            False -> current_node
+            True -> {
+              let assert V(_, _, newest_attributes, current_children) =
+                current_node
+              let new_children = [
+                T(blame, [
+                  BlamedContent(blame, pre <> "::++" <> counter_name <> post),
+                ]),
+                ..current_children
+              ]
+              V(blame, tag, newest_attributes, new_children)
             }
           }
-        )
+        })
       }
       Ok(newest_node)
     }
@@ -92,7 +89,11 @@ type Extra =
 
 pub fn add_title_counters_and_titles(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_title_counters_and_titles", Some(ins(extra)), "..."),
+    description: DesugarerDescription(
+      "add_title_counters_and_titles",
+      Some(ins(extra)),
+      "...",
+    ),
     desugarer: desugarer_factory(extra),
   )
 }
