@@ -14,82 +14,7 @@ import vxml_parser.{type VXML, V, BlamedAttribute}
 const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
-  Blame("generate_lbp_toc:" <> note, -1, [])
-}
-
-fn chapter_link(chapter_link_component_name : String, item: VXML, count: Int) -> Result(VXML, DesugaringError) {
-  let tp = case infra.tag_equals(item, "Chapter") {
-    True -> "chapter"
-    False -> {
-      let assert True = infra.tag_equals(item, "Bootcamp")
-      "bootcamp"
-    }
-  }
-
-  let item_blame = infra.get_blame(item)
-
-  use label_attr <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "title"),
-    with_on_none: Error(DesugaringError(item_blame, tp <> " missing title attribute"))
-  )
-
-  let on_mobile_attr = case infra.get_attribute_by_name(item, "on_mobile") {
-    Some(attr) -> attr
-    None -> label_attr
-  }
-
-  Ok(V(
-    item_blame,
-    chapter_link_component_name,
-    [
-      BlamedAttribute(blame_us("L41"), "article_type", ins(count)),
-      BlamedAttribute(label_attr.blame, "label", label_attr.value),
-      BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
-      BlamedAttribute(blame_us("L44"), "href", tp <> ins(count)),
-    ],
-    []
-  ))
-}
-
-fn type_of_chapters_title(
-  type_of_chapters_title_component_name: String,
-  label: String,
-) -> VXML {
-  V(
-    blame_us("L52"),
-    type_of_chapters_title_component_name,
-    [
-      BlamedAttribute(blame_us("L57"), "label", label)
-    ],
-    []
-  )
-}
-
-fn div_with_id_title_and_menu_items(
-  type_of_chapters_title_component_name: String,
-  id: String,
-  title_label: String,
-  menu_items: List(VXML)
-) -> VXML {
-  V(
-    blame_us("87"),
-    "div",
-    [
-      BlamedAttribute(blame_us("L72"), "id", id)
-    ],
-    [
-      type_of_chapters_title(
-        type_of_chapters_title_component_name,
-        title_label
-      ),
-      V(
-        blame_us("L95"),
-        "ul",
-        [],
-        menu_items
-      )
-    ]
-  )
+  Blame("generate_lbp_links:" <> note, -1, [])
 }
 
 fn try_prepand_link(vxml: VXML, link_value: String, class: String) -> VXML {
@@ -114,10 +39,11 @@ fn map_chapters(chapter: #(VXML, Int), local_index: Int, length: Int) {
     
     let #(chapter_vxml, global_index) = chapter
 
-    let #(prev_link, next_link) = case local_index {
-      0 -> #("/", "/article/chapter" <> ins(local_index + 2))
-      a if a == length - 1 -> #("/article/chapter" <> ins(local_index), "")  
-      _ -> #("/article/chapter" <> ins(local_index), "/article/chapter" <> ins(local_index + 2))  
+    let #(prev_link, next_link) = case local_index, length {
+      0, 1 -> #("/", "")
+      0, _ -> #("/", "/article/chapter" <> ins(local_index + 2))
+      a , _ if a == length - 1 -> #("/article/chapter" <> ins(local_index), "")  
+      _, _ -> #("/article/chapter" <> ins(local_index), "/article/chapter" <> ins(local_index + 2))  
     }
     let new = chapter_vxml |> try_prepand_link(prev_link, "prev_page") |> try_prepand_link(next_link, "next_page")
 
@@ -149,15 +75,42 @@ fn the_desugarer(
   let toc = infra.index_children_with_tag(root, "TOCAuthorSuppliedContent")
   let assert [#(toc, _)] = toc
 
-  let chapters = chapters
-    |> list.index_map(fn(c, i){ map_chapters(c, i, list.length(chapters)) })
-  let bootcamps = bootcamps
-    |> list.index_map(fn(c, i){ map_bootcamps(c, i, list.length(bootcamps)) })
+  let #(chapters, bootcamps, toc) = case list.is_empty(chapters), list.is_empty(bootcamps) {
+    True, True -> #([], [], toc)
+    False, False -> {
+      let chapters = chapters
+        |> list.index_map(fn(c, i){ map_chapters(c, i, list.length(chapters)) })
+      let bootcamps = bootcamps
+        |> list.index_map(fn(c, i){ map_bootcamps(c, i, list.length(bootcamps)) })
 
-  let toc = toc 
-  |> try_prepand_link("/article/bootcamp1", "prev_page")
-  |> try_prepand_link("/article/chapter" <> ins(list.length(chapters)), "next_page")
+      let toc = toc 
+      |> try_prepand_link("/article/bootcamp1", "prev_page")
+      |> try_prepand_link("/article/chapter1", "next_page")
   
+      #(chapters, bootcamps, toc)
+    }
+    True, False -> {
+      let bootcamps = bootcamps
+        |> list.index_map(fn(c, i){ map_bootcamps(c, i, list.length(bootcamps)) })
+
+      let toc = toc 
+      |> try_prepand_link("/article/bootcamp1", "prev_page")
+  
+      #([], bootcamps, toc)
+    }
+    False, True -> {
+      let chapters = chapters
+        |> list.index_map(fn(c, i){ map_chapters(c, i, list.length(chapters)) })
+
+      let toc = toc 
+      |> try_prepand_link("/article/chapter1", "next_page")
+  
+      #(chapters, bootcamps, toc)
+    }
+  }
+
+
+ 
 
   let children = children |> list.index_map(fn(vxml, global_index){
       let assert V(_, tag, _, _) = vxml
