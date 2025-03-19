@@ -1,4 +1,4 @@
-import argv
+import gleam/io
 import desugarers/extract_starting_and_ending_spaces.{extract_starting_and_ending_spaces}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_bookend_tags.{insert_bookend_tags}
@@ -6,7 +6,6 @@ import desugarers/insert_bookend_text_if_no_attributes.{insert_bookend_text_if_n
 import desugarers/unwrap_tags.{unwrap_tags}
 import desugarers/unwrap_tags_if_no_attributes.{unwrap_tags_if_no_attributes}
 import infrastructure.{type Pipe}
-import default_renderer as dr
 
 fn test_pipeline() -> List(Pipe) {
   [
@@ -45,5 +44,5 @@ fn test_pipeline() -> List(Pipe) {
 
 pub fn main() {
   // test_renderer()
-  // io.println("\nthis is an empty shell now; thank u for using\n")
+  io.println("\nthis is an empty shell now; thank u for using\n")
 }
