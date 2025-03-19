@@ -1,4 +1,4 @@
-import blamedlines.{type BlamedLine} as bl
+import blamedlines.{type BlamedLine, BlamedLine, type Blame, Blame } as bl
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
@@ -10,7 +10,7 @@ import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
-import vxml_parser.{type VXML} as vp
+import vxml_parser.{type VXML, V} as vp
 import writerly_parser as wp
 import desugarers/filter_nodes_by_attributes.{filter_nodes_by_attributes}
 
@@ -135,6 +135,18 @@ pub type SplitterDebugOptions(d) {
   )
 }
 
+// ************************
+// stub (empty) splitter
+// ************************
+
+pub fn empty_splitter(
+  vxml: VXML,
+  suffix: String,
+) -> Result(List(#(String, VXML, Nil)), Nil) {
+  let assert V(_, tag, _, _) = vxml
+  Ok([#(tag <> suffix, vxml, Nil)])
+}
+
 // *************
 // EMITTER(d, f)                                         // where 'd' is fragment type & 'f' is emitter error type
 // #(String, VXML, d) -> #(String, List(BlamedLine), d)  // #(local_path, blamed_lines, fragment_type)
@@ -149,6 +161,65 @@ pub type EmitterDebugOptions(d) {
     artifact_print: fn(String, List(BlamedLine), d) -> Bool,
     artifact_directory: String,
   )
+}
+
+// *****************
+// stub html emitter
+// *****************
+
+pub fn stub_html_emitter(
+  tuple: #(String, VXML, a)
+) -> Result(#(String, List(BlamedLine), a), b) {
+  let #(path, fragment, fragment_type) = tuple
+  let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, []) }
+  let lines = list.flatten([
+    [
+      BlamedLine(blame_us("stub_html_emitter"), 0, "<!DOCTYPE html>"),
+      BlamedLine(blame_us("stub_html_emitter"), 0, "<html>"),
+      BlamedLine(blame_us("stub_html_emitter"), 0, "<head>"),
+      BlamedLine(blame_us("stub_html_emitter"), 2, "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">"),
+      BlamedLine(blame_us("stub_html_emitter"), 2, "<meta charset=\"utf-8\">"),
+      BlamedLine(blame_us("stub_html_emitter"), 2, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"),
+      BlamedLine(blame_us("stub_html_emitter"), 2, "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>"),
+      BlamedLine(blame_us("stub_html_emitter"), 2, "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>"),
+      BlamedLine(blame_us("stub_html_emitter"), 0, "</head>"),
+      BlamedLine(blame_us("stub_html_emitter"), 0, "<body>"),
+    ],
+    fragment
+    |> infra.get_children
+    |> list.map(fn (vxml) {vp.vxml_to_html_blamed_lines(vxml, 8, 2)})
+    |> list.flatten,
+    [
+      BlamedLine(blame_us("stub_html_emitter"), 0, "</body>"),
+      BlamedLine(blame_us("stub_html_emitter"), 0, ""),
+    ],
+  ])
+  Ok(#(path, lines, fragment_type))
+}
+
+pub fn stub_jsx_emitter(
+  tuple: #(String, VXML, a)
+) -> Result(#(String, List(BlamedLine), a), b) {
+  let #(path, fragment, fragment_type) = tuple
+  let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, []) }
+  let lines = list.flatten([
+    [
+      BlamedLine(blame_us("panel_emitter"), 0, "import Something from \"./Somewhere\";"),
+      BlamedLine(blame_us("panel_emitter"), 0, ""),
+      BlamedLine(blame_us("panel_emitter"), 0, "const OurSuperComponent = () => {"),
+      BlamedLine(blame_us("panel_emitter"), 2, "return ("),
+      BlamedLine(blame_us("panel_emitter"), 4, "<>"),
+    ],
+    vp.vxmls_to_jsx_blamed_lines(fragment |> infra.get_children, 6),
+    [
+      BlamedLine(blame_us("panel_emitter"), 4, "</>"),
+      BlamedLine(blame_us("panel_emitter"), 2, ");"),
+      BlamedLine(blame_us("panel_emitter"), 0, "};"),
+      BlamedLine(blame_us("panel_emitter"), 0, ""),
+      BlamedLine(blame_us("panel_emitter"), 0, "export default OurSuperComponent;"),
+    ],
+  ])
+  Ok(#(path, lines, fragment_type))
 }
 
 // *************
@@ -192,7 +263,7 @@ pub fn prettier_prettifier(
 ) -> Result(String, #(Int, String)) {
   let #(local_path, _) = pair
   run_prettier(".", output_dir <> "/" <> local_path)
-  |> result.map(fn(_) { "prettified: " <> local_path })
+  |> result.map(fn(_) { "prettified: [" <> output_dir <> "/]" <> local_path })
 }
 
 pub fn guarded_prettier_prettifier(
@@ -555,7 +626,8 @@ pub fn run_renderer(
         Ok(Nil) -> {
           case debug_options.basic_messages {
             False -> Nil
-            True -> io.println("printed: " <> local_path)
+            // True -> io.println("printed: " <> local_path <> " in " <> output_dir)
+            True -> io.println("printed: [" <> output_dir <> "/]" <> local_path)
           }
           Ok(#(local_path, fragment_type))
         }

@@ -1,8 +1,8 @@
-const Article = () => {
+import Something from "./Somewhere";
+
+const OurSuperComponent = () => {
   return (
-    <Book
-      title=""
-      mobile_title="">
+    <>
       <WriterlyBlankLine />
       <Chapter title="Derivatives">
         <WriterlyBlankLine />
@@ -43,8 +43,8 @@ const Article = () => {
           </Exercise>
         </Exercises>
       </Chapter>
-    </Book>
+    </>
   );
 };
 
-export default Article;
+export default OurSuperComponent;
