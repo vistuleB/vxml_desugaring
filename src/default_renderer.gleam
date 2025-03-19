@@ -85,8 +85,7 @@ pub fn run_default_renderer(
   arguments: List(String),
 ) {
   use amendments <- infra.on_error_on_ok(
-    vr.process_command_line_arguments(arguments, [#("--prettier", True)]),
-
+    vr.process_command_line_arguments(arguments, ["--prettier"]),
     fn (error) {
       io.println("")
       io.println("command line error: " <> ins(error))
@@ -99,27 +98,23 @@ pub fn run_default_renderer(
   let renderer :
   vr.Renderer(
     wp.FileOrParseError,
-    // List(wp.Writerly),
     vr.RendererError(VXML, String, c, d, e),
     Nil,
     Nil,
     Nil,
-    Bool,
     #(Int, String),
   ) = vr.Renderer(
     assembler: wp.assemble_blamed_lines_advanced_mode(_, amendments.spotlight_args_files),
     source_parser: default_source_parser(_, amendments.spotlight_args),
-    // parsed_source_converter: wp.writerlys_to_vxmls,
     pipeline: pipeline,
     splitter: default_splitter,
     emitter: default_emitter,
-    prettifier: vr.prettier_prettifier,
+    prettifier: vr.guarded_prettier_prettifier(amendments.user_args),
   )
 
   let parameters = vr.RendererParameters(
     input_dir: "test/content/",
     output_dir: Some("test/output/"),
-    prettifying_option: False,
   )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
 
