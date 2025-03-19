@@ -1,4 +1,4 @@
-import blamedlines.{type BlamedLine}
+import blamedlines.{type BlamedLine} as bl
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
@@ -10,7 +10,9 @@ import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
-import vxml_parser.{type VXML}
+import vxml_parser.{type VXML} as vp
+import writerly_parser as wp
+import desugarers/filter_nodes_by_attributes.{filter_nodes_by_attributes}
 
 const ins = string.inspect
 
@@ -43,6 +45,61 @@ pub type SourceParserDebugOptions {
     debug_print: Bool,
     artifact_print: Bool,
     artifact_directory: String,
+  )
+}
+
+// ******************************
+// default source parsers
+// ******************************
+
+pub fn default_writerly_source_parser(
+  lines: List(BlamedLine),
+  spotlight_args: List(#(String, String, String))
+) -> Result(VXML, RendererError(a, String, c, d, e)) {
+  use writerlys <- result.then(
+    wp.parse_blamed_lines(lines)
+    |> result.map_error(fn(e) { SourceParserError(ins(e)) })
+  )
+
+  use vxml <- result.then(
+    wp.writerlys_to_vxmls(writerlys)
+    |> infra.get_root
+    |> result.map_error(SourceParserError)
+  )
+
+  use filtered_vxml <- result.then(
+    filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+    |> result.map_error(fn(e) { SourceParserError(ins(e)) })
+  )
+
+  Ok(filtered_vxml)
+}
+
+pub fn default_html_source_parser(
+  lines: List(BlamedLine),
+  spotlight_args: List(#(String, String, String))
+) -> Result(VXML, RendererError(a, String, b, c, d)) { 
+  let path = bl.first_blame_filename(lines) |> result.unwrap("")
+
+  use vxml <- result.then(
+    bl.blamed_lines_to_string(lines)
+    |> vp.xmlm_based_html_parser(path) 
+    |> result.map_error(fn(e) { 
+      case e {
+        vp.XMLMIOError(s) -> SourceParserError(s)
+        vp.XMLMParseError(s) -> SourceParserError(s)
+      }
+    })
+  )
+
+  filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+  |> result.map_error(
+    fn(e: infra.DesugaringError) { 
+      case e {
+        infra.DesugaringError(_, message) -> SourceParserError(message)
+        infra.GetRootError(message) -> SourceParserError(message)
+      }
+    }
   )
 }
 
@@ -229,7 +286,7 @@ fn pipeline_runner(
         Ok(vxml) -> {
           case pipeline_debug_options.debug_print(step, pipe) {
             False -> Nil
-            True -> vxml_parser.debug_print_vxml("(" <> ins(step) <> ")", vxml)
+            True -> vp.debug_print_vxml("(" <> ins(step) <> ")", vxml)
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
@@ -325,7 +382,7 @@ pub fn run_renderer(
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
     True -> {
-      io.println(blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+      io.println(bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
         "(assembled)",
         assembled,
       ))
@@ -383,8 +440,8 @@ pub fn run_renderer(
         False -> Nil
         True -> {
           vxml
-          |> vxml_parser.vxml_to_blamed_lines
-          |> blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+          |> vp.vxml_to_blamed_lines
+          |> bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
             "(" <> ins(list.length(renderer.pipeline)) <> ":splitter_debug_options:" <> local_path <> ")",
             _
           )
@@ -418,7 +475,7 @@ pub fn run_renderer(
         {
           False -> Nil
           True -> {
-            blamedlines.blamed_lines_to_table_vanilla_bob_and_jane_sue(
+            bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
               "(emitter_debug_options:" <> local_path <> ")",
               blamed_lines,
             )
@@ -446,7 +503,7 @@ pub fn run_renderer(
         Ok(#(local_path, lines, fragment_type)) -> {
           Ok(#(
             local_path,
-            blamedlines.blamed_lines_to_string(lines),
+            bl.blamed_lines_to_string(lines),
             fragment_type,
           ))
         }

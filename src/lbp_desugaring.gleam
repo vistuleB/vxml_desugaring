@@ -36,14 +36,14 @@ fn test_pipeline() -> List(Pipe) {
   ]
 }
 
-fn test_renderer() {
-  dr.run_default_renderer(
-    test_pipeline(),
-    argv.load().arguments,
-  )
-}
+// fn test_renderer() {
+//   dr.run_default_renderer(
+//     test_pipeline(),
+//     argv.load().arguments,
+//   )
+// }
 
 pub fn main() {
-  test_renderer()
+  // test_renderer()
   // io.println("\nthis is an empty shell now; thank u for using\n")
 }
