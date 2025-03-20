@@ -15,14 +15,14 @@ fn define_article_output_path_transform(
   case node {
     T(_, _) -> Ok(#(node, index))
     V(b, t, attributes, c) -> {
-      let #(tag, path, extension, key) = extra
+      let #(tag, path, key) = extra
       let #(index, new_attribute) = case tag == t {
         True -> {
           #(index + 1, [
             BlamedAttribute(
               b,
               key,
-              path <> string.inspect(index) <> "." <> extension,
+              path <> string.inspect(index),
             ),
           ])
         }
@@ -43,11 +43,11 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 type Extra =
-  #(String, String, String, String)
+  #(String, String, String)
 
-//     ^         ^       ^       ^
-//    Tag     File     file       attribute key
-//            Path     extension
+//     ^         ^       ^       
+//    Tag     File     attribute key       
+//            Path     
 
 pub fn define_article_output_path(extra: Extra) -> Pipe {
   Pipe(
