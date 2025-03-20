@@ -2,14 +2,13 @@ name = "lbp_desugaring"
 version = "1.0.0"
 
 [dependencies]
-blamedlines = { git = "git@github.com:vistuleB/blamedlines", ref = "583ddcf" }
-vxml_parser = { git = "git@github.com:vistuleB/vxml_parser", ref = "7ef7d21" }
-writerly_parser = { git = "git@github.com:vistuleB/writerly_parser", ref = "67cf25e" }
+vxml_parser = { git = "git@github.com:vistuleB/vxml_parser", ref = "main" }
+writerly_parser = { git = "git@github.com:vistuleB/writerly_parser", ref = "main" }
+blamedlines = { git = "git@github.com:vistuleB/blamedlines", ref = "main" }
 
-argv = ">= 1.0.2 and < 2.0.0"
-gleam_regexp = ">= 1.0.0 and < 2.0.0"
 gleam_stdlib = ">= 0.34.0 and < 2.0.0"
 gleescript = ">= 1.4.0 and < 2.0.0"
+gleam_regexp = ">= 1.0.0 and < 2.0.0"
 shellout = ">= 1.6.0 and < 2.0.0"
 simplifile = ">= 2.2.0 and < 3.0.0"
 xmlm = ">= 1.0.0 and < 2.0.0"
