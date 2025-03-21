@@ -139,12 +139,11 @@ fn param_transform(
               let handle_assignments_string = case
                 list.is_empty(handle_attributes)
               {
-                True -> tag_that_declared_counter <> "<<" // default handle with tagname
+                True -> ""
                 False ->
                   {
                     handle_attributes
                     |> list.map(attribute_value)
-                    |> list.append(tag_that_declared_counter)
                     |> string.join("<<")
                   }
                   <> "<<"
