@@ -61,8 +61,6 @@ pub fn default_writerly_source_parser(
     |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
   )
 
-  wp.debug_print_writerlys("", writerlys)
-
   use vxml <- result.then(
     wp.writerlys_to_vxmls(writerlys)
     |> infra.get_root
@@ -73,8 +71,6 @@ pub fn default_writerly_source_parser(
     filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
     |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
   )
-
-  io.debug(filtered_vxml)
 
   Ok(filtered_vxml)
 }
