@@ -48,7 +48,6 @@ fn param_transform_second_half(
 
       case tag == target_tag && ch_number > 0 {
         True -> {
-          io.debug(state_after_processing_children)
           let attributes = list.append(
             attributes,
             [vxml_parser.BlamedAttribute(
