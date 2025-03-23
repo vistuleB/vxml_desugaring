@@ -1,5 +1,6 @@
 import blamedlines.{type Blame}
 import gleam/list
+import gleam/io
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{
@@ -11,14 +12,29 @@ import vxml_parser.{
 }
 
 fn filter_out_handle_attributes(
+  tag: String,
   attributes: List(BlamedAttribute),
 ) -> #(List(BlamedAttribute), List(BlamedAttribute)) {
+
   list.fold(
     over: attributes,
     from: #([], []),
     with: fn(pairs, blamed_attribute) {
       let #(current_attrs, current_handles) = pairs
-      let BlamedAttribute(_, key, _) = blamed_attribute
+      let BlamedAttribute(b, key, value) = blamed_attribute
+
+      // generate a new handle for tags that have numbers on ( like exercise_number = x )
+      // can be used via : >>Tag{x} ( ex: >>Exercise4 )
+      use <- infra.on_true_on_false(
+        string.contains(key, "_number"),
+        #(
+          current_attrs, 
+          [
+            BlamedAttribute(b, "handle", tag <> value ),
+            ..current_handles
+          ]
+        )
+      )
       case key == "handle" {
         True -> #(current_attrs, [blamed_attribute, ..current_handles])
         False -> #([blamed_attribute, ..current_attrs], current_handles)
@@ -108,7 +124,7 @@ fn param_transform(
     T(_, _) -> Ok(node)
     V(blame, tag, attributes_v0, children) -> {
       let #(attributes_v1, handle_attributes) =
-        filter_out_handle_attributes(attributes_v0)
+        filter_out_handle_attributes(tag, attributes_v0)
       let attributes_v2 =
         list.flatten([
           counter_attributes_for_node(blame, tag, tuples),
@@ -136,6 +152,7 @@ fn param_transform(
             }
             True -> {
               let attributes_v3 = attributes_v2
+              io.debug(handle_attributes)
               let handle_assignments_string = case
                 list.is_empty(handle_attributes)
               {
