@@ -185,9 +185,7 @@ pub fn handles_generate_dictionary(extra: Extra) -> Pipe {
         extra,
         "",
       ))
-      // remove GrandWrapper
-      let assert V(_, _, _, [real_root]) = vxml
-      Ok(real_root)
+      Ok(vxml)
     },
   )
 }
