@@ -21,20 +21,8 @@ fn filter_out_handle_attributes(
     from: #([], []),
     with: fn(pairs, blamed_attribute) {
       let #(current_attrs, current_handles) = pairs
-      let BlamedAttribute(b, key, value) = blamed_attribute
+      let BlamedAttribute(_, key, _) = blamed_attribute
 
-      // generate a new handle for tags that have numbers on ( like exercise_number = x )
-      // can be used via : >>Tag{x} ( ex: >>Exercise4 )
-      use <- infra.on_true_on_false(
-        string.contains(key, "_number"),
-        #(
-          current_attrs, 
-          [
-            BlamedAttribute(b, "handle", tag <> value ),
-            ..current_handles
-          ]
-        )
-      )
       case key == "handle" {
         True -> #(current_attrs, [blamed_attribute, ..current_handles])
         False -> #([blamed_attribute, ..current_attrs], current_handles)

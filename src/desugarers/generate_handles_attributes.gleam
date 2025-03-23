@@ -17,7 +17,7 @@ fn param_transform_first_half(
   state: State,
   extra: Extra,
 ) -> Result(#(VXML, State), DesugaringError) {
-  let #(parent_tag, target_tag, _) = extra
+  let #(parent_tag, target_tag) = extra
   case node {
     T(_, _) -> Ok(#(node, state))
     V(_, tag, _, _)  -> {
@@ -37,7 +37,7 @@ fn param_transform_second_half(
   state_after_processing_children: State,
   extra: Extra,
 ) -> Result(#(VXML, State), DesugaringError) {
-  let #(parent_tag, target_tag, _) = extra
+  let #(parent_tag, target_tag) = extra
   case node {
     T(_, _) -> {
       let assert True = state_after_processing_children == original_state
@@ -75,7 +75,7 @@ fn param_transform_second_half(
 //                       count to occur
 //**********************************
 type Extra =
-  #(String, String, Int)
+  #(String, String)
 
 // Chapter number, Exercise number
 type State = #(Int, Int)
