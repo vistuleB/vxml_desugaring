@@ -23,7 +23,7 @@ fn param_transform_first_half(
     V(_, tag, _, _)  -> {
       let #(ch_number, ex_number) = state
       case tag  {
-        t if t == parent_tag -> Ok(#(node, #(ch_number + 1, 1))) // should reset ex_number to 1
+        t if t == parent_tag -> Ok(#(node, #(ch_number + 1, 0))) // should reset ex_number to 1
         t if t == target_tag -> Ok(#(node, #(ch_number, ex_number + 1)))
         _ -> Ok(#(node, state))
       }
