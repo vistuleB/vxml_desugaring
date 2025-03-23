@@ -184,9 +184,15 @@ fn desugarer_factory() -> Desugarer {
   )
 }
 
+/// Looks for handle definitions in GrandWrapper and 
+/// replaces >>handle occurences with defined value
+/// Returns error if there's a handle occurence with no definition
 pub fn handles_substitute() -> Pipe {
   Pipe(
-    description: DesugarerDescription("handles_substitute", option.None, "..."),
+    description: DesugarerDescription("handles_substitute", option.None, "
+    Looks for handle definitions in GrandWrapper and replaces >>handle occurences with defined value \n
+    Returns error if there's a handle occurence with no definition
+    "),
     desugarer: desugarer_factory(),
   )
 }
