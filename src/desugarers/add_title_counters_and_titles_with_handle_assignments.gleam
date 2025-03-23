@@ -140,7 +140,6 @@ fn param_transform(
             }
             True -> {
               let attributes_v3 = attributes_v2
-              io.debug(handle_attributes)
               let handle_assignments_string = case
                 list.is_empty(handle_attributes)
               {
