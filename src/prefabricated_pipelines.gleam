@@ -165,35 +165,6 @@ pub fn normalize_begin_end_align_star(
 // double underscore stuff
 //***************
 
-// pub fn double_underscore_splitting(
-//   tag: String,
-//   forbidden: List(String),
-// ) -> List(Pipe) {
-//   let opening_double_underscore_indexed_regex = irs.l_m_r_1_3_indexed_regex("[\\s]|^", "__", "[^\\s]|$")
-//   let opening_or_closing_double_underscore_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", "__", "[^\\s]|$")
-//   let closing_double_underscore_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", "__", "[\\s]|$")
-//   [
-//     split_by_indexed_regexes(#(
-//         [
-//           #(opening_or_closing_double_underscore_indexed_regex, "OpeningOrClosingDoubleUnderscore"),
-//           #(opening_double_underscore_indexed_regex, "OpeningDoubleUnderscore"),
-//           #(closing_double_underscore_indexed_regex, "ClosingDoubleUnderscore"),
-//         ],
-//         forbidden,
-//     )),
-//     pair_bookends(#(
-//       ["OpeningDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
-//       ["ClosingDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
-//       tag,
-//     )),
-//     fold_tags_into_text([
-//       #("OpeningDoubleUnderscore", "__"),
-//       #("ClosingDoubleUnderscore", "__"),
-//       #("OpeningOrClosingDoubleUnderscore", "__"),
-//     ]),
-//   ]
-// }
-
 pub fn symmetric_delim_splitting(
   delim_regex_form: String,
   delim_ordinary_form: String,
@@ -225,7 +196,7 @@ pub fn symmetric_delim_splitting(
   ]
 }
 
-pub fn asymmetric_delim_spitting(
+pub fn asymmetric_delim_splitting(
   opening_regex_form: String,
   closing_regex_form: String,
   opening_ordinary_form: String,
@@ -253,3 +224,69 @@ pub fn asymmetric_delim_spitting(
     ]),
   ]
 }
+
+// pub fn underscore_and_asterisk_delim_splitting(
+//   underscore_tag: String,
+//   asterisk_tag: String,
+//   forbidden: List(String),
+// ) -> List(Pipe) {
+//   // I don't remember why we had to split these together or why the complicated
+//   // with/without askteriks for underscore, but if you split them together you
+//   // need that with/without to avoid a bug, I remember that much
+
+//   // _ _
+//   let opening_single_underscore_indexed_regex =
+//     irs.l_m_r_1_3_indexed_regex("[\\s({\\[]|^", "_", "[^\\s)}\\]_]|$")
+//   let opening_or_closing_single_underscore_indexed_regex_without_asterisks =
+//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*_]|^", "_", "[^\\s)}\\]\\*_]|$")
+//   let opening_or_closing_single_underscore_indexed_regex_with_asterisks =
+//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[_]|^", "_", "[^\\s)}\\]_]|$")
+//   let closing_single_underscore_indexed_regex =
+//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[_]|^", "_", "[\\s)}\\]]|$")
+
+//   // * *
+//   let opening_single_asterisk_indexed_regex =
+//     irs.l_m_r_1_3_indexed_regex("[\\s({\\[]|^", "\\*", "[^\\s)}\\]\\*]|$")
+//   let opening_or_closing_single_asterisk_indexed_regex =
+//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*]|^", "\\*", "[^\\s)}\\]\\*]|$")
+//   let closing_single_asterisk_indexed_regex =
+//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*]|^", "\\*", "[\\s)}\\]]|$")
+
+//   [
+//     split_by_indexed_regexes(#(
+//       [
+//         // "_"
+//         #(opening_or_closing_single_underscore_indexed_regex_without_asterisks, "OpeningOrClosingUnderscore"),
+//         #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
+//         #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
+//         // "*"
+//         #(opening_or_closing_single_asterisk_indexed_regex, "OpeningOrClosingAsterisk"),
+//         #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
+//         #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
+//         // "_"
+//         #(opening_or_closing_single_underscore_indexed_regex_with_asterisks, "OpeningOrClosingUnderscore"),
+//         #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
+//         #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
+//       ],
+//       forbidden,
+//     )),
+//     pair_bookends(#(
+//       ["OpeningUnderscore", "OpeningOrClosingUnderscore"],
+//       ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
+//       underscore_tag,
+//     )),
+//     pair_bookends(#(
+//       ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
+//       ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
+//       asterisk_tag,
+//     )),
+//     fold_tags_into_text([
+//       #("OpeningOrClosingUnderscore", "_"),
+//       #("OpeningUnderscore", "_"),
+//       #("ClosingUnderscore", "_"),
+//       #("OpeningOrClosingAsterisk", "*"),
+//       #("OpeningAsterisk", "*"),
+//       #("ClosingAsterisk", "*"),
+//     ]),
+//   ]
+// }
