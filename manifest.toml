@@ -3,30 +3,30 @@
 
 packages = [
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
-  { name = "blamedlines", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], source = "git", repo = "git@github.com:vistuleB/blamedlines", commit = "583ddcfe4895cd7cde3c5004c462ded2f4191266" },
-  { name = "filepath", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "67A6D15FB39EEB69DD31F8C145BB5A421790581BD6AA14B33D64D5A55DBD6587" },
+  { name = "blamedlines", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], source = "local", path = "../../vistuleB/blamedlines" },
+  { name = "filepath", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "65F51013BCF78A603AFFD7992EF1CC6ECA96C74038EB48887F656DE44DBC1902" },
   { name = "gleam_erlang", version = "0.34.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_erlang", source = "hex", outer_checksum = "0C38F2A128BAA0CEF17C3000BD2097EB80634E239CE31A86400C4416A5D0FDCC" },
   { name = "gleam_regexp", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleam_regexp", source = "hex", outer_checksum = "7F5E0C0BBEB3C58E57C9CB05FA9002F970C85AD4A63BA1E55CBCB35C15809179" },
-  { name = "gleam_stdlib", version = "0.57.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "86EFACDF6460B8681E82752C5490F9630EC0F138F88A037DDCB241799AA8811F" },
+  { name = "gleam_stdlib", version = "0.58.0", build_tools = ["gleam"], requirements = [], otp_app = "gleam_stdlib", source = "hex", outer_checksum = "091F2D2C4A3A4E2047986C47E2C2C9D728A4E068ABB31FDA17B0D347E6248467" },
   { name = "gleescript", version = "1.4.0", build_tools = ["gleam"], requirements = ["argv", "filepath", "gleam_erlang", "gleam_stdlib", "simplifile", "snag", "tom"], otp_app = "gleescript", source = "hex", outer_checksum = "8CDDD29F91064E69950A91A40061785F10275ADB70A0520075591F61A724C455" },
   { name = "gleeunit", version = "1.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "gleeunit", source = "hex", outer_checksum = "0E6C83834BA65EDCAAF4FE4FB94AC697D9262D83E6F58A750D63C9F6C8A9D9FF" },
-  { name = "shellout", version = "1.6.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "shellout", source = "hex", outer_checksum = "E2FCD18957F0E9F67E1F497FC9FF57393392F8A9BAEAEA4779541DE7A68DD7E0" },
-  { name = "simplifile", version = "2.2.0", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "0DFABEF7DC7A9E2FF4BB27B108034E60C81BEBFCB7AB816B9E7E18ED4503ACD8" },
+  { name = "shellout", version = "1.7.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "shellout", source = "hex", outer_checksum = "1BDC03438FEB97A6AF3E396F4ABEB32BECF20DF2452EC9A8C0ACEB7BDDF70B14" },
+  { name = "simplifile", version = "2.2.1", build_tools = ["gleam"], requirements = ["filepath", "gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "C88E0EE2D509F6D86EB55161D631657675AA7684DAB83822F7E59EB93D9A60E3" },
   { name = "snag", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "7E9F06390040EB5FAB392CE642771484136F2EC103A92AE11BA898C8167E6E17" },
   { name = "tom", version = "1.1.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "tom", source = "hex", outer_checksum = "0910EE688A713994515ACAF1F486A4F05752E585B9E3209D8F35A85B234C2719" },
-  { name = "vxml_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_regexp", "gleam_stdlib", "simplifile", "xmlm"], source = "git", repo = "git@github.com:vistuleB/vxml_parser", commit = "1ba51fffae4314ab06b3a88f22578b126f3ead1a" },
-  { name = "writerly_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_stdlib", "simplifile", "vxml_parser"], source = "git", repo = "git@github.com:vistuleB/writerly_parser", commit = "bf78f9979ce304053034bcf91111d34528a57ebc" },
+  { name = "vxml_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_regexp", "gleam_stdlib", "simplifile", "xmlm"], source = "local", path = "../../vistuleB/vxml_parser" },
+  { name = "writerly_parser", version = "1.0.0", build_tools = ["gleam"], requirements = ["blamedlines", "gleam_stdlib", "simplifile", "vxml_parser"], source = "local", path = "../../vistuleB/writerly_parser" },
   { name = "xmlm", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "xmlm", source = "hex", outer_checksum = "295F483E1A930DC4C45ED0F07C3466C0A7381972C3C2FC64D66BD2FBB307ED6A" },
 ]
 
 [requirements]
-blamedlines = { git = "git@github.com:vistuleB/blamedlines", ref = "main" }
+blamedlines = { path = "../../vistuleB/blamedlines" }
 gleam_regexp = { version = ">= 1.0.0 and < 2.0.0" }
 gleam_stdlib = { version = ">= 0.34.0 and < 2.0.0" }
 gleescript = { version = ">= 1.4.0 and < 2.0.0" }
 gleeunit = { version = ">= 1.0.0 and < 2.0.0" }
 shellout = { version = ">= 1.6.0 and < 2.0.0" }
 simplifile = { version = ">= 2.2.0 and < 3.0.0" }
-vxml_parser = { git = "git@github.com:vistuleB/vxml_parser", ref = "main" }
-writerly_parser = { git = "git@github.com:vistuleB/writerly_parser", ref = "main" }
+vxml_parser = { path = "../../vistuleB/vxml_parser" }
+writerly_parser = { path = "../../vistuleB/writerly_parser" }
 xmlm = { version = ">= 1.0.0 and < 2.0.0" }

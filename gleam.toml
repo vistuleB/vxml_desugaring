@@ -2,9 +2,9 @@ name = "lbp_desugaring"
 version = "1.0.0"
 
 [dependencies]
-vxml_parser = { git = "git@github.com:vistuleB/vxml_parser", ref = "main" }
-writerly_parser = { git = "git@github.com:vistuleB/writerly_parser", ref = "main" }
-blamedlines = { git = "git@github.com:vistuleB/blamedlines", ref = "main" }
+blamedlines = { "path" = "../../vistuleB/blamedlines" }
+vxml_parser = { "path" = "../../vistuleB/vxml_parser" }
+writerly_parser = { "path" = "../../vistuleB/writerly_parser" }
 
 gleam_stdlib = ">= 0.34.0 and < 2.0.0"
 gleescript = ">= 1.4.0 and < 2.0.0"

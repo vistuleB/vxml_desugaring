@@ -4,41 +4,31 @@ const OurSuperComponent = () => {
   return (
     <>
       <WriterlyBlankLine />
+      <WriterlyBlankLine />
       <Chapter title="Derivatives">
         <WriterlyBlankLine />
+        <WriterlyBlankLine />
         <Exercises>
+          <WriterlyBlankLine />
           <Exercise>
+            <WriterlyBlankLine />
             <WriterlyCodeBlock language="python">
               hello = hi
             </WriterlyCodeBlock>
-            <WriterlyBlurb>
-              hihi
-            </WriterlyBlurb>
+            hihi
             <WriterlyBlankLine />
-            <WriterlyBlurb>
-              Glory
-            </WriterlyBlurb>
+            Glory
             <test src="hi" />
-            <WriterlyBlurb>
-              _ in time,
-              test{" "}
-            </WriterlyBlurb>
+            _ in time,
+            test{" "}
             <InlineImage src="hi" />
-            <WriterlyBlurb>
-              *exa*mine_ 
-              how long it would take__
-            </WriterlyBlurb>
+            *exa*mine_ 
+            how long it would take__
             <WriterlyBlankLine />
-            <WriterlyBlurb>
-              This paragraph should get an indent.
-            </WriterlyBlurb>
+            This paragraph should get an indent.
             <WriterlyBlankLine />
             <Solution>
-              <WriterlyBlurb>
-                hi
-              </WriterlyBlurb>
-              <WriterlyBlankLine />
-              <WriterlyBlankLine />
+              hi
             </Solution>
           </Exercise>
         </Exercises>

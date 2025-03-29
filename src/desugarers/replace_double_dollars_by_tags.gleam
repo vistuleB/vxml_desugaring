@@ -1,10 +1,11 @@
 import gleam/option
 import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
+import indexed_regex_splitting as rs
 
 fn transform_factory() -> infra.NodeToNodesTransform {
-  infra.replace_regex_by_tag_param_transform_indexed_group_version(
+  rs.replace_regex_by_tag_param_transform_indexed_group_version(
     _,
-    infra.unescaped_suffix_indexed_regex("\\$\\$"),
+    rs.unescaped_suffix_indexed_regex("\\$\\$"),
     "DoubleDollar",
   )
 }
