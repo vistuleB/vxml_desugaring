@@ -6,6 +6,10 @@ import desugarers/pair_bookends.{pair_bookends}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_bookend_tags.{insert_bookend_tags}
 
+//******************
+// math delimiter stuff
+//******************
+
 type LatexDelimiter {
   DoubleDollarDelimiter
   SingleDollarDelimiter
@@ -154,5 +158,98 @@ pub fn normalize_begin_end_align_star(
       #("BeginAlignStar", s1 <> "\\begin{align*}"),
       #("EndAlignStar", "\\end{align*}" <> s2),
     ])
+  ]
+}
+
+//***************
+// double underscore stuff
+//***************
+
+// pub fn double_underscore_splitting(
+//   tag: String,
+//   forbidden: List(String),
+// ) -> List(Pipe) {
+//   let opening_double_underscore_indexed_regex = irs.l_m_r_1_3_indexed_regex("[\\s]|^", "__", "[^\\s]|$")
+//   let opening_or_closing_double_underscore_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", "__", "[^\\s]|$")
+//   let closing_double_underscore_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", "__", "[\\s]|$")
+//   [
+//     split_by_indexed_regexes(#(
+//         [
+//           #(opening_or_closing_double_underscore_indexed_regex, "OpeningOrClosingDoubleUnderscore"),
+//           #(opening_double_underscore_indexed_regex, "OpeningDoubleUnderscore"),
+//           #(closing_double_underscore_indexed_regex, "ClosingDoubleUnderscore"),
+//         ],
+//         forbidden,
+//     )),
+//     pair_bookends(#(
+//       ["OpeningDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
+//       ["ClosingDoubleUnderscore", "OpeningOrClosingDoubleUnderscore"],
+//       tag,
+//     )),
+//     fold_tags_into_text([
+//       #("OpeningDoubleUnderscore", "__"),
+//       #("ClosingDoubleUnderscore", "__"),
+//       #("OpeningOrClosingDoubleUnderscore", "__"),
+//     ]),
+//   ]
+// }
+
+pub fn symmetric_delim_splitting(
+  delim_regex_form: String,
+  delim_ordinary_form: String,
+  tag: String,
+  forbidden: List(String),
+) -> List(Pipe) {
+  let opening_ir = irs.l_m_r_1_3_indexed_regex("[\\s]|^", delim_regex_form, "[^\\s]|$")
+  let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", delim_regex_form, "[^\\s]|$")
+  let closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", delim_regex_form, "[\\s]|$")
+  [
+    split_by_indexed_regexes(#(
+        [
+          #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
+          #(opening_ir, "OpeningSymmetricDelim"),
+          #(closing_ir, "ClosingSymmetricDelim"),
+        ],
+        forbidden,
+    )),
+    pair_bookends(#(
+      ["OpeningSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
+      ["ClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
+      tag,
+    )),
+    fold_tags_into_text([
+      #("OpeningSymmetricDelim", delim_ordinary_form),
+      #("ClosingSymmetricDelim", delim_ordinary_form),
+      #("OpeningOrClosingSymmetricDelim", delim_ordinary_form),
+    ]),
+  ]
+}
+
+pub fn asymmetric_delim_spitting(
+  opening_regex_form: String,
+  closing_regex_form: String,
+  opening_ordinary_form: String,
+  closing_ordinary_form: String,
+  tag: String,
+  forbidden: List(String),
+) -> List(Pipe) {
+  let opening_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[\\s]|^", opening_regex_form, "[^\\s]|$")
+  let closing_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", closing_regex_form, "[\\s]|$")
+  [
+    split_by_indexed_regexes(#(
+      [
+        #(opening_central_quote_indexed_regex, "OpeningAsymmetricDelim"),
+        #(closing_central_quote_indexed_regex, "ClosingAsymmetricDelim"),
+      ],
+      forbidden,
+    )),
+    pair_bookends(#(
+      ["OpeningAsymmetricDelim"],
+      ["ClosingAsymmetricDelim"],
+    tag)),
+    fold_tags_into_text([
+      #("OpeningAsymmetricDelim", opening_ordinary_form),
+      #("ClosingAsymmetricDelim", closing_ordinary_form),
+    ]),
   ]
 }
