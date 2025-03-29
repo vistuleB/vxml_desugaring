@@ -5,7 +5,7 @@ import indexed_regex_splitting as rs
 
 fn transform_factory(extras: Extra) -> infra.NodeToNodesFancyTransform {
   let #(regexes_and_tags, forbidden_parents) = extras
-  rs.replace_regexes_by_tags_param_transform_indexed_group_version(
+  rs.split_by_regexes_with_indexed_group_node_to_nodes_transform(
     _,
     regexes_and_tags,
   )

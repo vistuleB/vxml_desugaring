@@ -1,7 +1,6 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/regexp.{type Regexp}
-import gleam/pair
 import gleam/string
 import vxml_parser.{ type BlamedContent, type VXML, BlamedContent, T, V }
 import infrastructure.{type EitherOr, Or, Either, type DesugaringError } as infra
@@ -75,22 +74,21 @@ pub fn split_string_by_regex_with_indexed_group(
     True -> Nil
     False -> panic as { "pattern split failed: " <> pattern <> "[END]" }
   }
-  list.map_fold(over: splits, from: 0, with: fn(index: Int, split) -> #(
-    Int,
-    EitherOr(String, Nil),
-  ) {
-    case index % { num_groups + 1 } == dropped_group + 1 {
-      False -> #(index + 1, Either(split))
-      True -> #(index + 1, Or(Nil))
+  list.index_map(
+    splits,
+    fn(split, index: Int) {
+      case index % { num_groups + 1 } == dropped_group + 1 {
+        False -> Either(split)
+        True -> Or(Nil)
+      }
     }
-  })
-  |> pair.second
+  )
   |> infra.regroup_eithers
   |> infra.remove_ors_unwrap_eithers
   |> list.map(string.join(_, ""))
 }
 
-fn line_split_into_list_either_content_or_blame_indexed_group_version(
+fn split_line_by_regex_with_indexed_group(
   line: BlamedContent,
   re: RegexWithIndexedGroup,
 ) -> List(EitherOr(BlamedContent, Blame)) {
@@ -100,15 +98,13 @@ fn line_split_into_list_either_content_or_blame_indexed_group_version(
   |> list.intersperse(Or(blame))
 }
 
-fn replace_regex_by_tag_in_lines_indexed_group_version(
+fn replace_indexed_group_by_tag_in_lines(
   lines: List(BlamedContent),
   re: RegexWithIndexedGroup,
   tag: String,
 ) -> List(VXML) {
   lines
-  |> list.map(
-    line_split_into_list_either_content_or_blame_indexed_group_version(_, re),
-  )
+  |> list.map(split_line_by_regex_with_indexed_group(_, re))
   |> list.flatten
   |> infra.regroup_eithers
   |> infra.map_either_ors(
@@ -120,7 +116,7 @@ fn replace_regex_by_tag_in_lines_indexed_group_version(
   )
 }
 
-fn replace_regex_by_tag_in_node_indexed_group_version(
+fn replace_indexed_group_by_tag_in_node(
   node: VXML,
   re: RegexWithIndexedGroup,
   tag: String,
@@ -128,52 +124,36 @@ fn replace_regex_by_tag_in_node_indexed_group_version(
   case node {
     V(_, _, _, _) -> [node]
     T(_, lines) -> {
-      replace_regex_by_tag_in_lines_indexed_group_version(lines, re, tag)
+      replace_indexed_group_by_tag_in_lines(lines, re, tag)
     }
   }
 }
 
-fn replace_regex_by_tag_in_nodes_indexed_group_version(
+fn replace_indexed_group_by_tag_in_nodes(
   nodes: List(VXML),
   re: RegexWithIndexedGroup,
   tag: String,
 ) -> List(VXML) {
   nodes
-  |> list.map(replace_regex_by_tag_in_node_indexed_group_version(_, re, tag))
+  |> list.map(replace_indexed_group_by_tag_in_node(_, re, tag))
   |> list.flatten
-}
-
-fn replace_regexes_by_tags_in_nodes_indexed_group_version(
-  nodes: List(VXML),
-  rules: List(#(RegexWithIndexedGroup, String)),
-) -> List(VXML) {
-  list.fold(
-    rules,
-    nodes,
-    fn (nodes, rule) -> List(VXML) {
-      let #(regex, tag) = rule
-      replace_regex_by_tag_in_nodes_indexed_group_version(nodes, regex, tag)
-    }
-  )
 }
 
 //********************
 // public splitters
 //********************
 
-pub fn replace_regex_by_tag_param_transform_indexed_group_version(
-  node: VXML,
-  re: RegexWithIndexedGroup,
-  tag: String,
-) -> Result(List(VXML), DesugaringError) {
-  replace_regex_by_tag_in_node_indexed_group_version(node, re, tag)
-  |> Ok
-}
-
-pub fn replace_regexes_by_tags_param_transform_indexed_group_version(
+pub fn split_by_regexes_with_indexed_group_node_to_nodes_transform(
   node: VXML,
   rules: List(#(RegexWithIndexedGroup, String)),
 ) -> Result(List(VXML), DesugaringError) {
-  replace_regexes_by_tags_in_nodes_indexed_group_version([node], rules)
+  list.fold(
+    rules,
+    [node],
+    fn (nodes, rule) -> List(VXML) {
+      let #(regex, tag) = rule
+      replace_indexed_group_by_tag_in_nodes(nodes, regex, tag)
+    }
+  )
   |> Ok
 }
