@@ -162,7 +162,7 @@ pub fn normalize_begin_end_align_star(
 }
 
 //***************
-// double underscore stuff
+// generic symmetric & asymmetric delim splitting
 //***************
 
 pub fn symmetric_delim_splitting(
@@ -224,69 +224,3 @@ pub fn asymmetric_delim_splitting(
     ]),
   ]
 }
-
-// pub fn underscore_and_asterisk_delim_splitting(
-//   underscore_tag: String,
-//   asterisk_tag: String,
-//   forbidden: List(String),
-// ) -> List(Pipe) {
-//   // I don't remember why we had to split these together or why the complicated
-//   // with/without askteriks for underscore, but if you split them together you
-//   // need that with/without to avoid a bug, I remember that much
-
-//   // _ _
-//   let opening_single_underscore_indexed_regex =
-//     irs.l_m_r_1_3_indexed_regex("[\\s({\\[]|^", "_", "[^\\s)}\\]_]|$")
-//   let opening_or_closing_single_underscore_indexed_regex_without_asterisks =
-//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*_]|^", "_", "[^\\s)}\\]\\*_]|$")
-//   let opening_or_closing_single_underscore_indexed_regex_with_asterisks =
-//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[_]|^", "_", "[^\\s)}\\]_]|$")
-//   let closing_single_underscore_indexed_regex =
-//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[_]|^", "_", "[\\s)}\\]]|$")
-
-//   // * *
-//   let opening_single_asterisk_indexed_regex =
-//     irs.l_m_r_1_3_indexed_regex("[\\s({\\[]|^", "\\*", "[^\\s)}\\]\\*]|$")
-//   let opening_or_closing_single_asterisk_indexed_regex =
-//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*]|^", "\\*", "[^\\s)}\\]\\*]|$")
-//   let closing_single_asterisk_indexed_regex =
-//     irs.l_m_r_1_3_indexed_regex("[^\\s({\\[\\*]|^", "\\*", "[\\s)}\\]]|$")
-
-//   [
-//     split_by_indexed_regexes(#(
-//       [
-//         // "_"
-//         #(opening_or_closing_single_underscore_indexed_regex_without_asterisks, "OpeningOrClosingUnderscore"),
-//         #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
-//         #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
-//         // "*"
-//         #(opening_or_closing_single_asterisk_indexed_regex, "OpeningOrClosingAsterisk"),
-//         #(opening_single_asterisk_indexed_regex, "OpeningAsterisk"),
-//         #(closing_single_asterisk_indexed_regex, "ClosingAsterisk"),
-//         // "_"
-//         #(opening_or_closing_single_underscore_indexed_regex_with_asterisks, "OpeningOrClosingUnderscore"),
-//         #(opening_single_underscore_indexed_regex, "OpeningUnderscore"),
-//         #(closing_single_underscore_indexed_regex, "ClosingUnderscore"),
-//       ],
-//       forbidden,
-//     )),
-//     pair_bookends(#(
-//       ["OpeningUnderscore", "OpeningOrClosingUnderscore"],
-//       ["ClosingUnderscore", "OpeningOrClosingUnderscore"],
-//       underscore_tag,
-//     )),
-//     pair_bookends(#(
-//       ["OpeningAsterisk", "OpeningOrClosingAsterisk"],
-//       ["ClosingAsterisk", "OpeningOrClosingAsterisk"],
-//       asterisk_tag,
-//     )),
-//     fold_tags_into_text([
-//       #("OpeningOrClosingUnderscore", "_"),
-//       #("OpeningUnderscore", "_"),
-//       #("ClosingUnderscore", "_"),
-//       #("OpeningOrClosingAsterisk", "*"),
-//       #("OpeningAsterisk", "*"),
-//       #("ClosingAsterisk", "*"),
-//     ]),
-//   ]
-// }
