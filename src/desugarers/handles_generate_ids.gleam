@@ -9,8 +9,9 @@ import infrastructure.{
 } as infra
 import vxml_parser.{type VXML, BlamedAttribute, T, V}
 
-fn generate_id(blame: Blame) {
-  string.inspect(int.random(9999))
+fn generate_id(blame: Blame) -> String {
+  "_"
+  <> string.inspect(int.random(9999))
   <> string.inspect(blame.line_no)
   <> string.inspect(int.random(9999))
 }
