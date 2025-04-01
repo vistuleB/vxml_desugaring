@@ -1177,7 +1177,10 @@ pub fn db_amend_splitter_debug_options(
   SplitterDebugOptions(
     fn(local_path, vxml, fragment_type) {
       previous_condition(local_path, vxml, fragment_type)
-      || list.contains(amendments.debug_vxml_fragments_local_paths, local_path)
+      || list.any(
+        amendments.debug_vxml_fragments_local_paths,
+        string.contains(local_path, _),
+      )
     },
     artifact_print,
     artifact_directory,
@@ -1197,9 +1200,9 @@ pub fn db_amend_emitter_debug_options(
   EmitterDebugOptions(
     fn(local_path, lines, fragment_type) {
       previous_condition(local_path, lines, fragment_type)
-      || list.contains(
+      || list.any(
         amendments.debug_blamed_lines_fragments_local_paths,
-        local_path,
+        string.contains(local_path, _),
       )
     },
     artifact_print,
@@ -1216,9 +1219,9 @@ pub fn db_amend_printed_debug_options(
   PrinterDebugOptions(fn(local_path, fragment_type) {
     {
       previous_condition(local_path, fragment_type)
-      || list.contains(
+      || list.any(
         amendments.debug_printed_string_fragments_local_paths,
-        local_path,
+        string.contains(local_path, _),
       )
     }
   })
