@@ -63,12 +63,13 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
+fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
   param_transform(_, extra)
+  |> infra.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
+  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extra))
 }
 
 type Extra =

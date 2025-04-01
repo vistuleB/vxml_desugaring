@@ -454,6 +454,11 @@ pub type ThreePossibilities(f, g, h) {
   C3(h)
 }
 
+fn quick_message(thing: a, msg: String) -> a {
+  io.println(msg)
+  thing
+}
+
 // *************
 // RUN_RENDERER
 // *************
@@ -567,9 +572,13 @@ pub fn run_renderer(
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
-    |> list.map(renderer.emitter)
+    |> list.map(fn(tuple) {
+      let #(name, _, _) = tuple
+      renderer.emitter(tuple)
+      |> quick_message("converted: " <> name <> " to blamed lines")
+    })
 
-  io.println("-- (after conversion) --")
+  io.println("-- blamed lines debug printing --")
 
   // blamed line fragments debug printing
   fragments
@@ -646,7 +655,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- printing fragments --")
+  io.println("-- writing string fragments to files --")
 
   // printing string fragments (list.map to record errors)
   let fragments =
@@ -662,8 +671,7 @@ pub fn run_renderer(
         Ok(Nil) -> {
           case debug_options.basic_messages {
             False -> Nil
-            // True -> io.println("printed: " <> local_path <> " in " <> output_dir)
-            True -> io.println("printed: [" <> output_dir <> "/]" <> local_path)
+            True -> io.println("wrote: [" <> output_dir <> "/]" <> local_path)
           }
           Ok(#(local_path, fragment_type))
         }
