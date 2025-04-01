@@ -10,9 +10,9 @@ import desugarers/insert_bookend_tags.{insert_bookend_tags}
 // math delimiter stuff
 //******************
 
-type LatexDelimiter {
-  DoubleDollarDelimiter
-  SingleDollarDelimiter
+type LatexDelimiterSingleton {
+  DoubleDollarSingleton
+  SingleDollarSingleton
   BackslashOpeningParenthesis
   BackslashClosingParenthesis
   BackslashOpeningSquareBracket
@@ -26,12 +26,12 @@ pub type LatexDelimiterPair {
   BackslashSquareBracket
 }
 
-fn opening_and_closing_delimiter_for_pair(
+fn opening_and_closing_singletons_for_pair(
   pair: LatexDelimiterPair
-) -> #(LatexDelimiter, LatexDelimiter) {
+) -> #(LatexDelimiterSingleton, LatexDelimiterSingleton) {
   case pair {
-    DoubleDollar -> #(DoubleDollarDelimiter, DoubleDollarDelimiter)
-    SingleDollar -> #(SingleDollarDelimiter, SingleDollarDelimiter)
+    DoubleDollar -> #(DoubleDollarSingleton, DoubleDollarSingleton)
+    SingleDollar -> #(SingleDollarSingleton, SingleDollarSingleton)
     BackslashParenthesis -> #(BackslashOpeningParenthesis, BackslashClosingParenthesis)
     BackslashSquareBracket -> #(BackslashOpeningSquareBracket, BackslashClosingSquareBracket)
   }
@@ -48,12 +48,12 @@ fn opening_and_closing_string_for_pair(
   }
 }
 
-fn indexed_regex_tag_and_unpaired_replacement_for_latex_delimiter(
-  which: LatexDelimiter
+fn all_stuff_for_latex_delimiter_singleton(
+  which: LatexDelimiterSingleton
 ) -> #(RegexWithIndexedGroup, String, String) {
   case which {
-    DoubleDollarDelimiter -> #(irs.unescaped_suffix_indexed_regex("\\$\\$"), "DoubleDollar", "$$")
-    SingleDollarDelimiter -> #(irs.unescaped_suffix_indexed_regex("\\$"), "SingleDollar", "$")
+    DoubleDollarSingleton -> #(irs.unescaped_suffix_indexed_regex("\\$\\$"), "DoubleDollar", "$$")
+    SingleDollarSingleton -> #(irs.unescaped_suffix_indexed_regex("\\$"), "SingleDollar", "$")
     BackslashOpeningParenthesis -> #(irs.unescaped_suffix_indexed_regex("\\\\\\("), "LatexOpeningPar", "\\(")
     BackslashClosingParenthesis -> #(irs.unescaped_suffix_indexed_regex("\\\\\\)"), "LatexClosingPar", "\\)")
     BackslashOpeningSquareBracket -> #(irs.unescaped_suffix_indexed_regex("\\\\\\["), "LatexOpeningBra", "\\[")
@@ -76,10 +76,10 @@ fn split_pair_fold_for_delimiter_pair(
   wrapper: String,
   forbidden: List(String),
 ) -> List(Pipe) {
-  let #(d1, d2) = opening_and_closing_delimiter_for_pair(pair)
+  let #(d1, d2) = opening_and_closing_singletons_for_pair(pair)
   case closing_equals_opening(pair) {
     True -> {
-      let #(ind_regex, tag, replacement) = indexed_regex_tag_and_unpaired_replacement_for_latex_delimiter(d1)
+      let #(ind_regex, tag, replacement) = all_stuff_for_latex_delimiter_singleton(d1)
       [
         split_by_indexed_regexes(#([#(ind_regex, tag)], forbidden)),
         pair_bookends(#([tag], [tag], wrapper)),
@@ -88,8 +88,8 @@ fn split_pair_fold_for_delimiter_pair(
     }
 
     False -> {
-      let #(ind_regex1, tag1, replacement1) = indexed_regex_tag_and_unpaired_replacement_for_latex_delimiter(d1)
-      let #(ind_regex2, tag2, replacement2) = indexed_regex_tag_and_unpaired_replacement_for_latex_delimiter(d2)
+      let #(ind_regex1, tag1, replacement1) = all_stuff_for_latex_delimiter_singleton(d1)
+      let #(ind_regex2, tag2, replacement2) = all_stuff_for_latex_delimiter_singleton(d2)
       [
         split_by_indexed_regexes(#([#(ind_regex1, tag1), #(ind_regex2, tag2)], forbidden)),
         pair_bookends(#([tag1], [tag2], wrapper)),
@@ -102,8 +102,8 @@ fn split_pair_fold_for_delimiter_pair(
 pub fn create_mathblock_and_math_elements(
   display_math_delimiters: List(LatexDelimiterPair),
   single_math_delimiters: List(LatexDelimiterPair),
-  display_math_default_delims: #(String, String),
-  inline_math_default_delims: #(String, String),
+  display_math_default_delimeters: LatexDelimiterPair,
+  inline_math_default_delimeters: LatexDelimiterPair,
 ) -> List(Pipe) {
   let display_math_pipe =
     list.map(
@@ -119,8 +119,8 @@ pub fn create_mathblock_and_math_elements(
     )
     |> list.flatten
 
-  let #(a, b) = display_math_default_delims
-  let #(c, d) = inline_math_default_delims
+  let #(a, b) = opening_and_closing_string_for_pair(display_math_default_delimeters)
+  let #(c, d) = opening_and_closing_string_for_pair(inline_math_default_delimeters)
 
   let reinserting_delims_pipe = [
     insert_bookend_tags([
@@ -143,20 +143,29 @@ pub fn create_mathblock_and_math_elements(
   |> list.flatten
 }
 
-pub fn normalize_begin_end_align_star(
+pub fn normalize_begin_end_align(
   with: LatexDelimiterPair,
 ) -> List(Pipe) {
+  let #(s1, s2) = opening_and_closing_string_for_pair(with)
+
   let opening = irs.unescaped_suffix_indexed_regex("\\\\begin\\{align\\*\\}")
   let closing = irs.unescaped_suffix_indexed_regex("\\\\end\\{align\\*\\}")
-  let #(s1, s2) = opening_and_closing_string_for_pair(with)
+
+  let opening2 = irs.unescaped_suffix_indexed_regex("\\\\begin\\{align\\}")
+  let closing2 = irs.unescaped_suffix_indexed_regex("\\\\end\\{align\\}")
+
   [
     split_by_indexed_regexes(#([
       #(opening, "BeginAlignStar"),
-      #(closing, "EndAlignStar")
+      #(closing, "EndAlignStar"),
+      #(opening2, "BeginAlign"),
+      #(closing2, "EndAlign"),
     ], [])),
     fold_tags_into_text([
       #("BeginAlignStar", s1 <> "\\begin{align*}"),
       #("EndAlignStar", "\\end{align*}" <> s2),
+      #("BeginAlign", s1 <> "\\begin{align}"),
+      #("EndAlign", "\\end{align}" <> s2),
     ])
   ]
 }

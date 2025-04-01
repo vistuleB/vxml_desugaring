@@ -1,13 +1,8 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml_parser.{
-  type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V,
-}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import vxml_parser.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
 
 fn line_to_tooltip_span(bc: BlamedContent, prefix: Extra) -> VXML {
   let location =
@@ -20,21 +15,23 @@ fn line_to_tooltip_span(bc: BlamedContent, prefix: Extra) -> VXML {
       V(
         bc.blame,
         "span",
-        [BlamedAttribute(bc.blame, "class", "tooltip-3003-text")],
-        [T(bc.blame, [BlamedContent(bc.blame, bc.content)])],
+        [
+          BlamedAttribute(bc.blame, "class", "tooltip-3003-text")
+        ],
+        [
+          T(bc.blame, [BlamedContent(bc.blame, bc.content)])
+        ],
       ),
       V(
         bc.blame,
         "span",
         [
           BlamedAttribute(bc.blame, "class", "tooltip-3003"),
-          BlamedAttribute(
-            bc.blame,
-            "onClick",
-            "sendCmdTo3003('code --goto " <> location <> "');",
-          ),
+          BlamedAttribute(bc.blame, "onClick", "sendCmdTo3003('code --goto " <> location <> "');"),
         ],
-        [T(bc.blame, [BlamedContent(bc.blame, location)])],
+        [
+          T(bc.blame, [BlamedContent(bc.blame, location)])
+        ],
       ),
     ],
   )
