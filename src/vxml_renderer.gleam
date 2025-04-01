@@ -186,7 +186,7 @@ pub fn stub_html_emitter(
       ],
       fragment
         |> infra.get_children
-        |> list.map(fn(vxml) { vp.vxml_to_html_blamed_lines(vxml, 8, 2) })
+        |> list.map(fn(vxml) { vp.vxml_to_html_blamed_lines(vxml, 2, 2) })
         |> list.flatten,
       [
         BlamedLine(blame_us("stub_html_emitter"), 0, "</body>"),
