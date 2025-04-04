@@ -24,20 +24,25 @@ fn param_transform(
 
   let assert V(_, parent_tag, _, _) = parent
 
-  use pairs <- infra.on_error_on_ok(dict.get(param, #(tag, parent_tag)), fn(_) {
-    Ok(vxml)
-  })
+  use attributes_to_add <- infra.on_error_on_ok(
+    dict.get(param, #(tag, parent_tag)),
+    fn(_) { Ok(vxml)}
+  )
 
   let old_attribute_keys = infra.get_attribute_keys(attributes)
 
   let attributes_to_add =
-    list.fold(over: pairs, from: [], with: fn(so_far, pair) {
-      let #(key, value) = pair
-      case list.contains(old_attribute_keys, key) {
-        True -> so_far
-        False -> [BlamedAttribute(blame, key, value), ..so_far]
+    list.fold(
+      over: attributes_to_add,
+      from: [],
+      with: fn(so_far, pair) {
+        let #(key, value) = pair
+        case list.contains(old_attribute_keys, key) {
+          True -> so_far
+          False -> [BlamedAttribute(blame, key, value), ..so_far]
+        }
       }
-    })
+    )
     |> list.reverse
 
   Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))

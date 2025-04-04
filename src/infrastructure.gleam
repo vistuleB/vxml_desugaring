@@ -5,9 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import vxml_parser.{
-  type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V,
-}
+import vxml_parser.{type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
 
 pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
   let assert T(blame, lines) = vxml
@@ -1019,6 +1017,21 @@ pub fn digest(vxml: VXML) -> String {
     V(_, tag, _, _) -> "V(_, " <> tag <> ", _, _)"
     T(_, _) -> "T(_, _)"
   }
+}
+
+pub fn valid_tag(tag: String) -> Bool {
+  !string.is_empty(tag) && 
+  !string.contains(tag, " ") &&
+  !string.contains(tag, ".") &&
+  !string.contains(tag, "\n") &&
+  !string.contains(tag, "\t")
+}
+
+pub fn valid_attribute_key(tag: String) -> Bool {
+  !string.is_empty(tag) && 
+  !string.contains(tag, " ") &&
+  !string.contains(tag, "\n") &&
+  !string.contains(tag, "\t")
 }
 
 //**************************************************************

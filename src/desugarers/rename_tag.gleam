@@ -18,9 +18,6 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-type Extra =
-  #(String, String)
-
 fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   let #(_, to) = extra
   case to == "" {
@@ -34,6 +31,9 @@ fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
 fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
+
+type Extra =
+  #(String, String)
 
 pub fn rename_tag(extra: Extra) -> Pipe {
   Pipe(

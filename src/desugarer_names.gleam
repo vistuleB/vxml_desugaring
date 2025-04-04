@@ -32,6 +32,7 @@ import desugarers/remove_starting_and_ending_empty_lines
 import desugarers/remove_starting_and_ending_spaces
 import desugarers/remove_vertical_chunks_with_no_text_child
 import desugarers/rename_tag
+import desugarers/rename_with_attributes
 import desugarers/rename_when_child_of
 import desugarers/unwrap_tags
 import desugarers/unwrap_tags_if_descendants_of
@@ -72,6 +73,7 @@ pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_em
 pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
 pub const remove_vertical_chunks_with_no_text_child = remove_vertical_chunks_with_no_text_child.remove_vertical_chunks_with_no_text_child
 pub const rename_tag = rename_tag.rename_tag
+pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const unwrap_tags = unwrap_tags.unwrap_tags
 pub const unwrap_tags_if_descendants_of = unwrap_tags_if_descendants_of.unwrap_tags_if_descendants_of
