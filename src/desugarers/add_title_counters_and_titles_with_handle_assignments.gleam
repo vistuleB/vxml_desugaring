@@ -1,6 +1,5 @@
 import blamedlines.{type Blame}
 import gleam/list
-import gleam/io
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{
@@ -12,7 +11,6 @@ import vxml.{
 }
 
 fn filter_out_handle_attributes(
-  tag: String,
   attributes: List(BlamedAttribute),
 ) -> #(List(BlamedAttribute), List(BlamedAttribute)) {
 
@@ -112,7 +110,7 @@ fn param_transform(
     T(_, _) -> Ok(node)
     V(blame, tag, attributes_v0, children) -> {
       let #(attributes_v1, handle_attributes) =
-        filter_out_handle_attributes(tag, attributes_v0)
+        filter_out_handle_attributes(attributes_v0)
       let attributes_v2 =
         list.flatten([
           counter_attributes_for_node(blame, tag, tuples),

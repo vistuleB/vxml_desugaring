@@ -2,11 +2,8 @@ import gleam/list
 import gleam/option.{None}
 import gleam/dict.{type Dict}
 import gleam/result
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml.{type VXML, T, V, BlamedAttribute}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import vxml.{type VXML, V, BlamedAttribute}
 
 fn param_transform(
   vxml: VXML,

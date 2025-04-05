@@ -1,6 +1,3 @@
-import blamedlines.{type Blame}
-import gleam/dict.{type Dict}
-import gleam/io
 import gleam/list
 import gleam/option
 import gleam/string
@@ -8,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, T, V}
 
 
 
