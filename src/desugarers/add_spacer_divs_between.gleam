@@ -8,7 +8,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, BlamedAttribute, V}
 
 type Param =
   Dict(#(String, String), String)

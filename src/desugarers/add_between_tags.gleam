@@ -7,7 +7,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, BlamedAttribute, V}
 
 fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
   case children {

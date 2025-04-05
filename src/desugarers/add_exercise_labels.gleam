@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
+import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 fn add_exercise_labels_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {

@@ -7,7 +7,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn generate_id(blame: Blame) -> String {
   "_"

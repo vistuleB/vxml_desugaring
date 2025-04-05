@@ -5,7 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import vxml_parser.{type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
 
 pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
   let assert T(blame, lines) = vxml

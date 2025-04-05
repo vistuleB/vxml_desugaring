@@ -4,7 +4,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml.{type VXML, T, V}
 
 fn wrap_second_element_if_its_math_and_recurse(
   children: List(VXML),

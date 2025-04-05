@@ -10,7 +10,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{
+import vxml.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
   BlamedContent, T, V,
 }

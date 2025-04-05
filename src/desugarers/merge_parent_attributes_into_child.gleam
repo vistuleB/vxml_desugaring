@@ -7,7 +7,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn lookup_attributes_by_key(
   in: List(BlamedAttribute),

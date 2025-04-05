@@ -3,7 +3,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML}
+import vxml.{type VXML}
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   Ok(vxml)

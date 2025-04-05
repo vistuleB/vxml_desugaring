@@ -6,7 +6,7 @@ import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
   Blame("generate_ti2_toc:" <> note, -1, [])

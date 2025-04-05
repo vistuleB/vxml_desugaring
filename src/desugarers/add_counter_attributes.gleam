@@ -8,7 +8,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn produce_attributes_and_increase_counters_for_tag(
   blame: Blame,

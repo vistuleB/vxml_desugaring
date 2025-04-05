@@ -6,7 +6,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, T, V}
+import vxml.{type BlamedAttribute, type VXML, T, V}
 
 fn matches_all_key_value_pairs(
   attrs: List(BlamedAttribute),

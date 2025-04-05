@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml.{type VXML, T, V}
 
 fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {
@@ -23,7 +23,7 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
         |> list.map(fn(att) {
           case att.key {
             "href" ->
-              vxml_parser.BlamedAttribute(
+              vxml.BlamedAttribute(
                 att.blame,
                 "href",
                 att.value

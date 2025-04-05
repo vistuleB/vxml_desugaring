@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn replace_value(value: String, replacement: String) -> String {
   string.replace(replacement, "()", value)

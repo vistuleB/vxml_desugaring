@@ -8,7 +8,7 @@ import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 const ins = string.inspect
 

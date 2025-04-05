@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Pipe, DesugarerDescription, Pipe}
-import vxml_parser.{type VXML, V}
+import vxml.{type VXML, V}
 
 fn matches_a_key_value_pair(vxml: VXML, extra: Extra) -> Bool {
   let assert V(_, _, attrs, _) = vxml

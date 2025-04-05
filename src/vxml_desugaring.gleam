@@ -1,17 +1,13 @@
 import argv
-import desugarers/extract_starting_and_ending_spaces.{
-  extract_starting_and_ending_spaces,
-}
-import desugarers/insert_bookend_text_if_no_attributes.{
-  insert_bookend_text_if_no_attributes,
-}
+import desugarers/extract_starting_and_ending_spaces.{extract_starting_and_ending_spaces}
+import desugarers/insert_bookend_text_if_no_attributes.{insert_bookend_text_if_no_attributes}
 import desugarers/unwrap_tags_if_no_attributes.{unwrap_tags_if_no_attributes}
 import gleam/io
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
-import writerly_parser as wp
+import writerly as wp
 
 fn test_pipeline() -> List(Pipe) {
   [

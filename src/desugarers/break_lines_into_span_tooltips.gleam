@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
-import vxml_parser.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
+import vxml.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
 
 fn line_to_tooltip_span(bc: BlamedContent, prefix: Extra) -> VXML {
   let location =

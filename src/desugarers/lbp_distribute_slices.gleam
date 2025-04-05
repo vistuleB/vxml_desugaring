@@ -2,7 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option.{None}
 import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml_parser.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn is_known_outer_element(vxml: VXML) -> Bool {
   case vxml {

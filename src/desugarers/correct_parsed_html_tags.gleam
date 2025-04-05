@@ -4,7 +4,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml.{type VXML, T, V}
 
 fn correct_tag(tag: String) {
   tag |> string.drop_start(1) |> string.drop_end(1)

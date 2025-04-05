@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml.{type VXML, T, V}
 
 fn is_empty(child: VXML) {
   case child {

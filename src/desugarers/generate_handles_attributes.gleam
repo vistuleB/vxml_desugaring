@@ -8,7 +8,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 
 
@@ -50,7 +50,7 @@ fn param_transform_second_half(
         True -> {
           let attributes = list.append(
             attributes,
-            [vxml_parser.BlamedAttribute(
+            [vxml.BlamedAttribute(
               b,
               "handle",
               string.concat([parent_tag, string.inspect(ch_number), target_tag, string.inspect(ex_number)]),

@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, BlamedContent, T, V}
+import vxml.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
 

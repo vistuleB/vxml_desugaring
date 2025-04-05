@@ -6,7 +6,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, T, V, BlamedAttribute}
+import vxml.{type VXML, T, V, BlamedAttribute}
 
 fn param_transform(
   vxml: VXML,

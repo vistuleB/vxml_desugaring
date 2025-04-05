@@ -6,7 +6,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type VXML, T, V}
+import vxml.{type VXML, T, V}
 
 fn lists_of_non_blank_line_chunks(
   vxmls: List(VXML),

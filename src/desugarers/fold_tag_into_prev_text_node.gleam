@@ -4,7 +4,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn append_to_prev_text_node(fold_as: String, node: VXML) -> List(VXML) {
   case node {

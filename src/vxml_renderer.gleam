@@ -11,8 +11,8 @@ import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
-import vxml_parser.{type VXML, V} as vp
-import writerly_parser as wp
+import vxml.{type VXML, V} as vp
+import writerly as wp
 
 const ins = string.inspect
 

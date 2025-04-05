@@ -4,7 +4,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml_parser.{type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn content_is_nonempty(blamed_content: BlamedContent) {
   case blamed_content {

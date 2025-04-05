@@ -7,7 +7,7 @@ import gleam/string
 import infrastructure.{
   type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
 }
-import vxml_parser.{type BlamedAttribute, type VXML, BlamedAttribute, V}
+import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
   Dict(String, #(String, String, String))

@@ -2,7 +2,7 @@ import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/regexp.{type Regexp}
 import gleam/string
-import vxml_parser.{ type BlamedContent, type VXML, BlamedContent, T, V }
+import vxml.{ type BlamedContent, type VXML, BlamedContent, T, V }
 import infrastructure.{type EitherOr, Or, Either, type DesugaringError } as infra
 
 //**************************************************************

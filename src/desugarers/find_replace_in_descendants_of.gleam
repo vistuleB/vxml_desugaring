@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml_parser.{type VXML, T, V}
+import vxml.{type VXML, T, V}
 
 fn param_transform(
   vxml: VXML,
