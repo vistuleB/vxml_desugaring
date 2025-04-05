@@ -5,6 +5,7 @@ import desugarers/add_between_tags
 import desugarers/add_counter_attributes
 import desugarers/add_title_counters_and_titles_with_handle_assignments
 import desugarers/add_attribute_to_if_child_of_but_no_overwrites
+import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
 import desugarers/concatenate_text_nodes
 import desugarers/convert_int_attributes_to_float
@@ -15,11 +16,12 @@ import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
 import desugarers/free_children
 import desugarers/generate_handles_attributes
-import desugarers/handles_generate_ids
 import desugarers/generate_lbp_links
 import desugarers/generate_lbp_table_of_contents
+import desugarers/generate_ti2_table_of_contents_html
 import desugarers/group_consecutive_children_avoiding
 import desugarers/handles_generate_dictionary
+import desugarers/handles_generate_ids
 import desugarers/handles_substitute
 import desugarers/identity
 import desugarers/insert_bookend_tags
@@ -37,6 +39,7 @@ import desugarers/rename_when_child_of
 import desugarers/unwrap_tags
 import desugarers/unwrap_tags_if_descendants_of
 import desugarers/unwrap_tags_if_single_child
+import desugarers/unwrap_tag_when_child_of_tags
 import desugarers/wrap_math_with_no_break
 
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
@@ -46,6 +49,7 @@ pub const add_between_tags = add_between_tags.add_between_tags
 pub const add_counter_attributes = add_counter_attributes.add_counter_attributes
 pub const add_title_counters_and_titles_with_handle_assignments = add_title_counters_and_titles_with_handle_assignments.add_title_counters_and_titles_with_handle_assignments
 pub const add_attribute_to_if_child_of_but_no_overwrites = add_attribute_to_if_child_of_but_no_overwrites.add_attribute_to_if_child_of_but_no_overwrites
+pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
 pub const change_attribute_value = change_attribute_value.change_attribute_value
 pub const concatenate_text_nodes = concatenate_text_nodes.concatenate_text_nodes
 pub const convert_int_attributes_to_float = convert_int_attributes_to_float.convert_int_attributes_to_float
@@ -56,11 +60,12 @@ pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
 pub const find_replace = find_replace.find_replace
 pub const free_children = free_children.free_children
 pub const generate_handles_attributes = generate_handles_attributes.generate_handles_attributes
-pub const handles_generate_ids = handles_generate_ids.handles_generate_ids
 pub const generate_lbp_links = generate_lbp_links.generate_lbp_links
 pub const generate_lbp_table_of_contents = generate_lbp_table_of_contents.generate_lbp_table_of_contents
+pub const generate_ti2_table_of_contents_html = generate_ti2_table_of_contents_html.generate_ti2_table_of_contents_html
 pub const group_consecutive_children_avoiding = group_consecutive_children_avoiding.group_consecutive_children_avoiding
 pub const handles_generate_dictionary = handles_generate_dictionary.handles_generate_dictionary
+pub const handles_generate_ids = handles_generate_ids.handles_generate_ids
 pub const handles_substitute = handles_substitute.handles_substitute
 pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
@@ -75,6 +80,7 @@ pub const remove_vertical_chunks_with_no_text_child = remove_vertical_chunks_wit
 pub const rename_tag = rename_tag.rename_tag
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
+pub const unwrap_tag_when_child_of_tags = unwrap_tag_when_child_of_tags.unwrap_tag_when_child_of_tags
 pub const unwrap_tags = unwrap_tags.unwrap_tags
 pub const unwrap_tags_if_descendants_of = unwrap_tags_if_descendants_of.unwrap_tags_if_descendants_of
 pub const unwrap_tags_if_single_child = unwrap_tags_if_single_child.unwrap_tags_if_single_child
