@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -380,11 +377,13 @@ type Extra =
 
 pub fn fold_tag_contents_into_text(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      "fold_tag_contents_into_text",
-      Some(ins(extra)),
-      "...",
-    ),
+    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "REQUIRES VERIFICATION/DOCUMENTATION;
+seemingly replaces specified tags by
+their contents (like 'unwrap'), but with 
+the first/last text node of the contents
+being, if any, being glued to surrounding 
+text nodes (in end-of-last-line to 
+beginning-of-first-line fashion)"),
     desugarer: desugarer_factory(extra),
   )
 }

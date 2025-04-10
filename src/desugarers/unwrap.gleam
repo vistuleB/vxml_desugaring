@@ -35,10 +35,18 @@ type Extra =
   List(String)
 // list of tags to be unwrapped
 
+/// to 'unwrap' a tag means to repalce the
+/// tag by its children (replace a V- VXML node by
+/// its children in the tree); this function unwraps
+/// tags based solely on their name, as given by a
+/// list of names of tags to unwrap
 pub fn unwrap(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap", Some(ins(extra)), "unwraps tags based solely on tag
-name"),
+    description: DesugarerDescription("unwrap", Some(ins(extra)), "to 'unwrap' a tag means to repalce the
+tag by its children (replace a V- VXML node by
+its children in the tree); this function unwraps
+tags based solely on their name, as given by a
+list of names of tags to unwrap"),
     desugarer: desugarer_factory(extra),
   )
 }

@@ -56,10 +56,10 @@ fn fold_tags_into_text_children_accumulator(
   //
   // PURPOSE: this function should turn tags that appear
   //     in the tags2texts dictionary into text fragments
-  //     that become into last/first line of the previous/next
+  //     that become the last/first line of the previous/next
   //     text nodes to the tag, if any, possibly resulting
   //     in the two text nodes on either side of the tag
-  //     becoming joined into one text gone (by glued via
+  //     becoming joined into one text node (by glued via
   //     the tag text); if there are no adjacent text nodes,
   //     the tag becomes a new standalone text node
   // *
@@ -382,10 +382,14 @@ type Extra =
 pub fn fold_tags_into_text(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "fold_tags_into_text",
-      Some(ins(extra)),
-      "...",
-    ),
+      "fold_tags_into_text", Some(ins(extra)), "REQUIRES VERIFICATION/DOCUMENTATION;
+seemingly replaces specified tags by
+specified strings that are glued to
+surrounding text nodes (in end-of-last-line
+glued to beginning-of-first-line fashion), 
+without regards for the tag's contents 
+or attributes, that are destroyed in the 
+process"),
     desugarer: desugarer_factory(extra |> dict.from_list),
   )
 }
