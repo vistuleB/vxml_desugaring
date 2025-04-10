@@ -20,10 +20,10 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   let #(_, to) = extra
-  case to == "" {
-    False -> param_transform(_, extra)
-    True -> fn(_) {
-      Error(DesugaringError(infra.no_blame, "empty 'to' tag in rename_tag"))
+  case infra.valid_tag(to) {
+    True -> param_transform(_, extra)
+    False -> fn(_) {
+      Error(DesugaringError(infra.no_blame, "invalid target tag name '" <> to <> "'"))
     }
   }
 }
@@ -35,9 +35,9 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 type Extra =
   #(String, String)
 
-pub fn rename_tag(extra: Extra) -> Pipe {
+pub fn rename(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("rename_tag", None, "..."),
+    description: DesugarerDescription("rename", None, "renames one tag"),
     desugarer: desugarer_factory(extra),
   )
 }

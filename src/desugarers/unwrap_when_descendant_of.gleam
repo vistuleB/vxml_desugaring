@@ -18,23 +18,19 @@ fn param_transform(
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     V(_, tag, _, children) ->
-      case list.find(extra, fn(pair) { pair |> pair.first == tag }) {
-        Ok(pair) -> {
-          let forbidden = pair |> pair.second
+      case infra.use_list_pair_as_dict(extra, tag) {
+        Error(Nil) -> Ok([node])
+        Ok(forbidden) -> {
           let ancestor_names = list.map(ancestors, infra.get_tag)
           case list.any(ancestor_names, list.contains(forbidden, _)) {
             True -> Ok(children)
             False -> Ok([node])
           }
         }
-        Error(Nil) -> Ok([node])
       }
     _ -> Ok([node])
   }
 }
-
-type Extra =
-  List(#(String, List(String)))
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
   fn(vxml: VXML, s1: List(VXML), s2: List(VXML), s3: List(VXML), s4: List(VXML)) {
@@ -46,13 +42,16 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extra))
 }
 
-pub fn unwrap_tags_if_descendants_of(extra: Extra) -> Pipe {
+type Extra =
+  List(#(String,    List(String)))
+//        ↖            ↖
+//         tag to be    list of ancestor names
+//         unwrapped    that will cause tag to unwrap
+
+pub fn unwrap_when_descendant_of(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      "unwrap_tags_if_descendants_of",
-      Some(ins(extra)),
-      "...",
-    ),
+    description: DesugarerDescription("unwrap_when_descendant_of", Some(ins(extra)), "unwraps tags that are the descendant of
+one of a stipulated list of tag names"),
     desugarer: desugarer_factory(extra),
   )
 }

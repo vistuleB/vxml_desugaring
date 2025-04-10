@@ -289,6 +289,17 @@ pub fn triples_to_aggregated_dict(l: List(#(a, b, c))) -> Dict(a, List(#(b, c)))
   |> aggregate_on_first
 }
 
+pub fn use_list_pair_as_dict(
+  list_pairs: List(#(a, b)),
+  key: a
+) -> Result(b, Nil) {
+  case list_pairs {
+    [] -> Error(Nil)
+    [#(alice, bob)] if alice == key -> Ok(bob)
+    [_, ..rest] -> use_list_pair_as_dict(rest, key)
+  }
+}
+
 //**************************************************************
 //* either-or functions
 //**************************************************************

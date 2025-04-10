@@ -23,9 +23,6 @@ fn param_transform(
   }
 }
 
-type Extra =
-  List(String)
-
 fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
   param_transform(_, extra)
 }
@@ -34,9 +31,14 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
-pub fn unwrap_tags(extra: Extra) -> Pipe {
+type Extra =
+  List(String)
+// list of tags to be unwrapped
+
+pub fn unwrap(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap_tags", Some(ins(extra)), "..."),
+    description: DesugarerDescription("unwrap", Some(ins(extra)), "unwraps tags based solely on tag
+name"),
     desugarer: desugarer_factory(extra),
   )
 }

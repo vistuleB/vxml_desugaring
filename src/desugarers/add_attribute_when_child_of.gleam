@@ -69,15 +69,18 @@ type Param =
 
 type Extra =
   List(#(String, String, String, String))
+//       tag     parent  attr    value
 
-//                  tag     parent  attr    value
-
-pub fn add_attribute_to_if_child_of_but_no_overwrites(extra: Extra) -> Pipe {
+/// adds an attribute-pair to a tag
+/// when it is the child of another specified
+/// tag; will not overwrite if attribute with
+/// that key already exists
+pub fn add_attribute_when_child_of(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      "add_attribute_to_if_child_of_but_no_overwrites",
-      option.Some(string.inspect(extra)),
-      "...",
+    description: DesugarerDescription("add_attribute_when_child_of", option.Some(string.inspect(extra)), "adds an attribute-pair to a tag
+when it is the child of another specified
+tag; will not overwrite if attribute with
+that key already exists",
     ),
     desugarer: desugarer_factory(extra |> extra_to_param),
   )

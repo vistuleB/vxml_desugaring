@@ -23,9 +23,6 @@ fn param_transform(
   }
 }
 
-type Extra =
-  List(String)
-
 fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
   param_transform(_, extra)
 }
@@ -34,13 +31,16 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
-pub fn unwrap_tags_if_single_child(extra: Extra) -> Pipe {
+type Extra =
+  List(String)
+//      ↖
+//       tag to be
+//       unwrapped
+
+pub fn unwrap_when_single_child(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      "unwrap_tags_if_single_child",
-      Some(ins(extra)),
-      "...",
-    ),
+    description: DesugarerDescription("unwrap_when_single_child", Some(ins(extra)), "unwraps based on tag name if node
+has no siblings"),
     desugarer: desugarer_factory(extra),
   )
 }
