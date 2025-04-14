@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/pair
 import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
@@ -21,13 +22,29 @@ type HandleInstances =
 //   handle   local path, element id, string value
 //   name     of page     on page     of handle
 
+fn target_is_on_same_chapter(
+  current_filename: String, // eg: /article/chapter1
+  target_blame: Blame, // eg: chapter1/chapter.emu
+) -> Bool {
+  let assert [target_filename, ..] = target_blame.filename |> string.split("/")
+  let assert [current_filename, ..] = current_filename |> string.split("/") |> list.reverse()
+
+  target_filename == current_filename
+}
+
 fn construct_hyperlink(
   blame: Blame,
   handle: #(String, String, String),
   extra: Extra
 ) {
   let #(id, filename, value) = handle
-  V(blame, "a", list.flatten([
+
+  let tag = case target_is_on_same_chapter(filename, blame) {
+    True -> "InChapterLink"
+    False -> "a"
+  }
+
+  V(blame, tag, list.flatten([
       list.map(extra, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
       [BlamedAttribute(blame, "href", filename <> "#" <> id)]
     ]),
@@ -96,6 +113,7 @@ fn print_handle_for_contents(
   handles: HandleInstances,
   extra: Extra
 ) -> Result(List(VXML), DesugaringError) {
+
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
@@ -207,6 +225,7 @@ fn desugarer_factory(extra) -> Desugarer {
 /// # Extra
 /// list of additional key-value pairs to attach to anchor tag
 pub fn handles_substitute(extra: Extra) -> Pipe {
+
   Pipe(
     description: DesugarerDescription("handles_substitute", option.None, "
     Looks for handle definitions in GrandWrapper and replaces >>handle occurences with defined value \n
