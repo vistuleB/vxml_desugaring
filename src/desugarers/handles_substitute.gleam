@@ -46,7 +46,7 @@ fn construct_hyperlink(
 
   V(blame, tag, list.flatten([
       list.map(extra, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
-      [BlamedAttribute(blame, "href", filename <> "#" <> id)]
+      [BlamedAttribute(blame, "href", filename <> "?id=" <> id)]
     ]),
     [T(blame, [BlamedContent(blame, value)])])
 }
