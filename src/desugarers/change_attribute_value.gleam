@@ -52,15 +52,6 @@ fn change_attribute_value_param_transform(
   }
 }
 
-//**********************************
-// type Extra = List(#(String,            String  ))
-//                       ↖ attribute key      ↖ replacement of attribute value string
-//                                              "()" can be used to keep current value
-//                                              ex: 
-//                                                current value: image/img.png 
-//                                                replacement: /() 
-//                                                result: /image/img.png
-//**********************************
 type Extra =
   List(#(String, String))
 
@@ -72,12 +63,27 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
+/// Used for changing the value of an attribute
+/// Takes attribute key, replacement of attribute value string
+/// "()" can be used to keep current value
+///**********************************
+/// type Extra = List(#(String,            String  ))
+///                       ↖ attribute key      ↖ replacement of attribute value string
+///                                              "()" can be used to keep current value
+///                                              ex: 
+///                                                current value: image/img.png 
+///                                                replacement: /() 
+///                                                result: /image/img.png
+///**********************************
 pub fn change_attribute_value(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "change_attribute_value",
       option.Some(string.inspect(extra)),
-      "...",
+      "Used for changing the value of an attribute
+       Takes attribute key, replacement of attribute value string
+       \"()\" can be used to keep current value
+       ",
     ),
     desugarer: desugarer_factory(extra),
   )
