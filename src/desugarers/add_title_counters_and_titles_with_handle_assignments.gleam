@@ -207,19 +207,20 @@ type ManyStrings =
 
 type Extra =
   List(ManyStrings)
+// **********************************
+// type Extra = List(#(String,         String,       String,        String,         String,             String))
+//                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter      ↖ fallback phrase
+//                         ancestor        name          to add         phrase          phrase              if element is encountered
+//                         tag that                      title to                                           parent/ancestor that holds
+//                         contains                                                                         counter
+//                         counter
+// **********************************
 
-/// Used for adding countered titles to elements by prepending a new node  
-/// to an element that is a child of a certain ancestor 
-/// the new node will have pre-counter-text , counter and post-counter-text 
-/// 
-/// **********************************
-/// type Extra = List(#(String,         String,       String,        String,         String,             String))
-///                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter      ↖ fallback phrase
-///                         ancestor        name          to add         phrase          phrase              if element is encountered
-///                         tag that                      title to                                           parent/ancestor that holds
-///                         contains                                                                         counter
-///                         counter
-/// **********************************
+/// Used for adding countered titles to elements by 
+/// prepending a new node to an element that is a 
+/// child of a certain ancestor the new node will 
+/// have pre-counter-text, counter and 
+/// post-counter-text
 pub fn add_title_counters_and_titles_with_handle_assignments(
   extra: Extra,
 ) -> Pipe {
@@ -227,9 +228,12 @@ pub fn add_title_counters_and_titles_with_handle_assignments(
     description: DesugarerDescription(
       "add_title_counters_and_titles_with_handle_assignments",
       Some(ins(extra)),
-      "Used for adding countered titles to elements by prepending a new node\n
-      to an element that is a child of a certain ancestor\n 
-      the new node will have pre-counter-text , counter and post-counter-text",
+      "
+Used for adding countered titles to elements by 
+prepending a new node to an element that is a 
+child of a certain ancestor the new node will 
+have pre-counter-text, counter and 
+post-counter-text",
     ),
     desugarer: case check_uniqueness_extra(extra) {
       Some(pair) -> {

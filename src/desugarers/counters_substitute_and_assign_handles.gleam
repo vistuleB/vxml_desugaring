@@ -592,39 +592,67 @@ fn counter_transform(
   }
 }
 
-/// Used for automatic counting numbers inside text and assiging them to handles ( variables ) to be used anywhere in the document
-/// Starts by defining counters in attributes of tags (counter="MyCounterName")
-/// Then uses them in text nodes in these format ::::MyCounterName
+/// Used for automatic counting numbers inside text and 
+/// assiging them to handles ( variables ) to be used 
+/// anywhere in the document
+/// Starts by defining counters in attributes of tags 
+/// (counter="MyCounterName")
+/// Then uses them in text nodes in these format 
+/// ::::MyCounterName
 /// the format is split into 3 parts :
-/// - first ( insertion :: or .. ) : to indicate whether the value of this counter should be insterted in the text or not
-/// - second ( mutation :: ++ -- ) : to indicate the mutation to be applied to the counter , :: for not mutating , ++ for incrementing , -- for decrementing
-/// - third ( counter name ) : the name of the counter to be used
+/// - first ( insertion :: or .. ) : to indicate whether 
+/// the value of this counter should be insterted in the 
+/// text or not
+/// - second ( mutation :: ++ -- ) : to indicate the 
+/// mutation to be applied to the counter , :: for not 
+/// mutating , ++ for incrementing , -- for decrementing
+/// - third ( counter name ) : the name of the counter to 
+/// be used
 /// 
-/// to assign the value of the counter to a handle , use the format handle<<MyCounterName
-/// handle must be defined in an attribute tag anywhere in the document ( handle="MyHandleName" )
+/// to assign the value of the counter to a handle , use 
+/// the format handle<<MyCounterName
+/// handle must be defined in an attribute tag anywhere in 
+/// the document ( handle="MyHandleName" )
 /// 
-/// This desugarer will only replace the counter values in the text nodes
-/// For handles . it needs to be used with the handles_generate_ids, handles_generate_dictionary, handles_substitute
-
- 
+/// This desugarer will only replace the counter values in 
+/// the text nodes
+/// For handles . it needs to be used with the 
+/// handles_generate_ids, handles_generate_dictionary, 
+/// handles_substitute
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "counters_substitute_and_assign_handles",
       None,
-      "Used for automatic counting numbers inside text and assiging them to handles ( variables ) to be used anywhere in the document
-      Starts by defining counters in attributes of tags (counter=\"MyCounterName\")
-      Then uses them in text nodes in these format ::::MyCounterName
-      the format is split into 3 parts :
-      - first ( insertion :: or .. ) : to indicate whether the value of this counter should be insterted in the text or not
-      - second ( mutation :: ++ -- ) : to indicate the mutation to be applied to the counter , :: for not mutating , ++ for incrementing , -- for decrementing
-      - third ( counter name ) : the name of the counter to be used
+      "
+Used for automatic counting numbers inside text and 
+assiging them to handles (variables) to be used 
+anywhere in the document
+Starts by defining counters in attributes of tags 
+(counter=\"MyCounterName\")
+Then uses them in text nodes in these format 
+::::MyCounterName
+the format is split into 3 parts :
+- first (insertion :: or ..) : to indicate whether the 
+value of this counter should be insterted in the text 
+or not
+- second (mutation :: ++ --) : to indicate the mutation 
+to be applied to the counter , :: for not mutating , 
+++ for incrementing , -- for decrementing
+- third (counter name) : the name of the counter to be 
+used
 
-      to assign the value of the counter to a handle , use the format handle<<MyCounterName
-      handle must be defined in an attribute tag anywhere in the document ( handle=\"MyHandleName\" )
+to assign the value of the counter to a handle , use 
+the format handle<<MyCounterName
+handle must be defined in an attribute tag anywhere in 
+the document (handle=\"MyHandleName\")
 
-      This desugarer will only replace the counter values in the text nodes
-      For handles . it needs to be used with the handles_generate_ids, handles_generate_dictionary, handles_substitute",
+This desugarer will only replace the counter values in 
+the text nodes
+For handles . it needs to be used with the 
+handles_generate_ids, handles_generate_dictionary, 
+handles_substitute
+      ",
     ),
     desugarer: fn(vxml) {
       use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
