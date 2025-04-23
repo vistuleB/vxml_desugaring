@@ -54,8 +54,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 }
 
 /// Used for freeing an element from a certain 
-/// parent tag
-/// Takes tag of parent, tag of child
+/// parent tag. Takes tag of parent, tag of child
 pub fn free_children(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
@@ -63,8 +62,7 @@ pub fn free_children(extra: Extra) -> Pipe {
       Some(ins(extra)),
       "
 Used for freeing an element from a certain 
-parent tag
-Takes tag of parent, tag of child",
+parent tag. Takes tag of parent, tag of child",
     ),
     desugarer: desugarer_factory(extra),
   )

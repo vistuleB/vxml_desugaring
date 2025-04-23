@@ -209,18 +209,24 @@ type Extra =
   List(ManyStrings)
 // **********************************
 // type Extra = List(#(String,         String,       String,        String,         String,             String))
-//                       ↖ parent or     ↖ counter     ↖ element      ↖ pre-counter   ↖ post-counter      ↖ fallback phrase
-//                         ancestor        name          to add         phrase          phrase              if element is encountered
-//                         tag that                      title to                                           parent/ancestor that holds
-//                         contains                                                                         counter
-//                         counter
+//                       ↖ tag of       ↖ name of     ↖ tag of       ↖ pre-counter   ↖ post-counter      ↖ fallback string
+//                         ancestor       counter       element        string          string              if element is encountered
+//                         that                         to add                                             without the counter-defining
+//                         defines                      title to                                           ancestor
+//                         the relevant counter
 // **********************************
 
-/// Used for adding countered titles to elements by 
-/// prepending a new node to an element that is a 
-/// child of a certain ancestor the new node will 
-/// have pre-counter-text, counter and 
-/// post-counter-text
+/// Inserts a counter-dependent text node as the
+/// first child of designated tags. The text node
+/// content has the form 
+/// <prefix string>++::counterName<postfix string>.
+/// Supplied arguments include, in order, the tag
+/// of the ancestor that defines the counter, the
+/// counter name, the tag of the element to which
+/// the text must be added, the prefix string, the
+/// postfix string, and a fallback string in case
+/// the tag is encountered without the counter-
+/// defining ancestor
 pub fn add_title_counters_and_titles_with_handle_assignments(
   extra: Extra,
 ) -> Pipe {
@@ -229,11 +235,17 @@ pub fn add_title_counters_and_titles_with_handle_assignments(
       "add_title_counters_and_titles_with_handle_assignments",
       Some(ins(extra)),
       "
-Used for adding countered titles to elements by 
-prepending a new node to an element that is a 
-child of a certain ancestor the new node will 
-have pre-counter-text, counter and 
-post-counter-text",
+Inserts a counter-dependent text node as the
+first child of designated tags. The text node
+content has the form 
+<prefix string>::++counterName<postfix string>.
+Supplied arguments include, in order, the tag
+of the ancestor that defines the counter, the
+counter name, the tag of the element to which
+the text must be added, the prefix string, the
+postfix string, and a fallback string in case
+the tag is encountered without the counter-
+defining ancestor",
     ),
     desugarer: case check_uniqueness_extra(extra) {
       Some(pair) -> {
