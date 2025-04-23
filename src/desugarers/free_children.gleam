@@ -53,7 +53,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
-/// Used for freeing an element from a certain 
+/// frees an element from a certain 
 /// parent tag. Takes tag of parent, tag of child
 pub fn free_children(extra: Extra) -> Pipe {
   Pipe(
@@ -61,7 +61,7 @@ pub fn free_children(extra: Extra) -> Pipe {
       "free_children",
       Some(ins(extra)),
       "
-Used for freeing an element from a certain 
+frees an element from a certain 
 parent tag. Takes tag of parent, tag of child",
     ),
     desugarer: desugarer_factory(extra),
