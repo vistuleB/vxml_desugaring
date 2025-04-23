@@ -64,11 +64,9 @@ pub fn desugarer_description_star_block(
       None -> ""
     }
 
-  let desugarer_description_lines = case
-    string.is_empty(desugarer_desc.general_description)
-  {
+  let desugarer_description_lines = case string.is_empty(desugarer_desc.general_description) {
     True -> []
-    False -> string.split(desugarer_desc.general_description, "\n")
+    False -> string.split(string.trim(desugarer_desc.general_description), "\n")
   }
 
   star_block(
