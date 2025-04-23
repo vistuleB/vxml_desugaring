@@ -47,17 +47,15 @@ fn desugarer_factory() -> Desugarer {
   infra.node_to_node_fancy_desugarer_factory(transform_factory())
 }
 
-/// Used for inserting an indent attribute
-/// to a verticalChunks that follow a 
-/// verticalChunk. basically seperates 
-/// the verticalChunks from each other
+/// Adds an 'indent true' attribute-value pair
+/// to VerticalChunk nodes that whose previous
+/// sibling is also a VerticalChunk node
 pub fn insert_indent() -> Pipe {
   Pipe(
     description: DesugarerDescription("insert_indent", option.None, "
-Used for inserting an indent attribute
-to a verticalChunks that follow a 
-verticalChunk. basically seperates 
-the verticalChunks from each other
+Adds an 'indent true' attribute-value pair
+to VerticalChunk nodes that whose previous
+sibling is also a VerticalChunk node
       ",
     ),
     desugarer: desugarer_factory(),

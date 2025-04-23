@@ -592,67 +592,98 @@ fn counter_transform(
   }
 }
 
-/// Used for automatic counting numbers inside text and 
-/// assiging them to handles ( variables ) to be used 
-/// anywhere in the document
-/// Starts by defining counters in attributes of tags 
-/// (counter="MyCounterName")
-/// Then uses them in text nodes in these format 
-/// ::::MyCounterName
-/// the format is split into 3 parts :
-/// - first ( insertion :: or .. ) : to indicate whether 
-/// the value of this counter should be insterted in the 
-/// text or not
-/// - second ( mutation :: ++ -- ) : to indicate the 
-/// mutation to be applied to the counter , :: for not 
-/// mutating , ++ for incrementing , -- for decrementing
-/// - third ( counter name ) : the name of the counter to 
-/// be used
+/// Used for subsituting counters by their numerical
+/// value, converted to a string, and assiging those
+/// values to prefixed handles.
 /// 
-/// to assign the value of the counter to a handle , use 
-/// the format handle<<MyCounterName
-/// handle must be defined in an attribute tag anywhere in 
-/// the document ( handle="MyHandleName" )
+/// If a counter named 'MyCounterName' is defined by
+/// ancestor, replaces strings of the form
 /// 
-/// This desugarer will only replace the counter values in 
-/// the text nodes
-/// For handles . it needs to be used with the 
-/// handles_generate_ids, handles_generate_dictionary, 
-/// handles_substitute
+/// <aa><bb>MyCounterName
+/// 
+/// where 
+/// 
+/// <aa> == \"::\"|\"..\" indicates whether
+/// the counter occurrence should be echoed as a
+/// string appearing in the document or not (\"::\" == echo,
+/// \"..\" == suppress), and where
+/// 
+/// <bb> ==  \"++\"|\"--\"|\"::\" indicates whether
+/// the counter should be incremented, decremented, or
+/// neither prior to possible insertion,
+/// 
+/// by the appropriate replacement string (possibly
+/// none), and assigns handles coming to the left
+/// using the '<<' assignment, e.g.,
+/// 
+/// handleName<<..++MyCounterName
+/// 
+/// would assign the stringified incremented value
+/// of MyCounterName to handle 'handleName' without
+/// echoing the value to the document, whereas
+/// 
+/// handleName<<::++MyCounterName
+/// 
+/// will do the same but also insert the new counter 
+/// value at that point in the document.
+/// 
+/// The computed handle assignments are not directly
+/// used by this desugarer, but are stored inside of
+/// a dictionary [DETAILS MISSING]. Some desugarers
+/// that make use of the handles dictionary are:
+/// 
+/// -- handles_generate_dictionary
+/// -- handles_generate_ids
+/// -- handles_substitute
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "counters_substitute_and_assign_handles",
       None,
       "
-Used for automatic counting numbers inside text and 
-assiging them to handles (variables) to be used 
-anywhere in the document
-Starts by defining counters in attributes of tags 
-(counter=\"MyCounterName\")
-Then uses them in text nodes in these format 
-::::MyCounterName
-the format is split into 3 parts :
-- first (insertion :: or ..) : to indicate whether the 
-value of this counter should be insterted in the text 
-or not
-- second (mutation :: ++ --) : to indicate the mutation 
-to be applied to the counter , :: for not mutating , 
-++ for incrementing , -- for decrementing
-- third (counter name) : the name of the counter to be 
-used
+Used for subsituting counters by their numerical
+value, converted to a string, and assiging those
+values to prefixed handles.
 
-to assign the value of the counter to a handle , use 
-the format handle<<MyCounterName
-handle must be defined in an attribute tag anywhere in 
-the document (handle=\"MyHandleName\")
+If a counter named 'MyCounterName' is defined by
+ancestor, replaces strings of the form
 
-This desugarer will only replace the counter values in 
-the text nodes
-For handles . it needs to be used with the 
-handles_generate_ids, handles_generate_dictionary, 
-handles_substitute
-      ",
+<aa><bb>MyCounterName
+
+where 
+
+<aa> == \"::\"|\"..\" indicates whether
+the counter occurrence should be echoed as a
+string appearing in the document or not (\"::\" == echo,
+\"..\" == suppress), and where
+
+<bb> ==  \"++\"|\"--\"|\"::\" indicates whether
+the counter should be incremented, decremented, or
+neither prior to possible insertion,
+
+by the appropriate replacement string (possibly
+none), and assigns handles coming to the left
+using the '<<' assignment, e.g.,
+
+handleName<<..++MyCounterName
+
+would assign the stringified incremented value
+of MyCounterName to handle 'handleName' without
+echoing the value to the document, whereas
+
+handleName<<::++MyCounterName
+
+will do the same but also insert the new counter 
+value at that point in the document.
+
+The computed handle assignments are not directly
+used by this desugarer, but are stored inside of
+a dictionary [DETAILS MISSING]. Some desugarers
+that make use of the handles dictionary are:
+
+-- handles_generate_dictionary
+-- handles_generate_ids
+-- handles_substitute",
     ),
     desugarer: fn(vxml) {
       use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))

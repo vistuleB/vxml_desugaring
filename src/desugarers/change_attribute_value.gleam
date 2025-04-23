@@ -57,7 +57,7 @@ type Extra =
 // **********************************
 //  type Extra = List(#(String,            String  ))
 //                        ↖ attribute key      ↖ replacement of attribute value string
-//                                               "()" can be used to keep current value
+//                                               "()" can be used to echo the current value
 //                                               ex: 
 //                                                 current value: image/img.png 
 //                                                 replacement: /() 
@@ -72,21 +72,26 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
-/// Used for changing the value of an attribute
-/// Takes attribute key, replacement of attribute
-/// value string
-/// "()" can be used to keep current value
+/// Used for changing the value of an attribute.
+/// Takes an attribute key and a replacement
+/// string in which "()" is used as a stand-in
+/// for the current value. For example, replacing
+/// attribute value "images/img.png" with the
+/// replacement string "/()" will result in the
+/// new attribute value "/images/img.png"
 pub fn change_attribute_value(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "change_attribute_value",
       option.Some(string.inspect(extra)),
       "
-Used for changing the value of an attribute
-Takes attribute key, replacement of attribute
-value string
-\"()\" can be used to keep current value
-       ",
+Used for changing the value of an attribute.
+Takes an attribute key and a replacement
+string in which \"()\" is used as a stand-in
+for the current value. For example, replacing
+attribute value \"images/img.png\" with the
+replacement string \"/()\" will result in the
+new attribute value \"/images/img.png",
     ),
     desugarer: desugarer_factory(extra),
   )
