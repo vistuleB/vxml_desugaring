@@ -628,9 +628,9 @@ fn counter_transform(
 /// value at that point in the document.
 /// 
 /// The computed handle assignments are not directly
-/// used by this desugarer, but are stored inside of
-/// a dictionary [DETAILS MISSING]. Some desugarers
-/// that make use of the handles dictionary are:
+/// used by this desugarer, but are stored inside as
+/// attributes on the parent tag to be later used by
+/// these desugarers.
 /// 
 /// -- handles_generate_dictionary
 /// -- handles_generate_ids
@@ -677,9 +677,9 @@ will do the same but also insert the new counter
 value at that point in the document.
 
 The computed handle assignments are not directly
-used by this desugarer, but are stored inside of
-a dictionary [DETAILS MISSING]. Some desugarers
-that make use of the handles dictionary are:
+used by this desugarer, but are stored inside as
+attributes on the parent tag to be later used by
+these desugarers.
 
 -- handles_generate_dictionary
 -- handles_generate_ids
