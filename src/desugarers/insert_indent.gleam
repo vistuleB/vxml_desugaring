@@ -48,8 +48,8 @@ fn desugarer_factory() -> Desugarer {
 }
 
 /// Adds an 'indent true' attribute-value pair
-/// to VerticalChunk nodes that whose previous
-/// sibling is also a VerticalChunk node
+/// to VerticalChunk nodes that directly follow
+/// VerticalChunk nodes
 pub fn insert_indent() -> Pipe {
   Pipe(
     description: DesugarerDescription("insert_indent", option.None, "
