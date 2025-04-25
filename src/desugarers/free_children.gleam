@@ -53,16 +53,101 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_nodes_desugarer_factory(transform_factory(extra))
 }
 
-/// frees an element from a certain 
-/// parent tag. Takes tag of parent, tag of child
+/// given a parent-child structure of the form
+/// 
+///     A[parent]
+/// 
+///         B[child]
+/// 
+///         C[child]
+/// 
+///         B[child]
+/// 
+///         D[child]
+/// 
+///         C[child]
+/// 
+///         B[child]
+/// 
+/// where A, B, C, D represent tags, a call to
+/// 
+/// free_children([#(A, C)])
+/// 
+/// will for example result in the updated 
+/// structure
+/// 
+///     A[parent]
+/// 
+///         B[child]
+/// 
+///     C[parent]
+/// 
+///     A[parent]
+/// 
+///         B[child]
+/// 
+///         D[child]
+/// 
+///     C[parent]
+/// 
+///     A[parent]
+/// 
+///         B[child]
+/// 
+/// with the original attribute values of A
+/// copied over to the newly created 'copies' of 
+/// A
 pub fn free_children(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "free_children",
       Some(ins(extra)),
       "
-frees an element from a certain 
-parent tag. Takes tag of parent, tag of child",
+given a parent-child structure of the form
+
+    A[parent]
+
+        B[child]
+
+        C[child]
+
+        B[child]
+
+        D[child]
+
+        C[child]
+
+        B[child]
+
+where A, B, C, D represent tags, a call to
+
+free_children([#(A, C)])
+
+will for example result in the updated 
+structure
+
+    A[parent]
+
+        B[child]
+
+    C[parent]
+
+    A[parent]
+
+        B[child]
+
+        D[child]
+
+    C[parent]
+
+    A[parent]
+
+        B[child]
+
+with the original attribute values of A
+copied over to the newly created 'copies' of 
+A
+",
     ),
     desugarer: desugarer_factory(extra),
   )

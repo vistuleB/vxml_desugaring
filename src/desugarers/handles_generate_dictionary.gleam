@@ -59,6 +59,7 @@ fn get_handles_from_attributes(
     list.filter(attributes, fn(att) {
       !{ string.starts_with(att.key, "handle_") }
     })
+
   #(filtered_attributes, extracted_handles)
 }
 
@@ -145,11 +146,11 @@ fn handles_dict_factory_transform(
 
       case is_root {
         True -> {
-          let handles_as_attributs =
+          let handles_as_attributes =
             convert_handles_to_attributes(updated_handles)
           let updated_root = V(b, t, attributes, updated_children)
           let new_root =
-            V(b, "GrandWrapper", handles_as_attributs, [updated_root])
+            V(b, "GrandWrapper", handles_as_attributes, [updated_root])
           Ok(#(new_root, updated_handles))
         }
         False -> {

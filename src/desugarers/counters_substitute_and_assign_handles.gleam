@@ -592,23 +592,23 @@ fn counter_transform(
   }
 }
 
-/// Used for subsituting counters by their numerical
-/// value, converted to a string, and assiging those
+/// Substitutes counters by their numerical
+/// value converted to string form and assigns those
 /// values to prefixed handles.
 /// 
 /// If a counter named 'MyCounterName' is defined by
-/// ancestor, replaces strings of the form
+/// an ancestor, replaces strings of the form
 /// 
-/// <aa><bb>MyCounterName
+/// \<aa>\<bb>MyCounterName
 /// 
 /// where 
 /// 
-/// <aa> == \"::\"|\"..\" indicates whether
+/// \<aa> == \"::\"|\"..\" indicates whether
 /// the counter occurrence should be echoed as a
 /// string appearing in the document or not (\"::\" == echo,
 /// \"..\" == suppress), and where
 /// 
-/// <bb> ==  \"++\"|\"--\"|\"::\" indicates whether
+/// \<bb> ==  \"++\"|\"--\"|\"::\" indicates whether
 /// the counter should be incremented, decremented, or
 /// neither prior to possible insertion,
 /// 
@@ -627,21 +627,20 @@ fn counter_transform(
 /// will do the same but also insert the new counter 
 /// value at that point in the document.
 /// 
-/// The computed handle assignments are not directly
-/// used by this desugarer, but are stored inside as
-/// attributes on the parent tag to be later used by
-/// these desugarers.
+/// The computed handle assignments are recorded as
+/// attributes of the form 
 /// 
-/// -- handles_generate_dictionary
-/// -- handles_generate_ids
-/// -- handles_substitute
+/// handle_\<handleName> <counterValue>
+/// 
+/// on the parent tag to be later used by the
+/// 'handles_generate_dictionary' desugarer
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "counters_substitute_and_assign_handles",
       None,
       "
-Used for subsituting counters by their numerical
+Substitutes counters by their numerical
 value, converted to a string, and assiging those
 values to prefixed handles.
 
