@@ -17,7 +17,7 @@ fn check_first_child(children: List(VXML), key: String)
 -> Result(Option(#(BlamedAttribute, List(VXML))), DesugaringError) {
 
    use first_child <- result.try(list.first(children) |> result.map_error(fn(_) {
-      DesugaringError(blamedlines.Blame("L20", 20, []), "No first child found")
+      DesugaringError(blamedlines.Blame("L20", 20, 0, []), "No first child found")
     }))
 
   case first_child {

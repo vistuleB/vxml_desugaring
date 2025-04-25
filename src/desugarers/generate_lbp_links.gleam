@@ -10,7 +10,7 @@ import vxml.{type VXML, BlamedAttribute, V}
 const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
-  Blame("generate_lbp_links:" <> note, -1, [])
+  Blame("generate_lbp_links:" <> note, -1, -1, [])
 }
 
 fn try_prepand_link(vxml: VXML, link_value: String, class: String) -> VXML {

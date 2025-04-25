@@ -169,7 +169,7 @@ pub fn stub_html_emitter(
   tuple: #(String, VXML, a),
 ) -> Result(#(String, List(BlamedLine), a), b) {
   let #(path, fragment, fragment_type) = tuple
-  let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, []) }
+  let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, 0, []) }
   let lines =
     list.flatten([
       [
@@ -200,7 +200,7 @@ pub fn stub_jsx_emitter(
   tuple: #(String, VXML, a),
 ) -> Result(#(String, List(BlamedLine), a), b) {
   let #(path, fragment, fragment_type) = tuple
-  let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, []) }
+  let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, 0,[]) }
   let lines =
     list.flatten([
       [

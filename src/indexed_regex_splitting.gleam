@@ -88,13 +88,42 @@ pub fn split_string_by_regex_with_indexed_group(
   |> list.map(string.join(_, ""))
 }
 
+// Helper function to calculate character positions
+fn calculate_char_positions(splits: List(String)) -> List(Int) {
+  list.index_fold(
+    splits,
+    #([], 0),
+    fn(acc, split, _) {
+      let #(positions, current_pos) = acc
+      let new_pos = current_pos + string.length(split)
+      #([current_pos, ..positions], new_pos)
+    }
+  )
+  |> fn(result) { list.reverse(result.0) }
+}
+
 fn split_line_by_regex_with_indexed_group(
   line: BlamedContent,
   re: RegexWithIndexedGroup,
 ) -> List(EitherOr(BlamedContent, Blame)) {
   let BlamedContent(blame, content) = line
-  split_string_by_regex_with_indexed_group(content, re)
-  |> list.map(fn(thing) { Either(BlamedContent(blame, thing)) })
+  
+  // Track character position as we split
+  let splits = split_string_by_regex_with_indexed_group(content, re)
+  
+  // Create a list of character positions for each split
+  let char_positions = calculate_char_positions(splits)
+   
+  // Map each split to a BlamedContent with updated char_no
+  list.index_map(
+    splits,
+    fn(split, idx) {
+      let char_pos = infra.get_at(char_positions, idx)
+      let assert Ok(pos) = char_pos
+      let updated_blame = Blame(..blame, char_no: blame.char_no + pos)
+      Either(BlamedContent(updated_blame, split))
+    }
+  )
   |> list.intersperse(Or(blame))
 }
 

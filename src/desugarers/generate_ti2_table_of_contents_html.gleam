@@ -13,7 +13,7 @@ import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
-  Blame("generate_ti2_toc:" <> note, -1, [])
+  Blame("generate_ti2_toc:" <> note, -1, -1, [])
 }
 
 fn prepand_0(number: String) {

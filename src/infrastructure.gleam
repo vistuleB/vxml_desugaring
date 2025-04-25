@@ -7,6 +7,21 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
 
+
+/// Returns the element at the specified index in a list
+/// 
+/// Arguments:
+/// - list: The input list to get element from
+/// - index: The zero-based index to retrieve
+pub fn get_at(list: List(a), index: Int) -> Result(a, Nil) {
+  case list, index {
+    [], _ -> Error(Nil)
+    [head, ..], 0 -> Ok(head)
+    [_, ..tail], i if i > 0 -> get_at(tail, i - 1)
+    _, _ -> Error(Nil)
+  }
+}
+
 pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
   let assert T(blame, lines) = vxml
   let assert [first_line, ..rest] = lines
@@ -509,7 +524,7 @@ pub fn get_blame(vxml: VXML) -> Blame {
   }
 }
 
-pub const no_blame = Blame("", -1, [])
+pub const no_blame = Blame("", -1, -1, [])
 
 pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
   let assert [first, ..] = vxmls
@@ -517,8 +532,8 @@ pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
 }
 
 pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
-  let Blame(filename, indent, comments) = blame
-  Blame(filename, indent, [comment, ..comments])
+  let Blame(filename, indent, char_no, comments) = blame
+  Blame(filename, indent, char_no, [comment, ..comments])
 }
 
 //**************************************************************

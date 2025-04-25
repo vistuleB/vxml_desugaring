@@ -18,7 +18,7 @@ type HandleInstances =
 fn convert_handles_to_attributes(
   handles: HandleInstances,
 ) -> List(BlamedAttribute) {
-  let blame = Blame("", 0, [])
+  let blame = Blame("", 0, 0, [])
 
   list.map2(dict.keys(handles), dict.values(handles), fn(key, values) {
     let #(id, filename, value) = values
