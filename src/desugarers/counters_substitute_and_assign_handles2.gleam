@@ -1,4 +1,3 @@
-import gleam/io
 import blamedlines.{type Blame, Blame}
 import gleam/float
 import gleam/int
@@ -7,14 +6,9 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-}
+import infrastructure.{ type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe }
 import roman
-import vxml.{
-  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
-  BlamedContent, T, V,
-}
+import vxml.{ type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
 import infrastructure as infra
 
 type CounterType {
@@ -247,15 +241,15 @@ fn handle_matches(
         None -> None
         Some(_) -> Some(get_all_handles_from_match_content(content))
       }
+
       let handle_assignments = case handle_names {
         None -> []
-        Some(names) -> names |> list.map(fn(x) {
-                    #(x, handles_value)
-                  })
+        Some(names) -> names |> list.map(fn(x) { #(x, handles_value) })
       }
 
       let assert [first_split, _, _, _, _, _, _, _, _, _, _, _, ..rest_splits] =
         splits
+
       use #(rest_output, updated_counters, rest_handle_assignments) <- result.try(
         handle_matches(
           rest,
@@ -272,8 +266,6 @@ fn handle_matches(
     }
   }
 }
-
-
 
 fn substitute_counters_and_generate_handle_assignments(
   content: String,
@@ -334,10 +326,7 @@ fn substitute_counters_and_generate_handle_assignments(
     )
 
   let matches = regexp.scan(re, content)
-
   let splits = regexp.split(re, content)
-
-  
 
   handle_matches(matches, splits, counters)
 }
@@ -364,16 +353,17 @@ fn update_blamed_contents(
   let init_acc = #([], counters, [])
 
   contents
-    |> list.try_fold(init_acc, fn(acc, content){
-      let #(old_contents, counters, handles) = acc
-
-      use #(updated_content, updated_counters, new_handles) <- result.try(update_blamed_content(content, counters))
-
-      Ok(#(list.append(old_contents, [updated_content]), updated_counters, list.flatten([handles, new_handles]) ))
-    })
+    |> list.try_fold(
+      init_acc, 
+      fn(acc, content) {
+        let #(old_contents, counters, handles) = acc
+        use #(updated_content, updated_counters, new_handles) <- result.try(update_blamed_content(content, counters))
+        Ok(#(list.append(old_contents, [updated_content]), updated_counters, list.flatten([handles, new_handles]) ))
+      }
+    )
 }
 
-fn handle_assignment_blamed_attributes_from_handle_assignmnets(
+fn handle_assignment_blamed_attributes_from_handle_assignments(
   handles: List(HandleAssignment),
 ) -> List(BlamedAttribute) {
   handles
@@ -514,7 +504,7 @@ fn get_counters_from_attributes(
 
 fn before_transforming_children(
   vxml: VXML,
-  state: State,    // #(List(CounterInstance), List(HandleAssignment))
+  state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
   let #(counters, handles) = state
   let assert True = list.is_empty(handles)
@@ -557,7 +547,7 @@ fn after_transforming_children(
 
       let attributes = list.flatten([
         attributes,
-        handle_assignment_blamed_attributes_from_handle_assignmnets(handles_after),
+        handle_assignment_blamed_attributes_from_handle_assignments(handles_after),
       ])
 
       let counters = take_existing_counters(counters_before, counters_after)
@@ -593,5 +583,3 @@ pub fn counters_substitute_and_assign_handles2() -> Pipe {
     desugarer: desugarer_factory(),
   )
 }
-
-
