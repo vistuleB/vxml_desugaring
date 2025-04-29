@@ -51,7 +51,7 @@ type Extra =
 
 pub fn define_article_output_path(extra: Extra) -> Pipe {
   Pipe(
-    description: DesugarerDescription("", None, "..."),
+    description: DesugarerDescription("define_article_output_path", None, "..."),
     desugarer: desugarer_factory(extra),
   )
 }
