@@ -1424,25 +1424,6 @@ pub type StatefulDownAndUpNodeToNodeTransform(a) {
   )
 }
 
-fn stateful_down_up_node_to_node_many(
-  state: a,
-  vxmls: List(VXML),
-  transform: StatefulDownAndUpNodeToNodeTransform(a),
-) -> Result(#(List(VXML), a), DesugaringError) {
-  case vxmls {
-    [] -> Ok(#([], state))
-    [first, ..rest] -> {
-      use #(first_transformed, new_state) <- result.then(
-        stateful_down_up_node_to_node_one(state, first, transform),
-      )
-      use #(rest_transformed, new_new_state) <- result.then(
-        stateful_down_up_node_to_node_many(new_state, rest, transform),
-      )
-      Ok(#([first_transformed, ..rest_transformed], new_new_state))
-    }
-  }
-}
-
 fn stateful_down_up_node_to_node_apply_first_half(
   state: a,
   node: VXML,
@@ -1476,10 +1457,10 @@ fn stateful_down_up_node_to_node_apply_to_children(
   case node {
     T(_, _) -> Ok(#(node, state))
     V(blame, tag, attrs, children) -> {
-      use #(new_children, new_state) <- result.then(
-        stateful_down_up_node_to_node_many(state, children, transform_pair),
+      use #(children, new_state) <- result.then(
+        try_map_fold(children, state, fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform_pair)})
       )
-      Ok(#(V(blame, tag, attrs, new_children), new_state))
+      Ok(#(V(blame, tag, attrs, children), new_state))
     }
   }
 }
