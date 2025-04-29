@@ -1737,6 +1737,10 @@ pub fn early_return_node_to_node_desugarer_factory(
   early_return_node_to_node_desugar_one(_, [], transform)
 }
 
+pub fn blame_us(message: String) -> Blame {
+    Blame(message, 0, 0, [])
+}
+
 //*********
 //* types *
 //*********

@@ -43,7 +43,11 @@ import desugarers/unwrap_when_child_of
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
 import desugarers/cut_paste_attribute_from_first_child_to_self
+// import desugarers/rearrange_links
+import desugarers/counters_substitute_and_assign_handles2
 
+pub const counters_substitute_and_assign_handles2 = counters_substitute_and_assign_handles2.counters_substitute_and_assign_handles2
+// pub const rearrange_links = rearrange_links.rearrange_links
 pub const cut_paste_attribute_from_first_child_to_self = cut_paste_attribute_from_first_child_to_self.cut_paste_attribute_from_first_child_to_self
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
