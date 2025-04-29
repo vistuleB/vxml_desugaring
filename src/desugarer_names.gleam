@@ -29,6 +29,7 @@ import desugarers/insert_indent
 import desugarers/pair_bookends
 import desugarers/remove_attributes
 import desugarers/remove_empty_chunks
+import desugarers/remove_empty_lines
 import desugarers/remove_empty_text_nodes
 import desugarers/remove_starting_and_ending_empty_lines
 import desugarers/remove_starting_and_ending_spaces
@@ -81,6 +82,7 @@ pub const insert_indent = insert_indent.insert_indent
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_empty_chunks = remove_empty_chunks.remove_empty_chunks
+pub const remove_empty_lines = remove_empty_lines.remove_empty_lines
 pub const remove_empty_text_nodes = remove_empty_text_nodes.remove_empty_text_nodes
 pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_empty_lines.remove_starting_and_ending_empty_lines
 pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
