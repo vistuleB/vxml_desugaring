@@ -1418,8 +1418,70 @@ pub fn stateful_node_to_node_desugarer_factory(
   }
 }
 
+//**********************************************************************
+//* desugaring efforts #1.9: stateful down-up node-to-node
+//**********************************************************************
+
+pub type StatefulDownAndUpNodeToNodeTransform(a) {
+  StatefulDownAndUpNodeToNodeTransform(
+    v_before_transforming_children: fn(VXML, a) ->
+      Result(#(VXML, a), DesugaringError),
+    v_after_transforming_children: fn(VXML, a, a) ->
+      Result(#(VXML, a), DesugaringError),
+    t_transform: fn(VXML, a) ->
+      Result(#(VXML, a), DesugaringError),
+  )
+}
+
+fn stateful_down_up_node_to_node_one(
+  original_state: a,
+  node: VXML,
+  transform: StatefulDownAndUpNodeToNodeTransform(a),
+) -> Result(#(VXML, a), DesugaringError) {
+
+  case node {
+    V(_, _, _, children) -> {
+        use #(node, state) <- result.then(
+          transform.v_before_transforming_children(
+            node,
+            original_state,
+          ),
+        )
+
+        use #(children, state) <- result.then(
+          try_map_fold(
+            children,
+            state,
+            fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
+          )
+        )
+        
+        transform.v_after_transforming_children(
+          node |> replace_children_with(children),
+          original_state,
+          state,
+        )
+    }
+    T(_, _) -> transform.t_transform(node, original_state)
+  }
+}
+
+pub fn stateful_down_up_node_to_node_desugarer_factory(
+  transform: StatefulDownAndUpNodeToNodeTransform(a),
+  initial_state: a,
+) -> Desugarer {
+  fn(vxml) {
+    use #(vxml, _) <- result.then(stateful_down_up_node_to_node_one(
+      initial_state,
+      vxml,
+      transform
+    ))
+    Ok(vxml)
+  }
+}
+
 //**************************************************************
-//* desugaring efforts #1.99: stateful node-to-nodes
+//* desugaring efforts #1.99: stateful down-up node-to-nodes
 //**************************************************************
 
 pub type StatefulDownAndUpNodeToNodesTransform(a) {
@@ -1526,68 +1588,6 @@ pub fn stateful_down_up_node_to_nodes_desugarer_factory(
         Ok(new_vxml)
       }
     }
-  }
-}
-
-//**********************************************************************
-//* desugaring efforts #1.95: stateful node-to-nodes
-//**********************************************************************
-
-pub type StatefulDownAndUpNodeToNodeTransform(a) {
-  StatefulDownAndUpNodeToNodeTransform(
-    v_before_transforming_children: fn(VXML, a) ->
-      Result(#(VXML, a), DesugaringError),
-    v_after_transforming_children: fn(VXML, a, a) ->
-      Result(#(VXML, a), DesugaringError),
-    t_transform: fn(VXML, a) ->
-      Result(#(VXML, a), DesugaringError),
-  )
-}
-
-fn stateful_down_up_node_to_node_one(
-  original_state: a,
-  node: VXML,
-  transform: StatefulDownAndUpNodeToNodeTransform(a),
-) -> Result(#(VXML, a), DesugaringError) {
-
-  case node {
-    V(_, _, _, children) -> {
-        use #(node, state) <- result.then(
-          transform.v_before_transforming_children(
-            node,
-            original_state,
-          ),
-        )
-
-        use #(children, state) <- result.then(
-          try_map_fold(
-            children,
-            state,
-            fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
-          )
-        )
-        
-        transform.v_after_transforming_children(
-          node |> replace_children_with(children),
-          original_state,
-          state,
-        )
-    }
-    T(_, _) -> transform.t_transform(node, original_state)
-  }
-}
-
-pub fn stateful_down_up_node_to_node_desugarer_factory(
-  transform: StatefulDownAndUpNodeToNodeTransform(a),
-  initial_state: a,
-) -> Desugarer {
-  fn(vxml) {
-    use #(vxml, _) <- result.then(stateful_down_up_node_to_node_one(
-      initial_state,
-      vxml,
-      transform
-    ))
-    Ok(vxml)
   }
 }
 
