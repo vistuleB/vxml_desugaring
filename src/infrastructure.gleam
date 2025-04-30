@@ -1368,21 +1368,17 @@ pub fn prevent_node_to_nodes_transform_inside(
 pub type StatefulNodeToNodeTransform(a) =
   fn(VXML, a) -> Result(#(VXML, a), DesugaringError)
 
-fn stateful_node_to_node_many(
-  state: a,
-  vxmls: List(VXML),
-  transform: StatefulNodeToNodeTransform(a),
-) -> Result(#(List(VXML), a), DesugaringError) {
-  case vxmls {
+fn try_map_fold(
+  over ze_list: List(q),
+  from state: a,
+  with f: fn(a, q) -> Result(#(q, a), c)
+) -> Result(#(List(q), a), c) {
+  case ze_list {
     [] -> Ok(#([], state))
     [first, ..rest] -> {
-      use #(first_transformed, new_state) <- result.then(
-        stateful_node_to_node_desugar_one(state, first, transform),
-      )
-      use #(rest_transformed, new_new_state) <- result.then(
-        stateful_node_to_node_many(new_state, rest, transform),
-      )
-      Ok(#([first_transformed, ..rest_transformed], new_new_state))
+      use #(vxml, state) <- result.then(f(state, first))
+      use #(vxmls, state) <- result.then(try_map_fold(rest, state, f))
+      Ok(#([vxml, ..vxmls], state))
     }
   }
 }
@@ -1396,7 +1392,7 @@ fn stateful_node_to_node_desugar_one(
     T(_, _) -> transform(node, state)
     V(blame, tag, attrs, children) -> {
       use #(transformed_children, new_state) <- result.then(
-        stateful_node_to_node_many(state, children, transform),
+        try_map_fold(children, state, fn(x, y) { stateful_node_to_node_desugar_one(x, y, transform) })
       )
       transform(V(blame, tag, attrs, transformed_children), new_state)
     }
@@ -1426,25 +1422,6 @@ pub type StatefulDownAndUpNodeToNodeTransform(a) {
     after_transforming_children: fn(VXML, a, a) ->
       Result(#(VXML, a), DesugaringError),
   )
-}
-
-fn stateful_down_up_node_to_node_many(
-  state: a,
-  vxmls: List(VXML),
-  transform: StatefulDownAndUpNodeToNodeTransform(a),
-) -> Result(#(List(VXML), a), DesugaringError) {
-  case vxmls {
-    [] -> Ok(#([], state))
-    [first, ..rest] -> {
-      use #(first_transformed, new_state) <- result.then(
-        stateful_down_up_node_to_node_one(state, first, transform),
-      )
-      use #(rest_transformed, new_new_state) <- result.then(
-        stateful_down_up_node_to_node_many(new_state, rest, transform),
-      )
-      Ok(#([first_transformed, ..rest_transformed], new_new_state))
-    }
-  }
 }
 
 fn stateful_down_up_node_to_node_apply_first_half(
@@ -1480,10 +1457,10 @@ fn stateful_down_up_node_to_node_apply_to_children(
   case node {
     T(_, _) -> Ok(#(node, state))
     V(blame, tag, attrs, children) -> {
-      use #(new_children, new_state) <- result.then(
-        stateful_down_up_node_to_node_many(state, children, transform_pair),
+      use #(children, new_state) <- result.then(
+        try_map_fold(children, state, fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform_pair)})
       )
-      Ok(#(V(blame, tag, attrs, new_children), new_state))
+      Ok(#(V(blame, tag, attrs, children), new_state))
     }
   }
 }
