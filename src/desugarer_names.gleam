@@ -10,6 +10,7 @@ import desugarers/change_attribute_value
 import desugarers/concatenate_text_nodes
 import desugarers/convert_int_attributes_to_float
 import desugarers/counters_substitute_and_assign_handles
+import desugarers/cut_paste_attribute_from_first_child_to_self
 import desugarers/define_article_output_path
 import desugarers/find_replace
 import desugarers/fold_tag_contents_into_text
@@ -27,6 +28,8 @@ import desugarers/identity
 import desugarers/insert_bookend_tags
 import desugarers/insert_indent
 import desugarers/pair_bookends
+// import desugarers/rearrange_links
+import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/remove_attributes
 import desugarers/remove_empty_chunks
 import desugarers/remove_empty_lines
@@ -43,16 +46,7 @@ import desugarers/unwrap_when_single_child
 import desugarers/unwrap_when_child_of
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
-import desugarers/cut_paste_attribute_from_first_child_to_self
-// import desugarers/rearrange_links
-import desugarers/counters_substitute_and_assign_handles2
-import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 
-pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
-pub const counters_substitute_and_assign_handles2 = counters_substitute_and_assign_handles2.counters_substitute_and_assign_handles2
-// pub const rearrange_links = rearrange_links.rearrange_links
-pub const cut_paste_attribute_from_first_child_to_self = cut_paste_attribute_from_first_child_to_self.cut_paste_attribute_from_first_child_to_self
-pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
 pub const add_between_tag_and_text_node = add_between_tag_and_text_node.add_between_tag_and_text_node
@@ -65,6 +59,7 @@ pub const change_attribute_value = change_attribute_value.change_attribute_value
 pub const concatenate_text_nodes = concatenate_text_nodes.concatenate_text_nodes
 pub const convert_int_attributes_to_float = convert_int_attributes_to_float.convert_int_attributes_to_float
 pub const counters_substitute_and_assign_handles = counters_substitute_and_assign_handles.counters_substitute_and_assign_handles
+pub const cut_paste_attribute_from_first_child_to_self = cut_paste_attribute_from_first_child_to_self.cut_paste_attribute_from_first_child_to_self
 pub const define_article_output_path = define_article_output_path.define_article_output_path
 pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
@@ -82,6 +77,8 @@ pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_indent = insert_indent.insert_indent
 pub const pair_bookends = pair_bookends.pair_bookends
+// pub const rearrange_links = rearrange_links.rearrange_links
+pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_empty_chunks = remove_empty_chunks.remove_empty_chunks
 pub const remove_empty_lines = remove_empty_lines.remove_empty_lines
@@ -96,4 +93,5 @@ pub const unwrap_when_child_of= unwrap_when_child_of.unwrap_when_child_of
 pub const unwrap = unwrap.unwrap
 pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
 pub const unwrap_when_single_child = unwrap_when_single_child.unwrap_when_single_child
+pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break

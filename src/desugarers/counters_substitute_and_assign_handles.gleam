@@ -1,3 +1,4 @@
+import gleam/io
 import blamedlines.{type Blame, Blame}
 import gleam/float
 import gleam/int
@@ -14,6 +15,7 @@ import vxml.{
   type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
   BlamedContent, T, V,
 }
+import infrastructure as infra
 
 type CounterType {
   ArabicCounter
@@ -29,149 +31,21 @@ type CounterInstance {
   )
 }
 
-fn check_counter_already_defined(
-  new_counter_name: String,
-  counters: List(CounterInstance),
-  blame: Blame,
-) -> Result(Nil, DesugaringError) {
-  let existing_counter_names =
-    counters
-    |> list.map(fn(x) { x.name })
-
-  case list.contains(existing_counter_names, new_counter_name) {
-    True ->
-      Error(DesugaringError(
-        blame: blame,
-        message: "Counter " <> new_counter_name <> " has already been used",
-      ))
-    False -> Ok(Nil)
-  }
-}
-
-fn parse_value(
-  blame: Blame,
-  value: String,
-  message: String,
-) -> Result(Float, DesugaringError) {
-  case int.parse(value) {
-    Ok(i) -> Ok(int.to_float(i))
-    Error(_) -> {
-      case float.parse(value) {
-        Ok(f) -> Ok(f)
-        Error(_) -> Error(DesugaringError(blame, message))
-      }
-    }
-  }
-}
-
-fn handle_att_value(
-  blame: Blame,
-  value: String,
-) -> Result(#(String, Option(String), Option(Float)), DesugaringError) {
-  let splits = string.split(value, " ")
-  case splits {
-    [counter_name, default_value, step] -> {
-      use _ <- result.try(parse_value(
-        blame,
-        default_value,
-        "Default value for counter " <> counter_name <> " must be a number",
-      ))
-      use step <- result.try(parse_value(
-        blame,
-        step,
-        "Step for counter " <> counter_name <> " must be a number",
-      ))
-
-      Ok(#(counter_name, Some(default_value), Some(step)))
-    }
-    [counter_name, default_value] -> {
-      use _ <- result.try(parse_value(
-        blame,
-        default_value,
-        "Default value for counter " <> counter_name <> " must be a number",
-      ))
-
-      Ok(#(counter_name, Some(default_value), None))
-    }
-    [counter_name] -> Ok(#(counter_name, None, None))
-    _ -> Error(DesugaringError(blame, "Counter attribute must have a name"))
-  }
-}
-
-fn get_counters_from_attributes(
-  attributes: List(BlamedAttribute),
-  counters: List(CounterInstance),
-) -> Result(List(CounterInstance), DesugaringError) {
-  case attributes {
-    [] -> Ok([])
-    [first, ..rest] -> {
-      let att = case first.key {
-        "counter" -> {
-          use #(counter_name, default_value, step) <- result.try(
-            handle_att_value(first.blame, first.value),
-          )
-
-          Ok(
-            Some(CounterInstance(
-              ArabicCounter,
-              counter_name,
-              option.unwrap(default_value, "0"),
-              option.unwrap(step, 1.0),
-            )),
-          )
-        }
-        "roman_counter" -> {
-          use #(counter_name, default_value, step) <- result.try(
-            handle_att_value(first.blame, first.value),
-          )
-          Ok(
-            Some(CounterInstance(
-              RomanCounter,
-              counter_name,
-              option.unwrap(default_value, "."),
-              option.unwrap(step, 1.0),
-            )),
-          )
-        }
-        _ -> Ok(None)
-      }
-      use att <- result.try(att)
-
-      case get_counters_from_attributes(rest, counters) {
-        Ok(res) -> {
-          use _ <- result.try(check_counter_already_defined(
-            first.value,
-            counters,
-            first.blame,
-          ))
-          case att {
-            Some(att) -> Ok([att, ..res])
-            None -> Ok(res)
-          }
-        }
-        Error(error) -> Error(error)
-      }
-    }
-  }
-}
+type HandleAssignment = #(String, String)
 
 fn mutate(
-  blame: Blame,
   counter_type: CounterType,
   value: String,
   mutate_by: Float,
-) -> Result(String, DesugaringError) {
+) -> Result(String, String) {
   case counter_type {
     ArabicCounter -> {
-      let assert Ok(float_val) = parse_value(blame, value, "")
+      let assert Ok(float_val) = parse_value(value, "")
 
       let sum = float.sum([float_val, mutate_by]) |> float.to_precision(2)
       case sum <. 0.0 {
         True ->
-          Error(DesugaringError(
-            blame,
-            "Counter can't be decremented to less than 0",
-          ))
+          Error("Counter can't be decremented to less than 0")
         False -> {
           case float.ceiling(sum) == sum {
             // remove trailing zero
@@ -194,10 +68,7 @@ fn mutate(
       }
       case int_value + mutate_by < 0 {
         True ->
-          Error(DesugaringError(
-            blame,
-            "Counter can't be decremented to less than 0",
-          ))
+          Error("Counter can't be decremented to less than 0")
         False ->
           int_value
           |> int.add(mutate_by)
@@ -211,18 +82,16 @@ fn mutate(
 }
 
 fn update_counter(
-  blame: Blame,
   counters: List(CounterInstance),
   counter_name: String,
   mutation: String,
-) -> Result(List(CounterInstance), DesugaringError) {
+) -> Result(List(CounterInstance), String) {
   list.try_map(counters, fn(x) {
     case x.name == counter_name {
       True -> {
         case mutation {
           "++" -> {
             use new_value <- result.try(mutate(
-              blame,
               x.counter_type,
               x.current_value,
               x.step,
@@ -231,7 +100,6 @@ fn update_counter(
           }
           "--" -> {
             use new_value <- result.try(mutate(
-              blame,
               x.counter_type,
               x.current_value,
               x.step *. -1.0,
@@ -244,27 +112,6 @@ fn update_counter(
       False -> Ok(x)
     }
   })
-}
-
-fn handles_as_attributes(
-  blame: Blame,
-  node: VXML,
-  handle_names: Option(List(String)),
-  value: String,
-) -> VXML {
-  case handle_names {
-    Some(names) -> {
-      let attributes =
-        names
-        |> list.map(fn(name) {
-          BlamedAttribute(blame, "handle_" <> name, value)
-        })
-
-      let assert V(b, t, a, c) = node
-      V(b, t, list.flatten([a, attributes]), c)
-    }
-    None -> node
-  }
 }
 
 fn get_all_handles_from_match_content(match_content: String) -> List(String) {
@@ -310,7 +157,6 @@ fn get_all_counters_from_match_content(
 }
 
 fn handle_counter_expressions(
-  blame: Blame,
   expressions: List(#(String, String, String, Option(String))),
   counters: List(CounterInstance),
   // ignores insert_or_not  outout that 
@@ -319,7 +165,8 @@ fn handle_counter_expressions(
   //           |          /
   //           |         /
   //           |        /
-) -> Result(#(String, String, List(CounterInstance)), DesugaringError) {
+) -> Result(#(String, String, List(CounterInstance)), String) {
+
   case expressions {
     [] -> Ok(#("", "", counters))
     [#(insert_or_not, mutation, counter_name, split_char), ..rest] -> {
@@ -329,7 +176,6 @@ fn handle_counter_expressions(
         Ok(_) -> {
           // update counter
           use updated_counters <- result.try(update_counter(
-            blame,
             counters,
             counter_name,
             mutation,
@@ -340,7 +186,7 @@ fn handle_counter_expressions(
             })
 
           use #(rest_handles_value, rest_string_output, updated_counters) <- result.try(
-            handle_counter_expressions(blame, rest, updated_counters),
+            handle_counter_expressions(rest, updated_counters),
           )
 
           let split_char = case split_char {
@@ -371,25 +217,20 @@ fn handle_counter_expressions(
           }
         }
         Error(_) ->
-          Error(DesugaringError(
-            blame,
-            "Counter " <> counter_name <> " is not defined",
-          ))
+          Error("Counter " <> counter_name <> " is not defined")
       }
     }
   }
 }
 
 fn handle_matches(
-  blame: Blame,
   matches: List(regexp.Match),
   splits: List(String),
   counters: List(CounterInstance),
-  parent: VXML,
-) -> Result(#(String, VXML, List(CounterInstance)), DesugaringError) {
+) -> Result(#(String, List(CounterInstance), List(HandleAssignment)), String) {
   case matches {
     [] -> {
-      Ok(#(string.join(splits, ""), parent, counters))
+      Ok(#(string.join(splits, ""),  counters, []))
     }
     [first, ..rest] -> {
       let regexp.Match(content, sub_matches) = first
@@ -399,46 +240,50 @@ fn handle_matches(
       let counter_expressions = get_all_counters_from_match_content(content)
 
       use #(handles_value, expressions_output, updated_counters) <- result.try(
-        handle_counter_expressions(blame, counter_expressions, counters),
+        handle_counter_expressions(counter_expressions, counters),
       )
 
       let handle_names = case handle_name {
         None -> None
         Some(_) -> Some(get_all_handles_from_match_content(content))
       }
-
-      let updated_parent =
-        handles_as_attributes(blame, parent, handle_names, handles_value)
+      let handle_assignments = case handle_names {
+        None -> []
+        Some(names) -> names |> list.map(fn(x) {
+                    #(x, handles_value)
+                  })
+      }
 
       let assert [first_split, _, _, _, _, _, _, _, _, _, _, _, ..rest_splits] =
         splits
-      use #(rest_output, updated_parent, updated_counters) <- result.try(
+      use #(rest_output, updated_counters, rest_handle_assignments) <- result.try(
         handle_matches(
-          blame,
           rest,
           rest_splits,
           updated_counters,
-          updated_parent,
         ),
       )
 
       Ok(#(
         first_split <> expressions_output <> rest_output,
-        updated_parent,
         updated_counters,
+        list.flatten([handle_assignments, rest_handle_assignments])
       ))
-      // let #(insert_or_not, mutation, counter_name) = exp
     }
   }
 }
 
-fn counter_regex(
-  blame: Blame,
+
+
+fn substitute_counters_and_generate_handle_assignments(
   content: String,
   counters: List(CounterInstance),
-  parent: VXML,
-) -> Result(#(String, VXML, List(CounterInstance)), DesugaringError) {
-  // examples 
+) -> Result(
+  #(String, List(CounterInstance), List(HandleAssignment)),
+  // MySpecialCounterRegexErrorTypeNotADesugaringErrorYet
+  String
+){
+ // examples 
 
   // 1) one handle | one counter
   // ---------------------------
@@ -492,34 +337,50 @@ fn counter_regex(
 
   let splits = regexp.split(re, content)
 
-  handle_matches(blame, matches, splits, counters, parent)
+  
+
+  handle_matches(matches, splits, counters)
 }
 
-fn update_contents(
+fn update_blamed_content(
+  bl: BlamedContent,
+  counters: List(CounterInstance),
+) -> Result(#(BlamedContent, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
+  case substitute_counters_and_generate_handle_assignments(bl.content, counters) {
+    Ok(#(updated_content, counters, handles)) -> {
+      Ok(#(BlamedContent(bl.blame, updated_content), counters, handles))
+    }
+    Error(e) -> Error(DesugaringError(bl.blame, e))
+  }
+}
+
+fn update_blamed_contents(
   contents: List(BlamedContent),
   counters: List(CounterInstance),
-  parent: VXML,
 ) -> Result(
-  #(List(BlamedContent), VXML, List(CounterInstance)),
+  #(List(BlamedContent), List(CounterInstance), List(HandleAssignment)),
   DesugaringError,
 ) {
-  case contents {
-    [] -> Ok(#(contents, parent, counters))
-    [first, ..rest] -> {
-      use #(updated_content, updated_parent, updated_counters) <- result.try(
-        counter_regex(first.blame, first.content, counters, parent),
-      )
-      use #(rest_content, updated_parent, updated_counters) <- result.try(
-        update_contents(rest, updated_counters, updated_parent),
-      )
+  let init_acc = #([], counters, [])
 
-      Ok(#(
-        [BlamedContent(first.blame, updated_content), ..rest_content],
-        updated_parent,
-        updated_counters,
-      ))
-    }
-  }
+  contents
+    |> list.try_fold(init_acc, fn(acc, content){
+      let #(old_contents, counters, handles) = acc
+
+      use #(updated_content, updated_counters, new_handles) <- result.try(update_blamed_content(content, counters))
+
+      Ok(#(list.append(old_contents, [updated_content]), updated_counters, list.flatten([handles, new_handles]) ))
+    })
+}
+
+fn handle_assignment_blamed_attributes_from_handle_assignmnets(
+  handles: List(HandleAssignment),
+) -> List(BlamedAttribute) {
+  handles
+  |> list.map(fn(handle) {
+    let #(name, value) = handle
+    BlamedAttribute(infra.blame_us("..."), "handle_" <> name, value)
+  })
 }
 
 fn take_existing_counters(
@@ -527,166 +388,210 @@ fn take_existing_counters(
   new: List(CounterInstance),
 ) -> List(CounterInstance) {
   let current_names = current |> list.map(fn(x) { x.name })
-  new
-  |> list.filter(fn(x) { current_names |> list.contains(x.name) })
+  new |> list.filter(fn(x) { current_names |> list.contains(x.name) })
 }
 
-fn transform_children_recursive(
-  parent: Option(VXML),
-  children: List(VXML),
+fn check_counter_already_defined(
+  new_counter_name: String,
   counters: List(CounterInstance),
-) -> Result(#(List(VXML), Option(VXML), List(CounterInstance)), DesugaringError) {
-  case children {
-    [] -> Ok(#([], parent, counters))
-    [first, ..rest] -> {
-      use #(updated_first, updated_parent, updated_counters) <- result.try(
-        counter_transform(first, parent, counters),
-      )
-      // next children will not have counters that were added by nested children ( because of take_existing_counter)
-      // handles will have them
-      use #(updated_rest, updated_parent, updated_counters) <- result.try(
-        transform_children_recursive(updated_parent, rest, updated_counters),
-      )
-      Ok(#([updated_first, ..updated_rest], updated_parent, updated_counters))
-    }
-  }
-}
+  blame: Blame,
+) -> Result(Nil, DesugaringError) {
+  let existing_counter_names =
+    counters
+    |> list.map(fn(x) { x.name })
 
-fn counter_transform(
-  vxml: VXML,
-  parent: Option(VXML),
-  counters: List(CounterInstance),
-) -> Result(#(VXML, Option(VXML), List(CounterInstance)), DesugaringError) {
-  case vxml {
-    V(b, t, attributes, children) -> {
-      use new_counters <- result.try(
-        attributes
-        |> get_counters_from_attributes(counters),
-      )
-      use #(updated_children, updated_parent, updated_counters) <- result.try(
-        transform_children_recursive(
-          Some(vxml),
-          children,
-          list.append(counters, new_counters),
-        ),
-      )
-
-      let updated_attributes = case updated_parent {
-        Some(V(_, _, a, _)) -> a
-        _ -> attributes
-      }
-
-      Ok(#(
-        V(b, t, updated_attributes, updated_children),
-        parent,
-        take_existing_counters(counters, updated_counters),
+  case list.contains(existing_counter_names, new_counter_name) {
+    True ->
+      Error(DesugaringError(
+        blame: blame,
+        message: "Counter " <> new_counter_name <> " has already been used",
       ))
-    }
-    T(b, contents) -> {
-      let assert Some(parent) = parent
-      use #(updated_contents, updated_parent, updated_counters) <- result.try(
-        update_contents(contents, counters, parent),
-      )
-      Ok(#(T(b, updated_contents), Some(updated_parent), updated_counters))
+    False -> Ok(Nil)
+  }
+}
+
+fn parse_value(
+  value: String,
+  message: String,
+) -> Result(Float, DesugaringError) {
+  case int.parse(value) {
+    Ok(i) -> Ok(int.to_float(i))
+    Error(_) -> {
+      case float.parse(value) {
+        Ok(f) -> Ok(f)
+        Error(_) -> Error(DesugaringError(infra.blame_us("..."), message))
+      }
     }
   }
 }
 
-/// Substitutes counters by their numerical
-/// value converted to string form and assigns those
-/// values to prefixed handles.
-/// 
-/// If a counter named 'MyCounterName' is defined by
-/// an ancestor, replaces strings of the form
-/// 
-/// \<aa>\<bb>MyCounterName
-/// 
-/// where 
-/// 
-/// \<aa> == \"::\"|\"..\" indicates whether
-/// the counter occurrence should be echoed as a
-/// string appearing in the document or not (\"::\" == echo,
-/// \"..\" == suppress), and where
-/// 
-/// \<bb> ==  \"++\"|\"--\"|\"::\" indicates whether
-/// the counter should be incremented, decremented, or
-/// neither prior to possible insertion,
-/// 
-/// by the appropriate replacement string (possibly
-/// none), and assigns handles coming to the left
-/// using the '<<' assignment, e.g.,
-/// 
-/// handleName<<..++MyCounterName
-/// 
-/// would assign the stringified incremented value
-/// of MyCounterName to handle 'handleName' without
-/// echoing the value to the document, whereas
-/// 
-/// handleName<<::++MyCounterName
-/// 
-/// will do the same but also insert the new counter 
-/// value at that point in the document.
-/// 
-/// The computed handle assignments are recorded as
-/// attributes of the form 
-/// 
-/// handle_\<handleName> <counterValue>
-/// 
-/// on the parent tag to be later used by the
-/// 'handles_generate_dictionary' desugarer
+fn handle_att_value(
+  value: String,
+) -> Result(#(String, Option(String), Option(Float)), DesugaringError) {
+  let splits = string.split(value, " ")
+  case splits {
+    [counter_name, default_value, step] -> {
+      use _ <- result.try(parse_value(
+        default_value,
+        "Default value for counter " <> counter_name <> " must be a number",
+      ))
+      use step <- result.try(parse_value(
+        step,
+        "Step for counter " <> counter_name <> " must be a number",
+      ))
+
+      Ok(#(counter_name, Some(default_value), Some(step)))
+    }
+    [counter_name, default_value] -> {
+      use _ <- result.try(parse_value(
+        default_value,
+        "Default value for counter " <> counter_name <> " must be a number",
+      ))
+
+      Ok(#(counter_name, Some(default_value), None))
+    }
+    [counter_name] -> Ok(#(counter_name, None, None))
+    _ -> Error(DesugaringError(infra.blame_us("..."), "Counter attribute must have a name"))
+  }
+}
+
+fn get_counters_from_attributes(
+  attributes: List(BlamedAttribute),
+  counters: List(CounterInstance),
+) -> Result(List(CounterInstance), DesugaringError) {
+  case attributes {
+    [] -> Ok(counters)
+    [first, ..rest] -> {
+      let att = case first.key {
+        "counter" -> {
+          use #(counter_name, default_value, step) <- result.try(
+            handle_att_value(first.value),
+          )
+
+          Ok(
+            Some(CounterInstance(
+              ArabicCounter,
+              counter_name,
+              option.unwrap(default_value, "0"),
+              option.unwrap(step, 1.0),
+            )),
+          )
+        }
+        "roman_counter" -> {
+          use #(counter_name, default_value, step) <- result.try(
+            handle_att_value(first.value),
+          )
+          Ok(
+            Some(CounterInstance(
+              RomanCounter,
+              counter_name,
+              option.unwrap(default_value, "."),
+              option.unwrap(step, 1.0),
+            )),
+          )
+        }
+        _ -> Ok(None)
+      }
+      use att <- result.try(att)
+
+      case get_counters_from_attributes(rest, counters) {
+        Ok(res) -> {
+          use _ <- result.try(check_counter_already_defined(
+            first.value,
+            counters,
+            first.blame,
+          ))
+          case att {
+            Some(att) -> Ok([att, ..res])
+            None -> Ok(res)
+          }
+        }
+        Error(error) -> Error(error)
+      }
+    }
+  }
+}
+
+fn before_transforming_children(
+  vxml: VXML,
+  state: State,    // #(List(CounterInstance), List(HandleAssignment))
+) -> Result(#(VXML, State), DesugaringError) {
+  let #(counters, handles) = state
+  let assert True = list.is_empty(handles)
+  
+  case vxml {
+    V(_, _, attributes, _) -> {
+      use counters <-
+        result.then(get_counters_from_attributes(attributes, counters))
+       
+      Ok(#(vxml, #(counters, handles)))
+    }
+    _ -> {
+      Ok(#(vxml, #(counters, handles)))
+    }
+  }
+}
+
+fn after_transforming_children(
+  vxml: VXML,
+  state_before: State,
+  state_after: State,
+) -> Result(#(VXML, State), DesugaringError) {
+  let #(counters_before, handles_before) = state_before
+  let #(counters_after, handles_after) = state_after
+
+  let assert True = list.is_empty(handles_before)
+
+  case vxml {
+    T(blame, contents) -> {
+
+      use #(contents, counters, handles) <- result.then(update_blamed_contents(
+         contents,
+         counters_after
+      ))
+
+       Ok(#(T(blame, contents), #(counters, handles)))
+    }
+    
+    V(blame, tag, attributes, children) -> {
+
+      let attributes = list.flatten([
+        attributes,
+        handle_assignment_blamed_attributes_from_handle_assignmnets(handles_after),
+      ])
+
+      let counters = take_existing_counters(counters_before, counters_after)
+      
+      Ok(#(V(blame, tag, attributes, children), #(counters, [])))
+    }
+  }
+}
+
+type State = #(List(CounterInstance), List(HandleAssignment))
+
+fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
+  infra.StatefulDownAndUpNodeToNodeTransform(
+    before_transforming_children: before_transforming_children,
+    after_transforming_children: after_transforming_children,
+  )
+}
+
+fn desugarer_factory() -> infra.Desugarer {
+  infra.stateful_down_up_node_to_node_desugarer_factory(
+    transform_factory(),
+    #([], []),
+  )
+}
+
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "counters_substitute_and_assign_handles",
-      None,
-      "
-Substitutes counters by their numerical
-value, converted to a string, and assiging those
-values to prefixed handles.
-
-If a counter named 'MyCounterName' is defined by
-ancestor, replaces strings of the form
-
-<aa><bb>MyCounterName
-
-where 
-
-<aa> == \"::\"|\"..\" indicates whether
-the counter occurrence should be echoed as a
-string appearing in the document or not (\"::\" == echo,
-\"..\" == suppress), and where
-
-<bb> ==  \"++\"|\"--\"|\"::\" indicates whether
-the counter should be incremented, decremented, or
-neither prior to possible insertion,
-
-by the appropriate replacement string (possibly
-none), and assigns handles coming to the left
-using the '<<' assignment, e.g.,
-
-handleName<<..++MyCounterName
-
-would assign the stringified incremented value
-of MyCounterName to handle 'handleName' without
-echoing the value to the document, whereas
-
-handleName<<::++MyCounterName
-
-will do the same but also insert the new counter 
-value at that point in the document.
-
-The computed handle assignments are not directly
-used by this desugarer, but are stored inside as
-attributes on the parent tag to be later used by
-these desugarers.
-
--- handles_generate_dictionary
--- handles_generate_ids
--- handles_substitute",
+      option.Some(string.inspect(None)),
+      "",
     ),
-    desugarer: fn(vxml) {
-      use #(vxml, _, _) <- result.try(counter_transform(vxml, None, []))
-      Ok(vxml)
-    },
+    desugarer: desugarer_factory(),
   )
 }
+
+
