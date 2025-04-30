@@ -509,7 +509,6 @@ fn fancy_one_attribute_processor(
   to_process: BlamedAttribute,
   counters: List(CounterInstance),
 ) -> Result(#(BlamedAttribute, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
-
   use #(key, counters, assignments1) <- result.then(
     result.map_error(
       substitute_counters_and_generate_handle_assignments(to_process.key, counters),
@@ -526,7 +525,7 @@ fn fancy_one_attribute_processor(
 
   use <- infra.on_true_on_false(
     key == "",
-    Error(DesugaringError(to_process.blame, "Counter attribute must have a name")),
+    Error(DesugaringError(to_process.blame, "empty key after processing counters; original key: '" <> to_process.key <> "'")),
   )
 
   use #(value, counters, assignments2) <- result.then(
@@ -558,8 +557,8 @@ fn fancy_attribute_processor(
       already_processed |> list.reverse,
       counters,
     ))
-    [next, ..rest] -> {
 
+    [next, ..rest] -> {
       use #(next, counters, assignments) <- result.then(
         fancy_one_attribute_processor(next, counters),
       )
@@ -592,16 +591,13 @@ fn fancy_attribute_processor(
   }
 }
 
-fn before_transforming_children(
+fn v_before_transforming_children(
   vxml: VXML,
   state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(b, t, attributes, c) = vxml
   let #(counters, handles) = state
   let assert True = list.is_empty(handles)
-  
-  // use counters <-
-    // result.then(get_counters_from_attributes(attributes, counters))
 
   use #(attributes, counters) <-
     result.then(fancy_attribute_processor([], list.reverse(attributes), counters))
@@ -615,14 +611,16 @@ fn t_transform(
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert T(blame, contents) = vxml
   let #(counters, handles) = state
+
   use #(contents, updated_counters, new_handles) <- result.then(update_blamed_contents(
       contents,
       counters
   ))
+
   Ok(#(T(blame, contents), #(updated_counters, list.flatten([handles, new_handles]))))
 }
 
-fn after_transforming_children(
+fn v_after_transforming_children(
   vxml: VXML,
   state_before: State,
   state_after: State,
@@ -630,16 +628,15 @@ fn after_transforming_children(
   let assert V(blame, tag, attributes, children) = vxml
   let #(counters_before, handles_before) = state_before
   let #(counters_after, handles_after) = state_after
-
   let assert True = list.is_empty(handles_before)
 
-  let attributes = list.flatten([
+  let attributes = list.append(
     attributes,
     handle_assignment_blamed_attributes_from_handle_assignments(handles_after),
-  ])
+  )
 
   let counters = take_existing_counters(counters_before, counters_after)
-  
+
   Ok(#(V(blame, tag, attributes, children), #(counters, [])))
 }
 
@@ -647,8 +644,8 @@ type State = #(List(CounterInstance), List(HandleAssignment))
 
 fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
   infra.StatefulDownAndUpNodeToNodeTransform(
-    v_before_transforming_children: before_transforming_children,
-    v_after_transforming_children: after_transforming_children,
+    v_before_transforming_children: v_before_transforming_children,
+    v_after_transforming_children: v_after_transforming_children,
     t_transform: t_transform,
   )
 }
@@ -743,14 +740,13 @@ handleName<<::++MyCounterName
 will do the same but also insert the new counter 
 value at that point in the document.
 
-The computed handle assignments are not directly
-used by this desugarer, but are stored inside as
-attributes on the parent tag to be later used by
-these desugarers.
+The computed handle assignments are recorded as
+attributes of the form 
 
--- handles_generate_dictionary
--- handles_generate_ids
--- handles_substitute",
+handle_<handleName> <counterValue>
+
+on the parent tag to be later used by the
+'handles_generate_dictionary' desugarer",
     ),
     desugarer: desugarer_factory(),
   )
