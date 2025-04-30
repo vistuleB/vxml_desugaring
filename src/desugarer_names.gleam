@@ -16,7 +16,6 @@ import desugarers/find_replace
 import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
 import desugarers/free_children
-import desugarers/generate_handles_attributes
 import desugarers/generate_lbp_links
 import desugarers/generate_lbp_table_of_contents
 import desugarers/generate_ti2_table_of_contents_html
@@ -65,7 +64,6 @@ pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_con
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
 pub const find_replace = find_replace.find_replace
 pub const free_children = free_children.free_children
-pub const generate_handles_attributes = generate_handles_attributes.generate_handles_attributes
 pub const generate_lbp_links = generate_lbp_links.generate_lbp_links
 pub const generate_lbp_table_of_contents = generate_lbp_table_of_contents.generate_lbp_table_of_contents
 pub const generate_ti2_table_of_contents_html = generate_ti2_table_of_contents_html.generate_ti2_table_of_contents_html

@@ -83,16 +83,13 @@ fn param_transform_first_half(
   state: CountingState,
   transform_extra: TransformExtra,
 ) -> Result(#(VXML, CountingState), DesugaringError) {
-  case node {
-    T(_, _) -> Ok(#(node, state))
-    V(blame, tag, attributes, children) -> {
-      let new_state =
-        introduce_new_counter_nodes_for_parent(tag, transform_extra, state)
-      let #(new_attributes, new_new_state) =
-        possibly_add_counter_attribute(tag, blame, new_state, attributes)
-      Ok(#(V(blame, tag, new_attributes, children), new_new_state))
-    }
-  }
+  let assert V(blame, tag, attributes, children) = node
+
+  let new_state =
+    introduce_new_counter_nodes_for_parent(tag, transform_extra, state)
+  let #(new_attributes, new_new_state) =
+    possibly_add_counter_attribute(tag, blame, new_state, attributes)
+  Ok(#(V(blame, tag, new_attributes, children), new_new_state))
 }
 
 fn revert_new_counter_nodes_for_parent(
@@ -156,28 +153,22 @@ fn param_transform_second_half(
   state_after_processing_children: CountingState,
   transform_extra: TransformExtra,
 ) -> Result(#(VXML, CountingState), DesugaringError) {
-  case node {
-    T(_, _) -> {
-      let assert True = state_after_processing_children == original_state
-      Ok(#(node, original_state))
-    }
-    V(_, tag, _, _) -> {
-      let new_counting_state =
-        dict.combine(
-          original_state,
-          state_after_processing_children,
-          with: fn(_, new_val) { new_val },
-        )
-      let new_new_counting_state =
-        revert_new_counter_nodes_for_parent(
-          tag,
-          original_state,
-          new_counting_state,
-          transform_extra,
-        )
-      Ok(#(node, new_new_counting_state))
-    }
-  }
+  let assert V(_, tag, _, _) = node
+  
+  let new_counting_state =
+    dict.combine(
+      original_state,
+      state_after_processing_children,
+      with: fn(_, new_val) { new_val },
+    )
+  let new_new_counting_state =
+    revert_new_counter_nodes_for_parent(
+      tag,
+      original_state,
+      new_counting_state,
+      transform_extra,
+    )
+  Ok(#(node, new_new_counting_state))
 }
 
 type TagInfoForParent =
@@ -274,21 +265,25 @@ type TransformExtra =
 
 fn transform_factory(
   extra: Extra,
-) -> infra.StatefulDownAndUpNodeToNodeTransform(CountingState) {
+) -> infra.StatefulDownAndUpNodeToNodeTransformV2(CountingState) {
   let transform_extra = transform_extra_dictionary(extra)
-  infra.StatefulDownAndUpNodeToNodeTransform(
-    before_transforming_children: fn(node, state) {
+  infra.StatefulDownAndUpNodeToNodeTransformV2(
+    v_before_transforming_children: fn(node, state) {
       param_transform_first_half(node, state, transform_extra)
     },
-    after_transforming_children: fn(node, old_state, new_state) {
+    v_after_transforming_children: fn(node, old_state, new_state) {
       param_transform_second_half(node, old_state, new_state, transform_extra)
+    },
+    t_transform: fn(node, state) {
+      let assert T(_, _) = node
+      Ok(#(node, state))
     },
   )
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
   let initial_state: CountingState = dict.from_list([])
-  infra.stateful_down_up_node_to_node_desugarer_factory(
+  infra.stateful_down_up_node_to_node_v2_desugarer_factory(
     transform_factory(extra),
     initial_state,
   )

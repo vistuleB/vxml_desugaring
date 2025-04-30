@@ -506,20 +506,27 @@ fn before_transforming_children(
   vxml: VXML,
   state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
+  let assert V(_, _, attributes, _) = vxml
   let #(counters, handles) = state
   let assert True = list.is_empty(handles)
   
-  case vxml {
-    V(_, _, attributes, _) -> {
-      use counters <-
-        result.then(get_counters_from_attributes(attributes, counters))
-       
-      Ok(#(vxml, #(counters, handles)))
-    }
-    _ -> {
-      Ok(#(vxml, #(counters, handles)))
-    }
-  }
+  use counters <-
+    result.then(get_counters_from_attributes(attributes, counters))
+    
+  Ok(#(vxml, #(counters, handles)))
+}
+
+fn t_transform(
+  vxml: VXML,
+  state: State,
+) -> Result(#(VXML, State), DesugaringError) {
+  let assert T(blame, contents) = vxml
+  let #(counters, handles) = state
+  use #(contents, updated_counters, new_handles) <- result.then(update_blamed_contents(
+      contents,
+      counters
+  ))
+  Ok(#(T(blame, contents), #(updated_counters, list.flatten([handles, new_handles]))))
 }
 
 fn after_transforming_children(
@@ -527,47 +534,34 @@ fn after_transforming_children(
   state_before: State,
   state_after: State,
 ) -> Result(#(VXML, State), DesugaringError) {
+  let assert V(blame, tag, attributes, children) = vxml
   let #(counters_before, handles_before) = state_before
   let #(counters_after, handles_after) = state_after
 
   let assert True = list.is_empty(handles_before)
 
-  case vxml {
-    T(blame, contents) -> {
+  let attributes = list.flatten([
+    attributes,
+    handle_assignment_blamed_attributes_from_handle_assignments(handles_after),
+  ])
 
-      use #(contents, counters, handles) <- result.then(update_blamed_contents(
-         contents,
-         counters_after
-      ))
-
-       Ok(#(T(blame, contents), #(counters, handles)))
-    }
-    
-    V(blame, tag, attributes, children) -> {
-
-      let attributes = list.flatten([
-        attributes,
-        handle_assignment_blamed_attributes_from_handle_assignments(handles_after),
-      ])
-
-      let counters = take_existing_counters(counters_before, counters_after)
-      
-      Ok(#(V(blame, tag, attributes, children), #(counters, [])))
-    }
-  }
+  let counters = take_existing_counters(counters_before, counters_after)
+  
+  Ok(#(V(blame, tag, attributes, children), #(counters, [])))
 }
 
 type State = #(List(CounterInstance), List(HandleAssignment))
 
-fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
-  infra.StatefulDownAndUpNodeToNodeTransform(
-    before_transforming_children: before_transforming_children,
-    after_transforming_children: after_transforming_children,
+fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransformV2(State) {
+  infra.StatefulDownAndUpNodeToNodeTransformV2(
+    v_before_transforming_children: before_transforming_children,
+    v_after_transforming_children: after_transforming_children,
+    t_transform: t_transform,
   )
 }
 
 fn desugarer_factory() -> infra.Desugarer {
-  infra.stateful_down_up_node_to_node_desugarer_factory(
+  infra.stateful_down_up_node_to_node_v2_desugarer_factory(
     transform_factory(),
     #([], []),
   )
