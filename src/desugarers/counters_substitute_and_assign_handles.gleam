@@ -1,3 +1,5 @@
+import gleam/io
+import desugarers/encode_spaces_in_first_and_last_child
 import blamedlines.{type Blame, Blame}
 import gleam/float
 import gleam/int
@@ -445,6 +447,7 @@ fn handle_att_value(
   }
 }
 
+
 fn get_counters_from_attributes(
   attributes: List(BlamedAttribute),
   counters: List(CounterInstance),
@@ -502,18 +505,108 @@ fn get_counters_from_attributes(
   }
 }
 
+fn fancy_one_attribute_processor(
+  to_process: BlamedAttribute,
+  counters: List(CounterInstance),
+) -> Result(#(BlamedAttribute, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
+
+  use #(key, counters, assignments1) <- result.then(
+    result.map_error(
+      substitute_counters_and_generate_handle_assignments(to_process.key, counters),
+      fn(e) {
+        DesugaringError(
+          blame: to_process.blame,
+          message: e,
+        )
+      }
+    ),
+  )
+  
+  let assert True = key == string.trim(key)
+
+  use <- infra.on_true_on_false(
+    key == "",
+    Error(DesugaringError(to_process.blame, "Counter attribute must have a name")),
+  )
+
+  use #(value, counters, assignments2) <- result.then(
+     result.map_error(
+      substitute_counters_and_generate_handle_assignments(to_process.value, counters),
+      fn(e) {
+        DesugaringError(
+          blame: to_process.blame,
+          message: e,
+        )
+      }
+    ),
+  )
+  
+  Ok(#(
+    BlamedAttribute(to_process.blame, key, value),
+    counters,
+    list.flatten([assignments1, assignments2]),
+  ))
+}
+
+fn fancy_attribute_processor(
+  already_processed: List(BlamedAttribute),
+  yet_to_be_processed: List(BlamedAttribute),
+  counters: List(CounterInstance),
+) -> Result(#(List(BlamedAttribute), List(CounterInstance)), DesugaringError) {
+  case yet_to_be_processed {
+    [] -> Ok(#(
+      already_processed |> list.reverse,
+      counters,
+    ))
+    [next, ..rest] -> {
+
+      use #(next, counters, assignments) <- result.then(
+        fancy_one_attribute_processor(next, counters),
+      )
+
+      let assignment_attributes =
+        list.map(
+          assignments,
+          fn(handle_assignment) {
+            let #(handle_name, handle_value) = handle_assignment
+            BlamedAttribute(next.blame, "handle_" <> handle_name, handle_value)
+          }
+        )
+      
+      use counters <- result.then(
+        get_counters_from_attributes([next], counters)
+      )
+
+      let already_processed = list.flatten([
+        assignment_attributes |> list.reverse, // try to keep order of assignments same as order they occur in source
+        [next],
+        already_processed,
+      ])
+
+      fancy_attribute_processor(
+        already_processed,
+        rest,
+        counters,
+      )
+    }
+  }
+}
+
 fn before_transforming_children(
   vxml: VXML,
   state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
-  let assert V(_, _, attributes, _) = vxml
+  let assert V(b, t, attributes, c) = vxml
   let #(counters, handles) = state
   let assert True = list.is_empty(handles)
   
-  use counters <-
-    result.then(get_counters_from_attributes(attributes, counters))
-    
-  Ok(#(vxml, #(counters, handles)))
+  // use counters <-
+    // result.then(get_counters_from_attributes(attributes, counters))
+
+  use #(attributes, counters) <-
+    result.then(fancy_attribute_processor([], list.reverse(attributes), counters))
+
+  Ok(#(V(b, t, attributes, c), #(counters, handles)))
 }
 
 fn t_transform(
