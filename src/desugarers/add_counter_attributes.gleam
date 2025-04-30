@@ -265,9 +265,9 @@ type TransformExtra =
 
 fn transform_factory(
   extra: Extra,
-) -> infra.StatefulDownAndUpNodeToNodeTransformV2(CountingState) {
+) -> infra.StatefulDownAndUpNodeToNodeTransform(CountingState) {
   let transform_extra = transform_extra_dictionary(extra)
-  infra.StatefulDownAndUpNodeToNodeTransformV2(
+  infra.StatefulDownAndUpNodeToNodeTransform(
     v_before_transforming_children: fn(node, state) {
       param_transform_first_half(node, state, transform_extra)
     },
@@ -283,7 +283,7 @@ fn transform_factory(
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
   let initial_state: CountingState = dict.from_list([])
-  infra.stateful_down_up_node_to_node_v2_desugarer_factory(
+  infra.stateful_down_up_node_to_node_desugarer_factory(
     transform_factory(extra),
     initial_state,
   )

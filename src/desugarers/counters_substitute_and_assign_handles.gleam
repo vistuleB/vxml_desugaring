@@ -645,8 +645,8 @@ fn after_transforming_children(
 
 type State = #(List(CounterInstance), List(HandleAssignment))
 
-fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransformV2(State) {
-  infra.StatefulDownAndUpNodeToNodeTransformV2(
+fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
+  infra.StatefulDownAndUpNodeToNodeTransform(
     v_before_transforming_children: before_transforming_children,
     v_after_transforming_children: after_transforming_children,
     t_transform: t_transform,
@@ -654,7 +654,7 @@ fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransformV2(State) {
 }
 
 fn desugarer_factory() -> infra.Desugarer {
-  infra.stateful_down_up_node_to_node_v2_desugarer_factory(
+  infra.stateful_down_up_node_to_node_desugarer_factory(
     transform_factory(),
     #([], []),
   )
