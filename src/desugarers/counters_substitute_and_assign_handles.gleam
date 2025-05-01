@@ -450,12 +450,18 @@ fn handle_att_value(
 
 fn get_counters_from_attributes(
   attribute: BlamedAttribute,
+  counters: List(CounterInstance),
 ) -> Result(List(CounterInstance), DesugaringError) {
       case attribute.key {
         "counter" -> {
           use #(counter_name, default_value, step) <- result.try(
             handle_att_value(attribute.value),
           )
+          use _ <- result.try(check_counter_already_defined(
+            counter_name,
+            counters,
+            attribute.blame,
+          ))
           Ok(
             [CounterInstance(
               ArabicCounter,
@@ -469,6 +475,11 @@ fn get_counters_from_attributes(
           use #(counter_name, default_value, step) <- result.try(
             handle_att_value(attribute.value),
           )
+          use _ <- result.try(check_counter_already_defined(
+            counter_name,
+            counters,
+            attribute.blame,
+          ))
           Ok(
             [CounterInstance(
               RomanCounter,
@@ -550,7 +561,7 @@ fn fancy_attribute_processor(
         )
       
       use new_counter <- result.then(
-        get_counters_from_attributes(next)
+        get_counters_from_attributes(next, counters)
       )
 
       let already_processed = list.flatten([
