@@ -449,60 +449,37 @@ fn handle_att_value(
 
 
 fn get_counters_from_attributes(
-  attributes: List(BlamedAttribute),
-  counters: List(CounterInstance),
+  attribute: BlamedAttribute,
 ) -> Result(List(CounterInstance), DesugaringError) {
-  case attributes {
-    [] -> Ok(counters)
-    [first, ..rest] -> {
-      let att = case first.key {
+      case attribute.key {
         "counter" -> {
           use #(counter_name, default_value, step) <- result.try(
-            handle_att_value(first.value),
+            handle_att_value(attribute.value),
           )
-
           Ok(
-            Some(CounterInstance(
+            [CounterInstance(
               ArabicCounter,
               counter_name,
               option.unwrap(default_value, "0"),
               option.unwrap(step, 1.0),
-            )),
+            )],
           )
         }
         "roman_counter" -> {
           use #(counter_name, default_value, step) <- result.try(
-            handle_att_value(first.value),
+            handle_att_value(attribute.value),
           )
           Ok(
-            Some(CounterInstance(
+            [CounterInstance(
               RomanCounter,
               counter_name,
               option.unwrap(default_value, "."),
               option.unwrap(step, 1.0),
-            )),
+            )],
           )
         }
-        _ -> Ok(None)
+        _ -> Ok([])
       }
-      use att <- result.try(att)
-
-      case get_counters_from_attributes(rest, counters) {
-        Ok(res) -> {
-          use _ <- result.try(check_counter_already_defined(
-            first.value,
-            counters,
-            first.blame,
-          ))
-          case att {
-            Some(att) -> Ok([att, ..res])
-            None -> Ok(res)
-          }
-        }
-        Error(error) -> Error(error)
-      }
-    }
-  }
 }
 
 fn fancy_one_attribute_processor(
@@ -572,8 +549,8 @@ fn fancy_attribute_processor(
           }
         )
       
-      use counters <- result.then(
-        get_counters_from_attributes([next], counters)
+      use new_counter <- result.then(
+        get_counters_from_attributes(next)
       )
 
       let already_processed = list.flatten([
@@ -585,7 +562,7 @@ fn fancy_attribute_processor(
       fancy_attribute_processor(
         already_processed,
         rest,
-        counters,
+        list.flatten([new_counter, counters]),
       )
     }
   }
