@@ -29,6 +29,38 @@ type CounterInstance {
 
 type HandleAssignment = #(String, String)
 
+type StringAndRegexVersion {
+  StringAndRegexVersion(
+    string: String,
+    regex_string: String,
+  )
+}
+
+const loud = StringAndRegexVersion( 
+  string: "::",
+  regex_string: "::",
+)
+
+const soft = StringAndRegexVersion(
+  string: "..",
+  regex_string: "\\.\\.",
+)
+
+const increment = StringAndRegexVersion(
+  string: "++",
+  regex_string: "\\+\\+",
+)
+
+const decrement = StringAndRegexVersion(
+  string: "--",
+  regex_string: "--",
+)
+
+const no_change = StringAndRegexVersion(
+  string: "øø",
+  regex_string: "øø",
+)
+
 fn mutate(
   counter_type: CounterType,
   value: String,
@@ -147,7 +179,20 @@ fn get_all_counters_from_match_content(
   // splits character
 ) -> List(#(String, String, String, Option(String))) {
   let assert [last, ..] = string.split(match_content, "<<") |> list.reverse()
-  let assert Ok(re) = regexp.from_string("(::|\\.\\.)(::|\\+\\+|--)(\\w+)")
+   let counter_prefix_and_counter =
+    "("
+    <> loud.regex_string
+    <> "|"
+    <> soft.regex_string
+    <> ")("
+    <> increment.regex_string
+    <> "|"
+    <> decrement.regex_string
+    <> "|"
+    <> no_change.regex_string
+    <> ")(\\w+)"
+
+  let assert Ok(re) = regexp.from_string(counter_prefix_and_counter)
   let splits = regexp.split(re, last)
   split_expressions(splits)
 }
@@ -282,49 +327,72 @@ fn substitute_counters_and_generate_handle_assignments(
   // 1) one handle | one counter
   // ---------------------------
 
-  // "more handle<<::::MyCounter more" will result in
+  // "more handle<<::++MyCounter more" will result in
   // sub-matches of first match :
-  //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("::"), Some   ("MyCounter")]
+  //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("++"), Some   ("MyCounter")]
   // splits:
-  //   ["more ", "handle<<", "handle", "<<", "::", "::", "MyCounter", " more"]
+  //   ["more ", "handle<<", "handle", "<<", "::", "++", "MyCounter", " more"]
 
   // 2) multiple handles | one counter
   // ---------------------------------
 
-  // "more handle1<<handle2<<::::MyCounter more" will result in
+  // "more handle1<<handle2<<::++MyCounter more" will result in
   // content of first match : (only diff between first case) 
-  //    \"handle2<<handle1<<::::Counter\"
+  //    \"handle2<<handle1<<::++Counter\"
   // sub-matches of first match :
-  //   [Some("handle2<<"), Some("handle2"), Some("<<"), Some("::"), Some("::"), Some   ("MyCounter")]
+  //   [Some("handle2<<"), Some("handle2"), Some("<<"), Some("::"), Some("++"), Some   ("MyCounter")]
   // splits:
-  //   ["more ", "handle2<<", "handle2", "<<", "::", "::", "MyCounter", " more"]
+  //   ["more ", "handle2<<", "handle2", "<<", "::", "++", "MyCounter", " more"]
 
   // 3) 0 handles | one counter
   // --------------------------
 
-  // "more ::::MyCounter more" will result in
+  // "more ::++MyCounter more" will result in
   // sub-matches of first match :
-  //   [None, None, None, Some("::"), Some("::"), Some   ("MyCounter")]
+  //   [None, None, None, Some("::"), Some("++"), Some   ("MyCounter")]
   // splits:
-  //   ["more ", "", "", "", "::", "::", "MyCounter", " more"]
+  //   ["more ", "", "", "", "::", "++", "MyCounter", " more"]
 
   // 4) x handle | multiple counters + random text
   // ---------------------------------------------
 
-  // "more handle<<::::MyCounter-::--HisCounter more" will result in
-  // ** content of first match: handle<<::::MyCounter-::--HisCounter
+  // "more handle<<::++MyCounter-::--HisCounter more" will result in
+  // ** content of first match: handle<<::++MyCounter-::--HisCounter
 
   // sub-matches of first match :
-  //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("::"), Some("MyCounter"), Some("-::++HisCounter"), Some("-"), Some("::"), Some("++"), Some("HisCounter")]
+  //   [Some("handle<<"), Some("handle"), Some("<<"), Some("::"), Some("++"), Some("MyCounter"), Some("-::--HisCounter"), Some("-"), Some("::"), Some("--"), Some("HisCounter")]
 
   // splits:
-  //   ["", "handle<<", "handle", "<<", "::", "::", "MyCounter", "-::++HisCounter", "-", "::", "++", "HisCounter", " more"]
+  //   ["", "handle<<", "handle", "<<", "::", "++", "MyCounter", "-::--HisCounter", "-", "::", "--", "HisCounter", " more"]
 
   // if there are multiple appearances of last regex part - only last one will be in splits and matches . so we need to use match content to get all of them
 
+let any_number_of_handle_assignments =
+    "((\\w+)(<<))*"
+
+  let counter_prefix_and_counter =
+    "("
+    <> loud.regex_string
+    <> "|"
+    <> soft.regex_string
+    <> ")("
+    <> increment.regex_string
+    <> "|"
+    <> decrement.regex_string
+    <> "|"
+    <> no_change.regex_string
+    <> ")(\\w+)"
+
+  let any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation =
+    "(-|_|.|:|;|::|,)"
+    <> counter_prefix_and_counter
+
   let assert Ok(re) =
     regexp.from_string(
-      "((\\w+)(<<))*(::|\\.\\.)(::|\\+\\+|--)(\\w+)((-|_|.|:|;|::|,)(::|\\.\\.)(::|\\+\\+|--)(\\w+))*",
+      any_number_of_handle_assignments
+      <> counter_prefix_and_counter
+      <> any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation
+      <> "(" <> counter_prefix_and_counter <> ")*"
     )
 
   let matches = regexp.scan(re, content)
@@ -661,7 +729,7 @@ fn desugarer_factory() -> infra.Desugarer {
 /// string appearing in the document or not (\"::\" == echo,
 /// \"..\" == suppress), and where
 /// 
-/// \<bb> ==  \"++\"|\"--\"|\"::\" indicates whether
+/// \<bb> ==  \"++\"|\"--\"|\"øø\" indicates whether
 /// the counter should be incremented, decremented, or
 /// neither prior to possible insertion,
 /// 
@@ -709,7 +777,7 @@ the counter occurrence should be echoed as a
 string appearing in the document or not (\"::\" == echo,
 \"..\" == suppress), and where
 
-<bb> ==  \"++\"|\"--\"|\"::\" indicates whether
+<bb> ==  \"++\"|\"--\"|\"øø\" indicates whether
 the counter should be incremented, decremented, or
 neither prior to possible insertion,
 
