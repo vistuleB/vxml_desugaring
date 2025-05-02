@@ -1,5 +1,5 @@
-import desugarers/add_attributes
 import desugarers/absorb_next_sibling_while
+import desugarers/add_attributes
 import desugarers/add_before_tags_but_not_first_child_tags
 import desugarers/add_between_tag_and_text_node
 import desugarers/add_between_tags
@@ -48,8 +48,8 @@ import desugarers/unwrap_when_child_of
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
 
-pub const add_attributes = add_attributes.add_attributes
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
+pub const add_attributes = add_attributes.add_attributes
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
 pub const add_between_tag_and_text_node = add_between_tag_and_text_node.add_between_tag_and_text_node
 pub const add_between_tags = add_between_tags.add_between_tags

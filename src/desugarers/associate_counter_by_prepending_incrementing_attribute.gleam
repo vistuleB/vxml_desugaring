@@ -2,10 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
@@ -14,23 +11,27 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
     V(blame, tag, old_attributes, children) -> {
       case dict.get(param, tag) {
         Ok(counter_names) -> {
-          let #(handles_attributes, rest_attributes) = list.partition(old_attributes, fn(attr) {
+          let #(unassigned_handle_attributes, other_attributes) = list.partition(old_attributes, fn(attr) {
+            let assert True = attr.value == string.trim(attr.value)
             attr.key == "handle" &&
             string.split(attr.value, " ") |> list.length == 1 
           })
 
           let handles_str =
-            handles_attributes
+            unassigned_handle_attributes
             |> list.map(fn(attr) { attr.value <> "<<" })
             |> string.join("")
 
           let new_attributes =
             counter_names
-            |> list.map(fn(counter_name) {
-              BlamedAttribute(blame, ".", counter_name <> " " <> handles_str <> "::++" <> counter_name)
+            |> list.index_map(fn(counter_name, index) {
+              case index == 0 {
+                True -> BlamedAttribute(blame, ".", counter_name <> " " <> handles_str <> "::++" <> counter_name)
+                False -> BlamedAttribute(blame, ".", counter_name <> " " <> "::++" <> counter_name)
+              }
             })
 
-          Ok(V(blame, tag, list.flatten([rest_attributes, new_attributes]), children))
+          Ok(V(blame, tag, list.flatten([other_attributes, new_attributes]), children))
         }
         Error(Nil) -> Ok(vxml)
       }
@@ -68,4 +69,3 @@ pub fn associate_counter_by_prepending_incrementing_attribute(extra: Extra) -> P
     desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }
-
