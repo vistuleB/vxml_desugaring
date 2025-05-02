@@ -2,6 +2,7 @@ import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/io
 import gleam/list
+import gleam/pair
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
@@ -263,6 +264,13 @@ pub fn contains_one_of_tags(vxmls: List(VXML), tags: List(String)) -> Bool {
 //**************************************************************
 //* dictionary-building functions
 //**************************************************************
+
+pub fn dict_from_list_with_desugaring_error(extra: List(#(a, b))) -> Result(Dict(a, b), DesugaringError) {
+  case get_duplicate(list.map(extra, pair.first)) {
+    Some(guy) -> Error(DesugaringError(blamedlines.empty_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
+    None -> Ok(dict.from_list(extra))
+  }
+}
 
 pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
   list.fold(l, dict.from_list([]), fn(d, pair) {

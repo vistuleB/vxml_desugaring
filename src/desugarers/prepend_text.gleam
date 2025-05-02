@@ -2,11 +2,8 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml.{ type VXML, BlamedContent, T, V}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import vxml.{ type VXML, BlamedContent, T, V }
 
 fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   case vxml {
@@ -14,36 +11,23 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
     V(blame, tag, attrs, children) -> {
       case dict.get(param, tag) {
         Ok(text) -> {
-          let text = text |> string.join(" ")
-
-          use first_child <- infra.on_error_on_ok(
-            over: list.first(children),
-            with_on_error: fn(_){ 
-              let new_text_node = T(blame, [BlamedContent(blame, text)])
-
-              Ok(V(blame, tag, attrs, [new_text_node])) 
-            }
+          let contents = string.split(text, "\n")
+          let new_text_node =
+            T(
+              blame,
+              list.map(
+                contents,
+                fn (content) { BlamedContent(blame, content) }
+              )
+            )
+          Ok(
+            V(blame, tag, attrs, [new_text_node, ..children])
           )
-          let assert [_, ..rest_children] = children
-
-          let new_text_node = case first_child {
-            V(b, _, _, _) -> {
-              T(b, [BlamedContent(b, text)])
-            }
-            T(b, contents) -> {
-              T(b, list.prepend(contents, BlamedContent(b, text)))
-            }
-          }
-          Ok(V(blame, tag, attrs, [new_text_node, ..rest_children])) 
         }
         Error(Nil) -> Ok(vxml)
       }
     }
   }
-}
-
-fn extra_to_param(extra: Extra) -> Param {
-  extra |> infra.aggregate_on_first
 }
 
 fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
@@ -55,7 +39,7 @@ fn desugarer_factory(param: Param) -> Desugarer {
 }
 
 type Param =
-  Dict(String, List(String))
+  Dict(String, String)
 
 type Extra =
   List(#(String, String))
@@ -68,6 +52,9 @@ pub fn prepend_text(extra: Extra) -> Pipe {
       option.Some(string.inspect(extra)),
       "...",
     ),
-    desugarer: desugarer_factory(extra |> extra_to_param),
+    desugarer: case infra.dict_from_list_with_desugaring_error(extra) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

@@ -92,11 +92,9 @@ pub fn add_spacer_divs_after(extra: Extra) -> Pipe {
       Some(ins(extra)),
       "...",
     ),
-    desugarer: fn(root) {
-      case build_dictionary(infra.get_blame(root), extra) {
-        Error(err) -> Error(err)
-        Ok(param) -> desugarer_factory(param)(root)
-      }
-    },
+    desugarer: case infra.dict_from_list_with_desugaring_error(extra) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
