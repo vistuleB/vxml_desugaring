@@ -1,7 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
@@ -9,31 +8,29 @@ import infrastructure.{
 } as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
-fn build_blamed_attributes(
-  blame,
-  attributes: List(#(String, String)),
-) -> List(BlamedAttribute) {
-  attributes
-  |> list.map(fn(attr) {
-    BlamedAttribute(blame, attr |> pair.first, attr |> pair.second)
-  })
-}
-
 fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, old_attributes, children) -> {
       case dict.get(param, tag) {
-        Ok(new_attributes) -> {
-          Ok(V(
-            blame,
-            tag,
-            list.flatten([
-              old_attributes,
-              build_blamed_attributes(blame, new_attributes),
-            ]),
-            children,
-          ))
+        Ok(counter_names) -> {
+          let #(handles_attributes, rest_attributes) = list.partition(old_attributes, fn(attr) {
+            attr.key == "handle" &&
+            string.split(attr.value, " ") |> list.length == 1 
+          })
+
+          let handles_str =
+            handles_attributes
+            |> list.map(fn(attr) { attr.value <> "<<" })
+            |> string.join("")
+
+          let new_attributes =
+            counter_names
+            |> list.map(fn(counter_name) {
+              BlamedAttribute(blame, ".", counter_name <> " " <> handles_str <> "::++" <> counter_name)
+            })
+
+          Ok(V(blame, tag, list.flatten([rest_attributes, new_attributes]), children))
         }
         Error(Nil) -> Ok(vxml)
       }
@@ -42,7 +39,7 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
 }
 
 fn extra_to_param(extra: Extra) -> Param {
-  extra |> infra.triples_to_aggregated_dict
+  extra |> infra.aggregate_on_first
 }
 
 fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
@@ -54,20 +51,21 @@ fn desugarer_factory(param: Param) -> Desugarer {
 }
 
 type Param =
-  Dict(String, List(#(String, String)))
+  Dict(String, List(String))
 
 type Extra =
-  List(#(String, String, String))
+  List(#(String, String))
 
-//        tag     attr   value
+//        tag     counter_name
 
-pub fn add_attributes(extra: Extra) -> Pipe {
+pub fn associate_counter_by_prepending_incrementing_attribute(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "add_attributes",
+      "associate_counter_by_prepending_incrementing_attribute",
       option.Some(string.inspect(extra)),
       "...",
     ),
     desugarer: desugarer_factory(extra |> extra_to_param),
   )
 }
+

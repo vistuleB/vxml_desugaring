@@ -1,3 +1,4 @@
+import desugarers/add_attributes
 import desugarers/absorb_next_sibling_while
 import desugarers/add_before_tags_but_not_first_child_tags
 import desugarers/add_between_tag_and_text_node
@@ -5,6 +6,7 @@ import desugarers/add_between_tags
 import desugarers/add_counter_attributes
 import desugarers/add_title_counters_and_titles_with_handle_assignments
 import desugarers/add_attribute_when_child_of
+import desugarers/associate_counter_by_prepending_incrementing_attribute
 import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
 import desugarers/concatenate_text_nodes
@@ -27,6 +29,7 @@ import desugarers/identity
 import desugarers/insert_bookend_tags
 import desugarers/insert_indent
 import desugarers/pair_bookends
+import desugarers/prepend_text
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/remove_attributes
 import desugarers/remove_empty_chunks
@@ -45,6 +48,7 @@ import desugarers/unwrap_when_child_of
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
 
+pub const add_attributes = add_attributes.add_attributes
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
 pub const add_between_tag_and_text_node = add_between_tag_and_text_node.add_between_tag_and_text_node
@@ -52,6 +56,7 @@ pub const add_between_tags = add_between_tags.add_between_tags
 pub const add_counter_attributes = add_counter_attributes.add_counter_attributes
 pub const add_title_counters_and_titles_with_handle_assignments = add_title_counters_and_titles_with_handle_assignments.add_title_counters_and_titles_with_handle_assignments
 pub const add_attribute_when_child_of = add_attribute_when_child_of.add_attribute_when_child_of
+pub const associate_counter_by_prepending_incrementing_attribute = associate_counter_by_prepending_incrementing_attribute.associate_counter_by_prepending_incrementing_attribute
 pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
 pub const change_attribute_value = change_attribute_value.change_attribute_value
 pub const concatenate_text_nodes = concatenate_text_nodes.concatenate_text_nodes
@@ -74,6 +79,7 @@ pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_indent = insert_indent.insert_indent
 pub const pair_bookends = pair_bookends.pair_bookends
+pub const prepend_text = prepend_text.prepend_text
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_empty_chunks = remove_empty_chunks.remove_empty_chunks

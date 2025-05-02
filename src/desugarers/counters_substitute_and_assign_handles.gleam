@@ -384,8 +384,9 @@ let any_number_of_handle_assignments =
     <> ")(\\w+)"
 
   let any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation =
-    "(-|_|.|:|;|::|,)"
+    "((-|_|.|:|;|::|,)"
     <> counter_prefix_and_counter
+    <> ")*"
 
   let assert Ok(re) =
     regexp.from_string(
@@ -627,7 +628,7 @@ fn fancy_attribute_processor(
             BlamedAttribute(next.blame, "handle_" <> handle_name, handle_value)
           }
         )
-      
+            
       use new_counter <- result.then(
         get_counters_from_attributes(next, counters)
       )
@@ -656,7 +657,7 @@ fn v_before_transforming_children(
   let assert True = list.is_empty(handles)
 
   use #(attributes, counters) <-
-    result.then(fancy_attribute_processor([], list.reverse(attributes), counters))
+    result.then(fancy_attribute_processor([], attributes, counters))
 
   Ok(#(V(b, t, attributes, c), #(counters, handles)))
 }
