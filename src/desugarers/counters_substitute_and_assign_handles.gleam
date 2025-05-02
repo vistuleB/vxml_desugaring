@@ -1,11 +1,9 @@
-import gleam/io
-import desugarers/encode_spaces_in_first_and_last_child
 import blamedlines.{type Blame, Blame}
 import gleam/float
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/regexp
+import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string
 import infrastructure.{ type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe }
@@ -118,7 +116,7 @@ fn update_counter(
     case x.name == counter_name {
       True -> {
         case mutation {
-          "++" -> {
+          _ if mutation == increment.string -> {
             use new_value <- result.try(mutate(
               x.counter_type,
               x.current_value,
@@ -126,7 +124,7 @@ fn update_counter(
             ))
             Ok(CounterInstance(..x, current_value: new_value))
           }
-          "--" -> {
+          _ if mutation == decrement.string -> {
             use new_value <- result.try(mutate(
               x.counter_type,
               x.current_value,
@@ -173,26 +171,10 @@ fn split_expressions(
 
 fn get_all_counters_from_match_content(
   match_content: String,
-  // insert or not
-  // mutation
-  // counter name
-  // splits character
+  regexes: #(Regexp, Regexp),
 ) -> List(#(String, String, String, Option(String))) {
   let assert [last, ..] = string.split(match_content, "<<") |> list.reverse()
-   let counter_prefix_and_counter =
-    "("
-    <> loud.regex_string
-    <> "|"
-    <> soft.regex_string
-    <> ")("
-    <> increment.regex_string
-    <> "|"
-    <> decrement.regex_string
-    <> "|"
-    <> no_change.regex_string
-    <> ")(\\w+)"
-
-  let assert Ok(re) = regexp.from_string(counter_prefix_and_counter)
+  let #(re, _) = regexes
   let splits = regexp.split(re, last)
   split_expressions(splits)
 }
@@ -268,6 +250,7 @@ fn handle_matches(
   matches: List(regexp.Match),
   splits: List(String),
   counters: List(CounterInstance),
+  regexes: #(Regexp, Regexp),
 ) -> Result(#(String, List(CounterInstance), List(HandleAssignment)), String) {
   case matches {
     [] -> {
@@ -275,10 +258,8 @@ fn handle_matches(
     }
     [first, ..rest] -> {
       let regexp.Match(content, sub_matches) = first
-      // we need to get all counter expressions from content
       let assert [_, handle_name, ..] = sub_matches
-
-      let counter_expressions = get_all_counters_from_match_content(content)
+      let counter_expressions = get_all_counters_from_match_content(content, regexes)
 
       use #(handles_value, expressions_output, updated_counters) <- result.try(
         handle_counter_expressions(counter_expressions, counters),
@@ -302,6 +283,7 @@ fn handle_matches(
           rest,
           rest_splits,
           updated_counters,
+          regexes,
         ),
       )
 
@@ -317,12 +299,13 @@ fn handle_matches(
 fn substitute_counters_and_generate_handle_assignments(
   content: String,
   counters: List(CounterInstance),
+  regexes: #(Regexp, Regexp),
 ) -> Result(
   #(String, List(CounterInstance), List(HandleAssignment)),
   // MySpecialCounterRegexErrorTypeNotADesugaringErrorYet
   String
 ){
- // examples 
+  // examples 
 
   // 1) one handle | one counter
   // ---------------------------
@@ -367,46 +350,18 @@ fn substitute_counters_and_generate_handle_assignments(
 
   // if there are multiple appearances of last regex part - only last one will be in splits and matches . so we need to use match content to get all of them
 
-let any_number_of_handle_assignments =
-    "((\\w+)(<<))*"
-
-  let counter_prefix_and_counter =
-    "("
-    <> loud.regex_string
-    <> "|"
-    <> soft.regex_string
-    <> ")("
-    <> increment.regex_string
-    <> "|"
-    <> decrement.regex_string
-    <> "|"
-    <> no_change.regex_string
-    <> ")(\\w+)"
-
-  let any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation =
-    "((-|_|.|:|;|::|,)"
-    <> counter_prefix_and_counter
-    <> ")*"
-
-  let assert Ok(re) =
-    regexp.from_string(
-      any_number_of_handle_assignments
-      <> counter_prefix_and_counter
-      <> any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation
-      <> "(" <> counter_prefix_and_counter <> ")*"
-    )
-
+  let #(_, re) = regexes
   let matches = regexp.scan(re, content)
   let splits = regexp.split(re, content)
-
-  handle_matches(matches, splits, counters)
+  handle_matches(matches, splits, counters, regexes)
 }
 
 fn update_blamed_content(
   bl: BlamedContent,
   counters: List(CounterInstance),
+  regexes: #(Regexp, Regexp),
 ) -> Result(#(BlamedContent, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
-  case substitute_counters_and_generate_handle_assignments(bl.content, counters) {
+  case substitute_counters_and_generate_handle_assignments(bl.content, counters, regexes) {
     Ok(#(updated_content, counters, handles)) -> {
       Ok(#(BlamedContent(bl.blame, updated_content), counters, handles))
     }
@@ -417,6 +372,7 @@ fn update_blamed_content(
 fn update_blamed_contents(
   contents: List(BlamedContent),
   counters: List(CounterInstance),
+  regexes: #(Regexp, Regexp),
 ) -> Result(
   #(List(BlamedContent), List(CounterInstance), List(HandleAssignment)),
   DesugaringError,
@@ -428,7 +384,7 @@ fn update_blamed_contents(
       init_acc, 
       fn(acc, content) {
         let #(old_contents, counters, handles) = acc
-        use #(updated_content, updated_counters, new_handles) <- result.try(update_blamed_content(content, counters))
+        use #(updated_content, updated_counters, new_handles) <- result.try(update_blamed_content(content, counters, regexes))
         Ok(#(list.append(old_contents, [updated_content]), updated_counters, list.flatten([handles, new_handles]) ))
       }
     )
@@ -516,59 +472,59 @@ fn handle_att_value(
   }
 }
 
-
 fn get_counters_from_attributes(
   attribute: BlamedAttribute,
   counters: List(CounterInstance),
 ) -> Result(List(CounterInstance), DesugaringError) {
-      case attribute.key {
-        "counter" -> {
-          use #(counter_name, default_value, step) <- result.try(
-            handle_att_value(attribute.value),
-          )
-          use _ <- result.try(check_counter_already_defined(
-            counter_name,
-            counters,
-            attribute.blame,
-          ))
-          Ok(
-            [CounterInstance(
-              ArabicCounter,
-              counter_name,
-              option.unwrap(default_value, "0"),
-              option.unwrap(step, 1.0),
-            )],
-          )
-        }
-        "roman_counter" -> {
-          use #(counter_name, default_value, step) <- result.try(
-            handle_att_value(attribute.value),
-          )
-          use _ <- result.try(check_counter_already_defined(
-            counter_name,
-            counters,
-            attribute.blame,
-          ))
-          Ok(
-            [CounterInstance(
-              RomanCounter,
-              counter_name,
-              option.unwrap(default_value, "."),
-              option.unwrap(step, 1.0),
-            )],
-          )
-        }
-        _ -> Ok([])
-      }
+  case attribute.key {
+    "counter" -> {
+      use #(counter_name, default_value, step) <- result.try(
+        handle_att_value(attribute.value),
+      )
+      use _ <- result.try(check_counter_already_defined(
+        counter_name,
+        counters,
+        attribute.blame,
+      ))
+      Ok(
+        [CounterInstance(
+          ArabicCounter,
+          counter_name,
+          option.unwrap(default_value, "0"),
+          option.unwrap(step, 1.0),
+        )],
+      )
+    }
+    "roman_counter" -> {
+      use #(counter_name, default_value, step) <- result.try(
+        handle_att_value(attribute.value),
+      )
+      use _ <- result.try(check_counter_already_defined(
+        counter_name,
+        counters,
+        attribute.blame,
+      ))
+      Ok(
+        [CounterInstance(
+          RomanCounter,
+          counter_name,
+          option.unwrap(default_value, "."),
+          option.unwrap(step, 1.0),
+        )],
+      )
+    }
+    _ -> Ok([])
+  }
 }
 
 fn fancy_one_attribute_processor(
   to_process: BlamedAttribute,
   counters: List(CounterInstance),
+  regexes: #(Regexp, Regexp),
 ) -> Result(#(BlamedAttribute, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
   use #(key, counters, assignments1) <- result.then(
     result.map_error(
-      substitute_counters_and_generate_handle_assignments(to_process.key, counters),
+      substitute_counters_and_generate_handle_assignments(to_process.key, counters, regexes),
       fn(e) {
         DesugaringError(
           blame: to_process.blame,
@@ -587,7 +543,7 @@ fn fancy_one_attribute_processor(
 
   use #(value, counters, assignments2) <- result.then(
      result.map_error(
-      substitute_counters_and_generate_handle_assignments(to_process.value, counters),
+      substitute_counters_and_generate_handle_assignments(to_process.value, counters, regexes),
       fn(e) {
         DesugaringError(
           blame: to_process.blame,
@@ -608,6 +564,7 @@ fn fancy_attribute_processor(
   already_processed: List(BlamedAttribute),
   yet_to_be_processed: List(BlamedAttribute),
   counters: List(CounterInstance),
+  regexes: #(Regexp, Regexp)
 ) -> Result(#(List(BlamedAttribute), List(CounterInstance)), DesugaringError) {
   case yet_to_be_processed {
     [] -> Ok(#(
@@ -617,7 +574,7 @@ fn fancy_attribute_processor(
 
     [next, ..rest] -> {
       use #(next, counters, assignments) <- result.then(
-        fancy_one_attribute_processor(next, counters),
+        fancy_one_attribute_processor(next, counters, regexes),
       )
 
       let assignment_attributes =
@@ -643,6 +600,7 @@ fn fancy_attribute_processor(
         already_processed,
         rest,
         list.flatten([new_counter, counters]),
+        regexes,
       )
     }
   }
@@ -651,13 +609,14 @@ fn fancy_attribute_processor(
 fn v_before_transforming_children(
   vxml: VXML,
   state: State,
+  regexes: #(Regexp, Regexp),
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(b, t, attributes, c) = vxml
   let #(counters, handles) = state
   let assert True = list.is_empty(handles)
 
   use #(attributes, counters) <-
-    result.then(fancy_attribute_processor([], attributes, counters))
+    result.then(fancy_attribute_processor([], list.reverse(attributes), counters, regexes))
 
   Ok(#(V(b, t, attributes, c), #(counters, handles)))
 }
@@ -665,13 +624,15 @@ fn v_before_transforming_children(
 fn t_transform(
   vxml: VXML,
   state: State,
+  regexes: #(Regexp, Regexp),
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert T(blame, contents) = vxml
   let #(counters, handles) = state
 
   use #(contents, updated_counters, new_handles) <- result.then(update_blamed_contents(
       contents,
-      counters
+      counters,
+      regexes,
   ))
 
   Ok(#(T(blame, contents), #(updated_counters, list.flatten([handles, new_handles]))))
@@ -697,13 +658,49 @@ fn v_after_transforming_children(
   Ok(#(V(blame, tag, attributes, children), #(counters, [])))
 }
 
+fn our_two_regexes() -> #(Regexp, Regexp) {
+  let any_number_of_handle_assignments =
+    "((\\w+)(<<))*"
+
+  let counter_prefix_and_counter =
+    "("
+    <> loud.regex_string
+    <> "|"
+    <> soft.regex_string
+    <> ")("
+    <> increment.regex_string
+    <> "|"
+    <> decrement.regex_string
+    <> "|"
+    <> no_change.regex_string
+    <> ")(\\w+)"
+
+  let any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation =
+    "((-|_|.|:|;|::|,)"
+    <> counter_prefix_and_counter
+    <> ")*"
+
+  let assert Ok(big) =
+    regexp.from_string(
+      any_number_of_handle_assignments
+      <> counter_prefix_and_counter
+      <> any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation
+    )
+
+  let assert Ok(small) =
+    regexp.from_string(counter_prefix_and_counter)
+
+  #(small, big)
+}
+
 type State = #(List(CounterInstance), List(HandleAssignment))
 
 fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
+  let regexes = our_two_regexes()
   infra.StatefulDownAndUpNodeToNodeTransform(
-    v_before_transforming_children: v_before_transforming_children,
+    v_before_transforming_children: fn(vxml, state) { v_before_transforming_children (vxml, state, regexes) },
     v_after_transforming_children: v_after_transforming_children,
-    t_transform: t_transform,
+    t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },
   )
 }
 
