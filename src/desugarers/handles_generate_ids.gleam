@@ -24,14 +24,23 @@ fn transform(node: VXML) -> Result(VXML, DesugaringError) {
 
       let has_handles =
         list.filter(attributes, fn(att) {
-          string.starts_with(att.key, "handle_")
+          string.starts_with(att.key, "handle")
         })
 
       let attributes =
         attributes
         |> list.index_map(fn(att, _) {
-          case string.starts_with(att.key, "handle_") {
-            True -> BlamedAttribute(..att, value: id <> " | " <> att.value)
+          case string.starts_with(att.key, "handle") {
+            True -> {
+              use #(handle_name, handle_value) <- infra.on_error_on_ok(
+                string.split_once(att.value, " "),
+                fn(_) {
+                  // early return if we can't split the attribute value
+                  BlamedAttribute(..att, value: att.value <> " | " <> id <> " | " <> "")
+                }
+              )
+              BlamedAttribute(..att, value: handle_name <> " | " <> id <> " | " <> handle_value)
+            }
             False -> att
           }
         })

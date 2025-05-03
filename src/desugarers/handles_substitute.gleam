@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/pair
 import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
@@ -128,19 +127,20 @@ fn print_handle_for_contents(
 fn get_handles_from_root_attributes(
   attributes: List(BlamedAttribute),
 ) -> #(List(BlamedAttribute), HandleInstances) {
-  let handles =
-    list.filter(attributes, fn(att) { string.starts_with(att.key, "handle_") })
+
+   let #(handle_attributes, filtered_attributes) =
+    list.partition(attributes, fn(att) {
+      att.key == "handle"
+    })
+
+  let extracted_handles = 
+    handle_attributes
     |> list.fold(dict.new(), fn(acc, att) {
-      let handle_name = string.drop_start(att.key, 7)
-      let assert [id, filename, value] = att.value |> string.split(" | ")
+      let assert [handle_name, id, filename, value] = att.value |> string.split(" | ")
       dict.insert(acc, handle_name, #(id, filename, value))
     })
 
-  let filtered_attributes =
-    list.filter(attributes, fn(att) {
-      !{ string.starts_with(att.key, "handle_") }
-    })
-  #(filtered_attributes, handles)
+  #(filtered_attributes, extracted_handles)
 }
 
 fn counter_handles_transform_to_get_handles(

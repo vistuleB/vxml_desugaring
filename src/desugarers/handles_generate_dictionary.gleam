@@ -24,8 +24,8 @@ fn convert_handles_to_attributes(
     let #(id, filename, value) = values
     BlamedAttribute(
       blame: blame,
-      key: "handle_" <> key,
-      value: id <> " | " <> filename <> " | " <> value,
+      key: "handle",
+      value: key <> " | " <> id <> " | " <> filename <> " | " <> value,
     )
   })
 }
@@ -47,17 +47,17 @@ fn check_handle_already_defined(
 
 fn get_handles_from_attributes(
   attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), List(#(String, String))) {
-  let extracted_handles =
-    list.filter(attributes, fn(att) { string.starts_with(att.key, "handle_") })
-    |> list.map(fn(att) {
-      let handle_name = string.drop_start(att.key, 7)
-      #(handle_name, att.value)
+) -> #(List(BlamedAttribute), List(#(String, String, String))) {
+
+  let #(handle_attributes, filtered_attributes) =
+    list.partition(attributes, fn(att) {
+      att.key == "handle"
     })
 
-  let filtered_attributes =
-    list.filter(attributes, fn(att) {
-      !{ string.starts_with(att.key, "handle_") }
+  let extracted_handles =
+    list.map(handle_attributes, fn(att) {
+      let assert [handle_name, id, value] = string.split(att.value, " | ")
+      #(handle_name, id, value)
     })
 
   #(filtered_attributes, extracted_handles)
@@ -130,8 +130,7 @@ fn handles_dict_factory_transform(
 
       use handles <- result.try(
         list.try_fold(extracted_handles, handles, fn(acc, handle) {
-          let #(handle_name, att_value) = handle
-          let assert [id, handle_value] = string.split(att_value, " | ")
+          let #(handle_name, id, handle_value) = handle
           use _ <- result.try(check_handle_already_defined(handle_name, acc, b))
           Ok(dict.insert(acc, handle_name, #(id, local_path, handle_value)))
         }),

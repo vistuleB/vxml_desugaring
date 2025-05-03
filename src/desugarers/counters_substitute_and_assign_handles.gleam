@@ -396,7 +396,7 @@ fn handle_assignment_blamed_attributes_from_handle_assignments(
   handles
   |> list.map(fn(handle) {
     let #(name, value) = handle
-    BlamedAttribute(infra.blame_us("..."), "handle_" <> name, value)
+    BlamedAttribute(infra.blame_us("..."), "handle", name <> " " <> value)
   })
 }
 
@@ -582,7 +582,7 @@ fn fancy_attribute_processor(
           assignments,
           fn(handle_assignment) {
             let #(handle_name, handle_value) = handle_assignment
-            BlamedAttribute(next.blame, "handle_" <> handle_name, handle_value)
+            BlamedAttribute(next.blame, "handle", handle_name <> " " <> handle_value)
           }
         )
             
