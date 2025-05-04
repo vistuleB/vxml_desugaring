@@ -13,6 +13,7 @@ import desugarers/concatenate_text_nodes
 import desugarers/convert_int_attributes_to_float
 import desugarers/counters_substitute_and_assign_handles
 import desugarers/cut_paste_attribute_from_first_child_to_self
+import desugarers/cut_paste_attribute_from_self_to_child
 import desugarers/define_article_output_path
 import desugarers/find_replace
 import desugarers/fold_tag_contents_into_text
@@ -30,6 +31,7 @@ import desugarers/insert_bookend_tags
 import desugarers/insert_indent
 import desugarers/pair_bookends
 import desugarers/prepend_text
+import desugarers/rearrange_links
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/remove_attributes
 import desugarers/remove_empty_chunks
@@ -63,6 +65,7 @@ pub const concatenate_text_nodes = concatenate_text_nodes.concatenate_text_nodes
 pub const convert_int_attributes_to_float = convert_int_attributes_to_float.convert_int_attributes_to_float
 pub const counters_substitute_and_assign_handles = counters_substitute_and_assign_handles.counters_substitute_and_assign_handles
 pub const cut_paste_attribute_from_first_child_to_self = cut_paste_attribute_from_first_child_to_self.cut_paste_attribute_from_first_child_to_self
+pub const cut_paste_attribute_from_self_to_child = cut_paste_attribute_from_self_to_child.cut_paste_attribute_from_self_to_child
 pub const define_article_output_path = define_article_output_path.define_article_output_path
 pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
@@ -80,6 +83,7 @@ pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_indent = insert_indent.insert_indent
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const prepend_text = prepend_text.prepend_text
+pub const rearrange_links = rearrange_links.rearrange_links
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_empty_chunks = remove_empty_chunks.remove_empty_chunks

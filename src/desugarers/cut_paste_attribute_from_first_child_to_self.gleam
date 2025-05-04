@@ -1,5 +1,4 @@
 import blamedlines
-import gleam/io
 import gleam/result
 import gleam/list
 import gleam/option.{Some, type Option, None}
@@ -26,7 +25,7 @@ fn check_first_child(children: List(VXML), key: String)
       let attribute = list.find(attributes, fn(att) {
         att.key == key
       })
-      
+
       case attribute {
         Error(_) -> {
           //  check_first_child(sub_children, key)
