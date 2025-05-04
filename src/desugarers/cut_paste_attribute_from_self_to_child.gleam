@@ -5,7 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml.{type VXML, V, type BlamedAttribute}
+import vxml.{type VXML, V, type BlamedAttribute, BlamedAttribute}
 
 fn update_child(children: List(VXML), child_tag: String, attribute: BlamedAttribute)
 -> List(VXML) {
@@ -30,11 +30,18 @@ fn param_transform(
   let #(parent_tag, child_tag, key) = extra
   case node {
     V(b, tag, attributes, children) if tag == parent_tag -> {
-
+        
+        
         case infra.get_attribute_by_name(node, key) {
           None -> Ok(node)
           Some(attribute) -> {
-            Ok(V(b, tag, attributes, update_child(children, child_tag, attribute)))
+            let new_attribites = attributes |> list.filter(fn(x) {
+              case x {
+                BlamedAttribute(_, k, _) if k == key -> False
+                _ -> True
+              }
+            })
+            Ok(V(b, tag, new_attribites, update_child(children, child_tag, attribute)))
           }
         }
     }
