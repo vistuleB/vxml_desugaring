@@ -100,11 +100,12 @@ fn split_pair_fold_for_delimiter_pair(
 }
 
 pub fn create_mathblock_and_math_elements(
-  display_math_delimiters: List(LatexDelimiterPair),
-  single_math_delimiters: List(LatexDelimiterPair),
-  display_math_default_delimeters: LatexDelimiterPair,
-  inline_math_default_delimeters: LatexDelimiterPair,
+  display_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
+  single_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
 ) -> List(Pipe) {
+  let #(display_math_delimiters, display_math_default_delimeters) = display_math_delimiters
+  let #(single_math_delimiters, inline_math_default_delimeters) = single_math_delimiters
+
   let display_math_pipe =
     list.map(
       display_math_delimiters,
