@@ -1449,26 +1449,26 @@ fn stateful_down_up_node_to_node_one(
 
   case node {
     V(_, _, _, children) -> {
-        use #(node, state) <- result.then(
-          transform.v_before_transforming_children(
-            node,
-            original_state,
-          ),
-        )
-
-        use #(children, state) <- result.then(
-          try_map_fold(
-            children,
-            state,
-            fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
-          )
-        )
-        
-        transform.v_after_transforming_children(
-          node |> replace_children_with(children),
+      use #(node, state) <- result.then(
+        transform.v_before_transforming_children(
+          node,
           original_state,
+        ),
+      )
+
+      use #(children, state) <- result.then(
+        try_map_fold(
+          children,
           state,
+          fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
         )
+      )
+      
+      transform.v_after_transforming_children(
+        node |> replace_children_with(children),
+        original_state,
+        state,
+      )
     }
     T(_, _) -> transform.t_transform(node, original_state)
   }

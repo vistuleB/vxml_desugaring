@@ -613,7 +613,6 @@ fn v_before_transforming_children(
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(b, t, attributes, c) = vxml
   let #(counters, handles) = state
-  let assert True = list.is_empty(handles)
 
   use #(attributes, counters) <-
     result.then(fancy_attribute_processor([], list.reverse(attributes), counters, regexes))
@@ -635,6 +634,8 @@ fn t_transform(
       regexes,
   ))
 
+  let assert True = !list.any(new_handles, fn(h) { list.contains(handles, h) })
+
   Ok(#(T(blame, contents), #(updated_counters, list.flatten([handles, new_handles]))))
 }
 
@@ -646,11 +647,15 @@ fn v_after_transforming_children(
   let assert V(blame, tag, attributes, children) = vxml
   let #(counters_before, handles_before) = state_before
   let #(counters_after, handles_after) = state_after
-  let assert True = list.is_empty(handles_before)
+
+  let handles_from_our_children = list.filter(
+    handles_after,
+    fn (h) { !list.contains(handles_before, h) }
+  )
 
   let attributes = list.append(
     attributes,
-    handle_assignment_blamed_attributes_from_handle_assignments(handles_after),
+    handle_assignment_blamed_attributes_from_handle_assignments(handles_from_our_children),
   )
 
   let counters = take_existing_counters(counters_before, counters_after)

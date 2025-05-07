@@ -1,9 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn content_is_nonempty(blamed_content: BlamedContent) {

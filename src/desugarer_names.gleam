@@ -35,11 +35,11 @@ import desugarers/remove_empty_lines
 import desugarers/remove_empty_text_nodes
 import desugarers/remove_starting_and_ending_empty_lines
 import desugarers/remove_starting_and_ending_spaces
-import desugarers/remove_vertical_chunks_with_no_text_child
 import desugarers/rename
 import desugarers/rename_with_attributes
 import desugarers/rename_when_child_of
 import desugarers/unwrap
+import desugarers/unwrap_vertical_chunks_with_no_text_child
 import desugarers/unwrap_when_descendant_of
 import desugarers/unwrap_when_single_child
 import desugarers/unwrap_when_child_of
@@ -83,7 +83,6 @@ pub const remove_empty_lines = remove_empty_lines.remove_empty_lines
 pub const remove_empty_text_nodes = remove_empty_text_nodes.remove_empty_text_nodes
 pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_empty_lines.remove_starting_and_ending_empty_lines
 pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
-pub const remove_vertical_chunks_with_no_text_child = remove_vertical_chunks_with_no_text_child.remove_vertical_chunks_with_no_text_child
 pub const rename = rename.rename
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
@@ -91,5 +90,6 @@ pub const unwrap_when_child_of= unwrap_when_child_of.unwrap_when_child_of
 pub const unwrap = unwrap.unwrap
 pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
 pub const unwrap_when_single_child = unwrap_when_single_child.unwrap_when_single_child
+pub const unwrap_vertical_chunks_with_no_text_child = unwrap_vertical_chunks_with_no_text_child.unwrap_vertical_chunks_with_no_text_child
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break
