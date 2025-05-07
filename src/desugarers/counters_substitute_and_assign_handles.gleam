@@ -5,7 +5,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{ type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe }
 import roman
 import vxml.{ type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
@@ -626,7 +626,7 @@ fn t_transform(
   regexes: #(Regexp, Regexp),
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert T(blame, contents) = vxml
-  let #(counters, handles) = state
+  let #(counters, old_handles) = state
 
   use #(contents, updated_counters, new_handles) <- result.then(update_blamed_contents(
       contents,
@@ -634,9 +634,12 @@ fn t_transform(
       regexes,
   ))
 
-  let assert True = !list.any(new_handles, fn(h) { list.contains(handles, h) })
+  use <- infra.on_some_on_none(
+    infra.get_contained(new_handles, old_handles),
+    fn (old_handle) { Error(DesugaringError(blame, "found previously-defined handle: " <> ins(old_handle))) },
+  )
 
-  Ok(#(T(blame, contents), #(updated_counters, list.flatten([handles, new_handles]))))
+  Ok(#(T(blame, contents), #(updated_counters, list.flatten([old_handles, new_handles]))))
 }
 
 fn v_after_transforming_children(
@@ -660,7 +663,7 @@ fn v_after_transforming_children(
 
   let counters = take_existing_counters(counters_before, counters_after)
 
-  Ok(#(V(blame, tag, attributes, children), #(counters, [])))
+  Ok(#(V(blame, tag, attributes, children), #(counters, handles_before)))
 }
 
 fn our_two_regexes() -> #(Regexp, Regexp) {

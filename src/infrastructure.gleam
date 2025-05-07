@@ -144,10 +144,10 @@ pub fn on_none_on_some(
 pub fn on_some_on_none(
   over option: Option(a),
   with_on_some f2: fn(a) -> b,
-  with_on_none f1: b,
+  with_on_none f1: fn() -> b,
 ) -> b {
   case option {
-    None -> f1
+    None -> f1()
     Some(z) -> f2(z)
   }
 }
@@ -243,6 +243,16 @@ pub fn get_duplicate(list: List(a)) -> Option(a) {
         True -> Some(first)
         False -> get_duplicate(rest)
       }
+  }
+}
+
+pub fn get_contained(from: List(a), in: List(a)) -> Option(a) {
+  case from {
+    [] -> None
+    [first, ..rest] -> case list.contains(in, first) {
+      True -> Some(first)
+      False -> get_contained(rest, in)
+    }
   }
 }
 
