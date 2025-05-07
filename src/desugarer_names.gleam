@@ -29,6 +29,7 @@ import desugarers/insert_indent
 import desugarers/pair_bookends
 import desugarers/prepend_text
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
+import desugarers/rearrange_links
 import desugarers/remove_attributes
 import desugarers/remove_empty_chunks
 import desugarers/remove_empty_lines
@@ -76,6 +77,7 @@ pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_indent = insert_indent.insert_indent
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const prepend_text = prepend_text.prepend_text
+pub const rearrange_links = rearrange_links.rearrange_links
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_empty_chunks = remove_empty_chunks.remove_empty_chunks
