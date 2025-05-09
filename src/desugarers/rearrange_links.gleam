@@ -258,7 +258,7 @@ fn match(
   pattern: LinkPattern,
 ) -> #(
   Bool,
-  Int, // Int for tracking matched tokens in the patter
+  Int, // Int for tracking matched tokens in the pattern
   Int, // the index of the last found element
   Dict(Int, #(String, List(String))), // the first String is the original href value, the second string is the original text __OneWord "val" payload matched by the `_1_` or whatever)
 ) {
@@ -353,6 +353,43 @@ fn match(
     })
 }
 
+fn match_until_end(atomized: VXML, pattern1: LinkPattern, pattern2: LinkPattern, where_to_start: Int) -> List(VXML) {
+  let #(match, _, end, info_dict) = match(atomized, where_to_start, 0, pattern1)
+  let assert V(b, t, a, children) = atomized
+
+  case match {
+    True -> {
+      let nodes_to_replace = children |> list.drop(list.length(pattern1)) |> list.take(end)
+
+      let assert V(_, _, _, updated_atomized) = replace(V(b, t, a, nodes_to_replace), info_dict, pattern1, pattern2)
+
+      let reassembled = 
+        list.flatten([
+          list.take(children, end - list.length(pattern1)),
+          [end_node(infra.blame_us("..."))],
+          updated_atomized,
+          list.drop(children, end + 1),
+          [end_node(infra.blame_us("..."))],
+        ])
+      
+      vxml.debug_print_vxmls("", reassembled)
+      let de_atomized = deatomize_vxmls(reassembled, []) |> pair.first
+      vxml.debug_print_vxmls("", de_atomized)
+      
+
+      case end < list.length(children)   {
+        True -> {
+          match_until_end(V(b, t, a, de_atomized), pattern1, pattern2, end + 1)
+        }
+        False -> {
+          de_atomized
+        }
+      }
+    }
+    False -> children
+  }
+}
+
 fn transform(
   vxml: VXML,
   extra: ExtraTransformed,
@@ -367,35 +404,7 @@ fn transform(
 
           let assert #(continue, [atomized]) = vxml |> atomize_text
           case continue {
-            True -> {
-              let #(match, _, end, info_dict) = match(atomized, 0, 0, pattern1)
-              io.debug(end)
-
-              let info_dict = info_dict |> dict.filter(fn(i, _) { i > -1 })
-              case match {
-                True -> {
-                  let assert V(b, t, a, children) = atomized
-                  let nodes_to_replace = children |> list.drop(list.length(pattern1)) |> list.take(end)
-
-                  let assert V(_, _, _, updated_atomized) = replace(V(b, t, a, nodes_to_replace), info_dict, pattern1, pattern2)
-
-                  let reassembled = 
-                    list.flatten([
-                      list.take(children, end - list.length(pattern1)),
-                      [end_node(infra.blame_us("..."))],
-                      updated_atomized,
-                      list.drop(children, end + list.length(pattern1)),
-                      [end_node(infra.blame_us("..."))],
-                    ])
-                  
-                  vxml.debug_print_vxmls("", reassembled)
-                  let de_atomized = deatomize_vxmls(reassembled, []) |> pair.first
-                  vxml.debug_print_vxmls("", de_atomized)
-                  de_atomized
-                }
-                False -> children
-              }
-            }
+            True -> match_until_end(atomized, pattern1, pattern2, 0)
             False -> children
           }
         })
