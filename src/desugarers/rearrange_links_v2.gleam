@@ -67,64 +67,6 @@ fn end_node(blame: Blame) {
   )
 }
 
-fn atomize_text(
-  vxml: VXML,
-) -> #(Bool, List(VXML)) // bool for whether the vxml has a elements or not
-{
-  case vxml {
-    V(blame, tag, attributes, children) -> {
-      let has_a = list.any(children, fn(x) {
-        tag == "a" || case x {
-          V(_, "a", _, _) -> True
-          _ -> False
-        }
-      })
-
-      use <- infra.on_false_on_true(
-        over: has_a,
-        with_on_false: #(False, [vxml])
-      )
-
-      let atomized_children = list.map(children, fn(x) {
-        let #(_, atomized) = atomize_text(x)
-        atomized
-      })
-      
-      let new_children = list.flatten(atomized_children)
-
-      #(True, [V(blame, tag, attributes, new_children)])
-    }
-
-    T(blame, blamed_contents) -> {
-      let atomized = list.map(
-        blamed_contents,
-        fn (blamed_content) {
-          let BlamedContent(line_blame, line_content) = blamed_content
-          line_content
-            |> string.split(" ")
-            |> list.map(
-              fn(word) { word_to_node(line_blame, word) }
-            )
-            |> list.intersperse(space_node(line_blame))
-            |> list.filter(fn(node){
-              case node {
-                V(_, "__OneWord", attr, _) -> {
-                  let assert [BlamedAttribute(_, "val", word)] = attr
-                  !{ word |> string.is_empty }
-                }
-                _ -> True
-              }
-            })
-        }
-      )
-      |> list.intersperse([line_node(blame)])
-      |> list.flatten
-
-      #(True, atomized)
-    }
-  }
-}
-
 fn deatomize_vxmls(
   children: List(VXML),
   accumilated_contents: List(vxml.BlamedContent),
@@ -203,7 +145,6 @@ fn add_end_node_indicator(next_index: Int, pattern: LinkPattern) -> List(VXML) {
     }
     _ -> []
   }
-
 }
 
 fn replace(
@@ -262,7 +203,7 @@ fn match(
   Int, // the index of the last found element
   Dict(Int, #(String, List(String))), // the first String is the original href value, the second string is the original text __OneWord "val" payload matched by the `_1_` or whatever)
 ) {
-  let assert V(_, tag, _, children) = parent
+  let assert V(_, _, _, children) = parent
   let init_acc = #(False, 0, 0, dict.new())
 
   let real_children = children
@@ -289,8 +230,7 @@ fn match(
               let #(is_match, original_word) = case head_token {
                 // original word is needed for only the variable case . we want to know the value of the word  matched with the variable _x_
                 Word(w) -> #(w == word, w)
-                Variable(var) -> {
-                  // let var =  string.inspect(var)
+                Variable(_) -> {
                   #(True, word)
                 }
                 _ -> #(False, "")
@@ -395,6 +335,58 @@ fn match_until_end(
   }
 }
 
+fn atomize_text_node(
+  vxml: VXML
+) -> List(VXML) {
+  let assert T(blame, blamed_contents) = vxml
+  blamed_contents
+  |> list.map(
+    fn (blamed_content) {
+      let BlamedContent(line_blame, line_content) = blamed_content
+      line_content
+        |> string.split(" ")
+        |> list.map(
+          fn(word) { word_to_node(line_blame, word) }
+        )
+        |> list.intersperse(space_node(line_blame))
+        |> list.filter(fn(node){
+          case node {
+            V(_, "__OneWord", attr, _) -> {
+              let assert [BlamedAttribute(_, "val", word)] = attr
+              !{ word |> string.is_empty }
+            }
+            _ -> True
+          }
+        })
+    }
+  )
+  |> list.intersperse([line_node(blame)])
+  |> list.flatten
+}
+
+fn atomize_if_t_or_a_with_single_t_child(
+  vxml: VXML
+) -> List(VXML) {
+  case vxml {
+    V(blame, "a", attributes, [T(_, _) as t]) -> {
+      [V(blame, "a", attributes, atomize_text_node(t))]
+    }
+    V(_, _, _, _) -> [vxml]
+    T(_, _) -> atomize_text_node(vxml)
+  }
+}
+
+fn atomize_maybe(
+  vxml: VXML,
+) -> #(Bool, VXML) {
+  let assert V(blame, tag, attributes, children) = vxml
+  let #(has_a, new_children) = case list.any(children, infra.is_v_and_tag_equals(_, "a")) {
+    True -> #(True, children |> list.map(atomize_if_t_or_a_with_single_t_child) |> list.flatten)
+    False -> #(False, children)
+  }
+  #(has_a, V(blame, tag, attributes, new_children))
+}
+
 fn transform(
   vxml: VXML,
   extra: ExtraTransformed,
@@ -409,7 +401,7 @@ fn transform(
           fn(acc, x){
             let #(pattern1, pattern2) = x
             let vxml = V(b, tag, attributes, acc)
-            let assert #(continue, [atomized]) = vxml |> atomize_text
+            let #(continue, atomized) = vxml |> atomize_maybe
             case continue {
               True -> match_until_end(atomized, pattern1, pattern2, 0)
               False -> children
