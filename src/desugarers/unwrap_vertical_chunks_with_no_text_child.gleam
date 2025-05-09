@@ -10,7 +10,7 @@ fn is_text(child: VXML) {
   }
 }
 
-pub fn remove_vertical_chunks_with_no_text_child_transform(
+pub fn transform(
   node: VXML,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
@@ -31,7 +31,7 @@ pub fn remove_vertical_chunks_with_no_text_child_transform(
 }
 
 fn transform_factory() -> infra.NodeToNodesTransform {
-  remove_vertical_chunks_with_no_text_child_transform
+  transform
 }
 
 fn desugarer_factory() -> Desugarer {

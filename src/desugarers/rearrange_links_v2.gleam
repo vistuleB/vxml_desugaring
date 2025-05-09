@@ -1,17 +1,19 @@
 import gleam/pair
 import gleam/result
-import blamedlines.{type Blame, Blame}
+import gleam/dict.{type Dict}
+import gleam/regexp
+import gleam/io
 import gleam/int
-import gleam/string
+import gleam/string.{inspect as ins}
 import gleam/list
 import gleam/option.{Some, None, type Option}
+import blamedlines.{type Blame, Blame}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 import xmlm
-import gleam/dict.{type Dict}
 
 type LinkPatternToken {
     Word(String) // (does not contain whitespace)
@@ -435,6 +437,54 @@ fn is_variable(token: String) -> Option(Int)  {
   }
 }
 
+fn keep_some_remove_none_and_unwrap(l: List(Option(a))) -> List(a) {
+  l 
+  |> list.filter_map(fn(x) {
+    case x {
+      Some(x) -> Ok(x)
+      None -> Error(Nil)
+    }
+  })
+}
+
+fn xmlm_tag_name(t: xmlm.Tag) -> String {
+  let xmlm.Tag(xmlm.Name(_, ze_name), _) = t
+  ze_name
+}
+
+fn xmlm_attribute_name(t: xmlm.Attribute) -> String {
+  let xmlm.Attribute(xmlm.Name(_, ze_name), _) = t
+  ze_name
+}
+
+fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
+  xmlm_attribute_name(t) == name
+}
+
+fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern, DesugaringError))) {
+  use tag_content_patterns <- result.try(children |> result.all)
+  let tag_content_patterns = tag_content_patterns |> list.flatten
+  use <- infra.on_true_on_false(
+    xmlm_tag_name(xmlm_tag) == "root",
+    Ok(tag_content_patterns),
+  )
+  use <- infra.on_false_on_true(
+    xmlm_tag_name(xmlm_tag) == "a",
+    Error(DesugaringError(infra.blame_us(""), "pattern tag is not '<a>' is " <> xmlm_tag_name(xmlm_tag)))
+  )
+  use href_attribute <- result.then(
+    xmlm_tag.attributes
+    |> list.find(xmlm_attribute_equals(_, "href"))
+    |> result.map_error(fn(_) { DesugaringError(infra.blame_us(""), "<a> pattern tag missing 'href' attribute") })
+  )
+  let xmlm.Attribute(_, value) = href_attribute
+  use value <- result.then(
+    int.parse(value)
+    |> result.map_error(fn(_) { DesugaringError(infra.blame_us(""), "<a> pattern 'href' attribute not an int") })
+  )
+  Ok([A(value, tag_content_patterns)])
+}
+
 fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
   content 
   |> string.split(" ") 
@@ -446,67 +496,28 @@ fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
     }
   })
   |> list.intersperse(Some(Space))
-  |> list.filter_map(fn(x) {
-      case x {
-        Some(x) -> Ok(x)
-        None -> Error("")
-      }
-  })
+  |> keep_some_remove_none_and_unwrap
   |> Ok
 }
 
 fn extra_string_to_link_pattern(s: String) -> Result(LinkPattern, DesugaringError) {
-  let input = xmlm.from_string(s)
-
   case xmlm.document_tree(
-    input,
-    fn (xmlm_tag, children) {
-      let href_attribute = 
-        xmlm_tag.attributes
-        |> list.find(
-          fn(x) {
-            case x {
-              xmlm.Attribute(xmlm.Name(_, "href"), _) -> True
-              _ -> False
-            }
-          })
-
-      use tag_content_patterns <- result.try(children |> list.try_map(fn(x) {
-        x
-      }))
-     
-      case href_attribute {
-        Ok(xmlm.Attribute(_, value)) -> {
-          case int.parse(value) {
-            Ok(value) -> Ok([A(value, list.flatten(tag_content_patterns))])
-            Error(_) -> Error(DesugaringError(infra.blame_us(""), "href attribute not an int"))
-          } 
-        }
-        Error(_) -> {
-          case xmlm_tag {
-            xmlm.Tag(xmlm.Name(_, "a"), _) -> Error(DesugaringError(infra.blame_us(""), "href attribute not found"))
-            _ -> Ok(list.flatten(tag_content_patterns))
-          }
-        }
-      }
-    },
-
+    xmlm.from_string(s),
+    match_tag_and_children,
     match_link_content
   ) {
     Ok(#(_, pattern, _)) -> pattern
-    Error(input_error) -> {
-      input_error |> string.inspect |> DesugaringError(infra.blame_us(""), _) |> Error
-    }
+    Error(input_error) -> Error(DesugaringError(infra.blame_us(""), ins(input_error)))
   }
 }
 
 fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError){
   extra
   |>  list.try_map(fn(x){
-      let #(s1, s2) = x
-      use pattern1 <- result.try({"<root>" <> s1 <> "</root>"} |> extra_string_to_link_pattern)
-      use pattern2 <- result.try({"<root>" <> s2 <> "</root>"} |> extra_string_to_link_pattern)
-      Ok(#(pattern1, pattern2))
+    let #(s1, s2) = x
+    use pattern1 <- result.try({"<root>" <> s1 <> "</root>"} |> add_quotes |> extra_string_to_link_pattern)
+    use pattern2 <- result.try({"<root>" <> s2 <> "</root>"} |> add_quotes |> extra_string_to_link_pattern)
+    Ok(#(pattern1, pattern2))
   })
 }
 // *** End of extra transformation ***
@@ -522,6 +533,63 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
+pub fn add_quotes_test() {
+  let example = "href=1"
+  let result = add_quotes(example)
+  io.println("Input: " <> example)
+  io.println("Output: " <> result)
+  
+  // Additional examples
+  let examples = [
+    "src=image.jpg",
+    "width=100",
+    "id=main-content",
+    "disabled=true",
+    "href=\"1\"",
+    "href='1'",
+  ]
+  
+  examples
+  |> list.each(fn(ex) {
+    let quoted = add_quotes(ex)
+    io.println("\nInput: " <> ex)
+    io.println("Output: " <> quoted)
+  })
+}
+
+/// Takes an HTML attribute assignment like "href=1" and adds quotes
+/// around the value to produce "href=\"1\""
+pub fn add_quotes(input: String) -> String {
+  case regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True)) {
+    Ok(pattern) -> {
+      regexp.match_map(
+        each: pattern,
+        in: input,
+        with: fn(match: regexp.Match) {
+          // Extract the full match
+          let full_match = match.content
+          
+          // Extract attribute and value from submatches
+          case match.submatches {
+            [Some(attr), Some(value), ..] -> {
+              attr <> "=\"" <> value <> "\""
+            }
+            _ -> full_match  // Return original if pattern doesn't match as expected
+          }
+        }
+      )
+    }
+    
+    Error(_) -> {
+      // Fallback method if regexp fails
+      case string.split_once(input, "=") {
+        Ok(#(attr, value)) -> attr <> "=\"" <> value <> "\""
+        Error(_) -> input
+      }
+    }
+  }
+}
+
 type Extra = List(#(String, String))
 
 /// matches appearance of first String 
@@ -529,10 +597,10 @@ type Extra = List(#(String, String))
 /// and replaces it with the second String
 /// (x) can be used in second String to use
 /// the variable from first String
-pub fn rearrange_links(extra: Extra) -> Pipe {
+pub fn rearrange_links_v2(extra: Extra) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "rearrange_links",
+      "rearrange_links_v2",
       option.None,
       "
 matches appearance of first String 
