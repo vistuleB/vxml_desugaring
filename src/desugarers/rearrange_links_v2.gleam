@@ -413,10 +413,6 @@ fn transform(
     _ -> Ok(vxml)
   }
 }
- 
-// *** Transforming input of String, String to LinkPattern, LinkPattern
-
-type ExtraTransformed = List(#(LinkPattern, LinkPattern))
 
 fn is_variable(token: String) -> Option(Int)  {
   let length = string.length(token)
@@ -444,13 +440,11 @@ fn xmlm_tag_name(t: xmlm.Tag) -> String {
   ze_name
 }
 
-fn xmlm_attribute_name(t: xmlm.Attribute) -> String {
-  let xmlm.Attribute(xmlm.Name(_, ze_name), _) = t
-  ze_name
-}
-
 fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
-  xmlm_attribute_name(t) == name
+  case t {
+    xmlm.Attribute(xmlm.Name(_, ze_name), _) if ze_name == name -> True
+    _ -> False
+  }
 }
 
 fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern, DesugaringError))) {
@@ -503,16 +497,32 @@ fn extra_string_to_link_pattern(s: String) -> Result(LinkPattern, DesugaringErro
   }
 }
 
+fn make_sure_attributes_are_quoted(input: String) -> String {
+  let assert Ok(pattern) = regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
+
+  regexp.match_map(
+    pattern,
+    input,
+    fn(match: regexp.Match) {
+      case match.submatches {
+        [Some(key), Some(value)] -> {
+          key <> "=\"" <> value <> "\""
+        }
+        _ -> match.content
+      }
+    }
+  )
+}
+
 fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError){
   extra
-  |>  list.try_map(fn(x){
+  |>  list.try_map(fn(x) {
     let #(s1, s2) = x
-    use pattern1 <- result.try({"<root>" <> s1 <> "</root>"} |> add_quotes |> extra_string_to_link_pattern)
-    use pattern2 <- result.try({"<root>" <> s2 <> "</root>"} |> add_quotes |> extra_string_to_link_pattern)
+    use pattern1 <- result.try({"<root>" <> s1 <> "</root>"} |> make_sure_attributes_are_quoted |> extra_string_to_link_pattern)
+    use pattern2 <- result.try({"<root>" <> s2 <> "</root>"} |> make_sure_attributes_are_quoted |> extra_string_to_link_pattern)
     Ok(#(pattern1, pattern2))
   })
 }
-// *** End of extra transformation ***
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   fn(node) { 
@@ -525,63 +535,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
-pub fn add_quotes_test() {
-  let example = "href=1"
-  let result = add_quotes(example)
-  io.println("Input: " <> example)
-  io.println("Output: " <> result)
-  
-  // Additional examples
-  let examples = [
-    "src=image.jpg",
-    "width=100",
-    "id=main-content",
-    "disabled=true",
-    "href=\"1\"",
-    "href='1'",
-  ]
-  
-  examples
-  |> list.each(fn(ex) {
-    let quoted = add_quotes(ex)
-    io.println("\nInput: " <> ex)
-    io.println("Output: " <> quoted)
-  })
-}
-
-/// Takes an HTML attribute assignment like "href=1" and adds quotes
-/// around the value to produce "href=\"1\""
-pub fn add_quotes(input: String) -> String {
-  case regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True)) {
-    Ok(pattern) -> {
-      regexp.match_map(
-        each: pattern,
-        in: input,
-        with: fn(match: regexp.Match) {
-          // Extract the full match
-          let full_match = match.content
-          
-          // Extract attribute and value from submatches
-          case match.submatches {
-            [Some(attr), Some(value), ..] -> {
-              attr <> "=\"" <> value <> "\""
-            }
-            _ -> full_match  // Return original if pattern doesn't match as expected
-          }
-        }
-      )
-    }
-    
-    Error(_) -> {
-      // Fallback method if regexp fails
-      case string.split_once(input, "=") {
-        Ok(#(attr, value)) -> attr <> "=\"" <> value <> "\""
-        Error(_) -> input
-      }
-    }
-  }
-}
-
+type ExtraTransformed = List(#(LinkPattern, LinkPattern))
 type Extra = List(#(String, String))
 
 /// matches appearance of first String 
