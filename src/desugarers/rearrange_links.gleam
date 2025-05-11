@@ -1,4 +1,4 @@
-import gleam/io
+import gleam/regexp
 import gleam/pair
 import gleam/result
 import blamedlines.{type Blame, Blame}
@@ -14,6 +14,7 @@ import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 import xmlm
 import gleam/dict.{type Dict}
 
+const ins = string.inspect
 type LinkPatternToken {
     Word(String) // (does not contain whitespace)
     Space
@@ -51,7 +52,7 @@ fn space_node(blame: Blame) {
 fn line_node(blame: Blame) {
   V(
     blame,
-    "__OneNewline",
+    "__OneNewLine",
     [],
     [],
   )
@@ -133,8 +134,6 @@ fn deatomize_vxmls(
     [] -> #([], [])
     [first, ..rest] -> {
       let #(nodes, accumilated_contents) = case first {
-
-
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
           let last_line = case list.last(accumilated_contents){
@@ -147,7 +146,6 @@ fn deatomize_vxmls(
             |> int.add(-1)
             |> list.take(accumilated_contents, _)
             |> list.append([last_line])
-          
 
           #([], accumilated_contents)
         }
@@ -266,12 +264,6 @@ fn match(
   let init_acc = #(False, 0, 0, dict.new())
 
   children
-    |> list.filter(fn(child) {
-    case child {
-      V(_, "__EndAtomizedT", _, _) -> False
-      _ -> True
-     } 
-    })
     |> list.drop(where_to_start)
     |> list.index_fold(init_acc, fn(acc, child, index){
       let global_index = index + global_index
@@ -280,12 +272,10 @@ fn match(
 
       case pattern |> list.drop(last_found_index) {
         [] -> {
-          let #(_, end, last_index, dict) = acc
-        
-          #(True, end, last_index, dict)
+          let #(_, last_found_index, end, dict) = acc
+          #(True, last_found_index, end, dict)
         }
         [head_token,..] -> {
-        
           let #(_, _, _, prev_dict) = acc
           case child {
             V(_, "__OneWord", atts, _) -> {
@@ -350,7 +340,10 @@ fn match(
                 _ -> #(False, 0, global_index, dict.new())
               }
             }
-            _ -> #(False, 0, global_index, dict.new())
+            _ -> {
+              let #(is_match, last_found_index, _, dict) = acc
+              #(is_match, last_found_index, global_index, dict)
+            }
           }
         }
       }
@@ -362,15 +355,10 @@ fn match_until_end(
   pattern1: LinkPattern,
   pattern2: LinkPattern,
   where_to_start: Int,
-  end: Int,
 ) -> List(VXML) {
 
-
-  let #(match, _, end, info_dict) = match(atomized, where_to_start, end, pattern1)
+  let #(match, _, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
   let assert V(b, t, a, children) = atomized
-
-  // vxml.debug_print_vxmls("testttt111", children |> list.drop(where_to_start))
-
 
   let info_dict = dict.filter(info_dict, fn(key, _){
     key >= 0
@@ -383,13 +371,12 @@ fn match_until_end(
       let assert V(_, _, _, updated_atomized) = replace(V(b, t, a, nodes_to_replace), info_dict, pattern1, pattern2)
 
       let children_before_match =  list.flatten([
-          list.take(children, end - list.length(pattern1)),
-          [end_node(infra.blame_us("..."))]
+          list.take(children, end - 1 - list.length(pattern1)),
+          [end_node(infra.blame_us("..."))] 
       ])
 
       let children_after_match = list.flatten([
-          children |> list.drop(end + 1 + where_to_start),
-          [end_node(infra.blame_us("..."))]
+          children |> list.drop(end + 1),
       ])
 
       let reassembled = 
@@ -399,13 +386,12 @@ fn match_until_end(
           children_after_match,
         ])
 
+
       let next_where_to_start = list.length(children_before_match) + list.length(updated_atomized) + where_to_start
 
-
-      
       case list.length(children) - next_where_to_start  >= list.length(pattern1)   {
         True -> {
-          let rest = match_until_end(V(b, t, a, reassembled), pattern1, pattern2, next_where_to_start, end + 1)
+          let rest = match_until_end(V(b, t, a, reassembled), pattern1, pattern2, next_where_to_start)
           rest
         }
         False -> {
@@ -413,7 +399,7 @@ fn match_until_end(
         }
       }
     }
-    False -> children
+    False -> deatomize_vxmls(children, []) |> pair.first
   }
 }
 
@@ -444,6 +430,7 @@ fn atomize_text_node(
   )
   |> list.intersperse([line_node(blame)])
   |> list.flatten
+  |> list.append([end_node(blame)])
 }
 
 fn atomize_if_t_or_a_with_single_t_child(
@@ -485,7 +472,7 @@ fn transform(
             let vxml = V(b, tag, attributes, acc)
             let #(continue, atomized) = vxml |> atomize_maybe
             case continue {
-              True -> match_until_end(atomized, pattern1, pattern2, 0, 0)
+              True -> match_until_end(atomized, pattern1, pattern2, 0)
               False -> children
             }
           }
@@ -496,10 +483,6 @@ fn transform(
   }
 }
  
-// *** Transforming input of String, String to LinkPattern, LinkPattern
-
-type ExtraTransformed = List(#(LinkPattern, LinkPattern))
-
 fn is_variable(token: String) -> Option(Int)  {
   let length = string.length(token)
   let start = string.slice(token, 0, 1)
@@ -509,6 +492,52 @@ fn is_variable(token: String) -> Option(Int)  {
     True, True, Ok(x) -> Some(x)
     _, _, _ -> None
   }
+}
+
+fn keep_some_remove_none_and_unwrap(l: List(Option(a))) -> List(a) {
+  l 
+  |> list.filter_map(fn(x) {
+    case x {
+      Some(x) -> Ok(x)
+      None -> Error(Nil)
+    }
+  })
+}
+
+fn xmlm_tag_name(t: xmlm.Tag) -> String {
+  let xmlm.Tag(xmlm.Name(_, ze_name), _) = t
+  ze_name
+}
+
+fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
+  case t {
+    xmlm.Attribute(xmlm.Name(_, ze_name), _) if ze_name == name -> True
+    _ -> False
+  }
+}
+
+fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern, DesugaringError))) {
+  use tag_content_patterns <- result.try(children |> result.all)
+  let tag_content_patterns = tag_content_patterns |> list.flatten
+  use <- infra.on_true_on_false(
+    xmlm_tag_name(xmlm_tag) == "root",
+    Ok(tag_content_patterns),
+  )
+  use <- infra.on_false_on_true(
+    xmlm_tag_name(xmlm_tag) == "a",
+    Error(DesugaringError(infra.blame_us(""), "pattern tag is not '<a>' is " <> xmlm_tag_name(xmlm_tag)))
+  )
+  use href_attribute <- result.then(
+    xmlm_tag.attributes
+    |> list.find(xmlm_attribute_equals(_, "href"))
+    |> result.map_error(fn(_) { DesugaringError(infra.blame_us(""), "<a> pattern tag missing 'href' attribute") })
+  )
+  let xmlm.Attribute(_, value) = href_attribute
+  use value <- result.then(
+    int.parse(value)
+    |> result.map_error(fn(_) { DesugaringError(infra.blame_us(""), "<a> pattern 'href' attribute not an int") })
+  )
+  Ok([A(value, tag_content_patterns)])
 }
 
 fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
@@ -522,70 +551,47 @@ fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
     }
   })
   |> list.intersperse(Some(Space))
-  |> list.filter_map(fn(x) {
-      case x {
-        Some(x) -> Ok(x)
-        None -> Error("")
-      }
-  })
+  |> keep_some_remove_none_and_unwrap
   |> Ok
 }
 
 fn extra_string_to_link_pattern(s: String) -> Result(LinkPattern, DesugaringError) {
-  let input = xmlm.from_string(s)
-
   case xmlm.document_tree(
-    input,
-    fn (xmlm_tag, children) {
-      let href_attribute = 
-        xmlm_tag.attributes
-        |> list.find(
-          fn(x) {
-            case x {
-              xmlm.Attribute(xmlm.Name(_, "href"), _) -> True
-              _ -> False
-            }
-          })
-
-      use tag_content_patterns <- result.try(children |> list.try_map(fn(x) {
-        x
-      }))
-     
-      case href_attribute {
-        Ok(xmlm.Attribute(_, value)) -> {
-          case int.parse(value) {
-            Ok(value) -> Ok([A(value, list.flatten(tag_content_patterns))])
-            Error(_) -> Error(DesugaringError(infra.blame_us(""), "href attribute not an int"))
-          } 
-        }
-        Error(_) -> {
-          case xmlm_tag {
-            xmlm.Tag(xmlm.Name(_, "a"), _) -> Error(DesugaringError(infra.blame_us(""), "href attribute not found"))
-            _ -> Ok(list.flatten(tag_content_patterns))
-          }
-        }
-      }
-    },
-
+    xmlm.from_string(s),
+    match_tag_and_children,
     match_link_content
   ) {
     Ok(#(_, pattern, _)) -> pattern
-    Error(input_error) -> {
-      input_error |> string.inspect |> DesugaringError(infra.blame_us(""), _) |> Error
-    }
+    Error(input_error) -> Error(DesugaringError(infra.blame_us(""), ins(input_error)))
   }
+}
+
+fn make_sure_attributes_are_quoted(input: String) -> String {
+  let assert Ok(pattern) = regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
+
+  regexp.match_map(
+    pattern,
+    input,
+    fn(match: regexp.Match) {
+      case match.submatches {
+        [Some(key), Some(value)] -> {
+          key <> "=\"" <> value <> "\""
+        }
+        _ -> match.content
+      }
+    }
+  )
 }
 
 fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError){
   extra
-  |>  list.try_map(fn(x){
-      let #(s1, s2) = x
-      use pattern1 <- result.try({"<root>" <> s1 <> "</root>"} |> extra_string_to_link_pattern)
-      use pattern2 <- result.try({"<root>" <> s2 <> "</root>"} |> extra_string_to_link_pattern)
-      Ok(#(pattern1, pattern2))
+  |>  list.try_map(fn(x) {
+    let #(s1, s2) = x
+    use pattern1 <- result.try({"<root>" <> s1 <> "</root>"} |> make_sure_attributes_are_quoted |> extra_string_to_link_pattern)
+    use pattern2 <- result.try({"<root>" <> s2 <> "</root>"} |> make_sure_attributes_are_quoted |> extra_string_to_link_pattern)
+    Ok(#(pattern1, pattern2))
   })
 }
-// *** End of extra transformation ***
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
   fn(node) { 
@@ -598,6 +604,7 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(extra))
 }
 
+type ExtraTransformed = List(#(LinkPattern, LinkPattern))
 type Extra = List(#(String, String))
 
 /// matches appearance of first String 
