@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/regexp
 import gleam/pair
 import gleam/result
@@ -172,9 +173,12 @@ fn deatomize_vxmls(
         V(blame, "__EndAtomizedT", _, _) -> {
           #([T(blame, accumilated_contents)], [])
         }
-        V(b, t, a, children) -> {
+        V(b, "a", a, children) -> {
           let updated_children = deatomize_vxmls(children, []) |> pair.first
-          #([V(b, t, a, updated_children)], [])
+          #([V(b, "a", a, updated_children)], [])
+        }
+        V(_, _, _, _) -> {
+          #([first], [])
         }
         _ -> #([], []) // should never happen
       }
