@@ -214,7 +214,7 @@ fn replace(
   pattern1: LinkPattern,
   pattern2: LinkPattern,
 ) -> VXML {
-  let assert V(blame, tag, attrs, children) = parent
+  let assert V(blame, tag, attrs, _) = parent
   
   let new_children =  
   pattern2
@@ -243,7 +243,7 @@ fn replace(
               blame,
               "a", 
               [BlamedAttribute(blame, "href", href_value)],
-              children
+              []
             )
             |> replace(info_dict, pattern1, sub_pattern)
           ]
@@ -370,9 +370,7 @@ fn match_until_end(
 
   case match {
     True -> {
-      let nodes_to_replace = children |> list.drop(list.length(pattern1)) |> list.take(end)
-
-      let assert V(_, _, _, updated_atomized) = replace(V(b, t, a, nodes_to_replace), info_dict, pattern1, pattern2)
+      let assert V(_, _, _, updated_atomized) = replace(atomized, info_dict, pattern1, pattern2)
 
       let children_before_match =  list.flatten([
           list.take(children, end - 1 - list.length(pattern1)),
@@ -389,7 +387,6 @@ fn match_until_end(
           updated_atomized,
           children_after_match,
         ])
-
 
       let next_where_to_start = list.length(children_before_match) + list.length(updated_atomized) + where_to_start
 
@@ -544,18 +541,54 @@ fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern,
   Ok([A(value, tag_content_patterns)])
 }
 
+fn handle_matches(matches: List(regexp.Match), splits: List(String)) -> List(Option(LinkPatternToken)) {
+  io.debug(matches)
+  io.debug(splits)
+
+  []
+}
+
+fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) {
+  splits
+  |> list.filter(fn(x){ !{ x |> string.is_empty } })
+  |> list.map(fn(x){
+      case is_variable(x) {
+        Some(x) -> Variable(x)
+        None -> Word(x)
+      }
+    })
+  |> Some
+}
+
+fn word_to_optional_tokens(word: String) -> Option(LinkPattern) {
+  case word {
+    "" -> None
+    _ -> Some([Word(word)])
+  }
+}
+
+fn split_variables(words: List(String)) -> List(Option(LinkPattern)) {
+  let assert Ok(re) = regexp.from_string("(_[0-9]+_)")
+  words
+  |> list.map(fn(word) {
+    case regexp.check(re, word) {
+      False -> word_to_optional_tokens(word)
+      True -> {
+        regexp.split(re, word)
+        // example of splits for _1_._2_ ==> ["", "_1_", ".", "_2_", ""]
+        |> regex_splits_to_optional_tokens
+      }
+    }
+  })
+}
+
 fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
   content 
   |> string.split(" ") 
-  |> list.map(fn(x) {
-    case is_variable(x), x == "" {
-      Some(x), _ -> Some(Variable(x))
-      None, False -> Some(Word(x))
-      None, True -> None
-    }
-  })
-  |> list.intersperse(Some(Space))
+  |> split_variables // variables doesn't have to be surrounded by spaces
+  |> list.intersperse(Some([Space]))
   |> keep_some_remove_none_and_unwrap
+  |> list.flatten
   |> Ok
 }
 
@@ -598,9 +631,11 @@ fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError){
 }
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  fn(node) { 
-    use transformed_extra <- result.try(extra |> extra_transform)
-    transform(node, transformed_extra) 
+  case extra |> extra_transform {
+    Ok(transformed_extra) -> fn(node) { 
+      transform(node, transformed_extra) 
+    }
+    Error(error) -> fn(_) { Error(error) }
   }
 }
 
