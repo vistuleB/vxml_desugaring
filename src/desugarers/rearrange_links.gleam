@@ -214,7 +214,7 @@ fn replace(
   info_dict: Dict(Int, #(String, List(String))),
   pattern1: LinkPattern,
   pattern2: LinkPattern,
-) -> VXML {
+) -> Result(VXML, DesugaringError) {
   let assert V(blame, tag, attrs, _) = parent
   
   let new_children =  
@@ -222,37 +222,46 @@ fn replace(
   |> list.index_map(fn(token, i){
     case token {
       Word(word) -> {
-        list.flatten([[word_to_node(blame, word)], add_end_node_indicator(i + 1, pattern2)])
+        list.flatten([[word_to_node(blame, word)], add_end_node_indicator(i + 1, pattern2)]) |> Ok
       }
       Space -> {
         list.flatten([[space_node(blame)], add_end_node_indicator(i + 1, pattern2)])
+        |> Ok
       }
       Newline -> {
         list.flatten([[line_node(blame)], add_end_node_indicator(i + 1, pattern2)])
+        |> Ok
       }
       Variable(var) -> {
         let assert Ok(var_value) = info_dict |> get_list_of_variables |> infra.get_at(var - 1)
         list.flatten([[word_to_node(blame, var_value)], add_end_node_indicator(i + 1, pattern2)])
+        |> Ok
       }
       A(classes, var, sub_pattern) -> {
-        let assert Ok(link_info) = info_dict |> dict.get(var)
+        use link_info <- result.try(info_dict |> dict.get(var) |> result.map_error(fn(_){
+          DesugaringError(blame, "Href " <> ins(var) <> " was not found")
+        }))
         let href_value = link_info |> pair.first
 
-        // we need to add EndAtomizedT if there are previous siblings
-          [
-            V(
-              blame,
-              "a", 
-              [BlamedAttribute(blame, "href", href_value),
-              BlamedAttribute(blame, "class", classes)],
-              []
-            )
-            |> replace(info_dict, pattern1, sub_pattern)
-          ]
+        let new_a_node = V(
+            blame,
+            "a", 
+            [BlamedAttribute(blame, "href", href_value),
+            BlamedAttribute(blame, "class", classes)],
+            []
+          )
+        use new_new_a_node <- result.try(replace(new_a_node, info_dict, pattern1, sub_pattern))
+
+        [new_new_a_node] |> Ok
       }
     }
   })
-  V(blame, tag, attrs, new_children |> list.flatten)
+  |> list.try_map(fn(result){
+    result
+  })
+  
+  use new_children <- result.try(new_children)
+  Ok(V(blame, tag, attrs, new_children |> list.flatten))
 }
 
 fn match(
@@ -361,7 +370,7 @@ fn match_until_end(
   pattern1: LinkPattern,
   pattern2: LinkPattern,
   where_to_start: Int,
-) -> List(VXML) {
+) -> Result(List(VXML), DesugaringError) {
 
   let #(match, _, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
   let assert V(b, t, a, children) = atomized
@@ -372,7 +381,8 @@ fn match_until_end(
 
   case match {
     True -> {
-      let assert V(_, _, _, updated_atomized) = replace(atomized, info_dict, pattern1, pattern2)
+      use updated_node <- result.try(replace(atomized, info_dict, pattern1, pattern2))
+      let assert V(_, _, _, updated_atomized) = updated_node
 
       let children_before_match =  list.flatten([
           list.take(children, end - 1 - list.length(pattern1)),
@@ -398,11 +408,11 @@ fn match_until_end(
           rest
         }
         False -> {
-          deatomize_vxmls(reassembled, []) |> pair.first
+          deatomize_vxmls(reassembled, []) |> pair.first |> Ok
         }
       }
     }
-    False -> deatomize_vxmls(children, []) |> pair.first
+    False -> deatomize_vxmls(children, []) |> pair.first |> Ok
   }
 }
 
@@ -468,7 +478,7 @@ fn transform(
     V(b, tag, attributes, children) -> {
       let updated_childen = 
         extra
-        |> list.fold(
+        |> list.try_fold(
           children,
           fn(acc, x){
             let #(pattern1, pattern2) = x
@@ -476,10 +486,11 @@ fn transform(
             let #(continue, atomized) = vxml |> atomize_maybe
             case continue {
               True -> match_until_end(atomized, pattern1, pattern2, 0)
-              False -> children
+              False -> Ok(children)
             }
           }
         )
+      use updated_childen <- result.try(updated_childen)
       Ok(V(b, tag, attributes, updated_childen))
     }
     _ -> Ok(vxml)
