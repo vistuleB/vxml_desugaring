@@ -212,7 +212,6 @@ fn add_end_node_indicator(next_index: Int, pattern: LinkPattern) -> List(VXML) {
 fn replace(
   parent: VXML,
   info_dict: Dict(Int, #(String, List(String))),
-  pattern1: LinkPattern,
   pattern2: LinkPattern,
 ) -> Result(VXML, DesugaringError) {
   let assert V(blame, tag, attrs, _) = parent
@@ -233,7 +232,7 @@ fn replace(
         |> Ok
       }
       Variable(var) -> {
-        let assert Ok(var_value) = info_dict |> get_list_of_variables |> infra.get_at(var - 1)
+        let assert Ok(var_value) = info_dict |> get_list_of_variables |>  infra.get_at(var - 1)
         list.flatten([[word_to_node(blame, var_value)], add_end_node_indicator(i + 1, pattern2)])
         |> Ok
       }
@@ -250,8 +249,8 @@ fn replace(
             BlamedAttribute(blame, "class", classes)],
             []
           )
-        use new_new_a_node <- result.try(replace(new_a_node, info_dict, pattern1, sub_pattern))
-
+        use new_new_a_node <- result.try(replace(new_a_node, info_dict, sub_pattern))
+      
         [new_new_a_node] |> Ok
       }
     }
@@ -260,7 +259,10 @@ fn replace(
     result
   })
   
+ 
+
   use new_children <- result.try(new_children)
+        
   Ok(V(blame, tag, attrs, new_children |> list.flatten))
 }
 
@@ -296,10 +298,8 @@ fn match(
             V(_, "__OneWord", atts, _) -> {
               let assert [BlamedAttribute(_, "val", word)] = atts
               let #(is_match, original_word) = case head_token {
-                // original word is needed for only the variable case . we want to know the value of the word  matched with the variable _x_
                 Word(w) -> #(w == word, w)
-                Variable(var) -> {
-                  // let var =  string.inspect(var)
+                Variable(_) -> {
                   #(True, word)
                 }
                 _ -> #(False, "")
@@ -309,18 +309,17 @@ fn match(
                 True -> last_found_index + 1
                 False -> 0
               }
-
-              #(is_match, last_found_index, global_index, dict.insert(prev_dict, global_index * -1, #("__OneWord", [original_word]) ))
+              #(is_match, last_found_index, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
             }
             V(_, "__OneSpace", _, _) -> {
               case head_token {
-                Space -> #(True, last_found_index + 1, global_index, dict.insert(prev_dict, global_index * -1, #("__OneSpace", [""]) )) 
+                Space -> #(True, last_found_index + 1, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) )) 
                 _ -> #(False, 0, global_index, dict.new())
               }
             }
             V(_, "__OneNewLine", _, _) -> {
               case head_token {
-                Newline -> #(True, last_found_index + 1, global_index, dict.insert(prev_dict, global_index * -1, #("__OneNewLine", [""]) ))
+                Newline -> #(True, last_found_index + 1, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) ))
                 _ -> #(False, 0, global_index, dict.new())
               }
             }
@@ -375,13 +374,14 @@ fn match_until_end(
   let #(match, _, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
   let assert V(b, t, a, children) = atomized
 
-  let info_dict = dict.filter(info_dict, fn(key, _){
-    key >= 0
+  let info_dict = dict.filter(info_dict, fn(_, value){
+    value |> pair.first != "will_be_trashed"
   })
 
   case match {
     True -> {
-      use updated_node <- result.try(replace(atomized, info_dict, pattern1, pattern2))
+      use updated_node <- result.try(replace(atomized, info_dict, pattern2))
+
       let assert V(_, _, _, updated_atomized) = updated_node
 
       let children_before_match =  list.flatten([
