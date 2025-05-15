@@ -21,10 +21,11 @@ type LinkPatternToken {
     Space
     Newline
     Variable(Int)
-    A(Int, LinkPattern) // the Int is the href, the List(LinkPatternToken) is the inside of the a-tag
+    A(String, Int, LinkPattern) // the String for classes, the Int is the href, the List(LinkPatternToken) is the inside of the a-tag
 }
 
 type LinkPattern = List(LinkPatternToken)
+
 
 fn word_to_node(blame: Blame, word: String) {
   V(
@@ -200,7 +201,7 @@ fn get_list_of_variables(info_dict: Dict(Int, #(String, List(String)))) -> List(
 fn add_end_node_indicator(next_index: Int, pattern: LinkPattern) -> List(VXML) {
   let next_token = pattern |> infra.get_at(next_index)
   case next_token {
-    Ok(A(_, _)) | Error(_) -> {
+    Ok(A(_, _, _)) | Error(_) -> {
         [end_node(infra.blame_us("..."))]
     }
     _ -> []
@@ -233,7 +234,7 @@ fn replace(
         let assert Ok(var_value) = info_dict |> get_list_of_variables |> infra.get_at(var - 1)
         list.flatten([[word_to_node(blame, var_value)], add_end_node_indicator(i + 1, pattern2)])
       }
-      A(var, sub_pattern) -> {
+      A(classes, var, sub_pattern) -> {
         let assert Ok(link_info) = info_dict |> dict.get(var)
         let href_value = link_info |> pair.first
 
@@ -242,7 +243,8 @@ fn replace(
             V(
               blame,
               "a", 
-              [BlamedAttribute(blame, "href", href_value)],
+              [BlamedAttribute(blame, "href", href_value),
+              BlamedAttribute(blame, "class", classes)],
               []
             )
             |> replace(info_dict, pattern1, sub_pattern)
@@ -262,7 +264,7 @@ fn match(
   Bool,
   Int, // Int for tracking matched tokens in the pattern
   Int, // the index of the last found element
-  Dict(Int, #(String, List(String))), // the first String is the original href value, the second string is the original text __OneWord "val" payload matched by the `_1_` or whatever)
+  Dict(Int, #(String, List(String))), // the first String is the original href value, the second is for classes attribute, the third string is the original text __OneWord "val" payload matched by the `_1_` or whatever)
 ) {
   let assert V(_, tag, _, children) = parent
   let init_acc = #(False, 0, 0, dict.new())
@@ -315,7 +317,7 @@ fn match(
             }
             V(_, "a", attrs, _) -> {
               case head_token {
-                A(val, sub_pattern) ->{
+                A(_, val, sub_pattern) ->{
                   let #(is_match, _, _, new_dict) = match(child, 0, global_index, sub_pattern)
                   
                   let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(attrs, fn(x) {
@@ -533,19 +535,27 @@ fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern,
     |> list.find(xmlm_attribute_equals(_, "href"))
     |> result.map_error(fn(_) { DesugaringError(infra.blame_us(""), "<a> pattern tag missing 'href' attribute") })
   )
+
+  let class_attribute =
+    xmlm_tag.attributes
+    |> list.find(xmlm_attribute_equals(_, "class"))
+    
+
   let xmlm.Attribute(_, value) = href_attribute
   use value <- result.then(
     int.parse(value)
     |> result.map_error(fn(_) { DesugaringError(infra.blame_us(""), "<a> pattern 'href' attribute not an int") })
   )
-  Ok([A(value, tag_content_patterns)])
-}
 
-fn handle_matches(matches: List(regexp.Match), splits: List(String)) -> List(Option(LinkPatternToken)) {
-  io.debug(matches)
-  io.debug(splits)
+  let classes = case class_attribute {
+    Ok(x) -> {
+      let xmlm.Attribute(_, value) = x
+      value
+    }
+    Error(_) -> ""
+  }
 
-  []
+  Ok([A(classes, value, tag_content_patterns)])
 }
 
 fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) {
