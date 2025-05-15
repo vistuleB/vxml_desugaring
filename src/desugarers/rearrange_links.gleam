@@ -262,8 +262,8 @@ fn replace(
  
 
   use new_children <- result.try(new_children)
-        
-  Ok(V(blame, tag, attrs, new_children |> list.flatten))
+  
+    Ok(V(blame, tag, attrs, new_children |> list.flatten))
 }
 
 fn match(
@@ -280,7 +280,7 @@ fn match(
   let assert V(_, tag, _, children) = parent
   let init_acc = #(False, 0, 0, dict.new())
 
-  children
+  let result_acc = children
     |> list.drop(where_to_start)
     |> list.index_fold(init_acc, fn(acc, child, index){
       let global_index = index + global_index
@@ -362,6 +362,15 @@ fn match(
         }
       }
     })
+
+  let #(is_match, last_found_index, end, dict) = result_acc
+  // extra check to see if the pattern is fully completed 
+  case is_match && last_found_index < list.length(pattern) {
+    True -> {
+      #(False, last_found_index, end, dict)
+    }
+    _ -> result_acc
+  }
 }
 
 fn match_until_end(
