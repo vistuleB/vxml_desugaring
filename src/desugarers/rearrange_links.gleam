@@ -262,8 +262,15 @@ fn replace(
  
 
   use new_children <- result.try(new_children)
-  
+
     Ok(V(blame, tag, attrs, new_children |> list.flatten))
+}
+
+fn update_start_index(start_index: Int, global_index: Int, is_match: Bool, prev_is_match: Bool) -> Int {
+  case is_match, prev_is_match {
+    True, True -> start_index
+    _, _ -> global_index
+  }
 }
 
 fn match(
@@ -274,26 +281,25 @@ fn match(
 ) -> #(
   Bool,
   Int, // Int for tracking matched tokens in the pattern
-  Int, // the index of the last found element
+  Int, // index of the first element matched
+  Int, // index of the last element matched
   Dict(Int, #(String, List(String))), // the first String is the original href value, the second is for classes attribute, the third string is the original text __OneWord "val" payload matched by the `_1_` or whatever)
 ) {
-  let assert V(_, tag, _, children) = parent
-  let init_acc = #(False, 0, 0, dict.new())
+  let assert V(_, _, _, children) = parent
+  let init_acc = #(False, 0, 0, 0, dict.new())
 
   let result_acc = children
     |> list.drop(where_to_start)
     |> list.index_fold(init_acc, fn(acc, child, index){
+      let #(prev_is_match, last_found_index, start, end, prev_dict) = acc
       let global_index = index + global_index
-
-      let #(_, last_found_index, _, _) = acc
 
       case pattern |> list.drop(last_found_index) {
         [] -> {
-          let #(_, last_found_index, end, dict) = acc
-          #(True, last_found_index, end, dict)
+          #(True, last_found_index, start, end, prev_dict)
         }
         [head_token,..] -> {
-          let #(_, _, _, prev_dict) = acc
+
           case child {
             V(_, "__OneWord", atts, _) -> {
               let assert [BlamedAttribute(_, "val", word)] = atts
@@ -309,24 +315,30 @@ fn match(
                 True -> last_found_index + 1
                 False -> 0
               }
-              #(is_match, last_found_index, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
+
+              let start = update_start_index(start, global_index, is_match, prev_is_match)
+
+              #(is_match, last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
             }
             V(_, "__OneSpace", _, _) -> {
+              let start = update_start_index(start, global_index, True, prev_is_match)
               case head_token {
-                Space -> #(True, last_found_index + 1, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) )) 
-                _ -> #(False, 0, global_index, dict.new())
+                Space -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) )) 
+                _ -> #(False, 0, start, global_index, dict.new())
               }
             }
             V(_, "__OneNewLine", _, _) -> {
+              let start = update_start_index(start, global_index, True, prev_is_match)
               case head_token {
-                Newline -> #(True, last_found_index + 1, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) ))
-                _ -> #(False, 0, global_index, dict.new())
+                Newline -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) ))
+                _ -> #(False, 0, start, global_index, dict.new())
               }
             }
             V(_, "a", attrs, _) -> {
               case head_token {
-                A(_, val, sub_pattern) ->{
-                  let #(is_match, _, _, new_dict) = match(child, 0, global_index, sub_pattern)
+                A(_, val, sub_pattern) -> {
+
+                  let #(is_match, _, _,_, new_dict) = match(child, 0, global_index, sub_pattern)
                   
                   let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(attrs, fn(x) {
                     case x {
@@ -349,25 +361,32 @@ fn match(
                     True -> last_found_index + 1
                     False -> 0
                   }
-                  #(is_match, last_found_index, global_index, dict.merge(prev_dict, new_dict) )
+
+                 let start = update_start_index(start, global_index, is_match, prev_is_match)
+
+                  #(is_match, last_found_index, start, global_index, dict.merge(prev_dict, new_dict) )
                 }
-                _ -> #(False, 0, global_index, dict.new())
+                _ -> #(False, 0, start, global_index, dict.new())
               }
             }
+            V(_, "__EndAtomizedT", _, _) -> {
+              let #(is_match, last_found_index, start, _, dict) = acc
+              #(is_match, last_found_index, start, global_index - 1, dict)
+            }
             _ -> {
-              let #(is_match, last_found_index, _, dict) = acc
-              #(is_match, last_found_index, global_index, dict)
+              let #(is_match, last_found_index, start, _, dict) = acc
+              #(is_match, last_found_index, start, global_index - 1, dict)
             }
           }
         }
       }
     })
 
-  let #(is_match, last_found_index, end, dict) = result_acc
+  let #(is_match, last_found_index, start, end, dict) = result_acc
   // extra check to see if the pattern is fully completed 
   case is_match && last_found_index < list.length(pattern) {
     True -> {
-      #(False, last_found_index, end, dict)
+      #(False, last_found_index, start, end, dict)
     }
     _ -> result_acc
   }
@@ -380,7 +399,7 @@ fn match_until_end(
   where_to_start: Int,
 ) -> Result(List(VXML), DesugaringError) {
 
-  let #(match, _, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
+  let #(match, _, start, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
   let assert V(b, t, a, children) = atomized
 
   let info_dict = dict.filter(info_dict, fn(_, value){
@@ -394,7 +413,7 @@ fn match_until_end(
       let assert V(_, _, _, updated_atomized) = updated_node
 
       let children_before_match =  list.flatten([
-          list.take(children, end - 1 - list.length(pattern1)),
+          list.take(children, start),
           [end_node(infra.blame_us("..."))] 
       ])
 
