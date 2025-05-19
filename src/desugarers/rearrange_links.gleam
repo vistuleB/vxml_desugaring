@@ -191,7 +191,20 @@ fn deatomize_vxmls(
         }
         V(b, "a", a, children) -> {
           let updated_children = deatomize_vxmls(children, []) |> pair.first
-          #([V(b, "a", a, updated_children)], [])
+          // check if next is a new line to add a space 
+          let accumilated_contents = case rest {
+            [] -> []
+            [next, ..] -> {
+              case next {
+                V(_, "__OneNewLine", _, _) -> {
+                 [BlamedContent(b, " ")]
+                }
+                _ -> []
+              }
+            }
+          }
+
+          #([V(b, "a", a, updated_children)], accumilated_contents)
         }
         V(_, _, _, _) -> {
           #([first], [])
@@ -416,7 +429,7 @@ fn match_until_end(
   case match {
     True -> {
       use updated_node <- result.try(replace(atomized, info_dict, pattern2))
-
+      
       let assert V(_, _, _, updated_atomized) = updated_node
 
       let children_before_match =  list.flatten([
