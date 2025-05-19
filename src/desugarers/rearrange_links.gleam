@@ -11,7 +11,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
-import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
+import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute, type BlamedAttribute}
 import xmlm
 import gleam/dict.{type Dict}
 
@@ -26,6 +26,21 @@ type LinkPatternToken {
 
 type LinkPattern = List(LinkPatternToken)
 
+type InfoDict = Dict(
+  Int, // the href link variable ( respresenting the Int  In LinkPatternToken A(String, Int, LinkPattern)  )
+  #(
+    String, // the original href value
+    List(String) // the original text __OneWord "val" payload matched by the `_1_`
+  )
+)
+
+type MatchingAccumilator = #(
+  Bool, // whether the pattern has been matched
+  Int, // for tracking matched tokens in the pattern
+  Int, // index of the first element matched
+  Int, // index of the last element matched
+  InfoDict,
+)
 
 fn word_to_node(blame: Blame, word: String) {
   V(
@@ -189,7 +204,7 @@ fn deatomize_vxmls(
   }
 }
 
-fn get_list_of_variables(info_dict: Dict(Int, #(String, List(String)))) -> List(String) {
+fn get_list_of_variables(info_dict: InfoDict) -> List(String) {
   info_dict
   |> dict.map_values(fn(_, value){
     value |> pair.second
@@ -211,7 +226,7 @@ fn add_end_node_indicator(next_index: Int, pattern: LinkPattern) -> List(VXML) {
 
 fn replace(
   parent: VXML,
-  info_dict: Dict(Int, #(String, List(String))),
+  info_dict: InfoDict,
   pattern2: LinkPattern,
 ) -> Result(VXML, DesugaringError) {
   let assert V(blame, tag, attrs, _) = parent
@@ -258,12 +273,90 @@ fn replace(
   |> list.try_map(fn(result){
     result
   })
-  
- 
 
   use new_children <- result.try(new_children)
 
-    Ok(V(blame, tag, attrs, new_children |> list.flatten))
+  Ok(V(blame, tag, attrs, new_children |> list.flatten))
+}
+
+fn check_pattern_is_completed(acc: MatchingAccumilator, pattern: LinkPattern) -> MatchingAccumilator {
+  let #(is_match, last_found_index, start, end, dict) = acc
+  // extra check to see if the pattern is fully completed 
+  case is_match && last_found_index < list.length(pattern) {
+    True -> {
+      #(False, last_found_index, start, end, dict)
+    }
+    _ -> acc
+  }
+}
+
+fn match_word(acc: MatchingAccumilator, attrs: List(BlamedAttribute), token: LinkPatternToken, global_index: Int) -> MatchingAccumilator {
+  let assert [BlamedAttribute(_, "val", word)] = attrs
+  let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
+
+  let #(is_match, original_word) = case token {
+    Word(w) -> #(w == word, w)
+    Variable(_) -> {
+      #(True, word)
+    }
+    _ -> #(False, "")
+  }
+
+  let last_found_index = case is_match {
+    True -> last_found_index + 1
+    False -> 0
+  }
+
+  let start = update_start_index(start, global_index, is_match, prev_is_match)
+  #(is_match, last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
+}
+
+fn match_space_or_line(type_to_match: LinkPatternToken, acc: MatchingAccumilator, token: LinkPatternToken, global_index: Int) -> MatchingAccumilator {
+  let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
+  let start = update_start_index(start, global_index, True, prev_is_match)
+  case token, type_to_match {
+    Space, Space -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) ))
+    Newline, Newline -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) )) 
+    _, _ -> #(False, 0, start, global_index, dict.new())
+  }
+}
+
+fn match_a(acc: MatchingAccumilator, child: VXML, token: LinkPatternToken, global_index: Int) -> MatchingAccumilator {
+  let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
+  let assert V(_, _, attrs, _) = child
+  case token {
+    A(_, val, sub_pattern) -> {
+
+      let #(is_match, _, _,_, new_dict) = match(child, 0, global_index, sub_pattern)
+      
+      let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(attrs, fn(x) {
+        case x {
+          BlamedAttribute(_, "href", _) -> True
+          _ -> False
+        }
+      })
+      // get value of variables inside a text
+      let words = new_dict |> dict.map_values(fn(_, value){
+        value |> pair.second
+      })
+      |> dict.values
+      |> list.flatten
+
+      let new_dict = 
+        dict.new() 
+        |> dict.insert(val, #(href_value, words))
+      
+      let last_found_index = case is_match {
+        True -> last_found_index + 1
+        False -> 0
+      }
+
+      let start = update_start_index(start, global_index, is_match, prev_is_match)
+
+      #(is_match, last_found_index, start, global_index, dict.merge(prev_dict, new_dict) )
+    }
+    _ -> #(False, 0, start, global_index, dict.new())
+  }
 }
 
 fn update_start_index(start_index: Int, global_index: Int, is_match: Bool, prev_is_match: Bool) -> Int {
@@ -278,20 +371,14 @@ fn match(
   where_to_start: Int, // which child to use as starting point
   global_index: Int,
   pattern: LinkPattern,
-) -> #(
-  Bool,
-  Int, // Int for tracking matched tokens in the pattern
-  Int, // index of the first element matched
-  Int, // index of the last element matched
-  Dict(Int, #(String, List(String))), // the first String is the original href value, the second is for classes attribute, the third string is the original text __OneWord "val" payload matched by the `_1_` or whatever)
-) {
+) -> MatchingAccumilator {
   let assert V(_, _, _, children) = parent
   let init_acc = #(False, 0, 0, 0, dict.new())
 
-  let result_acc = children
+  children
     |> list.drop(where_to_start)
     |> list.index_fold(init_acc, fn(acc, child, index){
-      let #(prev_is_match, last_found_index, start, end, prev_dict) = acc
+      let #(_, last_found_index, start, end, prev_dict) = acc
       let global_index = index + global_index
 
       case pattern |> list.drop(last_found_index) {
@@ -299,97 +386,17 @@ fn match(
           #(True, last_found_index, start, end, prev_dict)
         }
         [head_token,..] -> {
-
           case child {
-            V(_, "__OneWord", atts, _) -> {
-              let assert [BlamedAttribute(_, "val", word)] = atts
-              let #(is_match, original_word) = case head_token {
-                Word(w) -> #(w == word, w)
-                Variable(_) -> {
-                  #(True, word)
-                }
-                _ -> #(False, "")
-              }
-
-              let last_found_index = case is_match {
-                True -> last_found_index + 1
-                False -> 0
-              }
-
-              let start = update_start_index(start, global_index, is_match, prev_is_match)
-
-              #(is_match, last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
-            }
-            V(_, "__OneSpace", _, _) -> {
-              let start = update_start_index(start, global_index, True, prev_is_match)
-              case head_token {
-                Space -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) )) 
-                _ -> #(False, 0, start, global_index, dict.new())
-              }
-            }
-            V(_, "__OneNewLine", _, _) -> {
-              let start = update_start_index(start, global_index, True, prev_is_match)
-              case head_token {
-                Newline -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) ))
-                _ -> #(False, 0, start, global_index, dict.new())
-              }
-            }
-            V(_, "a", attrs, _) -> {
-              case head_token {
-                A(_, val, sub_pattern) -> {
-
-                  let #(is_match, _, _,_, new_dict) = match(child, 0, global_index, sub_pattern)
-                  
-                  let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(attrs, fn(x) {
-                    case x {
-                      BlamedAttribute(_, "href", _) -> True
-                      _ -> False
-                    }
-                  })
-                  // get value of variables inside a text
-                  let words = new_dict |> dict.map_values(fn(_, value){
-                    value |> pair.second
-                  })
-                  |> dict.values
-                  |> list.flatten
-
-                  let new_dict = 
-                    dict.new() 
-                    |> dict.insert(val, #(href_value, words))
-                  
-                  let last_found_index = case is_match {
-                    True -> last_found_index + 1
-                    False -> 0
-                  }
-
-                 let start = update_start_index(start, global_index, is_match, prev_is_match)
-
-                  #(is_match, last_found_index, start, global_index, dict.merge(prev_dict, new_dict) )
-                }
-                _ -> #(False, 0, start, global_index, dict.new())
-              }
-            }
-            V(_, "__EndAtomizedT", _, _) -> {
-              let #(is_match, last_found_index, start, _, dict) = acc
-              #(is_match, last_found_index, start, global_index - 1, dict)
-            }
-            _ -> {
-              let #(is_match, last_found_index, start, _, dict) = acc
-              #(is_match, last_found_index, start, global_index - 1, dict)
-            }
+            V(_, "__OneWord", attrs, _) -> match_word(acc, attrs, head_token, global_index)
+            V(_, "__OneSpace", _, _) -> match_space_or_line(Space ,acc, head_token, global_index)
+            V(_, "__OneNewLine", _, _) -> match_space_or_line(Newline ,acc, head_token, global_index)
+            V(_, "a", _, _) -> match_a(acc, child, head_token, global_index)
+            _ -> acc
           }
         }
       }
     })
-
-  let #(is_match, last_found_index, start, end, dict) = result_acc
-  // extra check to see if the pattern is fully completed 
-  case is_match && last_found_index < list.length(pattern) {
-    True -> {
-      #(False, last_found_index, start, end, dict)
-    }
-    _ -> result_acc
-  }
+    |> check_pattern_is_completed(pattern)
 }
 
 fn match_until_end(
