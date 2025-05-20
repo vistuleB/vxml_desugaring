@@ -20,7 +20,12 @@ type LinkPatternToken {
     Word(String) // (does not contain whitespace)
     Space
     Variable(Int)
-    A(String, Int, LinkPattern) // the String for classes, the Int is the href, the List(LinkPatternToken) is the inside of the a-tag
+    A(
+      String, // tag name ( for now it's either a or InChapterLink )
+      String, // classes
+      Int, // href variable
+      LinkPattern // the List(LinkPatternToken) inside of the a-tag
+    )
 }
 
 type LinkPattern = List(LinkPatternToken)
@@ -233,7 +238,7 @@ fn get_list_of_variables(info_dict: InfoDict) -> List(String) {
 fn add_end_node_indicator(next_index: Int, pattern: LinkPattern) -> List(VXML) {
   let next_token = pattern |> infra.get_at(next_index)
   case next_token {
-    Ok(A(_, _, _)) | Error(_) -> {
+    Ok(A(_, _, _, _)) | Error(_) -> {
         [end_node(infra.blame_us("..."))]
     }
     _ -> []
@@ -264,14 +269,15 @@ fn replace(
         list.flatten([[word_to_node(blame, var_value)], add_end_node_indicator(i + 1, pattern2)])
         |> Ok
       }
-      A(classes, var, sub_pattern) -> {
+      A(tag, classes, var, sub_pattern) -> {
         use link_info <- result.try(info_dict |> dict.get(var) |> result.map_error(fn(_){
           DesugaringError(blame, "Href " <> ins(var) <> " was not found")
         }))
+
         let href_value = link_info |> pair.first
         let new_a_node = V(
             blame,
-            "a",
+            tag,
             [BlamedAttribute(blame, "href", href_value),
             BlamedAttribute(blame, "class", classes)],
             []
@@ -341,10 +347,14 @@ fn match_space_or_line(next_child: Result(VXML, Nil), acc: MatchingAccumulator, 
 
 fn match_a(acc: MatchingAccumulator, child: VXML, token: LinkPatternToken, global_index: Int) -> MatchingAccumulator {
   let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
-  let assert V(_, _, attrs, _) = child
+  let assert V(_, tag, attrs, _) = child
 
   case token {
-    A(_, val, sub_pattern) -> {
+    A(token_tag, _, val, sub_pattern) -> {
+      use <- infra.on_false_on_true(
+        over: tag == token_tag,
+        with_on_false: #(False, last_found_index, start, global_index, dict.new())
+      )
       let #(is_match, _, _, _, new_dict) = match(child, 0, global_index, sub_pattern)
 
       let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(
@@ -671,8 +681,8 @@ fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern,
     Ok(tag_content_patterns),
   )
   use <- infra.on_false_on_true(
-    xmlm_tag_name(xmlm_tag) == "a",
-    Error(DesugaringError(infra.blame_us(""), "pattern tag is not '<a>' is " <> xmlm_tag_name(xmlm_tag)))
+    xmlm_tag_name(xmlm_tag) == "a" || xmlm_tag_name(xmlm_tag) == "InChapterLink",
+    Error(DesugaringError(infra.blame_us(""), "pattern tag is not '<a>' or <InChapterLink> it is " <> xmlm_tag_name(xmlm_tag)))
   )
   use href_attribute <- result.then(
     xmlm_tag.attributes
@@ -699,7 +709,7 @@ fn match_tag_and_children(xmlm_tag: xmlm.Tag, children: List(Result(LinkPattern,
     Error(_) -> ""
   }
 
-  Ok([A(classes, value, tag_content_patterns)])
+  Ok([A(xmlm_tag_name(xmlm_tag), classes, value, tag_content_patterns)])
 }
 
 fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) {
