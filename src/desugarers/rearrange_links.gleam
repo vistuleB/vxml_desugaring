@@ -33,6 +33,7 @@ type LinkPattern = List(LinkPatternToken)
 type InfoDict = Dict(
   Int, // the href link variable ( respresenting the Int  In LinkPatternToken A(String, Int, LinkPattern)  )
   #(
+    String, // matched tag name ( for now either a or InChapterLink )
     String, // the original href value
     List(String) // the original text __OneWord "val" payload matched by the `_1_`
   )
@@ -229,7 +230,7 @@ fn deatomize_vxmls(
 fn get_list_of_variables(info_dict: InfoDict) -> List(String) {
   info_dict
   |> dict.map_values(fn(_, value){
-    value |> pair.second
+    value |> infra.triples_third
   })
   |> dict.values
   |> list.flatten
@@ -269,12 +270,13 @@ fn replace(
         list.flatten([[word_to_node(blame, var_value)], add_end_node_indicator(i + 1, pattern2)])
         |> Ok
       }
-      A(tag, classes, var, sub_pattern) -> {
+      A(_, classes, var, sub_pattern) -> {
         use link_info <- result.try(info_dict |> dict.get(var) |> result.map_error(fn(_){
           DesugaringError(blame, "Href " <> ins(var) <> " was not found")
         }))
 
-        let href_value = link_info |> pair.first
+        let tag = link_info |> infra.triples_first
+        let href_value = link_info |> infra.triples_second
         let new_a_node = V(
             blame,
             tag,
@@ -325,7 +327,7 @@ fn match_word(acc: MatchingAccumulator, attrs: List(BlamedAttribute), token: Lin
   }
 
   let start = update_start_index(start, global_index, is_match, prev_is_match)
-  #(is_match, last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
+  #(is_match, last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", "", [original_word]) ))
 }
 
 fn match_space_or_line(next_child: Result(VXML, Nil), acc: MatchingAccumulator, token: LinkPatternToken, global_index: Int) -> MatchingAccumulator {
@@ -339,7 +341,7 @@ fn match_space_or_line(next_child: Result(VXML, Nil), acc: MatchingAccumulator, 
     _ -> last_found_index + 1
   }
   case token {
-    Space -> #(True, new_last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) ))
+    Space -> #(True, new_last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", "", [""]) ))
     // Newline, Newline -> #(True, last_found_index + 1, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [""]) )) 
     _ -> #(False, 0, start, global_index, dict.new())
   }
@@ -350,11 +352,11 @@ fn match_a(acc: MatchingAccumulator, child: VXML, token: LinkPatternToken, globa
   let assert V(_, tag, attrs, _) = child
 
   case token {
-    A(token_tag, _, val, sub_pattern) -> {
-      use <- infra.on_false_on_true(
-        over: tag == token_tag,
-        with_on_false: #(False, last_found_index, start, global_index, dict.new())
-      )
+    A(_, _, val, sub_pattern) -> {
+      // use <- infra.on_false_on_true(
+      //   over: tag == token_tag,
+      //   with_on_false: #(False, last_found_index, start, global_index, dict.new())
+      // )
       let #(is_match, _, _, _, new_dict) = match(child, 0, global_index, sub_pattern)
 
       let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(
@@ -367,13 +369,13 @@ fn match_a(acc: MatchingAccumulator, child: VXML, token: LinkPatternToken, globa
         }
       )
 
-      let words = new_dict |> dict.map_values(fn(_, value) { value |> pair.second })
+      let words = new_dict |> dict.map_values(fn(_, value) { value |> infra.triples_third })
         |> dict.values
         |> list.flatten
 
       let new_dict = 
         dict.new() 
-        |> dict.insert(val, #(href_value, words))
+        |> dict.insert(val, #(tag, href_value, words))
       
       let last_found_index = case is_match {
         True -> last_found_index + 1
@@ -487,7 +489,7 @@ fn match_until_end(
   // }
  
   let info_dict = dict.filter(info_dict, fn(_, value){
-    value |> pair.first != "will_be_trashed"
+    value |> infra.triples_first != "will_be_trashed"
   })
 
 

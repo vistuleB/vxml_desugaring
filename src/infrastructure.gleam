@@ -300,6 +300,21 @@ pub fn quadruples_to_pairs_pairs(
   })
 }
 
+pub fn triples_first(l: #(a, b, c)) -> a {
+  let #(a, _, _) = l
+  a
+}
+
+pub fn triples_second(l: #(a, b, c)) -> b {
+  let #(_, b, _) = l
+  b
+}
+
+pub fn triples_third(l: #(a, b, c)) -> c {
+  let #(_, _, c) = l
+  c
+}
+
 pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
   l
   |> list.map(fn(triple) {
