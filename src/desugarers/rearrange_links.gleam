@@ -33,11 +33,11 @@ type InfoDict = Dict(
   )
 )
 
-type MatchingAccumilator = #(
+type MatchingAccumulator = #(
   Bool, // whether the pattern has been matched
-  Int, // for tracking matched tokens in the pattern
-  Int, // index of the first element matched
-  Int, // index of the last element matched
+  Int,  // for tracking matched tokens in the pattern
+  Int,  // index of the first element matched
+  Int,  // index of the last element matched
   InfoDict,
 )
 
@@ -89,12 +89,16 @@ fn atomize_text(
 {
   case vxml {
     V(blame, tag, attributes, children) -> {
-      let has_a = list.any(children, fn(x) {
-        tag == "a" || case x {
-          V(_, "a", _, _) -> True
-          _ -> False
+      let has_a = list.any(
+        children, 
+        fn(x) {
+          case x {
+            V(_, "a", _, _) -> True
+            V(_, "InChapterLink", _, _) -> True
+            _ -> False
+          }
         }
-      })
+      )
 
       use <- infra.on_false_on_true(
         over: has_a,
@@ -144,54 +148,55 @@ fn atomize_text(
 
 fn deatomize_vxmls(
   children: List(VXML),
-  accumilated_contents: List(vxml.BlamedContent),
+  accumulated_contents: List(vxml.BlamedContent),
 ) -> #(List(VXML), List(vxml.BlamedContent)) {
   case children {
     [] -> #([], [])
     [first, ..rest] -> {
-      let #(nodes, accumilated_contents) = case first {
+      let #(nodes, accumulated_contents) = case first {
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
-          let last_line = case list.last(accumilated_contents){
+          let last_line = case list.last(accumulated_contents){
             Ok(last_line) -> last_line
             Error(_) -> BlamedContent(blame, "")
           }
           let last_line = BlamedContent(..last_line, content: last_line.content <> word)
-          let accumilated_contents = accumilated_contents
+          let accumulated_contents = accumulated_contents
             |> list.length
             |> int.add(-1)
-            |> list.take(accumilated_contents, _)
+            |> list.take(accumulated_contents, _)
             |> list.append([last_line])
 
-          #([], accumilated_contents)
+          #([], accumulated_contents)
         }
         V(blame, "__OneSpace", _, _) -> {
-          let last_line = case list.last(accumilated_contents){
+          let last_line = case list.last(accumulated_contents){
             Ok(last_line) -> last_line
             Error(_) -> BlamedContent(blame, "")
           }
           let last_line = BlamedContent(..last_line, content: last_line.content <> " ")
-          let accumilated_contents = accumilated_contents
+          let accumulated_contents = accumulated_contents
             |> list.length 
             |> int.add(-1)
-            |> list.take(accumilated_contents, _)
+            |> list.take(accumulated_contents, _)
             |> list.append([last_line])
           
-          #([], accumilated_contents)
+          #([], accumulated_contents)
         }
         V(blame, "__OneNewLine", _, _) -> {
-          let accumilated_contents = accumilated_contents
+          let accumulated_contents = accumulated_contents
             |> list.append([BlamedContent(blame, "")])
           
-          #([], accumilated_contents)
+          #([], accumulated_contents)
         }
         V(blame, "__EndAtomizedT", _, _) -> {
-          #([T(blame, accumilated_contents)], [])
+          #([T(blame, accumulated_contents)], [])
         }
-        V(b, "a", a, children) -> {
+        V(b, "a", a, children) | V(b, "InChapterLink", a, children) -> {
+          let V(_, ze_tag, _, _) = first
           let updated_children = deatomize_vxmls(children, []) |> pair.first
           // check if next is a new line to add a space 
-          let accumilated_contents = case rest {
+          let accumulated_contents = case rest {
             [] -> []
             [next, ..] -> {
               case next {
@@ -203,14 +208,14 @@ fn deatomize_vxmls(
             }
           }
 
-          #([V(b, "a", a, updated_children)], accumilated_contents)
+          #([V(b, ze_tag, a, updated_children)], accumulated_contents)
         }
         V(_, _, _, _) -> {
           #([first], [])
         }
         _ -> #([], []) // should never happen
       }
-      let #(rest_nodes, _) = deatomize_vxmls(rest, accumilated_contents)
+      let #(rest_nodes, _) = deatomize_vxmls(rest, accumulated_contents)
       #(list.flatten([nodes, rest_nodes]), [])
     }
   }
@@ -254,10 +259,6 @@ fn replace(
         list.flatten([[space_node(blame)], add_end_node_indicator(i + 1, pattern2)])
         |> Ok
       }
-      // Newline -> {
-      //   list.flatten([[line_node(blame)], add_end_node_indicator(i + 1, pattern2)])
-      //   |> Ok
-      // }
       Variable(var) -> {
         let assert Ok(var_value) = info_dict |> get_list_of_variables |>  infra.get_at(var - 1)
         list.flatten([[word_to_node(blame, var_value)], add_end_node_indicator(i + 1, pattern2)])
@@ -268,16 +269,14 @@ fn replace(
           DesugaringError(blame, "Href " <> ins(var) <> " was not found")
         }))
         let href_value = link_info |> pair.first
-
         let new_a_node = V(
             blame,
-            "a", 
+            "a",
             [BlamedAttribute(blame, "href", href_value),
             BlamedAttribute(blame, "class", classes)],
             []
           )
         use new_new_a_node <- result.try(replace(new_a_node, info_dict, sub_pattern))
-      
         [new_new_a_node] |> Ok
       }
     }
@@ -291,7 +290,7 @@ fn replace(
   Ok(V(blame, tag, attrs, new_children |> list.flatten))
 }
 
-fn check_pattern_is_completed(acc: MatchingAccumilator, pattern: LinkPattern) -> MatchingAccumilator {
+fn check_pattern_is_completed(acc: MatchingAccumulator, pattern: LinkPattern) -> MatchingAccumulator {
   let #(is_match, last_found_index, start, end, dict) = acc
   // extra check to see if the pattern is fully completed 
   case is_match && last_found_index < list.length(pattern) {
@@ -302,7 +301,7 @@ fn check_pattern_is_completed(acc: MatchingAccumilator, pattern: LinkPattern) ->
   }
 }
 
-fn match_word(acc: MatchingAccumilator, attrs: List(BlamedAttribute), token: LinkPatternToken, global_index: Int) -> MatchingAccumilator {
+fn match_word(acc: MatchingAccumulator, attrs: List(BlamedAttribute), token: LinkPatternToken, global_index: Int) -> MatchingAccumulator {
   let assert [BlamedAttribute(_, "val", word)] = attrs
   let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
 
@@ -323,7 +322,7 @@ fn match_word(acc: MatchingAccumilator, attrs: List(BlamedAttribute), token: Lin
   #(is_match, last_found_index, start, global_index, dict.insert(prev_dict, global_index * -1, #("will_be_trashed", [original_word]) ))
 }
 
-fn match_space_or_line(next_child: Result(VXML, Nil), acc: MatchingAccumilator, token: LinkPatternToken, global_index: Int) -> MatchingAccumilator {
+fn match_space_or_line(next_child: Result(VXML, Nil), acc: MatchingAccumulator, token: LinkPatternToken, global_index: Int) -> MatchingAccumulator {
   let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
   let start = update_start_index(start, global_index, True, prev_is_match)
 
@@ -340,28 +339,27 @@ fn match_space_or_line(next_child: Result(VXML, Nil), acc: MatchingAccumilator, 
   }
 }
 
-fn match_a(acc: MatchingAccumilator, child: VXML, token: LinkPatternToken, global_index: Int) -> MatchingAccumilator {
+fn match_a(acc: MatchingAccumulator, child: VXML, token: LinkPatternToken, global_index: Int) -> MatchingAccumulator {
   let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
   let assert V(_, _, attrs, _) = child
+
   case token {
     A(_, val, sub_pattern) -> {
+      let #(is_match, _, _, _, new_dict) = match(child, 0, global_index, sub_pattern)
 
-
-      let #(is_match, _, _,_, new_dict) = match(child, 0, global_index, sub_pattern)
-
-
-      let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(attrs, fn(x) {
-        case x {
-          BlamedAttribute(_, "href", _) -> True
-          _ -> False
+      let assert Ok(BlamedAttribute(_, _, href_value)) = list.find(
+        attrs,
+        fn(x) {
+          case x {
+            BlamedAttribute(_, "href", _) -> True
+            _ -> False
+          }
         }
-      })
-      // get value of variables inside a text
-      let words = new_dict |> dict.map_values(fn(_, value){
-        value |> pair.second
-      })
-      |> dict.values
-      |> list.flatten
+      )
+
+      let words = new_dict |> dict.map_values(fn(_, value) { value |> pair.second })
+        |> dict.values
+        |> list.flatten
 
       let new_dict = 
         dict.new() 
@@ -376,6 +374,7 @@ fn match_a(acc: MatchingAccumilator, child: VXML, token: LinkPatternToken, globa
 
       #(is_match, last_found_index, start, global_index, dict.merge(prev_dict, new_dict) )
     }
+
     _ -> #(False, 0, start, global_index, dict.new())
   }
 }
@@ -392,32 +391,63 @@ fn match(
   where_to_start: Int, // which child to use as starting point
   global_index: Int,
   pattern: LinkPattern,
-) -> MatchingAccumilator {
+) -> MatchingAccumulator {
   let assert V(_, _, _, children) = parent
   let init_acc = #(False, 0, 0, 0, dict.new())
 
+  // let debug = global_index == 13
+  // case debug {
+  //   True -> {
+  //     let assert Ok(V(_, child_13_tag, _, _)) = infra.get_at(children, 13)
+  //     let assert Ok(V(_, child_14_tag, _, _)) = infra.get_at(children, 14)
+  //     let assert Ok(V(_, child_15_tag, _, _)) = infra.get_at(children, 15)
+  //     io.println("is debug!!!!; child_13_tag: " <> child_13_tag <> ", child_14_tag: " <> child_14_tag <> ", child_15_tag: " <> child_15_tag)
+  //     list.each(
+  //       children,
+  //       fn (c) {
+  //         let assert V(_, t, _, _) = c
+  //         io.println("tag: " <> t)
+  //       }
+  //     )
+  //   }
+  //   False -> io.println("is not debug")
+  // }
+
   children
     |> list.drop(where_to_start)
-    |> list.index_fold(init_acc, fn(acc, child, index){
-      let #(_, last_found_index, start, end, prev_dict) = acc
-      let global_index = index + global_index
-      let next_child = infra.get_at(children, index + 1)
+    |> list.index_fold(
+      init_acc,
+      fn(acc, child, index) {
+        let #(_, last_found_index, start, end, prev_dict) = acc
+        let global_index = index + global_index
+        let next_child = infra.get_at(children, where_to_start + index + 1)
 
-      case pattern |> list.drop(last_found_index) {
-        [] -> {
-          #(True, last_found_index, start, end, prev_dict)
-        }
-        [head_token,..] -> {
-          case child {
-            V(_, "__OneWord", attrs, _) -> match_word(acc, attrs, head_token, global_index)
-            V(_, "__OneSpace", _, _) | V(_, "__OneNewLine", _, _) -> match_space_or_line(next_child, acc, head_token, global_index)
-            // V(_, "__OneNewLine", _, _) -> match_space_or_line(Newline ,acc, head_token, global_index)
-            V(_, "a", _, _) -> match_a(acc, child, head_token, global_index)
-            _ -> acc
+        // case debug && index == 0 {
+        //   True -> {
+        //     let assert V(_, tag, _, _) = child
+        //     let assert Ok(V(_, next_tag, _, _)) = next_child
+        //     io.println("global_index, index, last_found_index: " <> ins(global_index) <> ", " <> ins(index) <> ", " <> ins(last_found_index) <> ", tag & next tag: " <> tag <> ", " <> next_tag )
+        //     // io.println("tag, next_tag: " <> tag <> ", " <> next_tag)
+        //   }
+        //   _ -> Nil
+        // }
+
+        case pattern |> list.drop(last_found_index) {
+          [] -> {
+            #(True, last_found_index, start, end, prev_dict)
+          }
+          [head_token,..] -> {
+            case child {
+              V(_, "__OneWord", attrs, _) -> match_word(acc, attrs, head_token, global_index)
+              V(_, "__OneSpace", _, _) | V(_, "__OneNewLine", _, _) -> match_space_or_line(next_child, acc, head_token, global_index)
+              V(_, "a", _, _) -> match_a(acc, child, head_token, global_index)
+              V(_, "InChapterLink", _, _) -> match_a(acc, child, head_token, global_index)
+              _ -> acc
+            }
           }
         }
       }
-    })
+    )
     |> check_pattern_is_completed(pattern)
 }
 
@@ -427,23 +457,55 @@ fn match_until_end(
   pattern2: LinkPattern,
   where_to_start: Int,
 ) -> Result(List(VXML), DesugaringError) {
+  // let debug = list.length(pattern1) == 3 && where_to_start > 0
+  // case debug {
+  //   True -> {
+  //     io.println("where_to_start, atomized: " <> ins(where_to_start))
+  //     vxml.debug_print_vxml("atomized_before_match", atomized)
+  //   }
+  //   False -> Nil
+  // }
 
-  let #(match, _, start, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
   let assert V(b, t, a, children) = atomized
-  // vxml.debug_print_vxmls(t, [atomized])
+  let #(match, _, start, end, info_dict) = match(atomized, where_to_start, where_to_start, pattern1)
 
+  // case debug {
+  //   True -> {
+  //     io.println("match, pattern_index, start, end: " <> ins(match) <> ", " <> ins(pattern_index) <> ", " <> ins(start) <> ", " <> ins(end))
+  //   }
+  //   False -> Nil
+  // }
+ 
   let info_dict = dict.filter(info_dict, fn(_, value){
     value |> pair.first != "will_be_trashed"
   })
 
+
   case match {
     True -> {
+      // case debug {
+      //   True -> {
+      //     io.println("trying to call replace on atomized")
+      //     io.println("the info_dict is: " <> ins(info_dict))
+      //     io.println("the pattern2 is:" <> ins(pattern2))
+      //     vxml.debug_print_vxml("atomized", atomized)
+      //   }
+      //   _ -> Nil
+      // }
       use updated_node <- result.try(replace(atomized, info_dict, pattern2))
       let assert V(_, _, _, updated_atomized) = updated_node
 
+      // case debug {
+      //   True -> {
+      //     io.println("the updated_atomized children were:")
+      //     vxml.debug_print_vxmls("updated_atomized", updated_atomized)
+      //   }
+      //   _ -> Nil
+      // }
+
       let children_before_match =  list.flatten([
-          list.take(children, start),
-          [end_node(infra.blame_us("..."))] 
+        list.take(children, start),
+        [ end_node(infra.blame_us("...")) ] 
       ])
 
       let children_after_match = list.flatten([
@@ -457,12 +519,17 @@ fn match_until_end(
           children_after_match,
         ])
   
-
       let next_where_to_start = list.length(children_before_match) + list.length(updated_atomized) + where_to_start
-
 
       case list.length(children) - next_where_to_start  >= list.length(pattern1)   {
         True -> {
+          // case debug {
+          //   True -> {
+          //     io.println("calling match_until_end pt2, with next_where_to_start = " <> ins(next_where_to_start))
+
+          //   }
+          //   _ -> Nil
+          // }
           let rest = match_until_end(V(b, t, a, reassembled), pattern1, pattern2, next_where_to_start)
           rest
         }
@@ -512,6 +579,9 @@ fn atomize_if_t_or_a_with_single_t_child(
     V(blame, "a", attributes, [T(_, _) as t]) -> {
       [V(blame, "a", attributes, atomize_text_node(t))]
     }
+    V(blame, "InChapterLink", attributes, [T(_, _) as t]) -> {
+      [V(blame, "InChapterLink", attributes, atomize_text_node(t))]
+    }
     V(_, _, _, _) -> [vxml]
     T(_, _) -> atomize_text_node(vxml)
   }
@@ -521,7 +591,7 @@ fn atomize_maybe(
   vxml: VXML,
 ) -> #(Bool, VXML) {
   let assert V(blame, tag, attributes, children) = vxml
-  let #(has_a, new_children) = case list.any(children, infra.is_v_and_tag_equals(_, "a")) {
+  let #(has_a, new_children) = case list.any(children, fn (v) {infra.is_v_and_tag_equals(v, "a") || infra.is_v_and_tag_equals(v, "InChapterLink")}) {
     True -> #(True, children |> list.map(atomize_if_t_or_a_with_single_t_child) |> list.flatten)
     False -> #(False, children)
   }
@@ -543,12 +613,12 @@ fn transform(
             let #(pattern1, pattern2) = x
             let vxml = V(b, tag, attributes, acc)
             let #(continue, atomized) = vxml |> atomize_maybe
-
             case continue {
               True ->{
                 // vxml.debug_print_vxmls("", [atomized])
-                 match_until_end(atomized, pattern1, pattern2, 0)
-                 }
+                io.println("calling match_until_end pt1")
+                match_until_end(atomized, pattern1, pattern2, 0)
+              }
               False -> Ok(children)
             }
           }

@@ -14,12 +14,10 @@ import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedContent,
 /// Arguments:
 /// - list: The input list to get element from
 /// - index: The zero-based index to retrieve
-pub fn get_at(list: List(a), index: Int) -> Result(a, Nil) {
-  case list, index {
-    [], _ -> Error(Nil)
-    [head, ..], 0 -> Ok(head)
-    [_, ..tail], i if i > 0 -> get_at(tail, i - 1)
-    _, _ -> Error(Nil)
+pub fn get_at(ze_list: List(a), index: Int) -> Result(a, Nil) {
+  case index >= list.length(ze_list) || index < 0 {
+    True -> Error(Nil)
+    False -> list.drop(ze_list, index) |> list.first
   }
 }
 
