@@ -33,32 +33,16 @@ type LinkPatternToken {
  
 type LinkPattern =
   List(LinkPatternToken)
- 
-type InfoDict =
-  Dict(
-    Int,  // integer reference of href
-    #(
-      String,
-      String,
-      List(
-        String,
-        // the href link variable ( respresenting the Int  In LinkPatternToken A(String, Int, LinkPattern)  )
-        // matched tag name ( for now either a or InChapterLink )
-        // the original href value
-      ),
-      // the original text __OneWord "val" payload matched by the `_1_`
-    ),
+
+
+type PrefixMatchOnAtomizedList {
+  PrefixMatchOnAtomizedList(
+    left_unmatched: Int,
+    href_dict: Dict(Int, VXML),
+    variables_dict: Dict(Int, List(VXML)),
   )
- 
-type MatchingAccumulator =
-  #(
-    Bool, // whether the pattern has been matched
-    Int,  // number of matched tokens in source pattern
-    Int,  // index of the first element matched
-    Int,  // index of the last element matched
-    InfoDict,
-  )
- 
+}
+
 fn word_to_node(blame: Blame, word: String) {
   V(
     blame,
@@ -160,321 +144,224 @@ fn deatomize_vxmls(
   }
 }
  
-fn get_list_of_variables(info_dict: InfoDict) -> List(String) {
-  info_dict
-  |> dict.map_values(fn(_, value) { value |> infra.triples_third })
-  |> dict.values
-  |> list.flatten
+fn fast_forward_past_spaces(
+  atomized: List(VXML),
+) -> List(VXML) {
+  list.drop_while(atomized, infra.tag_is_one_of(_, ["__OneSpace", "__OneNewLine", "__EndAtomizedT"]))
 }
- 
-fn add_end_node_indicator(next_index: Int, pattern: LinkPattern) -> List(VXML) {
-  let next_token = pattern |> infra.get_at(next_index)
-  case next_token {
-    Ok(A(_, _, _, _)) | Error(_) -> {
-      [end_node(infra.blame_us("..."))]
-    }
-    _ -> []
-  }
+
+fn fast_forward_past_end_t(
+  atomized: List(VXML),
+) -> List(VXML) {
+  list.drop_while(atomized, infra.tag_equals(_, "__EndAtomizedT"))
 }
- 
-fn replace(
-  blame: Blame,
-  info_dict: InfoDict,
-  pattern2: LinkPattern,
-) -> Result(List(VXML), DesugaringError) {
-  pattern2
-  |> list.index_map(
-    fn(token, i) {
-      case token {
-        Word(word) -> {
-          list.flatten([
-            [word_to_node(blame, word)],
-            add_end_node_indicator(i + 1, pattern2),
-          ])
-          |> Ok
-        }
-        Space -> {
-          list.flatten([
-            [space_node(blame)],
-            add_end_node_indicator(i + 1, pattern2),
-          ])
-          |> Ok
-        }
-        Variable(var) -> {
-          let assert Ok(var_value) = info_dict |> get_list_of_variables |> infra.get_at(var - 1)
-          list.flatten([
-            [word_to_node(blame, var_value)],
-            add_end_node_indicator(i + 1, pattern2),
-          ])
-          |> Ok
-        }
-        A(_, classes, var, sub_pattern) -> {
-          use link_info <- result.try(
-            info_dict
-            |> dict.get(var)
-            |> result.map_error(fn(_) {DesugaringError(blame, "Href " <> ins(var) <> " was not found")}),
-          )
-          let tag = link_info |> infra.triples_first
-          let href_value = link_info |> infra.triples_second
-          use a_node_children <- result.try(replace(
-            blame,
-            info_dict,
-            sub_pattern,
-          ))
-          let new_a_node =
-            V(
-              blame,
-              tag,
-              [
-                BlamedAttribute(blame, "href", href_value),
-                BlamedAttribute(blame, "class", classes),
-              ],
-              a_node_children,
-            )
-          [new_a_node] |> Ok
-        }
-      }
-    }
-  )
-  |> result.all
-  |> result.map(list.flatten)
-}
- 
-fn check_pattern_is_completed(
-  acc: MatchingAccumulator,
+
+fn match_internal(
+  atomized: List(VXML),
   pattern: LinkPattern,
-) -> MatchingAccumulator {
-  let #(is_match, last_found_index, start, end, dict) = acc
-  // extra check to see if the pattern is fully completed
-  case is_match && last_found_index < list.length(pattern) {
-    True -> {
-      #(False, last_found_index, start, end, dict)
+  href_dict_so_far: Dict(Int, VXML),
+  variables_dict_so_far: Dict(Int, List(VXML)),
+) -> Option(PrefixMatchOnAtomizedList) {
+  let atomized = fast_forward_past_end_t(atomized)
+
+  case pattern {
+    [] -> Some(PrefixMatchOnAtomizedList(
+      left_unmatched: atomized |> list.length,
+      href_dict: href_dict_so_far,
+      variables_dict: variables_dict_so_far,
+    ))
+
+    [Variable(z), ..pattern_rest] -> {
+      let assert True = list.is_empty(pattern_rest)
+      let assert Error(Nil) = dict.get(variables_dict_so_far, z)
+      let variables_dict_so_far = dict.insert(variables_dict_so_far, z, atomized)
+
+      Some(PrefixMatchOnAtomizedList(
+        left_unmatched: 0,
+        href_dict: href_dict_so_far,
+        variables_dict: variables_dict_so_far
+      ))
     }
-    _ -> acc
-  }
-}
- 
-fn match_word(
-  acc: MatchingAccumulator,
-  attrs: List(BlamedAttribute),
-  token: LinkPatternToken,
-  global_index: Int,
-) -> MatchingAccumulator {
-  let assert [BlamedAttribute(_, "val", word)] = attrs
-  let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
- 
-  let #(is_match, original_word) = case token {
-    Word(w) -> #(w == word, w)
-    Variable(_) -> {
-      #(True, word)
-    }
-    _ -> #(False, "")
-  }
- 
-  let last_found_index = case is_match {
-    True -> last_found_index + 1
-    False -> 0
-  }
- 
-  let start = update_start_index(start, global_index, is_match, prev_is_match)
-  #(
-    is_match,
-    last_found_index,
-    start,
-    global_index,
-    dict.insert(
-      prev_dict,
-      global_index * -1,
-      #("will_be_trashed", "", [original_word]),
-    ),
-  )
-}
- 
-fn match_space_or_line(
-  next_child: Result(VXML, Nil),
-  acc: MatchingAccumulator,
-  token: LinkPatternToken,
-  global_index: Int,
-) -> MatchingAccumulator {
-  let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
-  let start = update_start_index(start, global_index, True, prev_is_match)
- 
-  let new_last_found_index = case next_child {
-    Ok(V(_, "__OneSpace", _, _)) | Ok(V(_, "__OneNewLine", _, _)) -> {
-      last_found_index
-    }
-    _ -> last_found_index + 1
-  }
-  case token {
-    Space -> #(
-      True,
-      new_last_found_index,
-      start,
-      global_index,
-      dict.insert(prev_dict, global_index * -1, #("will_be_trashed", "", [""])),
-    )
-    _ -> #(False, 0, start, global_index, dict.new())
-  }
-}
- 
-fn match_a(
-  acc: MatchingAccumulator,
-  child: VXML,
-  token: LinkPatternToken,
-  global_index: Int,
-) -> MatchingAccumulator {
-  let #(prev_is_match, last_found_index, start, _, prev_dict) = acc
-  let assert V(_, tag, attrs, sub_children) = child
- 
-  case token {
-    A(_, _, val, sub_pattern) -> {
-      let #(is_match, _, _, _, new_dict) =
-        match(sub_children, 0, global_index, sub_pattern)
- 
-      let assert Ok(BlamedAttribute(_, _, href_value)) =
-        list.find(attrs, fn(x) {
-          case x {
-            BlamedAttribute(_, "href", _) -> True
-            _ -> False
+
+    [Word(word), ..pattern_rest] ->
+      case atomized {
+        [V(_, "__OneWord", _, _) as v, ..atomized_rest] -> {
+          let assert Some(attr) = infra.get_attribute_by_name(v, "val")
+          case attr.value == word {
+            True -> match_internal(
+              atomized_rest,
+              pattern_rest,
+              href_dict_so_far,
+              variables_dict_so_far,
+            )
+            False -> None
           }
-        })
- 
-      let words =
-        new_dict
-        |> dict.map_values(fn(_, value) { value |> infra.triples_third })
-        |> dict.values
-        |> list.flatten
- 
-      let new_dict =
-        dict.new()
-        |> dict.insert(val, #(tag, href_value, words))
- 
-      let last_found_index = case is_match {
-        True -> last_found_index + 1
-        False -> 0
+        }
+        _ -> None
       }
- 
-      let start =
-        update_start_index(start, global_index, is_match, prev_is_match)
- 
-      #(
-        is_match,
-        last_found_index,
-        start,
-        global_index,
-        dict.merge(prev_dict, new_dict),
-      )
+
+    [Space, ..pattern_rest] -> case atomized {
+      [V(_, "__OneSpace", _, _), ..atomized_rest] -> {
+        match_internal(
+          atomized_rest |> fast_forward_past_spaces,
+          pattern_rest,
+          href_dict_so_far,
+          variables_dict_so_far,
+        )
+      }
+      _ -> {
+        None
+      }
     }
-    _ -> #(False, 0, start, global_index, dict.new())
+
+    [A(_, _, href_int, internal_tokens,), ..pattern_rest] -> case atomized {
+      [V(_, tag, _, children) as v, ..atomized_rest] if tag == "a" || tag == "InChapterLink" -> {
+        let href_dict_so_far = dict.insert(href_dict_so_far, href_int, v)
+        case match_internal(
+          children,
+          internal_tokens,
+          href_dict_so_far,
+          variables_dict_so_far,
+        ) {
+          None -> None
+          Some(PrefixMatchOnAtomizedList(left_unmatched, href_dict_so_far, variables_dict_so_far)) -> {
+            case left_unmatched > 0 {
+              True -> None
+              False -> match_internal(
+                atomized_rest,
+                pattern_rest,
+                href_dict_so_far,
+                variables_dict_so_far,
+              )
+            }
+          }
+        }
+      }
+
+      _ -> None
+    }
   }
 }
 
-fn update_start_index(
-  start_index: Int,
-  global_index: Int,
-  is_match: Bool,
-  prev_is_match: Bool,
-) -> Int {
-  case is_match, prev_is_match {
-    True, True -> start_index
-    _, _ -> global_index
-  }
-}
- 
 fn match(
-  atomized_children: List(VXML),
-  where_to_start: Int, // which child to use as starting point
-  global_index: Int,
+  atomized: List(VXML),
   pattern: LinkPattern,
-) -> MatchingAccumulator {
-  let init_acc = #(False, 0, 0, 0, dict.new())
- 
-  atomized_children
-  |> list.drop(where_to_start)
-  |> list.index_fold(init_acc, fn(acc, child, index) {
-    let #(_, last_found_index, start, end, prev_dict) = acc
-    let global_index = index + global_index
-    let next_child = infra.get_at(atomized_children, where_to_start + index + 1)
-    case pattern |> list.drop(last_found_index) {
-      [] -> {
-        #(True, last_found_index, start, end, prev_dict)
-      }
-      [head_token, ..] -> {
-        case child {
-          V(_, "__OneWord", attrs, _) ->
-            match_word(acc, attrs, head_token, global_index)
-          V(_, "__OneSpace", _, _) | V(_, "__OneNewLine", _, _) ->
-            match_space_or_line(next_child, acc, head_token, global_index)
-          V(_, "a", _, _) -> match_a(acc, child, head_token, global_index)
-          V(_, "InChapterLink", _, _) ->
-            match_a(acc, child, head_token, global_index)
-          _ -> acc
+) -> Option(PrefixMatchOnAtomizedList) {
+  match_internal(
+    atomized,
+    pattern,
+    dict.new(),
+    dict.new(),
+  )
+}
+
+fn prefix_match_to_atomized_list(
+  default_blame: Blame,
+  pattern: List(LinkPatternToken),
+  match: PrefixMatchOnAtomizedList,
+  already_ready: List(VXML),
+) -> List(VXML) {
+  case pattern {
+    [] -> already_ready |> list.reverse
+    [p, ..pattern_rest] -> {
+      case p {
+        Word(word) -> prefix_match_to_atomized_list(
+          default_blame,
+          pattern_rest,
+          match,
+          [word_to_node(default_blame, word), ..already_ready],
+        )
+
+        Space -> prefix_match_to_atomized_list(
+          default_blame,
+          pattern_rest,
+          match,
+          [space_node(default_blame), ..already_ready],
+        )
+
+        Variable(z) -> {
+          let assert Ok(z_vxmls) = dict.get(match.variables_dict, z)
+          [
+            already_ready |> list.reverse,
+            z_vxmls,
+          ] |> list.flatten
+        }
+
+        A(_, classes, href_int, internal_pattern) -> {
+          let assert Ok(vxml) = dict.get(match.href_dict, href_int)
+          let assert V(blame, tag, attributes, _) = vxml
+          let a_node = V(
+            blame,
+            tag,
+            attributes |> infra.add_to_class_attribute(blame, classes),
+            prefix_match_to_atomized_list(
+              vxml.blame,
+              internal_pattern,
+              match,
+              [],
+            ),
+          )
+          prefix_match_to_atomized_list(
+            default_blame,
+            pattern_rest,
+            match,
+            [a_node, end_node(blame), ..already_ready],
+          )
         }
       }
     }
-  })
-  |> check_pattern_is_completed(pattern)
+  }
 }
- 
-fn match_until_end(
-  atomized_children: List(VXML),
+
+fn replace(
+  atomized: List(VXML),
+  pattern: LinkPattern,
+  match: PrefixMatchOnAtomizedList,
+) -> List(VXML) {
+  let to_be_dropped = list.length(atomized) - match.left_unmatched
+  let assert True = 0 <= to_be_dropped && to_be_dropped <= list.length(atomized)
+  let assert Ok(V(first_blame, _, _, _)) = list.first(atomized)
+  let tail = list.drop(atomized, to_be_dropped)
+  let head = prefix_match_to_atomized_list(first_blame, pattern, match, [])
+  [head, tail] |> list.flatten
+}
+
+fn match_until_end_internal(
+  atomized: List(VXML),
   pattern1: LinkPattern,
   pattern2: LinkPattern,
-  where_to_start: Int,
-) -> Result(List(VXML), DesugaringError) {
- 
-  let #(match, _, start, end, info_dict) = match(atomized_children, where_to_start, where_to_start, pattern1)
- 
-  let info_dict = dict.filter(
-    info_dict,
-    fn(_, value) {
-      value |> infra.triples_first != "will_be_trashed"
-    }
-  )
- 
-  case match {
-    True -> {
-      let assert Ok(blame_node) = infra.get_at(atomized_children, start)
- 
-      use pattern2_vxmls <- result.try(replace(blame_node.blame, info_dict, pattern2))
- 
-      let children_before_match =
-        list.flatten([
-          list.take(atomized_children, start),
-          [end_node(infra.blame_us("..."))],
-        ])
- 
-      let children_after_match = list.flatten([atomized_children |> list.drop(end + 1)])
- 
-      let reassembled =
-        list.flatten([
-          children_before_match,
-          pattern2_vxmls,
-          children_after_match,
-        ])
- 
-      let next_where_to_start =
-        list.length(children_before_match)
-        + list.length(pattern2_vxmls)
-        + where_to_start
- 
-      case list.length(atomized_children) - next_where_to_start >= list.length(pattern1) {
-        True -> {
-          let rest =
-            match_until_end(
-              reassembled,
-              pattern1,
-              pattern2,
-              next_where_to_start,
-            )
-          rest
-        }
-        False -> reassembled |> Ok
+  already_done: List(VXML),
+) -> List(VXML) {
+  case atomized {
+    [] -> already_done |> list.reverse
+    [first, ..rest] -> case match(atomized, pattern1) {
+      None -> match_until_end_internal(
+        rest,
+        pattern1,
+        pattern2,
+        [first, ..already_done],
+      )
+      Some(match) -> {
+        let assert [first, ..rest] = replace(atomized, pattern2, match)
+        match_until_end_internal(
+          rest,
+          pattern1,
+          pattern2,
+          [first, ..already_done],
+        )
       }
     }
-    False -> atomized_children |> Ok
   }
 }
+
+fn match_until_end(
+  atomized: List(VXML),
+  patterns: #(LinkPattern, LinkPattern),
+) -> List(VXML) {
+  let #(pattern1, pattern2) = patterns
+  match_until_end_internal(atomized, pattern1, pattern2, [])
+}
+
  
 fn atomize_text_node(vxml: VXML) -> List(VXML) {
   let assert T(blame, blamed_contents) = vxml
@@ -528,33 +415,26 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
     False -> Error(Nil)
   }
 }
- 
+
 fn transform(
   vxml: VXML,
   extra: ExtraTransformed,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(b, tag, attributes, children) -> {
-      use atomized_children <- infra.on_error_on_ok(
+      use atomized <- infra.on_error_on_ok(
         over: atomize_maybe(children),
         with_on_error: fn(_) { Ok(vxml) },
       )
-
-      let updated_children =
-        extra
-        |> list.try_fold(
-          atomized_children,
-          fn(acc, x) {
-            let #(pattern1, pattern2) = x
-            match_until_end(acc, pattern1, pattern2, 0)
-          }
-        )
-      use updated_children <- result.try(updated_children)
-      updated_children
-        |> deatomize_vxmls([])
-        |> pair.first
-        |> V(b, tag, attributes, _)
-        |> Ok
+      list.fold(
+        extra,
+        atomized,
+        match_until_end,
+      )
+      |> deatomize_vxmls([])
+      |> pair.first
+      |> V(b, tag, attributes, _)
+      |> Ok
     }
     _ -> Ok(vxml)
   }
@@ -592,10 +472,27 @@ fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
     _ -> False
   }
 }
+
+fn href_var_exists_in_pattern1(pattern1: LinkPattern, value: Int) -> Result(Nil, DesugaringError) {
+  infra.on_false_on_true(
+    pattern1 |> list.any(fn(x) {
+      case x {
+        A(_, _, var, _) -> value == var
+        _ -> False
+      }
+    }),
+    Error(DesugaringError(
+        infra.blame_us(""),
+        "href variable (" <> ins(value) <>") in target pattern does not exist in source pattern",
+      )),
+    fn() { Ok(Nil) },
+  )
+}
  
 fn match_tag_and_children(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
+  pattern1: Option(LinkPattern),
 ) {
   use tag_content_patterns <- result.try(children |> result.all)
   let tag_content_patterns = tag_content_patterns |> list.flatten
@@ -635,6 +532,11 @@ fn match_tag_and_children(
       )
     }),
   )
+
+  use _ <- result.try (case pattern1 {
+    Some(p) -> href_var_exists_in_pattern1(p, value)
+    None -> Ok(Nil)
+  })
  
   let classes = case class_attribute {
     Ok(x) -> {
@@ -694,11 +596,12 @@ fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
  
 fn extra_string_to_link_pattern(
   s: String,
+  pattern1: Option(LinkPattern), 
 ) -> Result(LinkPattern, DesugaringError) {
   case
     xmlm.document_tree(
       xmlm.from_string(s),
-      match_tag_and_children,
+      fn(t, c) { match_tag_and_children(t, c, pattern1) },
       match_link_content,
     )
   {
@@ -721,20 +624,52 @@ fn make_sure_attributes_are_quoted(input: String) -> String {
     }
   })
 }
+
+fn make_sure_there_are_no_duplicate_href_variables(input: String) -> Result(String, DesugaringError) {
+  let assert Ok(pattern) =
+    regexp.compile("([a-zA-Z0-9_]+)=[\"']([a-zA-Z0-9_])*[\"']", regexp.Options(True, True))
+ 
+  let matches = regexp.scan(pattern, input)
+
+  let values = 
+    list.index_map(matches, fn(match: regexp.Match, index: Int) {
+      case match.submatches {
+        [_, Some(value)] -> {
+        value
+        }
+        _ -> "--" <> ins(index)
+      }
+    })
+
+  case infra.get_duplicate(values) {
+    None -> Ok(input)
+    Some(_) -> Error(DesugaringError(
+      infra.blame_us(""),
+      "Source pattern has duplicate href variables",
+    ))
+  }
+}
  
 fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
   extra
   |> list.try_map(fn(x) {
     let #(s1, s2) = x
+
+    use s1 <- infra.on_error_on_ok(
+      over: s1 
+            |> make_sure_attributes_are_quoted
+            |> make_sure_there_are_no_duplicate_href_variables,
+      with_on_error: fn(e){ Error(e) }
+    )
+
     use pattern1 <- result.try(
       { "<root>" <> s1 <> "</root>" }
-      |> make_sure_attributes_are_quoted
-      |> extra_string_to_link_pattern,
+      |> extra_string_to_link_pattern(None),
     )
     use pattern2 <- result.try(
       { "<root>" <> s2 <> "</root>" }
       |> make_sure_attributes_are_quoted
-      |> extra_string_to_link_pattern,
+      |> extra_string_to_link_pattern(Some(pattern1)),
     )
     Ok(#(pattern1, pattern2))
   })

@@ -6,8 +6,75 @@ import gleam/pair
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
 
+
+pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
+  case node {
+    T(_, _) -> False
+    V(_, tag, _, _) -> list.contains(tags, tag)
+  }
+}
+
+pub fn list_set(ze_list: List(a), index: Int, element: a) -> List(a) {
+  let assert True = 0 <= index && index <= list.length(ze_list)
+  let prefix = list.take(ze_list, index)
+  let suffix = list.drop(ze_list, index + 1)
+  [
+    prefix,
+    [element],
+    suffix,
+  ] |> list.flatten
+}
+
+// put before "desugaring efforts #1 section":
+
+pub fn concatenate_classes(a: String, b: String) -> String {
+  let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
+  let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
+  let all = list.flatten([all_a, all_b])
+  list.fold(
+    all,
+    [],
+    fn (so_far, next) {
+      case list.contains(so_far, next) {
+        True -> so_far
+        False -> [next, ..so_far]
+      }
+    }
+  )
+  |> string.join(" ")
+}
+
+pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classes: String) -> List(BlamedAttribute) {
+  let #(index, new_attribute) = list.index_fold(
+    attrs,
+    #(-1, BlamedAttribute(blame, "", "")),
+    fn (acc, attr, i) {
+      case acc |> pair.first {
+        -1 -> case attr.key {
+          "class" -> #(i, BlamedAttribute(..attr, value: concatenate_classes(attr.value, classes)))
+          _ -> acc
+        }
+        _ -> acc
+      }
+    }
+  )
+
+  case index >= 0 {
+    True -> list_set(attrs, index, new_attribute)
+    False -> list.append(
+      attrs,
+      [
+        BlamedAttribute(
+          blame,
+          "class",
+          concatenate_classes("", classes),
+        )
+      ],
+    )
+  }
+}
 
 /// Returns the element at the specified index in a list
 /// 
