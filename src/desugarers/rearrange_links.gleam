@@ -67,11 +67,12 @@ fn end_node(blame: Blame) {
 fn deatomize_vxmls(
   children: List(VXML),
   accumulated_contents: List(vxml.BlamedContent),
-) -> #(List(VXML), List(vxml.BlamedContent)) {
+  result: List(VXML)
+) -> List(VXML) {
   case children {
-    [] -> #([], [])
+    [] -> result |> list.reverse
     [first, ..rest] -> {
-      let #(nodes, accumulated_contents) = case first {
+      case first {
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
           let last_line = case list.last(accumulated_contents) {
@@ -87,7 +88,7 @@ fn deatomize_vxmls(
             |> list.take(accumulated_contents, _)
             |> list.append([last_line])
  
-          #([], accumulated_contents)
+          deatomize_vxmls(rest, accumulated_contents, result)
         }
         V(blame, "__OneSpace", _, _) -> {
           let last_line = case list.last(accumulated_contents) {
@@ -103,21 +104,21 @@ fn deatomize_vxmls(
             |> list.take(accumulated_contents, _)
             |> list.append([last_line])
  
-          #([], accumulated_contents)
+          deatomize_vxmls(rest, accumulated_contents, result)
         }
         V(blame, "__OneNewLine", _, _) -> {
           let accumulated_contents =
             accumulated_contents
             |> list.append([BlamedContent(blame, "")])
  
-          #([], accumulated_contents)
+          deatomize_vxmls(rest, accumulated_contents, result)
         }
         V(blame, "__EndAtomizedT", _, _) -> {
-          #([T(blame, accumulated_contents)], [])
+          deatomize_vxmls(rest, [], [T(blame, accumulated_contents), ..result])
         }
         V(b, "a", a, children) | V(b, "InChapterLink", a, children) -> {
           let V(_, ze_tag, _, _) = first
-          let updated_children = deatomize_vxmls(children, []) |> pair.first
+          let updated_children = deatomize_vxmls(children, [], [])
           // check if next is a new line to add a space
           let accumulated_contents = case rest {
             [] -> []
@@ -131,15 +132,11 @@ fn deatomize_vxmls(
             }
           }
  
-          #([V(b, ze_tag, a, updated_children)], accumulated_contents)
+          deatomize_vxmls(rest, accumulated_contents, [V(b, ze_tag, a, updated_children) ,..result])
         }
-        V(_, _, _, _) -> {
-          #([first], [])
-        }
-        _ -> #([], []) // should never happen
+        V(_, _, _, _) -> deatomize_vxmls(rest, [], result)
+        _ -> [] // should never happen
       }
-      let #(rest_nodes, _) = deatomize_vxmls(rest, accumulated_contents)
-      #(list.flatten([nodes, rest_nodes]), [])
     }
   }
 }
@@ -431,8 +428,7 @@ fn transform(
         atomized,
         match_until_end,
       )
-      |> deatomize_vxmls([])
-      |> pair.first
+      |> deatomize_vxmls([], [])
       |> V(b, tag, attributes, _)
       |> Ok
     }
