@@ -22,7 +22,7 @@ const ins = string.inspect
 type LinkPatternToken {
   Word(String)    // (does not contain whitespace)
   Space
-  Variable(Int)
+  ContentVar(Int)
   A(
     String,       // tag name ( for now it's either a or InChapterLink )
     String,       // classes
@@ -38,8 +38,8 @@ type LinkPattern =
 type PrefixMatchOnAtomizedList {
   PrefixMatchOnAtomizedList(
     left_unmatched: Int,
-    href_dict: Dict(Int, VXML),
-    variables_dict: Dict(Int, List(VXML)),
+    href_var_dict: Dict(Int, VXML),
+    content_var_dict: Dict(Int, List(VXML)),
   )
 }
 
@@ -149,26 +149,26 @@ fn match_internal(
   atomized: List(VXML),
   pattern: LinkPattern,
   href_dict_so_far: Dict(Int, VXML),
-  variables_dict_so_far: Dict(Int, List(VXML)),
+  content_var_dict_so_far: Dict(Int, List(VXML)),
 ) -> Option(PrefixMatchOnAtomizedList) {
   let atomized = fast_forward_past_end_t(atomized)
 
   case pattern {
     [] -> Some(PrefixMatchOnAtomizedList(
       left_unmatched: atomized |> list.length,
-      href_dict: href_dict_so_far,
-      variables_dict: variables_dict_so_far,
+      href_var_dict: href_dict_so_far,
+      content_var_dict: content_var_dict_so_far,
     ))
 
-    [Variable(z), ..pattern_rest] -> {
+    [ContentVar(z), ..pattern_rest] -> {
       let assert True = list.is_empty(pattern_rest)
-      let assert Error(Nil) = dict.get(variables_dict_so_far, z)
-      let variables_dict_so_far = dict.insert(variables_dict_so_far, z, atomized)
+      let assert Error(Nil) = dict.get(content_var_dict_so_far, z)
+      let content_var_dict_so_far = dict.insert(content_var_dict_so_far, z, atomized)
 
       Some(PrefixMatchOnAtomizedList(
         left_unmatched: 0,
-        href_dict: href_dict_so_far,
-        variables_dict: variables_dict_so_far
+        href_var_dict: href_dict_so_far,
+        content_var_dict: content_var_dict_so_far
       ))
     }
 
@@ -181,7 +181,7 @@ fn match_internal(
               atomized_rest,
               pattern_rest,
               href_dict_so_far,
-              variables_dict_so_far,
+              content_var_dict_so_far,
             )
             False -> None
           }
@@ -195,7 +195,7 @@ fn match_internal(
           atomized_rest |> fast_forward_past_spaces,
           pattern_rest,
           href_dict_so_far,
-          variables_dict_so_far,
+          content_var_dict_so_far,
         )
       }
       _ -> {
@@ -210,17 +210,17 @@ fn match_internal(
           children,
           internal_tokens,
           href_dict_so_far,
-          variables_dict_so_far,
+          content_var_dict_so_far,
         ) {
           None -> None
-          Some(PrefixMatchOnAtomizedList(left_unmatched, href_dict_so_far, variables_dict_so_far)) -> {
+          Some(PrefixMatchOnAtomizedList(left_unmatched, href_dict_so_far, content_var_dict_so_far)) -> {
             case left_unmatched > 0 {
               True -> None
               False -> match_internal(
                 atomized_rest,
                 pattern_rest,
                 href_dict_so_far,
-                variables_dict_so_far,
+                content_var_dict_so_far,
               )
             }
           }
@@ -268,8 +268,8 @@ fn prefix_match_to_atomized_list(
           [space_node(default_blame), ..already_ready],
         )
 
-        Variable(z) -> {
-          let assert Ok(z_vxmls) = dict.get(match.variables_dict, z)
+        ContentVar(z) -> {
+          let assert Ok(z_vxmls) = dict.get(match.content_var_dict, z)
           [
             already_ready |> list.reverse,
             z_vxmls,
@@ -277,7 +277,7 @@ fn prefix_match_to_atomized_list(
         }
 
         A(_, classes, href_int, internal_pattern) -> {
-          let assert Ok(vxml) = dict.get(match.href_dict, href_int)
+          let assert Ok(vxml) = dict.get(match.href_var_dict, href_int)
           let assert V(blame, tag, attributes, _) = vxml
           let a_node = V(
             blame,
@@ -460,27 +460,10 @@ fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
     _ -> False
   }
 }
-
-fn href_var_exists_in_pattern1(pattern1: LinkPattern, value: Int) -> Result(Nil, DesugaringError) {
-  infra.on_false_on_true(
-    pattern1 |> list.any(fn(x) {
-      case x {
-        A(_, _, var, _) -> value == var
-        _ -> False
-      }
-    }),
-    Error(DesugaringError(
-        infra.blame_us(""),
-        "href variable (" <> ins(value) <>") in target pattern does not exist in source pattern",
-      )),
-    fn() { Ok(Nil) },
-  )
-}
  
 fn match_tag_and_children(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
-  pattern1: Option(LinkPattern),
 ) {
   use tag_content_patterns <- result.try(children |> result.all)
   let tag_content_patterns = tag_content_patterns |> list.flatten
@@ -521,11 +504,6 @@ fn match_tag_and_children(
     }),
   )
 
-  use _ <- result.try (case pattern1 {
-    Some(p) -> href_var_exists_in_pattern1(p, value)
-    None -> Ok(Nil)
-  })
- 
   let classes = case class_attribute {
     Ok(x) -> {
       let xmlm.Attribute(_, value) = x
@@ -542,7 +520,7 @@ fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) 
   |> list.filter(fn(x) { !{ x |> string.is_empty } })
   |> list.map(fn(x) {
     case is_variable(x) {
-      Some(x) -> Variable(x)
+      Some(x) -> ContentVar(x)
       None -> Word(x)
     }
   })
@@ -584,12 +562,11 @@ fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
  
 fn extra_string_to_link_pattern(
   s: String,
-  pattern1: Option(LinkPattern), 
 ) -> Result(LinkPattern, DesugaringError) {
   case
     xmlm.document_tree(
       xmlm.from_string(s),
-      fn(t, c) { match_tag_and_children(t, c, pattern1) },
+      match_tag_and_children,
       match_link_content,
     )
   {
@@ -613,52 +590,110 @@ fn make_sure_attributes_are_quoted(input: String) -> String {
   })
 }
 
-fn make_sure_there_are_no_duplicate_href_variables(input: String) -> Result(String, DesugaringError) {
-  let assert Ok(pattern) =
-    regexp.compile("([a-zA-Z0-9_]+)=[\"']([a-zA-Z0-9_])*[\"']", regexp.Options(True, True))
- 
-  let matches = regexp.scan(pattern, input)
+fn get_content_vars(
+  pattern2: LinkPattern,
+) -> List(Int) {
+  list.map(pattern2, fn(token){
+    case token {
+      ContentVar(var) -> [var]
+      A(_, _, _, sub_pattern) -> get_content_vars(sub_pattern)
+      _ -> []
+    }
+  })
+  |> list.flatten
+}
 
-  let values = 
-    list.index_map(matches, fn(match: regexp.Match, index: Int) {
-      case match.submatches {
-        [_, Some(value)] -> {
-        value
-        }
-        _ -> "--" <> ins(index)
-      }
-    })
+fn get_hreft_vars(
+  pattern2: LinkPattern,
+) -> List(Int) {
+  list.map(pattern2, fn(token){
+    case token {
+      A(_, _, var, _) -> [var]
+      _ -> []
+    }
+  })
+  |> list.flatten
+}
 
-  case infra.get_duplicate(values) {
-    None -> Ok(input)
-    Some(_) -> Error(DesugaringError(
-      infra.blame_us(""),
-      "Source pattern has duplicate href variables",
-    ))
+fn check_each_content_var_is_sourced(pattern2: LinkPattern, source_vars: List(Int)) -> Result(Nil, Int) {
+  let content_vars = get_content_vars(pattern2)
+  case list.find(content_vars, fn(var){
+    !{ list.contains(source_vars, var) }
+  }) {
+    Ok(var) -> Error(var)
+    Error(_) -> Ok(Nil)
+  }
+}
+
+fn check_each_href_var_is_sourced(pattern2: LinkPattern, href_vars: List(Int)) -> Result(Nil, Int) {
+  let vars = get_hreft_vars(pattern2)
+  
+  case list.find(vars, fn(var){
+    !{ list.contains(href_vars, var) }
+  }) {
+    Ok(var) -> Error(var)
+    Error(_) -> Ok(Nil)
+  }
+}
+
+fn collect_unique_content_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
+  let vars = get_content_vars(pattern1)
+  case infra.get_duplicate(vars) {
+    None -> Ok(vars)
+    Some(int) -> Error(int)
+  }
+}
+
+fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
+  let vars = get_hreft_vars(pattern1)
+  case infra.get_duplicate(vars) {
+    None -> Ok(vars)
+    Some(int) -> Error(int)
   }
 }
  
-fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
-  extra
-  |> list.try_map(fn(x) {
-    let #(s1, s2) = x
+fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
+  let #(s1, s2) = string_pair
 
-    use s1 <- infra.on_error_on_ok(
-      over: s1 
-            |> make_sure_attributes_are_quoted
-            |> make_sure_there_are_no_duplicate_href_variables,
-      with_on_error: fn(e){ Error(e) }
-    )
-
-    use pattern1 <- result.try(
+  use pattern1 <- result.try(
       { "<root>" <> s1 <> "</root>" }
-      |> extra_string_to_link_pattern(None),
+      |> make_sure_attributes_are_quoted
+      |> extra_string_to_link_pattern,
     )
     use pattern2 <- result.try(
       { "<root>" <> s2 <> "</root>" }
       |> make_sure_attributes_are_quoted
-      |> extra_string_to_link_pattern(Some(pattern1)),
+      |> extra_string_to_link_pattern,
     )
+    Ok(#(pattern1, pattern2))
+}
+
+fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
+  extra
+  |> list.try_map(fn(string_pair) {
+    let #(s1, s2) = string_pair
+    use #(pattern1, pattern2) <- result.try(string_pair_to_link_pattern_pair(string_pair))
+
+    use unique_href_vars <- result.try(
+      collect_unique_href_vars(pattern1)
+      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of href variable: " <> ins(var) ) })
+    )
+
+    use unique_content_vars <- result.try(
+      collect_unique_content_vars(pattern1)
+      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of content variable: " <> ins(var)) })
+    )
+
+    use _ <- result.try(
+      check_each_href_var_is_sourced(pattern2, unique_href_vars)
+      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced href variable: " <> ins(var)) })
+    )
+
+    use _ <- result.try(
+      check_each_content_var_is_sourced(pattern2, unique_content_vars)
+      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced content variable: " <> ins(var)) })
+    )
+
     Ok(#(pattern1, pattern2))
   })
 }
