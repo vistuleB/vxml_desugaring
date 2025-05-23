@@ -75,42 +75,34 @@ fn deatomize_vxmls(
       case first {
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
-          let last_line = case list.last(accumulated_contents) {
+
+          let last_line = case list.first(accumulated_contents) {
             Ok(last_line) -> last_line
             Error(_) -> BlamedContent(blame, "")
           }
+
           let last_line =
             BlamedContent(..last_line, content: last_line.content <> word)
-          let accumulated_contents =
-            accumulated_contents
-            |> list.length
-            |> int.add(-1)
-            |> list.take(accumulated_contents, _)
-            |> list.append([last_line])
+
+          let accumulated_contents = [last_line, ..list.drop(accumulated_contents, 1)]
  
           deatomize_vxmls(rest, accumulated_contents, result)
         }
         V(blame, "__OneSpace", _, _) -> {
-          let last_line = case list.last(accumulated_contents) {
+          let last_line = case list.first(accumulated_contents) {
             Ok(last_line) -> last_line
             Error(_) -> BlamedContent(blame, "")
           }
+
           let last_line =
             BlamedContent(..last_line, content: last_line.content <> " ")
-          let accumulated_contents =
-            accumulated_contents
-            |> list.length
-            |> int.add(-1)
-            |> list.take(accumulated_contents, _)
-            |> list.append([last_line])
+
+          let accumulated_contents = [last_line, ..list.drop(accumulated_contents, 1)]
  
           deatomize_vxmls(rest, accumulated_contents, result)
         }
         V(blame, "__OneNewLine", _, _) -> {
-          let accumulated_contents =
-            accumulated_contents
-            |> list.append([BlamedContent(blame, "")])
- 
+          let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
           deatomize_vxmls(rest, accumulated_contents, result)
         }
         V(blame, "__EndAtomizedT", _, _) -> {
