@@ -1,20 +1,13 @@
-import gleam/io
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/pair
 import gleam/regexp
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml.{
-  type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V,
-}
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import vxml.{ type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V }
 import xmlm
  
 const ins = string.inspect
@@ -33,7 +26,6 @@ type LinkPatternToken {
  
 type LinkPattern =
   List(LinkPatternToken)
-
 
 type PrefixMatchOnAtomizedList {
   PrefixMatchOnAtomizedList(
@@ -75,7 +67,7 @@ fn deatomize_vxmls(
       case first {
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
-
+          
           let last_line = case list.first(accumulated_contents) {
             Ok(last_line) -> last_line
             Error(_) -> BlamedContent(blame, "")
@@ -88,6 +80,7 @@ fn deatomize_vxmls(
  
           deatomize_vxmls(rest, accumulated_contents, result)
         }
+
         V(blame, "__OneSpace", _, _) -> {
           let last_line = case list.first(accumulated_contents) {
             Ok(last_line) -> last_line
@@ -101,13 +94,16 @@ fn deatomize_vxmls(
  
           deatomize_vxmls(rest, accumulated_contents, result)
         }
+
         V(blame, "__OneNewLine", _, _) -> {
           let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
           deatomize_vxmls(rest, accumulated_contents, result)
         }
+
         V(blame, "__EndAtomizedT", _, _) -> {
           deatomize_vxmls(rest, [], [T(blame, accumulated_contents), ..result])
         }
+
         V(b, "a", a, children) | V(b, "InChapterLink", a, children) -> {
           let V(_, ze_tag, _, _) = first
           let updated_children = deatomize_vxmls(children, [], [])
@@ -126,7 +122,9 @@ fn deatomize_vxmls(
  
           deatomize_vxmls(rest, accumulated_contents, [V(b, ze_tag, a, updated_children) ,..result])
         }
+
         V(_, _, _, _) -> deatomize_vxmls(rest, [], result)
+
         _ -> [] // should never happen
       }
     }
@@ -330,6 +328,7 @@ fn match_until_end_internal(
         pattern2,
         [first, ..already_done],
       )
+
       Some(match) -> {
         let assert [first, ..rest] = replace(atomized, pattern2, match)
         match_until_end_internal(
@@ -356,11 +355,10 @@ fn atomize_text_node(vxml: VXML) -> List(VXML) {
   let assert T(blame, blamed_contents) = vxml
   blamed_contents
   |> list.map(fn(blamed_content) {
-    let BlamedContent(line_blame, line_content) = blamed_content
-    line_content
+    blamed_content.content
     |> string.split(" ")
-    |> list.map(fn(word) { word_to_node(line_blame, word) })
-    |> list.intersperse(space_node(line_blame))
+    |> list.map(fn(word) { word_to_node(blamed_content.blame, word) })
+    |> list.intersperse(space_node(blamed_content.blame))
     |> list.filter(fn(node) {
       case node {
         V(_, "__OneWord", attr, _) -> {
@@ -465,7 +463,7 @@ fn match_tag_and_children(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
 ) {
-  use tag_content_patterns <- result.try(children |> result.all)
+  use tag_content_patterns <- result.then(children |> result.all)
   let tag_content_patterns = tag_content_patterns |> list.flatten
   use <- infra.on_true_on_false(
     xmlm_tag_name(xmlm_tag) == "root",
@@ -492,8 +490,8 @@ fn match_tag_and_children(
   let class_attribute =
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "class"))
- 
-  let xmlm.Attribute(_, value) = href_attribute
+  let xmlm.Attribute(_, value) = 
+    href_attribute
   use value <- result.then(
     int.parse(value)
     |> result.map_error(fn(_) {
@@ -503,7 +501,6 @@ fn match_tag_and_children(
       )
     }),
   )
-
   let classes = case class_attribute {
     Ok(x) -> {
       let xmlm.Attribute(_, value) = x
@@ -511,7 +508,6 @@ fn match_tag_and_children(
     }
     Error(_) -> ""
   }
- 
   Ok([A(xmlm_tag_name(xmlm_tag), classes, value, tag_content_patterns)])
 }
  
@@ -553,7 +549,6 @@ fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
   content
   |> string.split(" ")
   |> split_variables
-  // variables doesn't have to be surrounded by spaces
   |> list.intersperse(Some([Space]))
   |> keep_some_remove_none_and_unwrap
   |> list.flatten
@@ -627,7 +622,6 @@ fn check_each_content_var_is_sourced(pattern2: LinkPattern, source_vars: List(In
 
 fn check_each_href_var_is_sourced(pattern2: LinkPattern, href_vars: List(Int)) -> Result(Nil, Int) {
   let vars = get_hreft_vars(pattern2)
-  
   case list.find(vars, fn(var){
     !{ list.contains(href_vars, var) }
   }) {
@@ -656,40 +650,42 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   let #(s1, s2) = string_pair
 
   use pattern1 <- result.try(
-      { "<root>" <> s1 <> "</root>" }
-      |> make_sure_attributes_are_quoted
-      |> extra_string_to_link_pattern,
-    )
-    use pattern2 <- result.try(
-      { "<root>" <> s2 <> "</root>" }
-      |> make_sure_attributes_are_quoted
-      |> extra_string_to_link_pattern,
-    )
-    Ok(#(pattern1, pattern2))
+    { "<root>" <> s1 <> "</root>" }
+    |> make_sure_attributes_are_quoted
+    |> extra_string_to_link_pattern,
+  )
+
+  use pattern2 <- result.try(
+    { "<root>" <> s2 <> "</root>" }
+    |> make_sure_attributes_are_quoted
+    |> extra_string_to_link_pattern,
+  )
+
+  Ok(#(pattern1, pattern2))
 }
 
 fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
   extra
   |> list.try_map(fn(string_pair) {
     let #(s1, s2) = string_pair
-    use #(pattern1, pattern2) <- result.try(string_pair_to_link_pattern_pair(string_pair))
+    use #(pattern1, pattern2) <- result.then(string_pair_to_link_pattern_pair(string_pair))
 
-    use unique_href_vars <- result.try(
+    use unique_href_vars <- result.then(
       collect_unique_href_vars(pattern1)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of href variable: " <> ins(var) ) })
     )
 
-    use unique_content_vars <- result.try(
+    use unique_content_vars <- result.then(
       collect_unique_content_vars(pattern1)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of content variable: " <> ins(var)) })
     )
 
-    use _ <- result.try(
+    use _ <- result.then(
       check_each_href_var_is_sourced(pattern2, unique_href_vars)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced href variable: " <> ins(var)) })
     )
 
-    use _ <- result.try(
+    use _ <- result.then(
       check_each_content_var_is_sourced(pattern2, unique_content_vars)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced content variable: " <> ins(var)) })
     )
