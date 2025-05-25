@@ -238,7 +238,7 @@ fn prefix_match_to_atomized_list(
   already_ready: List(VXML),
 ) -> List(VXML) {
   case pattern {
-    [] -> already_ready |> list.reverse
+    [] -> already_ready |> list.reverse |> list.append([end_node(default_blame)])
     [p, ..pattern_rest] -> {
       case p {
         Word(word) -> prefix_match_to_atomized_list(
@@ -257,10 +257,15 @@ fn prefix_match_to_atomized_list(
 
         ContentVar(z) -> {
           let assert Ok(z_vxmls) = dict.get(match.content_var_dict, z)
-          [
-            already_ready |> list.reverse,
-            z_vxmls,
-          ] |> list.flatten
+          prefix_match_to_atomized_list(
+            default_blame,
+            pattern_rest,
+            match,
+            [
+              z_vxmls,
+              already_ready,
+            ] |> list.flatten,
+          )
         }
 
         A(_, classes, href_int, internal_pattern) -> {
