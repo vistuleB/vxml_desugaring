@@ -61,37 +61,27 @@ fn deatomize_vxmls(
   accumulated_contents: List(vxml.BlamedContent),
   result: List(VXML)
 ) -> List(VXML) {
+
+  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.BlamedContent) {
+    let #(last_line, other_lines) = case accumulated_contents {
+      [last_line, ..other_lines] -> #(last_line, other_lines)
+      _ -> #(BlamedContent(blame, ""), [])
+    }
+    [BlamedContent(..last_line, content: last_line.content <> word), ..other_lines]
+  }
+
   case children {
     [] -> result |> list.reverse
     [first, ..rest] -> {
       case first {
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
-          
-          let last_line = case list.first(accumulated_contents) {
-            Ok(last_line) -> last_line
-            Error(_) -> BlamedContent(blame, "")
-          }
-
-          let last_line =
-            BlamedContent(..last_line, content: last_line.content <> word)
-
-          let accumulated_contents = [last_line, ..list.drop(accumulated_contents, 1)]
- 
+          let accumulated_contents = append_word_to_accumlated_contents(blame, word)
           deatomize_vxmls(rest, accumulated_contents, result)
         }
 
         V(blame, "__OneSpace", _, _) -> {
-          let last_line = case list.first(accumulated_contents) {
-            Ok(last_line) -> last_line
-            Error(_) -> BlamedContent(blame, "")
-          }
-
-          let last_line =
-            BlamedContent(..last_line, content: last_line.content <> " ")
-
-          let accumulated_contents = [last_line, ..list.drop(accumulated_contents, 1)]
- 
+          let accumulated_contents = append_word_to_accumlated_contents(blame, " ")
           deatomize_vxmls(rest, accumulated_contents, result)
         }
 
@@ -122,10 +112,8 @@ fn deatomize_vxmls(
  
           deatomize_vxmls(rest, accumulated_contents, [V(b, ze_tag, a, updated_children) ,..result])
         }
-
         V(_, _, _, _) -> deatomize_vxmls(rest, [], result)
-
-        _ -> [] // should never happen
+        _ -> panic as "should not happen"
       }
     }
   }
