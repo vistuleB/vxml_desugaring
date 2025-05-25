@@ -1,3 +1,4 @@
+import gleam/io
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/int
@@ -91,7 +92,7 @@ fn deatomize_vxmls(
         }
 
         V(blame, "__EndAtomizedT", _, _) -> {
-          deatomize_vxmls(rest, [], [T(blame, accumulated_contents), ..result])
+          deatomize_vxmls(rest, [], [T(blame, accumulated_contents |> list.reverse), ..result])
         }
 
         V(b, "a", a, children) | V(b, "InChapterLink", a, children) -> {
@@ -308,7 +309,7 @@ fn match_until_end_internal(
   already_done: List(VXML),
 ) -> List(VXML) {
   case atomized {
-    [] -> already_done |> list.reverse
+    [] -> already_done |> list.reverse 
     [first, ..rest] -> case match(atomized, pattern1) {
       None -> match_until_end_internal(
         rest,
