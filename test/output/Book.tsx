@@ -5,7 +5,7 @@ const OurSuperComponent = () => {
     <>
       <WriterlyBlankLine />
       <WriterlyBlankLine />
-      <Chapter title="Derivatives">
+      <Chapter title Derivatives="">
         <WriterlyBlankLine />
         <WriterlyBlankLine />
         <Exercises>
@@ -18,10 +18,10 @@ const OurSuperComponent = () => {
             hihi
             <WriterlyBlankLine />
             Glory
-            <test src="hi" />
+            <test src hi="" />
             _ in time,
             test{" "}
-            <InlineImage src="hi" />
+            <InlineImage src hi="" />
             *exa*mine_ 
             how long it would take__
             <WriterlyBlankLine />

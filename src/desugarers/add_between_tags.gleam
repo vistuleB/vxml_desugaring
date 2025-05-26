@@ -9,11 +9,11 @@ import infrastructure.{
 } as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
+fn add_in_list(children: List(VXML), inner_param: InnerParam) -> List(VXML) {
   case children {
     [V(_, first_tag, _, _) as first, V(_, second_tag, _, _) as second, ..rest] -> {
-      case dict.get(param, #(first_tag, second_tag)) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], param)]
+      case dict.get(inner_param, #(first_tag, second_tag)) {
+        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner_param)]
         Ok(#(new_element_tag, new_element_attributes)) -> {
           let blame = infra.get_blame(first)
           [
@@ -26,7 +26,7 @@ fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
               }),
               [],
             ),
-            ..add_in_list([second, ..rest], param)
+            ..add_in_list([second, ..rest], inner_param)
           ]
         }
       }
@@ -35,46 +35,48 @@ fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
   }
 }
 
-fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, inner_param: InnerParam) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attributes, children) ->
-      Ok(V(blame, tag, attributes, add_in_list(children, param)))
+      Ok(V(blame, tag, attributes, add_in_list(children, inner_param)))
     _ -> Ok(node)
   }
 }
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner_param)
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner_param))
 }
 
-fn param(extra: Extra) -> Param {
-  extra
-  |> infra.triples_to_dict
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param |> infra.triples_to_dict)
 }
-
-type Param =
-  Dict(#(String, String), #(String, List(#(String, String))))
 
 //**********************************
-// type Extra = List(#(String,                String),     String,                 List(#(String, String))))
+// type Param = List(#(String,                String),     String,                 List(#(String, String))))
 //                       ↖ insert divs between ↗             ↖ tag name             ↖ attributes for
 //                          adjacent siblings                  for new element        new element
 //                         of these two names
 //**********************************
-type Extra =
+type Param =
   List(#(#(String, String), String, List(#(String, String))))
 
-pub fn add_between_tags(extra: Extra) -> Pipe {
+type InnerParam =
+  Dict(#(String, String), #(String, List(#(String, String))))
+
+pub fn add_between_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "add_between_tags",
-      Some(ins(extra)),
+      Some(ins(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra |> param),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }

@@ -6,10 +6,15 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{ type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe }
-import roman
-import vxml.{ type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
+import infrastructure.{
+  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
+}
 import infrastructure as infra
+import roman
+import vxml.{
+  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
+  BlamedContent, T, V,
+}
 
 type CounterType {
   ArabicCounter
@@ -25,39 +30,22 @@ type CounterInstance {
   )
 }
 
-type HandleAssignment = #(String, String)
+type HandleAssignment =
+  #(String, String)
 
 type StringAndRegexVersion {
-  StringAndRegexVersion(
-    string: String,
-    regex_string: String,
-  )
+  StringAndRegexVersion(string: String, regex_string: String)
 }
 
-const loud = StringAndRegexVersion( 
-  string: "::",
-  regex_string: "::",
-)
+const loud = StringAndRegexVersion(string: "::", regex_string: "::")
 
-const soft = StringAndRegexVersion(
-  string: "..",
-  regex_string: "\\.\\.",
-)
+const soft = StringAndRegexVersion(string: "..", regex_string: "\\.\\.")
 
-const increment = StringAndRegexVersion(
-  string: "++",
-  regex_string: "\\+\\+",
-)
+const increment = StringAndRegexVersion(string: "++", regex_string: "\\+\\+")
 
-const decrement = StringAndRegexVersion(
-  string: "--",
-  regex_string: "--",
-)
+const decrement = StringAndRegexVersion(string: "--", regex_string: "--")
 
-const no_change = StringAndRegexVersion(
-  string: "øø",
-  regex_string: "øø",
-)
+const no_change = StringAndRegexVersion(string: "øø", regex_string: "øø")
 
 fn mutate(
   counter_type: CounterType,
@@ -70,8 +58,7 @@ fn mutate(
 
       let sum = float.sum([float_val, mutate_by]) |> float.to_precision(2)
       case sum <. 0.0 {
-        True ->
-          Error("Counter can't be decremented to less than 0")
+        True -> Error("Counter can't be decremented to less than 0")
         False -> {
           case float.ceiling(sum) == sum {
             // remove trailing zero
@@ -93,8 +80,7 @@ fn mutate(
         _ -> 0
       }
       case int_value + mutate_by < 0 {
-        True ->
-          Error("Counter can't be decremented to less than 0")
+        True -> Error("Counter can't be decremented to less than 0")
         False ->
           int_value
           |> int.add(mutate_by)
@@ -182,14 +168,13 @@ fn get_all_counters_from_match_content(
 fn handle_counter_expressions(
   expressions: List(#(String, String, String, Option(String))),
   counters: List(CounterInstance),
-  // ignores insert_or_not  outout that 
-  // to be used as          will be put 
+  // ignores insert_or_not  outout that
+  // to be used as          will be put
   // value fo handles       in the result
   //           |          /
   //           |         /
   //           |        /
 ) -> Result(#(String, String, List(CounterInstance)), String) {
-
   case expressions {
     [] -> Ok(#("", "", counters))
     [#(insert_or_not, mutation, counter_name, split_char), ..rest] -> {
@@ -239,8 +224,7 @@ fn handle_counter_expressions(
               ))
           }
         }
-        Error(_) ->
-          Error("Counter " <> counter_name <> " is not defined")
+        Error(_) -> Error("Counter " <> counter_name <> " is not defined")
       }
     }
   }
@@ -254,12 +238,13 @@ fn handle_matches(
 ) -> Result(#(String, List(CounterInstance), List(HandleAssignment)), String) {
   case matches {
     [] -> {
-      Ok(#(string.join(splits, ""),  counters, []))
+      Ok(#(string.join(splits, ""), counters, []))
     }
     [first, ..rest] -> {
       let regexp.Match(content, sub_matches) = first
       let assert [_, handle_name, ..] = sub_matches
-      let counter_expressions = get_all_counters_from_match_content(content, regexes)
+      let counter_expressions =
+        get_all_counters_from_match_content(content, regexes)
 
       use #(handles_value, expressions_output, updated_counters) <- result.try(
         handle_counter_expressions(counter_expressions, counters),
@@ -279,18 +264,13 @@ fn handle_matches(
         splits
 
       use #(rest_output, updated_counters, rest_handle_assignments) <- result.try(
-        handle_matches(
-          rest,
-          rest_splits,
-          updated_counters,
-          regexes,
-        ),
+        handle_matches(rest, rest_splits, updated_counters, regexes),
       )
 
       Ok(#(
         first_split <> expressions_output <> rest_output,
         updated_counters,
-        list.flatten([handle_assignments, rest_handle_assignments])
+        list.flatten([handle_assignments, rest_handle_assignments]),
       ))
     }
   }
@@ -300,12 +280,9 @@ fn substitute_counters_and_generate_handle_assignments(
   content: String,
   counters: List(CounterInstance),
   regexes: #(Regexp, Regexp),
-) -> Result(
-  #(String, List(CounterInstance), List(HandleAssignment)),
   // MySpecialCounterRegexErrorTypeNotADesugaringErrorYet
-  String
-){
-  // examples 
+) -> Result(#(String, List(CounterInstance), List(HandleAssignment)), String) {
+  // examples
 
   // 1) one handle | one counter
   // ---------------------------
@@ -320,7 +297,7 @@ fn substitute_counters_and_generate_handle_assignments(
   // ---------------------------------
 
   // "more handle1<<handle2<<::++MyCounter more" will result in
-  // content of first match : (only diff between first case) 
+  // content of first match : (only diff between first case)
   //    \"handle2<<handle1<<::++Counter\"
   // sub-matches of first match :
   //   [Some("handle2<<"), Some("handle2"), Some("<<"), Some("::"), Some("++"), Some   ("MyCounter")]
@@ -360,8 +337,17 @@ fn update_blamed_content(
   bl: BlamedContent,
   counters: List(CounterInstance),
   regexes: #(Regexp, Regexp),
-) -> Result(#(BlamedContent, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
-  case substitute_counters_and_generate_handle_assignments(bl.content, counters, regexes) {
+) -> Result(
+  #(BlamedContent, List(CounterInstance), List(HandleAssignment)),
+  DesugaringError,
+) {
+  case
+    substitute_counters_and_generate_handle_assignments(
+      bl.content,
+      counters,
+      regexes,
+    )
+  {
     Ok(#(updated_content, counters, handles)) -> {
       Ok(#(BlamedContent(bl.blame, updated_content), counters, handles))
     }
@@ -380,14 +366,17 @@ fn update_blamed_contents(
   let init_acc = #([], counters, [])
 
   contents
-    |> list.try_fold(
-      init_acc, 
-      fn(acc, content) {
-        let #(old_contents, counters, handles) = acc
-        use #(updated_content, updated_counters, new_handles) <- result.try(update_blamed_content(content, counters, regexes))
-        Ok(#(list.append(old_contents, [updated_content]), updated_counters, list.flatten([handles, new_handles]) ))
-      }
+  |> list.try_fold(init_acc, fn(acc, content) {
+    let #(old_contents, counters, handles) = acc
+    use #(updated_content, updated_counters, new_handles) <- result.try(
+      update_blamed_content(content, counters, regexes),
     )
+    Ok(#(
+      list.append(old_contents, [updated_content]),
+      updated_counters,
+      list.flatten([handles, new_handles]),
+    ))
+  })
 }
 
 fn handle_assignment_blamed_attributes_from_handle_assignments(
@@ -427,10 +416,7 @@ fn check_counter_already_defined(
   }
 }
 
-fn parse_value(
-  value: String,
-  message: String,
-) -> Result(Float, DesugaringError) {
+fn parse_value(value: String, message: String) -> Result(Float, DesugaringError) {
   case int.parse(value) {
     Ok(i) -> Ok(int.to_float(i))
     Error(_) -> {
@@ -468,7 +454,11 @@ fn handle_att_value(
       Ok(#(counter_name, Some(default_value), None))
     }
     [counter_name] -> Ok(#(counter_name, None, None))
-    _ -> Error(DesugaringError(infra.blame_us("..."), "Counter attribute must have a name"))
+    _ ->
+      Error(DesugaringError(
+        infra.blame_us("..."),
+        "Counter attribute must have a name",
+      ))
   }
 }
 
@@ -478,40 +468,40 @@ fn get_counters_from_attributes(
 ) -> Result(List(CounterInstance), DesugaringError) {
   case attribute.key {
     "counter" -> {
-      use #(counter_name, default_value, step) <- result.try(
-        handle_att_value(attribute.value),
-      )
+      use #(counter_name, default_value, step) <- result.try(handle_att_value(
+        attribute.value,
+      ))
       use _ <- result.try(check_counter_already_defined(
         counter_name,
         counters,
         attribute.blame,
       ))
-      Ok(
-        [CounterInstance(
+      Ok([
+        CounterInstance(
           ArabicCounter,
           counter_name,
           option.unwrap(default_value, "0"),
           option.unwrap(step, 1.0),
-        )],
-      )
+        ),
+      ])
     }
     "roman_counter" -> {
-      use #(counter_name, default_value, step) <- result.try(
-        handle_att_value(attribute.value),
-      )
+      use #(counter_name, default_value, step) <- result.try(handle_att_value(
+        attribute.value,
+      ))
       use _ <- result.try(check_counter_already_defined(
         counter_name,
         counters,
         attribute.blame,
       ))
-      Ok(
-        [CounterInstance(
+      Ok([
+        CounterInstance(
           RomanCounter,
           counter_name,
           option.unwrap(default_value, "."),
           option.unwrap(step, 1.0),
-        )],
-      )
+        ),
+      ])
     }
     _ -> Ok([])
   }
@@ -521,38 +511,44 @@ fn fancy_one_attribute_processor(
   to_process: BlamedAttribute,
   counters: List(CounterInstance),
   regexes: #(Regexp, Regexp),
-) -> Result(#(BlamedAttribute, List(CounterInstance), List(HandleAssignment)), DesugaringError) {
+) -> Result(
+  #(BlamedAttribute, List(CounterInstance), List(HandleAssignment)),
+  DesugaringError,
+) {
   use #(key, counters, assignments1) <- result.then(
     result.map_error(
-      substitute_counters_and_generate_handle_assignments(to_process.key, counters, regexes),
-      fn(e) {
-        DesugaringError(
-          blame: to_process.blame,
-          message: e,
-        )
-      }
+      substitute_counters_and_generate_handle_assignments(
+        to_process.key,
+        counters,
+        regexes,
+      ),
+      fn(e) { DesugaringError(blame: to_process.blame, message: e) },
     ),
   )
-  
+
   let assert True = key == string.trim(key)
 
   use <- infra.on_true_on_false(
     key == "",
-    Error(DesugaringError(to_process.blame, "empty key after processing counters; original key: '" <> to_process.key <> "'")),
+    Error(DesugaringError(
+      to_process.blame,
+      "empty key after processing counters; original key: '"
+        <> to_process.key
+        <> "'",
+    )),
   )
 
   use #(value, counters, assignments2) <- result.then(
-     result.map_error(
-      substitute_counters_and_generate_handle_assignments(to_process.value, counters, regexes),
-      fn(e) {
-        DesugaringError(
-          blame: to_process.blame,
-          message: e,
-        )
-      }
+    result.map_error(
+      substitute_counters_and_generate_handle_assignments(
+        to_process.value,
+        counters,
+        regexes,
+      ),
+      fn(e) { DesugaringError(blame: to_process.blame, message: e) },
     ),
   )
-  
+
   Ok(#(
     BlamedAttribute(to_process.blame, key, value),
     counters,
@@ -564,13 +560,10 @@ fn fancy_attribute_processor(
   already_processed: List(BlamedAttribute),
   yet_to_be_processed: List(BlamedAttribute),
   counters: List(CounterInstance),
-  regexes: #(Regexp, Regexp)
+  regexes: #(Regexp, Regexp),
 ) -> Result(#(List(BlamedAttribute), List(CounterInstance)), DesugaringError) {
   case yet_to_be_processed {
-    [] -> Ok(#(
-      already_processed |> list.reverse,
-      counters,
-    ))
+    [] -> Ok(#(already_processed |> list.reverse, counters))
 
     [next, ..rest] -> {
       use #(next, counters, assignments) <- result.then(
@@ -578,23 +571,27 @@ fn fancy_attribute_processor(
       )
 
       let assignment_attributes =
-        list.map(
-          assignments,
-          fn(handle_assignment) {
-            let #(handle_name, handle_value) = handle_assignment
-            BlamedAttribute(next.blame, "handle", handle_name <> " " <> handle_value)
-          }
-        )
-            
-      use new_counter <- result.then(
-        get_counters_from_attributes(next, counters)
-      )
+        list.map(assignments, fn(handle_assignment) {
+          let #(handle_name, handle_value) = handle_assignment
+          BlamedAttribute(
+            next.blame,
+            "handle",
+            handle_name <> " " <> handle_value,
+          )
+        })
 
-      let already_processed = list.flatten([
-        assignment_attributes |> list.reverse, // try to keep order of assignments same as order they occur in source
-        [next],
-        already_processed,
-      ])
+      use new_counter <- result.then(get_counters_from_attributes(
+        next,
+        counters,
+      ))
+
+      let already_processed =
+        list.flatten([
+          assignment_attributes |> list.reverse,
+          // try to keep order of assignments same as order they occur in source
+          [next],
+          already_processed,
+        ])
 
       fancy_attribute_processor(
         already_processed,
@@ -614,8 +611,12 @@ fn v_before_transforming_children(
   let assert V(b, t, attributes, c) = vxml
   let #(counters, handles) = state
 
-  use #(attributes, counters) <-
-    result.then(fancy_attribute_processor([], list.reverse(attributes), counters, regexes))
+  use #(attributes, counters) <- result.then(fancy_attribute_processor(
+    [],
+    list.reverse(attributes),
+    counters,
+    regexes,
+  ))
 
   Ok(#(V(b, t, attributes, c), #(counters, handles)))
 }
@@ -628,18 +629,26 @@ fn t_transform(
   let assert T(blame, contents) = vxml
   let #(counters, old_handles) = state
 
-  use #(contents, updated_counters, new_handles) <- result.then(update_blamed_contents(
-      contents,
-      counters,
-      regexes,
-  ))
+  use #(contents, updated_counters, new_handles) <- result.then(
+    update_blamed_contents(contents, counters, regexes),
+  )
 
   use <- infra.on_some_on_none(
     infra.get_contained(new_handles, old_handles),
-    fn (old_handle) { Error(DesugaringError(blame, "found previously-defined handle: " <> ins(old_handle))) },
+    fn(old_handle) {
+      Error(DesugaringError(
+        blame,
+        "found previously-defined handle: " <> ins(old_handle),
+      ))
+    },
   )
 
-  Ok(#(T(blame, contents), #(updated_counters, list.flatten([old_handles, new_handles]))))
+  Ok(
+    #(T(blame, contents), #(
+      updated_counters,
+      list.flatten([old_handles, new_handles]),
+    )),
+  )
 }
 
 fn v_after_transforming_children(
@@ -651,15 +660,16 @@ fn v_after_transforming_children(
   let #(counters_before, handles_before) = state_before
   let #(counters_after, handles_after) = state_after
 
-  let handles_from_our_children = list.filter(
-    handles_after,
-    fn (h) { !list.contains(handles_before, h) }
-  )
+  let handles_from_our_children =
+    list.filter(handles_after, fn(h) { !list.contains(handles_before, h) })
 
-  let attributes = list.append(
-    attributes,
-    handle_assignment_blamed_attributes_from_handle_assignments(handles_from_our_children),
-  )
+  let attributes =
+    list.append(
+      attributes,
+      handle_assignment_blamed_attributes_from_handle_assignments(
+        handles_from_our_children,
+      ),
+    )
 
   let counters = take_existing_counters(counters_before, counters_after)
 
@@ -667,8 +677,7 @@ fn v_after_transforming_children(
 }
 
 fn our_two_regexes() -> #(Regexp, Regexp) {
-  let any_number_of_handle_assignments =
-    "((\\w+)(<<))*"
+  let any_number_of_handle_assignments = "((\\w+)(<<))*"
 
   let counter_prefix_and_counter =
     "("
@@ -684,29 +693,29 @@ fn our_two_regexes() -> #(Regexp, Regexp) {
     <> ")(\\w+)"
 
   let any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation =
-    "((-|_|.|:|;|::|,)"
-    <> counter_prefix_and_counter
-    <> ")*"
+    "((-|_|.|:|;|::|,)" <> counter_prefix_and_counter <> ")*"
 
   let assert Ok(big) =
     regexp.from_string(
       any_number_of_handle_assignments
       <> counter_prefix_and_counter
-      <> any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation
+      <> any_number_of_counter_prefixes_and_counters_prefaced_by_punctuation,
     )
 
-  let assert Ok(small) =
-    regexp.from_string(counter_prefix_and_counter)
+  let assert Ok(small) = regexp.from_string(counter_prefix_and_counter)
 
   #(small, big)
 }
 
-type State = #(List(CounterInstance), List(HandleAssignment))
+type State =
+  #(List(CounterInstance), List(HandleAssignment))
 
-fn transform_factory( ) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
+fn transform_factory() -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
   let regexes = our_two_regexes()
   infra.StatefulDownAndUpNodeToNodeTransform(
-    v_before_transforming_children: fn(vxml, state) { v_before_transforming_children (vxml, state, regexes) },
+    v_before_transforming_children: fn(vxml, state) {
+      v_before_transforming_children(vxml, state, regexes)
+    },
     v_after_transforming_children: v_after_transforming_children,
     t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },
   )
@@ -722,43 +731,43 @@ fn desugarer_factory() -> infra.Desugarer {
 /// Substitutes counters by their numerical
 /// value converted to string form and assigns those
 /// values to prefixed handles.
-/// 
+///
 /// If a counter named 'MyCounterName' is defined by
 /// an ancestor, replaces strings of the form
-/// 
+///
 /// \<aa>\<bb>MyCounterName
-/// 
-/// where 
-/// 
+///
+/// where
+///
 /// \<aa> == \"::\"|\"..\" indicates whether
 /// the counter occurrence should be echoed as a
 /// string appearing in the document or not (\"::\" == echo,
 /// \"..\" == suppress), and where
-/// 
+///
 /// \<bb> ==  \"++\"|\"--\"|\"øø\" indicates whether
 /// the counter should be incremented, decremented, or
 /// neither prior to possible insertion,
-/// 
+///
 /// by the appropriate replacement string (possibly
 /// none), and assigns handles coming to the left
 /// using the '<<' assignment, e.g.,
-/// 
+///
 /// handleName<<..++MyCounterName
-/// 
+///
 /// would assign the stringified incremented value
 /// of MyCounterName to handle 'handleName' without
 /// echoing the value to the document, whereas
-/// 
+///
 /// handleName<<::++MyCounterName
-/// 
-/// will do the same but also insert the new counter 
+///
+/// will do the same but also insert the new counter
 /// value at that point in the document.
-/// 
+///
 /// The computed handle assignments are recorded as
-/// attributes of the form 
-/// 
+/// attributes of the form
+///
 /// handle_\<handleName> <counterValue>
-/// 
+///
 /// on the parent tag to be later used by the
 /// 'handles_generate_dictionary' desugarer
 pub fn counters_substitute_and_assign_handles() -> Pipe {
@@ -776,7 +785,7 @@ ancestor, replaces strings of the form
 
 <aa><bb>MyCounterName
 
-where 
+where
 
 <aa> == \"::\"|\"..\" indicates whether
 the counter occurrence should be echoed as a
@@ -799,11 +808,11 @@ echoing the value to the document, whereas
 
 handleName<<::++MyCounterName
 
-will do the same but also insert the new counter 
+will do the same but also insert the new counter
 value at that point in the document.
 
 The computed handle assignments are recorded as
-attributes of the form 
+attributes of the form
 
 handle_<handleName> <counterValue>
 

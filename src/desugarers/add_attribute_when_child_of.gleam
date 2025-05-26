@@ -8,13 +8,13 @@ import infrastructure.{
 } as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
-fn param_transform(
+fn transform(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
   _: List(VXML),
   _: List(VXML),
-  param: Param,
+  inner_param: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   use blame, tag, attributes, children <- infra.on_t_on_v(vxml, fn(_, _) {
     Ok(vxml)
@@ -25,7 +25,7 @@ fn param_transform(
   let assert V(_, parent_tag, _, _) = parent
 
   use attributes_to_add <- infra.on_error_on_ok(
-    dict.get(param, #(tag, parent_tag)),
+    dict.get(inner_param, #(tag, parent_tag)),
     fn(_) { Ok(vxml)}
   )
 
@@ -48,40 +48,43 @@ fn param_transform(
   Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))
 }
 
-fn extra_to_param(extra: Extra) -> Param {
-  extra
-  |> infra.quadruples_to_pairs_pairs
-  |> infra.aggregate_on_first
-}
-
-fn transform_factory(param: Param) -> infra.NodeToNodeFancyTransform {
+fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeFancyTransform {
   fn(vxml, ancestors, s1, s2, s3) {
-    param_transform(vxml, ancestors, s1, s2, s3, param)
+    transform(vxml, ancestors, s1, s2, s3, inner_param)
   }
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner_param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param
+  |> infra.quadruples_to_pairs_pairs
+  |> infra.aggregate_on_first)
 }
 
 type Param =
-  Dict(#(String, String), List(#(String, String)))
-
-type Extra =
   List(#(String, String, String, String))
 //       tag     parent  attr    value
+
+type InnerParam =
+  Dict(#(String, String), List(#(String, String)))
 
 /// adds an attribute-pair to a tag
 /// when it is the child of another specified
 /// tag; will not overwrite if attribute with
 /// that key already exists
-pub fn add_attribute_when_child_of(extra: Extra) -> Pipe {
+pub fn add_attribute_when_child_of(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_attribute_when_child_of", option.Some(string.inspect(extra)), "adds an attribute-pair to a tag
+    description: DesugarerDescription("add_attribute_when_child_of", option.Some(string.inspect(param)), "adds an attribute-pair to a tag
 when it is the child of another specified
 tag; will not overwrite if attribute with
 that key already exists",
     ),
-    desugarer: desugarer_factory(extra |> extra_to_param),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }
