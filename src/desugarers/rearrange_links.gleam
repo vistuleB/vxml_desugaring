@@ -1,4 +1,3 @@
-import gleam/io
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/int
@@ -24,7 +23,7 @@ type LinkPatternToken {
     LinkPattern,  // the List(LinkPatternToken) inside of the a-tag
   )
 }
- 
+
 type LinkPattern =
   List(LinkPatternToken)
 
@@ -60,60 +59,62 @@ fn end_node(blame: Blame) {
 fn deatomize_vxmls(
   children: List(VXML),
   accumulated_contents: List(vxml.BlamedContent),
-  result: List(VXML)
+  accumulated_nodes: List(VXML)
 ) -> List(VXML) {
-
   let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.BlamedContent) {
-    let #(last_line, other_lines) = case accumulated_contents {
-      [last_line, ..other_lines] -> #(last_line, other_lines)
-      _ -> #(BlamedContent(blame, ""), [])
+    case accumulated_contents {
+      [first, ..rest] -> [BlamedContent(first.blame, first.content <> word), ..rest]
+      _ -> [BlamedContent(blame, word)]
     }
-    [BlamedContent(..last_line, content: last_line.content <> word), ..other_lines]
   }
 
   case children {
-    [] -> result |> list.reverse
+    [] -> {
+      let assert True = list.is_empty(accumulated_contents)
+      accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
+    }
+
     [first, ..rest] -> {
       case first {
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
           let accumulated_contents = append_word_to_accumlated_contents(blame, word)
-          deatomize_vxmls(rest, accumulated_contents, result)
+          deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
         }
 
         V(blame, "__OneSpace", _, _) -> {
           let accumulated_contents = append_word_to_accumlated_contents(blame, " ")
-          deatomize_vxmls(rest, accumulated_contents, result)
+          deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
         }
 
         V(blame, "__OneNewLine", _, _) -> {
-          let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
-          deatomize_vxmls(rest, accumulated_contents, result)
+          let accumulated_contents = case accumulated_contents {
+            [] -> [BlamedContent(blame, ""), BlamedContent(blame, "")]
+            _ -> [BlamedContent(blame, ""), ..accumulated_contents]
+          }
+          deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
         }
 
-        V(blame, "__EndAtomizedT", _, _) -> {
-          deatomize_vxmls(rest, [], [T(blame, accumulated_contents |> list.reverse), ..result])
-        }
+        V(blame, "__EndAtomizedT", _, _) ->
+          deatomize_vxmls(rest, [], case accumulated_contents {
+            [] -> panic as "__EndAtomizedT not following text nodes"
+            _ -> [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes]
+          })
 
         V(b, "a", a, children) | V(b, "InChapterLink", a, children) -> {
+
+          let assert True = list.is_empty(accumulated_contents)
           let V(_, ze_tag, _, _) = first
           let updated_children = deatomize_vxmls(children, [], [])
-          // check if next is a new line to add a space
-          let accumulated_contents = case rest {
-            [] -> []
-            [next, ..] -> {
-              case next {
-                V(_, "__OneNewLine", _, _) -> {
-                  [BlamedContent(b, " ")]
-                }
-                _ -> []
-              }
-            }
-          }
  
-          deatomize_vxmls(rest, accumulated_contents, [V(b, ze_tag, a, updated_children) ,..result])
+          deatomize_vxmls(rest, [], [V(b, ze_tag, a, updated_children), ..accumulated_nodes])
         }
-        V(_, _, _, _) -> deatomize_vxmls(rest, [], result)
+
+        V(_, _, _, _) -> {
+          let assert True = list.is_empty(accumulated_contents)
+          deatomize_vxmls(rest, [], [first, ..accumulated_nodes])
+        }
+
         _ -> panic as "should not happen"
       }
     }
@@ -150,7 +151,11 @@ fn match_internal(
     [ContentVar(z), ..pattern_rest] -> {
       let assert True = list.is_empty(pattern_rest)
       let assert Error(Nil) = dict.get(content_var_dict_so_far, z)
-      let content_var_dict_so_far = dict.insert(content_var_dict_so_far, z, atomized)
+      let content_var_dict_so_far = dict.insert(
+        content_var_dict_so_far,
+        z,
+        atomized |> list.take(list.length(atomized) - 1) // we're dropping the last __EndAtomizedT, that will be re-created by replace function (L261)
+      )
 
       Some(PrefixMatchOnAtomizedList(
         left_unmatched: 0,
@@ -223,12 +228,27 @@ fn match(
   atomized: List(VXML),
   pattern: LinkPattern,
 ) -> Option(PrefixMatchOnAtomizedList) {
-  match_internal(
-    atomized,
-    pattern,
-    dict.new(),
-    dict.new(),
-  )
+  case atomized {
+    [V(_, "__EndAtomizedT", _, _)] -> None // so that we can 'fast_forward_past_end_t' at start of match_internal (and only ff past "our" __EndTs)
+    _ -> match_internal(
+      atomized,
+      pattern,
+      dict.new(),
+      dict.new(),
+    )
+  }
+}
+
+fn maybe_prepend_end_node(
+  blame: Blame,
+  others: List(VXML),
+) -> List(VXML) {
+  case others {
+    [V(_, "__OneWord", _, _), ..] -> [end_node(blame), ..others]
+    [V(_, "__OneSpace", _, _), ..] -> [end_node(blame), ..others]
+    [V(_, "__OneNewLine", _, _), ..] -> [end_node(blame), ..others]
+    _ -> others
+  }
 }
 
 fn prefix_match_to_atomized_list(
@@ -238,7 +258,7 @@ fn prefix_match_to_atomized_list(
   already_ready: List(VXML),
 ) -> List(VXML) {
   case pattern {
-    [] -> already_ready |> list.reverse |> list.append([end_node(default_blame)])
+    [] -> maybe_prepend_end_node(Blame("hoola", 0, 0, []), already_ready) |> list.reverse
     [p, ..pattern_rest] -> {
       case p {
         Word(word) -> prefix_match_to_atomized_list(
@@ -262,7 +282,7 @@ fn prefix_match_to_atomized_list(
             pattern_rest,
             match,
             [
-              z_vxmls,
+              z_vxmls |> list.reverse,
               already_ready,
             ] |> list.flatten,
           )
@@ -286,7 +306,7 @@ fn prefix_match_to_atomized_list(
             default_blame,
             pattern_rest,
             match,
-            [a_node, end_node(blame), ..already_ready],
+            [a_node, ..maybe_prepend_end_node(Blame("goopie", 0, 0, []), already_ready)],
           )
         }
       }
@@ -329,7 +349,7 @@ fn match_until_end_internal(
           rest,
           pattern1,
           pattern2,
-          [first, ..already_done],
+          [first, ..maybe_prepend_end_node(Blame("yoyo", 0, 0, []), already_done)],
         )
       }
     }
@@ -344,7 +364,6 @@ fn match_until_end(
   match_until_end_internal(atomized, pattern1, pattern2, [])
 }
 
- 
 fn atomize_text_node(vxml: VXML) -> List(VXML) {
   let assert T(blame, blamed_contents) = vxml
   blamed_contents
@@ -643,13 +662,13 @@ fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
 fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
   let #(s1, s2) = string_pair
 
-  use pattern1 <- result.try(
+  use pattern1 <- result.then(
     { "<root>" <> s1 <> "</root>" }
     |> make_sure_attributes_are_quoted
     |> extra_string_to_link_pattern,
   )
 
-  use pattern2 <- result.try(
+  use pattern2 <- result.then(
     { "<root>" <> s2 <> "</root>" }
     |> make_sure_attributes_are_quoted
     |> extra_string_to_link_pattern,

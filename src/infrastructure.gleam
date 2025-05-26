@@ -27,60 +27,6 @@ pub fn list_set(ze_list: List(a), index: Int, element: a) -> List(a) {
   ] |> list.flatten
 }
 
-// put before "desugaring efforts #1 section":
-
-pub fn concatenate_classes(a: String, b: String) -> String {
-  let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
-  let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
-  let all = list.flatten([all_a, all_b])
-  list.fold(
-    all,
-    [],
-    fn (so_far, next) {
-      case list.contains(so_far, next) {
-        True -> so_far
-        False -> [next, ..so_far]
-      }
-    }
-  )
-  |> string.join(" ")
-}
-
-pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classes: String) -> List(BlamedAttribute) {
-  let #(index, new_attribute) = list.index_fold(
-    attrs,
-    #(-1, BlamedAttribute(blame, "", "")),
-    fn (acc, attr, i) {
-      case acc |> pair.first {
-        -1 -> case attr.key {
-          "class" -> #(i, BlamedAttribute(..attr, value: concatenate_classes(attr.value, classes)))
-          _ -> acc
-        }
-        _ -> acc
-      }
-    }
-  )
-
-  case index >= 0 {
-    True -> list_set(attrs, index, new_attribute)
-    False -> list.append(
-      attrs,
-      [
-        BlamedAttribute(
-          blame,
-          "class",
-          concatenate_classes("", classes),
-        )
-      ],
-    )
-  }
-}
-
-/// Returns the element at the specified index in a list
-/// 
-/// Arguments:
-/// - list: The input list to get element from
-/// - index: The zero-based index to retrieve
 pub fn get_at(ze_list: List(a), index: Int) -> Result(a, Nil) {
   case index >= list.length(ze_list) || index < 0 {
     True -> Error(Nil)
@@ -109,39 +55,6 @@ pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
       BlamedContent(..line, content: string.trim_end(line.content))
     })
   T(blame, list.reverse([last_line, ..updated_rest]))
-}
-
-fn map_with_special_first_last_internal(
-  l: List(a),
-  fun: fn(a, Bool, Bool) -> b,
-) -> List(b) {
-  case l {
-    [] -> []
-    [last] -> {
-      [fun(last, False, True)]
-    }
-    [el, ..rest] -> {
-      [fun(el, False, False), ..map_with_special_first_last_internal(rest, fun)]
-    }
-  }
-}
-
-pub fn map_with_special_first_last(
-  l: List(a),
-  fun: fn(a, Bool, Bool) -> b,
-) -> List(b) {
-  case l {
-    [] -> []
-    [one] -> {
-      [fun(one, True, True)]
-    }
-    [first, ..rest] -> {
-      [
-        fun(first, True, False),
-        ..map_with_special_first_last_internal(rest, fun)
-      ]
-    }
-  }
 }
 
 pub fn is_singleton(z: List(a)) -> Bool {
@@ -637,6 +550,68 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //**************************************************************
 //* misc (children collecting, inserting, ...)
 //**************************************************************
+
+pub fn t_t_last_to_first_concatenation(node1: VXML, node2: VXML) -> VXML {
+  let assert T(blame1, lines1) = node1
+  let assert T(_, lines2) = node2
+  let assert [BlamedContent(blame_last, content_last), ..other_lines1] = lines1 |> list.reverse
+  let assert [BlamedContent(_, content_first), ..other_lines2] = lines2
+  T(
+    blame1,
+    list.flatten([
+      other_lines1 |> list.reverse,
+      [BlamedContent(blame_last, content_last <> content_first)],
+      other_lines2,
+    ]),
+  )
+}
+
+fn last_to_first_concatenation_internal(
+  remaining: List(VXML),
+  already_done: List(VXML),
+  current_t: Option(VXML)
+) {
+  case remaining {
+    [] -> case current_t {
+      None -> already_done |> list.reverse
+      Some(t) -> [t, ..already_done] |> list.reverse
+    }
+    [V(_, _, _, _) as first, ..rest] -> case current_t {
+      None -> last_to_first_concatenation_internal(
+        rest,
+        [first, ..already_done],
+        None
+      )
+      Some(t) -> last_to_first_concatenation_internal(
+        rest,
+        [first, t, ..already_done],
+        None,
+      )
+    }
+    [T(_, _) as first, ..rest] -> case current_t {
+      None -> last_to_first_concatenation_internal(
+        rest,
+        already_done,
+        Some(first)
+      )
+      Some(t) -> last_to_first_concatenation_internal(
+        rest,
+        already_done,
+        Some(t_t_last_to_first_concatenation(t, first))
+      )
+    }
+  }
+}
+
+pub fn last_to_first_concatenation(vxmls: List(VXML)) -> List(VXML) {
+  last_to_first_concatenation_internal(vxmls, [], None)
+}
+
+pub fn v_last_to_first_concatenation(v: VXML) -> VXML {
+  let assert V(blame, tag, attributes, children) = v
+  let children = last_to_first_concatenation(children)
+  V(blame, tag, attributes, children)
+}
 
 pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
@@ -1163,6 +1138,53 @@ pub fn valid_attribute_key(tag: String) -> Bool {
   !string.contains(tag, " ") &&
   !string.contains(tag, "\n") &&
   !string.contains(tag, "\t")
+}
+
+pub fn concatenate_classes(a: String, b: String) -> String {
+  let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
+  let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
+  let all = list.flatten([all_a, all_b])
+  list.fold(
+    all,
+    [],
+    fn (so_far, next) {
+      case list.contains(so_far, next) {
+        True -> so_far
+        False -> [next, ..so_far]
+      }
+    }
+  )
+  |> string.join(" ")
+}
+
+pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classes: String) -> List(BlamedAttribute) {
+  let #(index, new_attribute) = list.index_fold(
+    attrs,
+    #(-1, BlamedAttribute(blame, "", "")),
+    fn (acc, attr, i) {
+      case acc |> pair.first {
+        -1 -> case attr.key {
+          "class" -> #(i, BlamedAttribute(..attr, value: concatenate_classes(attr.value, classes)))
+          _ -> acc
+        }
+        _ -> acc
+      }
+    }
+  )
+
+  case index >= 0 {
+    True -> list_set(attrs, index, new_attribute)
+    False -> list.append(
+      attrs,
+      [
+        BlamedAttribute(
+          blame,
+          "class",
+          concatenate_classes("", classes),
+        )
+      ],
+    )
+  }
 }
 
 //**************************************************************
