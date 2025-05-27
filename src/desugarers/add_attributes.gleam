@@ -50,12 +50,11 @@ fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param |> infra.triples_to_aggregated_dict)
+  Ok(infra.triples_to_aggregated_dict(param))
 }
 
 type Param =
   List(#(String, String, String))
-
 //        tag     attr   value
 
 type InnerParam =

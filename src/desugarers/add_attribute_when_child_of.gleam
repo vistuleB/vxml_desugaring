@@ -77,10 +77,15 @@ type InnerParam =
 /// that key already exists
 pub fn add_attribute_when_child_of(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_attribute_when_child_of", option.Some(string.inspect(param)), "adds an attribute-pair to a tag
+    description: DesugarerDescription(
+      "add_attribute_when_child_of",
+      option.Some(string.inspect(param)),
+      "
+adds an attribute-pair to a tag
 when it is the child of another specified
 tag; will not overwrite if attribute with
-that key already exists",
+that key already exists
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

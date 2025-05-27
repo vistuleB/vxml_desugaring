@@ -48,7 +48,11 @@ type InnerParam = Nil
 
 pub fn add_exercise_labels() -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_exercise_labels", option.None, "..."),
+    description: DesugarerDescription(
+      "add_exercise_labels",
+      option.None,
+      "..."
+    ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner_param) -> desugarer_factory(inner_param)

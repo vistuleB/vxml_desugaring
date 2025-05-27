@@ -103,25 +103,7 @@ fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(list.fold(
-    over: param,
-    from: dict.from_list([]),
-    with: fn(current_dict, incoming: #(String, String)) {
-      let #(absorbing_tag, absorbed_tag) = incoming
-      case dict.get(current_dict, absorbing_tag) {
-        Error(Nil) -> dict.insert(current_dict, absorbing_tag, [absorbed_tag])
-        Ok(existing_absorbed) ->
-          case list.contains(existing_absorbed, absorbed_tag) {
-            False ->
-              dict.insert(current_dict, absorbing_tag, [
-                absorbed_tag,
-                ..existing_absorbed
-              ])
-            True -> current_dict
-          }
-      }
-    },
-  ))
+  Ok(infra.aggregate_on_first(param))
 }
 
 //**********************************
@@ -136,21 +118,23 @@ type Param =
 type InnerParam =
   Dict(String, List(String))
 
-/// if the arguments are [#(\"Tag1\", \"Child1\"),
-/// (\"Tag1\", \"Child1\")] then will cause Tag1
+/// if the arguments are [#("Tag1\", "Child1"),
+/// ("Tag1", "Child1")] then will cause Tag1
 /// nodes to absorb all subsequent Child1 & Child2
 /// nodes, as long as they come immediately after
-/// Tag1 (in any order)"
+/// Tag1 (in any order)
 pub fn absorb_next_sibling_while(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "absorb_next_sibling_while",
       Some(ins(param)),
-      "if the arguments are [#(\"Tag1\", \"Child1\"),
+      "
+if the arguments are [#(\"Tag1\", \"Child1\"),
 (\"Tag1\", \"Child1\")] then will cause Tag1
 nodes to absorb all subsequent Child1 & Child2
 nodes, as long as they come immediately after
-Tag1 (in any order)",
+Tag1 (in any order)
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

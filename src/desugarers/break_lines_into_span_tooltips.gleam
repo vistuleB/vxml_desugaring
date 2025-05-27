@@ -37,7 +37,7 @@ fn line_to_tooltip_span(bc: BlamedContent, prefix: Extra) -> VXML {
   )
 }
 
-fn param_transform(
+fn transform(
   vxml: VXML,
   extra: Extra,
 ) -> Result(List(VXML), DesugaringError) {
@@ -61,7 +61,7 @@ fn param_transform(
 }
 
 fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
-  param_transform(_, extra)
+  transform(_, extra)
   |> infra.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
 }
 
