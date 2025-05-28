@@ -116,10 +116,14 @@ fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
       let blame = infra.blame_us("generate_lbp_sections_breadcrumbs")
       let children = transform_children(children)
 
+      let link = V(blame, "InChapterLink", [
+        BlamedAttribute(blame, "href", "?id=section-" <> ins(index + 1)),
+      ], children)
+
       V(blame, "li", [
         BlamedAttribute(blame, "class", "breadcrumb"),
         BlamedAttribute(blame, "id", "breadcrumb-" <> ins(index)),
-      ], children)
+      ], [link])
   })
 }
 
