@@ -611,7 +611,7 @@ fn get_content_vars(
   |> list.flatten
 }
 
-fn get_hreft_vars(
+fn get_href_vars(
   pattern2: LinkPattern,
 ) -> List(Int) {
   list.map(pattern2, fn(token){
@@ -634,7 +634,7 @@ fn check_each_content_var_is_sourced(pattern2: LinkPattern, source_vars: List(In
 }
 
 fn check_each_href_var_is_sourced(pattern2: LinkPattern, href_vars: List(Int)) -> Result(Nil, Int) {
-  let vars = get_hreft_vars(pattern2)
+  let vars = get_href_vars(pattern2)
   case list.find(vars, fn(var){
     !{ list.contains(href_vars, var) }
   }) {
@@ -652,7 +652,7 @@ fn collect_unique_content_vars(pattern1: LinkPattern) -> Result(List(Int), Int) 
 }
 
 fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
-  let vars = get_hreft_vars(pattern1)
+  let vars = get_href_vars(pattern1)
   case infra.get_duplicate(vars) {
     None -> Ok(vars)
     Some(int) -> Error(int)
