@@ -11,11 +11,11 @@ import vxml.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect
 
-fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
+fn add_in_list(children: List(VXML), inner_param: InnerParam) -> List(VXML) {
   case children {
     [first, V(blame, tag, _, _) as second, ..rest] -> {
-      case dict.get(param, tag) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], param)]
+      case dict.get(inner_param, tag) {
+        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner_param)]
         Ok(#(new_element_tag, new_element_attributes)) -> {
           [
             first,
@@ -27,7 +27,7 @@ fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
               }),
               [],
             ),
-            ..add_in_list([second, ..rest], param)
+            ..add_in_list([second, ..rest], inner_param)
           ]
         }
       }
@@ -36,46 +36,49 @@ fn add_in_list(children: List(VXML), param: Param) -> List(VXML) {
   }
 }
 
-fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, inner_param: InnerParam) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attributes, children) ->
-      Ok(V(blame, tag, attributes, add_in_list(children, param)))
+      Ok(V(blame, tag, attributes, add_in_list(children, inner_param)))
     _ -> Ok(node)
   }
 }
 
-fn param(extra: Extra) -> Param {
-  extra |> infra.triples_to_dict
+fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner_param)
 }
 
-type Param =
-  Dict(String, #(String, List(#(String, String))))
+fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner_param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(infra.triples_to_dict(param))
+}
 
 //**********************************
-// type Extra = List(#(String,                  String,            List(#(String, String))))
+// type Param = List(#(String,                  String,            List(#(String, String))))
 //                       ↖ insert divs          ↖ tag name         ↖ attributes 
 //                         before tags            of new element
 //                         of this name
 //                         (except if tag is first child)
 //**********************************
-type Extra =
+type Param =
   List(#(String, String, List(#(String, String))))
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
-}
+type InnerParam =
+  Dict(String, #(String, List(#(String, String))))
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
-}
-
-pub fn add_before_tags_but_not_first_child_tags(extra: Extra) -> Pipe {
+pub fn add_before_tags_but_not_first_child_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "add_before_tags_but_not_first_child_tags",
-      Some(ins(extra)),
+      Some(ins(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra |> param),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }

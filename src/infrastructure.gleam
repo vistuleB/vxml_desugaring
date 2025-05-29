@@ -253,10 +253,12 @@ pub fn contains_one_of_tags(vxmls: List(VXML), tags: List(String)) -> Bool {
 //* dictionary-building functions
 //**************************************************************
 
-pub fn dict_from_list_with_desugaring_error(extra: List(#(a, b))) -> Result(Dict(a, b), DesugaringError) {
-  case get_duplicate(list.map(extra, pair.first)) {
+pub fn dict_from_list_with_desugaring_error(
+  l: List(#(a, b))
+) -> Result(Dict(a, b), DesugaringError) {
+  case get_duplicate(list.map(l, pair.first)) {
     Some(guy) -> Error(DesugaringError(blamedlines.empty_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
-    None -> Ok(dict.from_list(extra))
+    None -> Ok(dict.from_list(l))
   }
 }
 

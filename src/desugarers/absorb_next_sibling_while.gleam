@@ -35,7 +35,7 @@ fn prepend_first_item_to_second_item(p: #(a, List(a))) -> List(a) {
 
 fn update_children(
   children: List(VXML),
-  param: Dict(String, List(String)),
+  inner_param: InnerParam,
 ) -> List(VXML) {
   use #(first, rest) <- result_map_both(
     list_first_rest(children),
@@ -58,7 +58,7 @@ fn update_children(
         ),
           V(_, incoming_tag, _, _)
         -> {
-          case dict.get(param, previous_sibiling_tag) {
+          case dict.get(inner_param, previous_sibiling_tag) {
             Error(Nil) -> #(incoming, [previous_sibling, ..already_bundled])
             Ok(absorbed_tags) -> {
               case list.contains(absorbed_tags, incoming_tag) {
@@ -86,72 +86,59 @@ fn update_children(
   |> list.reverse
 }
 
-fn param_transform(node: VXML, pairs: Param) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, inner_param: InnerParam) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attributes, children) ->
-      Ok(V(blame, tag, attributes, update_children(children, pairs)))
+      Ok(V(blame, tag, attributes, update_children(children, inner_param)))
     _ -> Ok(node)
   }
 }
 
-fn extra_2_param(extra: Extra) -> Param {
-  list.fold(
-    over: extra,
-    from: dict.from_list([]),
-    with: fn(current_dict, incoming: #(String, String)) {
-      let #(absorbing_tag, absorbed_tag) = incoming
-      case dict.get(current_dict, absorbing_tag) {
-        Error(Nil) -> dict.insert(current_dict, absorbing_tag, [absorbed_tag])
-        Ok(existing_absorbed) ->
-          case list.contains(existing_absorbed, absorbed_tag) {
-            False ->
-              dict.insert(current_dict, absorbing_tag, [
-                absorbed_tag,
-                ..existing_absorbed
-              ])
-            True -> current_dict
-          }
-      }
-    },
-  )
+fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner_param)
 }
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner_param))
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(infra.aggregate_on_first(param))
 }
-
-type Param =
-  Dict(String, List(String))
 
 //**********************************
-// type Extra = List(#(String,            String))
+// type Param = List(#(String,            String))
 //                       ↖ tag that         ↖ tag that will
 //                         will absorb        be absorbed by
 //                         next sibling       previous sibling
 //**********************************
-type Extra =
+type Param =
   List(#(String, String))
 
-/// if the arguments are [#(\"Tag1\", \"Child1\"),
-/// (\"Tag1\", \"Child1\")] then will cause Tag1
+type InnerParam =
+  Dict(String, List(String))
+
+/// if the arguments are [#("Tag1\", "Child1"),
+/// ("Tag1", "Child1")] then will cause Tag1
 /// nodes to absorb all subsequent Child1 & Child2
 /// nodes, as long as they come immediately after
-/// Tag1 (in any order)"
-pub fn absorb_next_sibling_while(extra: Extra) -> Pipe {
+/// Tag1 (in any order)
+pub fn absorb_next_sibling_while(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "absorb_next_sibling_while",
-      Some(ins(extra)),
-      "if the arguments are [#(\"Tag1\", \"Child1\"),
+      Some(ins(param)),
+      "
+if the arguments are [#(\"Tag1\", \"Child1\"),
 (\"Tag1\", \"Child1\")] then will cause Tag1
 nodes to absorb all subsequent Child1 & Child2
 nodes, as long as they come immediately after
-Tag1 (in any order)",
+Tag1 (in any order)
+      ",
     ),
-    desugarer: desugarer_factory(extra_2_param(extra)),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }

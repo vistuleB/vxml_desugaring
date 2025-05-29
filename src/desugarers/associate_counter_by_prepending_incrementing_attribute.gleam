@@ -5,7 +5,7 @@ import gleam/string
 import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
-fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, old_attributes, children) -> {
@@ -39,12 +39,12 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn extra_to_param(extra: Extra) -> Param {
+fn param_to_inner_param(extra: Extra) -> Param {
   extra |> infra.aggregate_on_first
 }
 
 fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+  transform(_, param)
 }
 
 fn desugarer_factory(param: Param) -> Desugarer {
@@ -66,6 +66,6 @@ pub fn associate_counter_by_prepending_incrementing_attribute(extra: Extra) -> P
       option.Some(string.inspect(extra)),
       "...",
     ),
-    desugarer: desugarer_factory(extra |> extra_to_param),
+    desugarer: desugarer_factory(extra |> param_to_inner_param),
   )
 }

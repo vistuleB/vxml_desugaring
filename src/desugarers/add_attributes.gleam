@@ -19,11 +19,11 @@ fn build_blamed_attributes(
   })
 }
 
-fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, inner_param: InnerParam) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, old_attributes, children) -> {
-      case dict.get(param, tag) {
+      case dict.get(inner_param, tag) {
         Ok(new_attributes) -> {
           Ok(V(
             blame,
@@ -41,33 +41,35 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn extra_to_param(extra: Extra) -> Param {
-  extra |> infra.triples_to_aggregated_dict
+fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner_param)
 }
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner_param))
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(infra.triples_to_aggregated_dict(param))
 }
 
 type Param =
-  Dict(String, List(#(String, String)))
-
-type Extra =
   List(#(String, String, String))
-
 //        tag     attr   value
 
-pub fn add_attributes(extra: Extra) -> Pipe {
+type InnerParam =
+  Dict(String, List(#(String, String)))
+
+pub fn add_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "add_attributes",
-      option.Some(string.inspect(extra)),
+      option.Some(string.inspect(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra |> extra_to_param),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }

@@ -7,7 +7,7 @@ import infrastructure.{
 } as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
-fn add_exercise_labels_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, "Exercises", attributes, children) -> {
       let new_attribute = [
@@ -31,17 +31,31 @@ fn add_exercise_labels_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory() -> infra.NodeToNodeTransform {
-  add_exercise_labels_transform
+fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner_param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
 
 pub fn add_exercise_labels() -> Pipe {
   Pipe(
-    description: DesugarerDescription("add_exercise_labels", option.None, "..."),
-    desugarer: desugarer_factory(),
+    description: DesugarerDescription(
+      "add_exercise_labels",
+      option.None,
+      "..."
+    ),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }
