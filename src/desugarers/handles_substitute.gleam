@@ -37,17 +37,20 @@ fn construct_hyperlink(
   extra: Extra
 ) {
   let #(id, filename, value) = handle
-
-  let tag = case target_is_on_same_chapter(filename, blame) {
-    True -> "InChapterLink"
-    False -> "a"
+  let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
+    True -> #("InChapterLink", "handle-in-chapter-link")
+    False -> #("a", "handle-out-of-chapter-link")
   }
 
   V(blame, tag, list.flatten([
       list.map(extra, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
-      [BlamedAttribute(blame, "href", filename <> "?id=" <> id)]
+      [
+        BlamedAttribute(blame, "href", filename <> "?id=" <> id),
+        BlamedAttribute(blame, "class", classes),
+      ]
     ]),
-    [T(blame, [BlamedContent(blame, value)])])
+    [T(blame, [BlamedContent(blame, value)])],
+  )
 }
 
 fn handle_handle_matches(
