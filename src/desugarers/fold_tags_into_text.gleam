@@ -372,11 +372,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-
-//*********************************
-// - first string is tag name
-// - second string is replacement value to use
+  List(#(String,      String))
+//       ↖ tag name   ↖ replacement
+//                      tag to use
 
 type InnerParam =
   Dict(String, String)

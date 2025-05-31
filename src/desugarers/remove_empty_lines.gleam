@@ -38,7 +38,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 /// for each text node, removes each line whose
@@ -49,9 +48,11 @@ pub fn remove_empty_lines() -> Pipe {
     description: DesugarerDescription(
       "remove_empty_lines",
       option.None,
-      "for each text node, removes each line whose
+      "
+for each text node, removes each line whose
 content is the empty string & destroys
-text nodes that end up with 0 lines",
+text nodes that end up with 0 lines
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }

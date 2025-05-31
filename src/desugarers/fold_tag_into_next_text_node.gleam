@@ -36,11 +36,6 @@ fn transform(
   }
 }
 
-type Param =
-  #(String, String)
-
-type InnerParam = Param
-
 fn transform_factory(param: InnerParam) -> infra.NodeToNodesFancyTransform {
   fn(node, ancestors, s1, s2, s3) {
     transform(node, ancestors, s1, s2, s3, param)
@@ -54,6 +49,9 @@ fn desugarer_factory(param: InnerParam) -> Desugarer {
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
+
+type Param = #(String, String)
+type InnerParam = Param
 
 pub fn fold_tag_into_next_text_node(param: Param) -> Pipe {
   Pipe(

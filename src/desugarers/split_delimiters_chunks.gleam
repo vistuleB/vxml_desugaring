@@ -3,7 +3,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/order
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
@@ -420,14 +420,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String, String, Bool, List(String))
-
 type InnerParam = Param
 
 pub fn split_delimiters_chunks_desugarer(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "split_delimiters_chunks_desugarer",
-      option.Some(string.inspect(param)),
+      option.Some(ins(param)),
       "...",
     ),
     desugarer: case param_to_inner_param(param) {

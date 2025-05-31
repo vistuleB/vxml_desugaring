@@ -1,10 +1,8 @@
 import gleam/list
 import gleam/option.{Some}
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
-
-const ins = string.inspect
 
 fn transform(
   vxml: VXML,
@@ -37,9 +35,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(String)
-
+type Param = List(String)
 type InnerParam = Param
 
 pub fn extract_starting_and_ending_spaces(param: Param) -> Pipe {

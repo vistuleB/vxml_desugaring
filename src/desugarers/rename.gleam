@@ -1,4 +1,4 @@
-import gleam/option.{None}
+import gleam/option
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
@@ -34,14 +34,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   }
 }
 
-type Param =
-  #(String, String)
-
+type Param = #(String, String)
 type InnerParam = Param
 
 pub fn rename(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("rename", None, "renames one tag"),
+    description: DesugarerDescription(
+      "rename",
+      option.None,
+      "renames one tag"
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

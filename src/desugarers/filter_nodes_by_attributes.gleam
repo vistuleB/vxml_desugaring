@@ -25,12 +25,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, String, String))
-
-//         ↖        ↖       ↖
-//         path     key     value
-
+//                  path     key     value
+type Param = List(#(String, String, String))
 type InnerParam = Param
 
 /// filters by identifying nodes whose
@@ -45,15 +41,17 @@ pub fn filter_nodes_by_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "filter_nodes_by_attributes",
-      option.Some(param |> ins),
-      "filters by identifying nodes whose
+      option.Some(ins(param)),
+      "
+filters by identifying nodes whose
 blame.filename contain the extra.path
 as a substring and whose attributes
 match at least one of the given #(key, value)
 pairs, with a match counting as true
 if key == \"\"; keeps only nodes that
 are descendants of such nodes, or
-ancestors of such nodes",
+ancestors of such nodes
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

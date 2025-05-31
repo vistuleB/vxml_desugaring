@@ -1,12 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/pair
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
-
-const ins = string.inspect
 
 fn add_in_list(children: List(VXML), param: InnerParam) -> List(VXML) {
   case children {
@@ -54,15 +52,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String, List(#(String, String))))
-
-//**********************************
-// type Param = List(#(String,                  String,            List((String, String))))
-//                       ↖ insert divs          ↖ tag name         ↖ attributes
-//                         before tags            of new element
-//                         of this name
-//                         (except if tag is first child)
-//**********************************
+  List(#(String,         String,           List(#(String, String))))
+//       ↖ insert divs   ↖ tag name        ↖ attributes
+//         before tags     of new element
+//         of this name
+//         (except if tag is first child)
 
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
@@ -71,7 +65,7 @@ pub fn add_before_tags_but_not_first_child_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "add_before_tags_but_not_first_child_tags",
-      Some(ins(param)),
+      option.Some(ins(param)),
       "...",
     ),
     desugarer: case param_to_inner_param(param) {

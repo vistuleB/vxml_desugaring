@@ -100,8 +100,6 @@ fn desugarer_factory(param: InnerParam) -> Desugarer {
 
 type Param =
   List(#(String, String, String))
-
-//***********************************
 // - String: text to prepend
 // - String: text to append
 // - String: parent tag

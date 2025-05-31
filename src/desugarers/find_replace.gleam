@@ -1,4 +1,4 @@
-import gleam/option.{Some}
+import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 
@@ -16,16 +16,17 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(List(#(String, String)), List(String))
-
-//         from    to        keep_out_of
-
+//                    from    to        keep_out_of
+type Param = #(List(#(String, String)), List(String))
 type InnerParam = Param
 
 pub fn find_replace(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("find_replace", Some(ins(param)), "..."),
+    description: DesugarerDescription(
+      "find_replace",
+      option.Some(ins(param)),
+      "..."
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}
       Ok(param) -> desugarer_factory(param)

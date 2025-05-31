@@ -44,12 +44,15 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn remove_empty_chunks() -> Pipe {
   Pipe(
-    description: DesugarerDescription("remove_empty_chunks", option.None, "..."),
+    description: DesugarerDescription(
+      "remove_empty_chunks",
+      option.None, 
+      "..."
+    ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

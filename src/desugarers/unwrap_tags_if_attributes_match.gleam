@@ -48,9 +48,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, List(#(String, String))))
-
+type Param = List(#(String, List(#(String, String))))
 type InnerParam = Param
 
 pub fn unwrap_tags_if_attributes_match(param: Param) -> Pipe {

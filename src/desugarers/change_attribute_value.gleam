@@ -61,17 +61,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, String))
-// **********************************
-//  type Param = List(#(String,            String  ))
-//                        ↖ attribute key      ↖ replacement of attribute value string
-//                                               "()" can be used to echo the current value
-//                                               ex:
-//                                                 current value: image/img.png
-//                                                 replacement: /()
-//                                                 result: /image/img.png
-// **********************************
+type Param = List(#(String,           String))
+//                  ↖ attribute key   ↖ replacement of attribute value string
+//                                      "()" can be used to echo the current value
+//                                      ex:
+//                                        current value: image/img.png
+//                                        replacement: /()
+//                                        result: /image/img.png
 
 type InnerParam = Param
 
@@ -94,7 +90,8 @@ string in which \"()\" is used as a stand-in
 for the current value. For example, replacing
 attribute value \"images/img.png\" with the
 replacement string \"/()\" will result in the
-new attribute value \"/images/img.png",
+new attribute value \"/images/img.png\"
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}

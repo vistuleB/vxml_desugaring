@@ -104,14 +104,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-
-//**********************************
-// type Param = List(#(String,            String))
-//                       ↖ tag that         ↖ tag that will
-//                         will absorb        be absorbed by
-//                         next sibling       previous sibling
-//**********************************
+  List(#(String,         String))
+//       ↖ tag that      ↖ tag that will
+//         will absorb     be absorbed by
+//         next sibling    previous sibling
 
 type InnerParam =
   Dict(String, List(String))

@@ -42,11 +42,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String,    List(String)))
-//        ↖            ↖
-//         tag to be    list of ancestor names
-//         unwrapped    that will cause tag to unwrap
+type Param = List(#(String,    List(String)))
+//                   ↖            ↖
+//                    tag to be    list of ancestor names
+//                    unwrapped    that will cause tag to unwrap
 
 type InnerParam = Param
 

@@ -30,7 +30,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
-
 type InnerParam = Param
 
 pub fn remove_tag_desugarer(param: Param) -> Pipe {

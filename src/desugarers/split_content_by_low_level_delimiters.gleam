@@ -255,7 +255,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {

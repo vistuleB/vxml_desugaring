@@ -43,7 +43,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn unwrap_vertical_chunks_with_no_text_child() -> Pipe {

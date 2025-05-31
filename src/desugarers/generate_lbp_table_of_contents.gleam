@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect
@@ -79,7 +79,7 @@ fn div_with_id_title_and_menu_items(
   ])
 }
 
-fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   let #(
     table_of_contents_tag,
     type_of_chapters_title_component_name,
@@ -92,9 +92,7 @@ fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
       chapters
-      |> list.index_map(fn(chapter: VXML, index) {
-        chapter_link(chapter_link_component_name, chapter, index + 1)
-      })
+      |> list.index_map(fn(chapter: VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) })
       |> result.all
     },
     with_on_error: Error,
@@ -149,12 +147,8 @@ fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   ))
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
-}
-
 fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+  at_root(_, param)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

@@ -29,7 +29,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn correct_parsed_html_tags() -> Pipe {

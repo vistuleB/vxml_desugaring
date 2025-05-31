@@ -37,7 +37,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(List(String), String)
-
 type InnerParam = Param
 
 pub fn wrap_element_children_desugarer(param: Param) -> Pipe {

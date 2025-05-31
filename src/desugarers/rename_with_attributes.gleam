@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import gleam/dict.{type Dict}
 import gleam/result
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
@@ -70,7 +70,11 @@ type InnerParam =
 
 pub fn rename_with_attributes(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("rename_with_attributes", None, "..."),
+    description: DesugarerDescription(
+      "rename_with_attributes",
+      option.None,
+      "..."
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

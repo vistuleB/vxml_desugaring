@@ -53,14 +53,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(#(String, String), String, List(#(String, String))))
-
-//**********************************
-// type Param = List(#(String,                String),     String,                 List(#(String, String))))
-//                       ↖ insert divs between ↗             ↖ tag name             ↖ attributes for
-//                          adjacent siblings                  for new element        new element
-//                         of these two names
-//**********************************
+  List(#(#(String,           String), String,             List(#(String, String))))
+//         ↖ insert divs between ↗    ↖ tag name          ↖ attributes for
+//            adjacent siblings         for new element     new element
+//           of these two names
 
 type InnerParam =
   Dict(#(String, String), #(String, List(#(String, String))))

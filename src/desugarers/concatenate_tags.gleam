@@ -37,9 +37,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(String)
-
+type Param = List(String)
 type InnerParam = Param
 
 pub fn concatenate_tags(param: Param) -> Pipe {

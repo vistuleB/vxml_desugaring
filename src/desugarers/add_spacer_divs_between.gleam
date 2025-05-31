@@ -51,14 +51,10 @@ fn desugarer_factory(param: InnerParam) -> Desugarer {
 }
 
 type Param =
-  List(#(#(String, String), String))
-
-//**********************************
-// type Param = List(#(String,                String),     String))
-//                       ↖ insert divs between ↗             ↖ class name
-//                          adjacent siblings                  for inserted div
-//                         of these two names
-//**********************************
+  List(#(#(String,             String), String))
+//         ↖ insert divs between         ↖ class name
+//            adjacent siblings            for inserted div
+//           of these two names
 
 type InnerParam =
   Dict(#(String, String), String)

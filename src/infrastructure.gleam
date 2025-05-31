@@ -1054,6 +1054,7 @@ pub fn filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
 }
 
 pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
+  let assert V(_, _, _, _) = vxml
   filter_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
@@ -1089,6 +1090,7 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
 }
 
 pub fn children_with_attr(vxml: VXML, key: String, value: String) -> List(VXML) {
+  let assert V(_, _, _, _) = vxml
   filter_children(vxml, is_v_and_has_attr(_, key, value))
 }
 

@@ -59,7 +59,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String, String)
-
 type InnerParam = Param
 
 /// Moves an attribute with key `key` from the first child of a node with tag

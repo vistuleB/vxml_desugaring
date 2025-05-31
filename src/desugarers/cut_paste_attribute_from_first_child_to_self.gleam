@@ -11,21 +11,20 @@ import vxml.{type VXML, V, type BlamedAttribute}
 /// - Modified children ( with removed attribute )
 fn check_first_child(children: List(VXML), key: String)
 -> Result(Option(#(BlamedAttribute, List(VXML))), DesugaringError) {
-
-   use first_child <- result.try(list.first(children) |> result.map_error(fn(_) {
-      DesugaringError(blamedlines.Blame("L20", 20, 0, []), "No first child found")
-    }))
+  use first_child <- result.then(
+    list.first(children)
+    |> result.map_error(
+    fn(_) { DesugaringError(blamedlines.Blame("bobby", 0, 0, []), "No first child found") }
+  ))
 
   case first_child {
     V(b, t, attributes, sub_children) -> {
-
       let attribute = list.find(attributes, fn(att) {
         att.key == key
       })
 
       case attribute {
         Error(_) -> {
-          //  check_first_child(sub_children, key)
           use res <- result.try(check_first_child(sub_children, key))
           case res {
             None -> Ok(None)
@@ -74,7 +73,7 @@ fn transform(
 }
 
 fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-    transform(_, param)
+  transform(_, param)
 }
 
 fn desugarer_factory(param: InnerParam) -> Desugarer {
@@ -86,7 +85,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String)
-
 type InnerParam = Param
 
 /// Moves an attribute with key `key` from the first child of a node with tag

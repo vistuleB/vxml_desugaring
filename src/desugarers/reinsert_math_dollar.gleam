@@ -1,11 +1,9 @@
 import gleam/dict
 import gleam/list
 import gleam/option
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
-
-const ins = string.inspect
 
 type Where {
   First

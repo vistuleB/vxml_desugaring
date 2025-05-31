@@ -48,9 +48,11 @@ pub fn replace_in_attribute_values(param: Param) -> Pipe {
     description: DesugarerDescription(
       "replace_in_attribute_values",
       Some(ins(param)),
-      "performs exact match find-replace in every
+      "
+performs exact match find-replace in every
 attribute value of every node using the
-'string.replace' function",
+'string.replace' function
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

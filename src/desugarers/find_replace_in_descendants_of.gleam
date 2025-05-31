@@ -41,12 +41,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(
-    #(String, List(#(String, String))),
-    //    ancestor       from    to
-  )
-
+//                 ancestor       from    to
+type Param =List(#(String, List(#(String, String))))
 type InnerParam = Param
 
 pub fn find_replace_in_descendants_of(param: Param) -> Pipe {

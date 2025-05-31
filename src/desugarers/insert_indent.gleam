@@ -57,7 +57,10 @@ type InnerParam = Nil
 /// VerticalChunk nodes
 pub fn insert_indent() -> Pipe {
   Pipe(
-    description: DesugarerDescription("insert_indent", option.None, "
+    description: DesugarerDescription(
+      "insert_indent",
+      option.None,
+      "
 Adds an 'indent true' attribute-value pair
 to VerticalChunk nodes that whose previous
 sibling is also a VerticalChunk node

@@ -30,9 +30,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(String)
-
+type Param = List(String)
 type InnerParam = Param
 
 pub fn unwrap_tags_if_no_attributes(param: Param) -> Pipe {

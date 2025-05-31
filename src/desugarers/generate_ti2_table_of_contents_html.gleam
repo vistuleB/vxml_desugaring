@@ -5,7 +5,7 @@ import gleam/option
 import gleam/pair
 import gleam/result
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -176,12 +176,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String, String)
-
 // - first string: tag name for table of contents
 // - second string: tag name for individual chapter links
-
+type Param = #(String, String)
 type InnerParam = Param
 
 pub fn generate_ti2_table_of_contents_html(param: Param) -> Pipe {

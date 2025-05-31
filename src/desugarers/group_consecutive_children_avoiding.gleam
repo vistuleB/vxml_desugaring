@@ -1,10 +1,9 @@
 import gleam/list
-import gleam/option.{Some}
-import gleam/string
+import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-const ins = string.inspect
 
 fn is_forbidden(elem: VXML, forbidden: List(String)) {
   case elem {
@@ -59,27 +58,31 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String, List(String), List(String))
-
 //********************************
 // - String: name of wrapper tag
 // - List(String): do not wrap these
 // - List(String): do not even enter these
 //********************************
-
+type Param = #(String, List(String), List(String))
 type InnerParam = Param
 
+/// wrap consecutive children whose tags
+/// are not in the excluded list inside
+/// of a designated parent tag; stay
+/// out of subtrees rooted at tags
+/// in the second argument
 pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "group_consecutive_children_avoiding",
-      Some(ins(param)),
-      "wrap consecutive children whose tags
+      option.Some(ins(param)),
+      "
+wrap consecutive children whose tags
 are not in the excluded list inside
 of a designated parent tag; stay
 out of subtrees rooted at tags
-in the second argument",
+in the second argument
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}

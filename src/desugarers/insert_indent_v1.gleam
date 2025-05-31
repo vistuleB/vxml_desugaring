@@ -37,7 +37,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn insert_indent_v1_desugarer() -> Pipe {

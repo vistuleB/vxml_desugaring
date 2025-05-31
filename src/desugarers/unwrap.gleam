@@ -32,24 +32,27 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(String)
-// list of tags to be unwrapped
-
+type Param = List(String)
 type InnerParam = Param
 
-/// to 'unwrap' a tag means to repalce the
+/// to 'unwrap' a tag means to replace the
 /// tag by its children (replace a V- VXML node by
 /// its children in the tree); this function unwraps
 /// tags based solely on their name, as given by a
 /// list of names of tags to unwrap
 pub fn unwrap(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap", Some(ins(param)), "to 'unwrap' a tag means to repalce the
+    description: DesugarerDescription(
+      "unwrap",
+      Some(ins(param)),
+      "
+to 'unwrap' a tag means to replace the
 tag by its children (replace a V- VXML node by
 its children in the tree); this function unwraps
 tags based solely on their name, as given by a
-list of names of tags to unwrap"),
+list of names of tags to unwrap
+      "
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

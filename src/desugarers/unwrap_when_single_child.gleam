@@ -32,18 +32,21 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(String)
-//      ↖
-//       tag to be
-//       unwrapped
-
+type Param = List(String)
 type InnerParam = Param
 
+/// unwraps based on tag name if node
+/// has no siblings
 pub fn unwrap_when_single_child(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap_when_single_child", Some(ins(param)), "unwraps based on tag name if node
-has no siblings"),
+    description: DesugarerDescription(
+      "unwrap_when_single_child",
+      Some(ins(param)),
+      "
+unwraps based on tag name if node
+has no siblings
+      "
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

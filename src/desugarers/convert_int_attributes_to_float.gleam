@@ -1,11 +1,9 @@
 import gleam/int
 import gleam/list
 import gleam/option.{Some}
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
-
-const ins = string.inspect
 
 fn update_attributes(
   tag: String,
@@ -69,21 +67,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-
-//**********************************
-// List(#(String,                  String))
-//           ↖ tag name,              ↖ attribute name,
-//             matches all              matches all attributes
-//             tag if set to ""         if set to ""
-//
-// ...will convert int to float for all attributes
-// keys that match one of the entries in 'param', per
-// the matching rules above
-//**********************************
+  List(#(String,              String))
+//       ↖ tag name,          ↖ attribute name,
+//         matches all          matches all attributes
+//         tag if set to ""     if set to ""
 
 type InnerParam = Param
 
+/// converts int to float for all attributes
+/// keys that match one of the entries in 'param', per
+/// the matching rules above
 pub fn convert_int_attributes_to_float(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(

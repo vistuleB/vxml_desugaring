@@ -1,17 +1,17 @@
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/pair
 import gleam/option.{None}
 import gleam/result
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
-  Dict(String, #(String, String, String))
-
-//   handle   local path, element id, string value
-//   name     of page     on page     of handle
+  Dict(String, #(String,     String,     String))
+//     handle    local path, element id, string value
+//     name      of page     on page     of handle
 
 fn convert_handles_to_attributes(
   handles: HandleInstances,
@@ -64,7 +64,7 @@ fn get_handles_from_attributes(
 fn children_loop(
   children: List(VXML),
   handles: HandleInstances,
-  param: InnerParam,
+  param: Param,
   local_path: String,
 ) {
   case children {
@@ -86,7 +86,7 @@ fn children_loop(
 
 fn update_local_path(
   node: VXML,
-  param: InnerParam,
+  param: Param,
   local_path: String,
 ) -> Result(String, DesugaringError) {
   let assert V(b, t, attributes, _) = node
@@ -114,7 +114,7 @@ fn handles_dict_factory_transform(
   vxml: VXML,
   handles: HandleInstances,
   is_root: Bool,
-  param: InnerParam,
+  param: Param,
   local_path: String,
 ) -> Result(#(VXML, HandleInstances), DesugaringError) {
   case vxml {
@@ -160,36 +160,12 @@ fn handles_dict_factory_transform(
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  fn(vxml) {
-    use #(vxml, _) <- result.try(handles_dict_factory_transform(
-      vxml,
-      dict.new(),
-      True,
-      param,
-      "",
-    ))
-    Ok(vxml)
-  }
-}
-
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
-}
-
-fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
-}
-
 type Param =
   List(#(String, String))
-
 //        ^        ^
 //  tags to      attribute key
 //  get local    that mentions
 //  path from    local path
-
-type InnerParam = Param
 
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
   Pipe(
@@ -198,9 +174,11 @@ pub fn handles_generate_dictionary(param: Param) -> Pipe {
       None,
       "...",
     ),
-    desugarer: case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
-    }
+    desugarer: fn(vxml) {
+      result.map(
+        handles_dict_factory_transform(vxml, dict.new(), True, param, ""),
+        pair.first
+      )
+    },
   )
 }

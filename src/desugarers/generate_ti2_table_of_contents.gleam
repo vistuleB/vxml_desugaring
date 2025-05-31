@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -128,13 +128,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String, String)
-
-// - first string: tag name for table of contents
-// - second string: tag name for individual chapter links
-// - third string: optional tag name for spacer between two groups of chapter links
-
+type Param = #(String, String)
 type InnerParam = Param
 
 pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {

@@ -19,12 +19,20 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
+/// idempotent desugarer that leaves the
+/// VXML unchanged
 pub fn identity() -> Pipe {
   Pipe(
-    description: DesugarerDescription("identity", option.None, "..."),
+    description: DesugarerDescription(
+      "identity",
+      option.None,
+      "
+idempotent desugarer that leaves the
+VXML unchanged
+      "
+    ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

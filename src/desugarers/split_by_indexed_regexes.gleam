@@ -20,9 +20,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(List(#(rs.RegexWithIndexedGroup, String)), List(String))
-
+type Param = #(List(#(rs.RegexWithIndexedGroup, String)), List(String))
 type InnerParam = Param
 
 pub fn split_by_indexed_regexes(param: Param) -> Pipe {

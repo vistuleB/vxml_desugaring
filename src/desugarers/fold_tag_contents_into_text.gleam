@@ -383,13 +383,18 @@ type InnerParam = Param
 
 pub fn fold_tag_contents_into_text(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(param)), "REQUIRES VERIFICATION/DOCUMENTATION;
+    description: DesugarerDescription(
+      "fold_tag_contents_into_text",
+      option.Some(ins(param)),
+      "
 seemingly replaces specified tags by
 their contents (like 'unwrap'), but with
 the first/last text node of the contents
 being, if any, being glued to surrounding
 text nodes (in end-of-last-line to
-beginning-of-first-line fashion)"),
+beginning-of-first-line fashion)
+      "
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}
       Ok(param) -> desugarer_factory(param)

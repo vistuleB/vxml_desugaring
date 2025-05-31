@@ -17,12 +17,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, String))
-
-//       ↖       ↖
-//       key     value
-
+type Param = List(#(String, String))
+//                   ↖       ↖
+//                   key     value
 type InnerParam = Param
 
 /// filters by identifying nodes whose attributes

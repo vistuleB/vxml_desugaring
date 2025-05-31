@@ -108,9 +108,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String, #(String, String), List(String), Option(String))
-
+type Param = #(String, #(String, String), List(String), Option(String))
 type InnerParam = Param
 
 /// # Param:
@@ -124,7 +122,13 @@ pub fn insert_ti2_counter_commands(param: Param) -> Pipe {
     description: DesugarerDescription(
       "insert_ti2_counter_commands",
       option.Some(string.inspect(param)),
-      "...",
+      "
+# Param:
+ - Counter command to insert . ex: \"::++Counter\"
+ - key-value pair of node to insert counter command
+ - list of strings before counter command
+ - A wrapper tag to wrap the counter command string      
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

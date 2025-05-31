@@ -60,8 +60,14 @@ type InnerParam = Param
 /// relationships
 pub fn unwrap_when_child_of(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap_when_child_of", option.Some(ins(param)), "unwrap nodes based on parent-child
-relationships"),
+    description: DesugarerDescription(
+      "unwrap_when_child_of",
+      option.Some(ins(param)),
+      "
+unwrap nodes based on parent-child
+relationships
+      "
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

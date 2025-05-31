@@ -1,6 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
@@ -70,10 +70,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String, String))
-
-//********************************
-//    old_name, new_name, parent
+  List(#(String,   String,   String))
+//       old_name, new_name, parent
 //********************************
 
 type InnerParam =
@@ -81,7 +79,11 @@ type InnerParam =
 
 pub fn rename_when_child_of(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("rename_when_child_of", None, "..."),
+    description: DesugarerDescription(
+      "rename_when_child_of",
+      option.None,
+      "..."
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

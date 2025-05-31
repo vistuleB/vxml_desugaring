@@ -72,11 +72,13 @@ pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Pipe {
     description: DesugarerDescription(
       "group_siblings_not_separated_by_blank_lines",
       Some(ins(param)),
-      "wrap siblings that are not separated by
+      "
+wrap siblings that are not separated by
 WriterlyBlankLine inside a designated tag
 and remove WriterlyBlankLine elements;
 stays out of subtrees designated by
-tags in the second 'List(String)' argument",
+tags in the second 'List(String)' argument
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}

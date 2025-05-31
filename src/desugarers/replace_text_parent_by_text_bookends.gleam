@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
@@ -44,7 +44,7 @@ pub fn replace_text_parent_by_text_bookends(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "replace_text_parent_by_text_bookends",
-      None,
+      option.None,
       "...",
     ),
     desugarer: case param_to_inner_param(param) {

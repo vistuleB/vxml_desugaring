@@ -58,16 +58,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(infra.triples_to_dict(param))
 }
 
-type Param =
-  List(#(String, String, List(#(String, String))))
 
-//**********************************
-// type Param = List(#(String,                  String,            List((String, String))))
-//                       ↖ insert after          ↖ tag name         ↖ attributes
-//                         tag of this             of new element
-//                         name (except
-//                         if last child)
-//**********************************
+type Param =
+  List(#(String,          String,           List(#(String, String))))
+//       ↖ insert after   ↖ tag name        ↖ attributes
+//         tag of this      of new element
+//         name (except
+//         if last child)
 
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))

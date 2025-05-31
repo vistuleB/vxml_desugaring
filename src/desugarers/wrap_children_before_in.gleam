@@ -49,11 +49,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String, String)
-
 type InnerParam = Param
 
-/// Wraps children of a node that appear before a certain child
-/// #Extra
+/// Wraps children of a node that appear 
+/// before a certain child
+/// #Param
 /// - `parent tag` -
 /// - `tag to stop at` -
 /// - `wrapper tag` -
@@ -62,7 +62,14 @@ pub fn wrap_children_before_in(param: Param) -> Pipe {
     description: DesugarerDescription(
       "wrap_children_before_in",
       Some(ins(param)),
-      "Wraps children of a node that appear before a certain child",
+      "
+Wraps children of a node that appear 
+before a certain child
+#Param
+- `parent tag` -
+- `tag to stop at` -
+- `wrapper tag` -
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

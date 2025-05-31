@@ -73,9 +73,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  String
-
+type Param = String
 type InnerParam = Param
 
 pub fn break_lines_into_span_tooltips(param: Param) -> Pipe {

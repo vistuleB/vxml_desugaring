@@ -1,7 +1,7 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
@@ -72,7 +72,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String))
-//        tag     counter_name
+//       tag     counter_name
 
 type InnerParam =
     Dict(String, List(String))
@@ -83,7 +83,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
   Pipe(
     description: DesugarerDescription(
       "associate_counter_by_prepending_incrementing_attribute",
-      option.Some(string.inspect(param)),
+      option.Some(ins(param)),
       "...",
     ),
     desugarer: case param_to_inner_param(param) {

@@ -113,7 +113,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn pair_double_dollars_together_desugarer() -> Pipe {

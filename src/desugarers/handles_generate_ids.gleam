@@ -1,7 +1,7 @@
 import blamedlines.{type Blame}
 import gleam/int
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
@@ -65,14 +65,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub fn handles_generate_ids() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "handles_generate_ids",
-      None,
+      option.None,
       "unique Id generator for handles",
     ),
     desugarer: case param_to_inner_param(Nil) {

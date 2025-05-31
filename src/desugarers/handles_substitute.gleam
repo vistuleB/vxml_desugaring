@@ -17,9 +17,8 @@ import vxml.{
 
 type HandleInstances =
   Dict(String, #(String, String, String))
-
-//   handle   local path, element id, string value
-//   name     of page     on page     of handle
+//     handle   local path, element id, string value
+//     name     of page     on page     of handle
 
 fn target_is_on_same_chapter(
   current_filename: String, // eg: /article/chapter1
@@ -224,7 +223,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(#(String, String))
-// list of additional key-value pair to attach to anchor tag
+// list of additional key-value pairs to attach to anchor tag
 
 type InnerParam = Param
 
@@ -236,10 +235,17 @@ type InnerParam = Param
 pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
-    description: DesugarerDescription("handles_substitute", option.None, "
-    Looks for handle definitions in GrandWrapper and replaces >>handle occurences with defined value \n
-    Returns error if there's a handle occurence with no definition
-    "),
+    description: DesugarerDescription(
+      "handles_substitute",
+      option.None,
+      "
+Looks for handle definitions in GrandWrapper and
+replaces >>handle occurences with defined value
+Returns error if there's a handle occurence with no definition
+# Param
+list of additional key-value pairs to attach to anchor tag
+      "
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

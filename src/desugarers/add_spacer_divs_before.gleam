@@ -70,15 +70,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-
-//**********************************
-// type Param = List(#(String,                  String))
-//                       ↖ insert divs          ↖ class attribute
-//                         before tags            of inserted div
-//                         of this name
-//                         (except if tag is first child)
-//**********************************
+  List(#(String,            String))
+//       ↖ insert divs      ↖ class attribute
+//         before tags        of inserted div
+//         of this name
+//         (except if tag is first child)
 
 type InnerParam =
   Dict(String, String)

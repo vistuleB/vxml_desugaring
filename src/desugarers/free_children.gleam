@@ -44,16 +44,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, String))
-
-//**********************************
-// type Param = List(#(String,         String      ))
-//                       ↖ tag of      ↖ ...when
-//                         child to      parent is
-//                         free from     this tag
-//                         parent
-//**********************************
+type Param = List(#(String,       String))
+//                  ↖ tag of      ↖ ...when
+//                    child to      parent is
+//                    free from     this tag
+//                    parent
 
 type InnerParam = Param
 
@@ -151,7 +146,7 @@ structure
 with the original attribute values of A
 copied over to the newly created 'copies' of
 A
-",
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

@@ -43,7 +43,11 @@ type Param =
 
 pub fn insert_bookend_text(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("insert_bookend_text", option.None, "..."),
+    description: DesugarerDescription(
+      "insert_bookend_text",
+      option.None,
+      "..."
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

@@ -250,14 +250,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(List(String), List(String), String)
-
+type Param = #(List(String), List(String), String)
 type InnerParam = Param
 
 pub fn pair_bookends(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("pair_bookends", Some(ins(param)), "..."),
+    description: DesugarerDescription(
+      "pair_bookends",
+      option.Some(ins(param)),
+      "..."
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)
