@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect
@@ -79,7 +79,7 @@ fn div_with_id_title_and_menu_items(
   ])
 }
 
-fn the_desugarer(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   let #(
     table_of_contents_tag,
     type_of_chapters_title_component_name,
@@ -149,6 +149,18 @@ fn the_desugarer(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError)
   ))
 }
 
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
+}
+
+fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
 type Param =
   #(String, String, String, Option(String))
 
@@ -166,6 +178,9 @@ pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
       option.None,
       "...",
     ),
-    desugarer: the_desugarer(_, param),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
