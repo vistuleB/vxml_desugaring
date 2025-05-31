@@ -3,10 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn lookup_attributes_by_key(
@@ -74,7 +71,7 @@ fn merge_attributes(
   })
 }
 
-fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
@@ -84,7 +81,7 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
             case child {
               T(_, _) -> Ok(child)
               V(child_blame, child_tag, child_attrs, grandchildren) -> {
-                case list.contains(extra, #(tag, child_tag)) {
+                case list.contains(param, #(tag, child_tag)) {
                   False -> Ok(child)
                   True -> {
                     case merge_attributes(attrs, child_attrs) {
@@ -106,28 +103,37 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Extra =
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   List(#(String, String))
+
+type InnerParam = Param
 
 //********************************
 //       parent, child
 //********************************
 
-pub fn merge_parent_attributes_into_child(extra: Extra) -> Pipe {
+pub fn merge_parent_attributes_into_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "merge_parent_attributes_into_child",
-      option.Some(extra |> ins),
+      option.Some(param |> ins),
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

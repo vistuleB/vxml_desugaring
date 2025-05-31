@@ -1,7 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn is_known_outer_element(vxml: VXML) -> Bool {
@@ -50,7 +50,7 @@ fn is_known_other_element(vxml: VXML) -> Bool {
   list.contains(["Table", "table", "Pause", "p"], tag)
 }
 
-fn param_transform(vxml: VXML, _: List(VXML)) -> infra.EarlyReturn(VXML) {
+fn transform(vxml: VXML, _: List(VXML)) -> infra.EarlyReturn(VXML) {
   use <- infra.on_true_on_false(
     is_known_outer_element(vxml),
     infra.Continue(vxml),
@@ -73,17 +73,28 @@ fn param_transform(vxml: VXML, _: List(VXML)) -> infra.EarlyReturn(VXML) {
   infra.GoBack(vxml)
 }
 
-fn transform_factory() -> infra.EarlyReturnNodeToNodeTransform {
-  param_transform
+fn transform_factory(_param: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.early_return_node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.early_return_node_to_node_desugarer_factory(transform_factory(param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
 
 pub fn lbp_distribute_slices() -> Pipe {
   Pipe(
     description: DesugarerDescription("lbp_distribute_slices", None, "..."),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
