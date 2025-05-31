@@ -1,7 +1,7 @@
 import blamedlines.{type Blame, Blame}
 import gleam/int
 import gleam/list
-import gleam/option.{None}
+import gleam/option.{None, Some}
 import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
@@ -45,9 +45,10 @@ fn transform(node: VXML) -> Result(VXML, DesugaringError) {
           }
         })
 
-      let id_attribute = case list.is_empty(has_handles) {
-        False -> [BlamedAttribute(b, key: "id", value: id)]
-        True -> []
+      let id_attribute = case list.is_empty(has_handles), infra.get_attribute_by_name(node, "id") {
+        False, None -> [BlamedAttribute(b, key: "id", value: id)]
+        False, Some(id_attribute) -> [id_attribute]
+        _, _ -> []
       }
 
       Ok(V(b, t, list.flatten([attributes, id_attribute]), c))
