@@ -1,19 +1,16 @@
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn param_transform(
+fn transform(
   vxml: VXML,
-  extra: Extra,
+  param: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
     V(blame, tag, _, children) -> {
-      let #(del_tag, opening, closing) = extra
+      let #(del_tag, opening, closing) = param
       case del_tag == tag {
         True -> {
           let opening = V(blame, opening, [], [])
@@ -26,24 +23,33 @@ fn param_transform(
   }
 }
 
-type Extra =
+fn transform_factory(param: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, param)
+}
+
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   #(String, String, String)
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
-  param_transform(_, extra)
-}
+type InnerParam = Param
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
-}
-
-pub fn replace_text_parent_by_text_bookends(extra: Extra) -> Pipe {
+pub fn replace_text_parent_by_text_bookends(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "replace_text_parent_by_text_bookends",
       None,
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

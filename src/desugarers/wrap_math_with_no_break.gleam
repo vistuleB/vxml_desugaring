@@ -1,9 +1,6 @@
 import gleam/list
 import gleam/option.{Some}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn wrap_second_element_if_its_math_and_recurse(
@@ -60,7 +57,7 @@ fn wrap_second_element_if_its_math_and_recurse(
   ]
 }
 
-fn wrap_math_with_no_break_transform(
+fn transform(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -78,13 +75,21 @@ fn wrap_math_with_no_break_transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodeTransform {
-  wrap_math_with_no_break_transform
+fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_)
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
 
 pub fn wrap_math_with_no_break() -> Pipe {
   Pipe(
@@ -93,6 +98,9 @@ pub fn wrap_math_with_no_break() -> Pipe {
       option.None,
       "...",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

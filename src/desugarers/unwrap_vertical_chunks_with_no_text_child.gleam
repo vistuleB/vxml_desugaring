@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe } as infra
 import vxml.{type VXML, T, V}
 
 fn is_text(child: VXML) {
@@ -10,7 +10,7 @@ fn is_text(child: VXML) {
   }
 }
 
-pub fn transform(
+fn transform(
   node: VXML,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
@@ -30,13 +30,21 @@ pub fn transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodesTransform {
-  transform
+fn transform_factory(_param: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_)
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory())
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
 
 pub fn unwrap_vertical_chunks_with_no_text_child() -> Pipe {
   Pipe(
@@ -45,6 +53,9 @@ pub fn unwrap_vertical_chunks_with_no_text_child() -> Pipe {
       option.None,
       "...",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

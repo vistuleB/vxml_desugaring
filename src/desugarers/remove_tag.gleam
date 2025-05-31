@@ -1,18 +1,15 @@
 import gleam/list
 import gleam/option
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, V}
 
-fn remove_tag_transform(
+fn transform(
   vxml: VXML,
-  extra: List(String),
+  param: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     V(_, tag, _, _) ->
-      case list.contains(extra, tag) {
+      case list.contains(param, tag) {
         True -> Ok([])
         False -> Ok([vxml])
       }
@@ -20,21 +17,32 @@ fn remove_tag_transform(
   }
 }
 
-fn transform_factory(extra: List(String)) -> infra.NodeToNodesTransform {
-  remove_tag_transform(_, extra)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: List(String)) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(param))
 }
 
-pub fn remove_tag_desugarer(extra: List(String)) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = List(String)
+
+type InnerParam = Param
+
+pub fn remove_tag_desugarer(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "remove_tag_desugarer",
       option.None,
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

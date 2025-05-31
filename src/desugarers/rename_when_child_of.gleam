@@ -1,13 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
@@ -34,56 +31,60 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn param(extra: Extra) -> Param {
-  extra
-  |> list.fold(
-    from: dict.from_list([]),
-    with: fn(
-      state: Dict(String, Dict(String, String)),
-      incoming: #(String, String, String),
-    ) {
-      let #(old_name, new_name, parent_name) = incoming
-      case dict.get(state, parent_name) {
-        Error(Nil) -> {
-          dict.insert(
-            state,
-            parent_name,
-            dict.from_list([#(old_name, new_name)]),
-          )
-        }
-        Ok(existing_dict) -> {
-          dict.insert(
-            state,
-            parent_name,
-            dict.insert(existing_dict, old_name, new_name),
-          )
-        }
-      }
-    },
-  )
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra |> param)
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  let inner_param = param
+    |> list.fold(
+      from: dict.from_list([]),
+      with: fn(
+        state: Dict(String, Dict(String, String)),
+        incoming: #(String, String, String),
+      ) {
+        let #(old_name, new_name, parent_name) = incoming
+        case dict.get(state, parent_name) {
+          Error(Nil) -> {
+            dict.insert(
+              state,
+              parent_name,
+              dict.from_list([#(old_name, new_name)]),
+            )
+          }
+          Ok(existing_dict) -> {
+            dict.insert(
+              state,
+              parent_name,
+              dict.insert(existing_dict, old_name, new_name),
+            )
+          }
+        }
+      },
+    )
+  Ok(inner_param)
 }
 
 type Param =
-  Dict(String, Dict(String, String))
-
-type Extra =
   List(#(String, String, String))
 
 //********************************
 //    old_name, new_name, parent
 //********************************
 
-pub fn rename_when_child_of(extra: Extra) -> Pipe {
+type InnerParam =
+  Dict(String, Dict(String, String))
+
+pub fn rename_when_child_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription("rename_when_child_of", None, "..."),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
