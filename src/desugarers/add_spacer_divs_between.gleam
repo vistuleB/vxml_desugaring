@@ -1,11 +1,7 @@
-import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
-import gleam/option.{None, Some}
+import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn intersperse_children_with_spacers(
@@ -54,17 +50,18 @@ fn desugarer_factory(param: InnerParam) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type InnerParam =
-  Dict(#(String, String), String)
+type Param =
+  List(#(#(String, String), String))
 
 //**********************************
 // type Param = List(#(String,                String),     String))
-//                       ↖ insert divs between ↗             ↖ class name         
+//                       ↖ insert divs between ↗             ↖ class name
 //                          adjacent siblings                  for inserted div
 //                         of these two names
 //**********************************
-type Param =
-  List(#(#(String, String), String))
+
+type InnerParam =
+  Dict(#(String, String), String)
 
 pub fn add_spacer_divs_between(param: Param) -> Pipe {
   Pipe(
