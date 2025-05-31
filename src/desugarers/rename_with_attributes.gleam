@@ -2,6 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/dict.{type Dict}
 import gleam/result
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, V, BlamedAttribute}
 
@@ -72,7 +73,7 @@ pub fn rename_with_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "rename_with_attributes",
-      option.None,
+      option.Some(ins(param)),
       "..."
     ),
     desugarer: case param_to_inner_param(param) {
