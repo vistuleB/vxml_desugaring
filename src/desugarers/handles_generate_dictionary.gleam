@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option.{None}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
@@ -160,6 +160,27 @@ fn handles_dict_factory_transform(
   }
 }
 
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  fn(vxml) {
+    use #(vxml, _) <- result.try(handles_dict_factory_transform(
+      vxml,
+      dict.new(),
+      True,
+      param,
+      "",
+    ))
+    Ok(vxml)
+  }
+}
+
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
 type Param =
   List(#(String, String))
 
@@ -177,15 +198,9 @@ pub fn handles_generate_dictionary(param: Param) -> Pipe {
       None,
       "...",
     ),
-    desugarer: fn(vxml) {
-      use #(vxml, _) <- result.try(handles_dict_factory_transform(
-        vxml,
-        dict.new(),
-        True,
-        param,
-        "",
-      ))
-      Ok(vxml)
-    },
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
