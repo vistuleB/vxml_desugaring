@@ -3,9 +3,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -95,8 +93,8 @@ fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML 
   ])
 }
 
-fn the_desugarer(root: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
-  let #(table_of_contents_tag, chapter_link_component_name) = extra
+fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+  let #(table_of_contents_tag, chapter_link_component_name) = param
   let sections = infra.descendants_with_tag(root, "Section")
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
@@ -118,20 +116,31 @@ fn the_desugarer(root: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   ))
 }
 
-type Extra =
-  #(String, String)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
+}
 
-// - first string: tag name for table of contents
-// - second string: tag name for individual chapter links
-// - third string: optional tag name for spacer between two groups of chapter links
+fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
 
-pub fn generate_ti2_table_of_contents(extra: Extra) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = #(String, String)
+type InnerParam = Param
+
+pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "generate_ti2_table_of_contents",
       option.None,
       "...",
     ),
-    desugarer: the_desugarer(_, extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

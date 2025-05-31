@@ -1,15 +1,15 @@
-import gleam/option.{None}
+import gleam/option
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
 import vxml.{type VXML, T, V}
 
-fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      let #(from, to) = extra
+      let #(from, to) = param
       case from == tag {
         False -> Ok(vxml)
         True -> Ok(V(blame, to, attrs, children))
@@ -18,26 +18,35 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  let #(_, to) = extra
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
+}
+
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  let #(_, to) = param
   case infra.valid_tag(to) {
-    True -> param_transform(_, extra)
-    False -> fn(_) {
-      Error(DesugaringError(infra.no_blame, "invalid target tag name '" <> to <> "'"))
-    }
+    True -> Ok(param)
+    False -> Error(DesugaringError(infra.no_blame, "invalid target tag name '" <> to <> "'"))
   }
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
-}
+type Param = #(String, String)
+type InnerParam = Param
 
-type Extra =
-  #(String, String)
-
-pub fn rename(extra: Extra) -> Pipe {
+pub fn rename(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("rename", None, "renames one tag"),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      "rename",
+      option.None,
+      "renames one tag"
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

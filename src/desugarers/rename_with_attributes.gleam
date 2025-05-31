@@ -1,16 +1,16 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import gleam/dict.{type Dict}
 import gleam/result
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, V, BlamedAttribute}
 
-fn param_transform(
+fn transform(
   vxml: VXML,
-  param: Param,
+  param: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   use blame, tag, attributes, children <- infra.on_t_on_v(
-    vxml, 
+    vxml,
     fn(_, _) { Ok(vxml) }
   )
 
@@ -38,43 +38,46 @@ fn param_transform(
   Ok(V(blame, new_name, list.append(attributes, attributes_to_add), children))
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  case validate_extra(extra) {
-    Ok(_) -> param_transform(_, extra |> extra_2_param)
-    Error(e) -> fn(_) { Error(e) }
-  }
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-fn validate_extra(extra: Extra) -> Result(Nil, DesugaringError) {
-  extra
-  |> list.map(fn (tuple) { 
-    let #(_, to, _) = tuple
-    case infra.valid_tag(to) {
-      True -> Ok(Nil)
-      False -> Error(DesugaringError(infra.no_blame, "invalid tag name: '" <> to <> "'"))
-    }
-  })
-  |> result.all
-  |> result.map(fn(_) {Nil})
-}
-
-fn extra_2_param(extra: Extra) -> Param {
-  infra.triples_to_dict(extra)
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  use _ <- result.try(
+    param
+    |> list.map(fn (tuple) {
+      let #(_, to, _) = tuple
+      case infra.valid_tag(to) {
+        True -> Ok(Nil)
+        False -> Error(DesugaringError(infra.no_blame, "invalid tag name: '" <> to <> "'"))
+      }
+    })
+    |> result.all
+    |> result.map(fn(_) {Nil})
+  )
+  Ok(infra.triples_to_dict(param))
 }
 
 type Param =
-  Dict(String, #(String, List(#(String, String))))
-
-type Extra =
   List(#(String, String, List(#(String, String))))
 
-pub fn rename_with_attributes(extra: Extra) -> Pipe {
+type InnerParam =
+  Dict(String, #(String, List(#(String, String))))
+
+pub fn rename_with_attributes(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("rename_with_attributes", None, "..."),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      "rename_with_attributes",
+      option.None,
+      "..."
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

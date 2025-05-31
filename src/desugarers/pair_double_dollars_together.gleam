@@ -2,10 +2,7 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
@@ -103,13 +100,20 @@ pub fn pair_double_dollars_together_transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodeTransform {
+fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
   pair_double_dollars_together_transform
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
 
 pub fn pair_double_dollars_together_desugarer() -> Pipe {
   Pipe(
@@ -118,6 +122,9 @@ pub fn pair_double_dollars_together_desugarer() -> Pipe {
       option.None,
       "...",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

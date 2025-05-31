@@ -1,11 +1,8 @@
 import gleam/option
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn remove_vertical_chunks_around_single_children_transform(
+fn transform(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -23,13 +20,21 @@ fn remove_vertical_chunks_around_single_children_transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodeTransform {
-  remove_vertical_chunks_around_single_children_transform
+fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_)
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
 
 pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
   Pipe(
@@ -38,6 +43,9 @@ pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
       option.None,
       "...",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

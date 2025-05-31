@@ -1,13 +1,10 @@
 import gleam/list
 import gleam/option.{None}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T}
 
-fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   case vxml {
     T(blame, lines) -> {
       case lines {
@@ -32,13 +29,20 @@ fn param_transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory() -> infra.NodeToNodeTransform {
-  param_transform
+fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_)
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
 
 pub fn replace_multiple_spaces_by_one() -> Pipe {
   Pipe(
@@ -47,6 +51,9 @@ pub fn replace_multiple_spaces_by_one() -> Pipe {
       None,
       "...",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

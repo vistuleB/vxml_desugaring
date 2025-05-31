@@ -1,4 +1,4 @@
-import blamedlines.{type Blame, Blame}
+import blamedlines.{type Blame}
 import gleam/float
 import gleam/int
 import gleam/list
@@ -6,15 +6,10 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
 import infrastructure as infra
 import roman
-import vxml.{
-  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
-  BlamedContent, T, V,
-}
+import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 type CounterType {
   ArabicCounter
@@ -38,13 +33,9 @@ type StringAndRegexVersion {
 }
 
 const loud = StringAndRegexVersion(string: "::", regex_string: "::")
-
 const soft = StringAndRegexVersion(string: "..", regex_string: "\\.\\.")
-
 const increment = StringAndRegexVersion(string: "++", regex_string: "\\+\\+")
-
 const decrement = StringAndRegexVersion(string: "--", regex_string: "--")
-
 const no_change = StringAndRegexVersion(string: "øø", regex_string: "øø")
 
 fn mutate(
@@ -710,7 +701,7 @@ fn our_two_regexes() -> #(Regexp, Regexp) {
 type State =
   #(List(CounterInstance), List(HandleAssignment))
 
-fn transform_factory() -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
+fn transform_factory(_: InnerParam) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
   let regexes = our_two_regexes()
   infra.StatefulDownAndUpNodeToNodeTransform(
     v_before_transforming_children: fn(vxml, state) {
@@ -721,12 +712,19 @@ fn transform_factory() -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
   )
 }
 
-fn desugarer_factory() -> infra.Desugarer {
+fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
   infra.stateful_down_up_node_to_node_desugarer_factory(
-    transform_factory(),
+    transform_factory(param),
     #([], []),
   )
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
 
 /// Substitutes counters by their numerical
 /// value converted to string form and assigns those
@@ -817,8 +815,12 @@ attributes of the form
 handle_<handleName> <counterValue>
 
 on the parent tag to be later used by the
-'handles_generate_dictionary' desugarer",
+'handles_generate_dictionary' desugarer
+      ",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

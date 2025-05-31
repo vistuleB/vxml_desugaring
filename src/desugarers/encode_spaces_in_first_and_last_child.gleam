@@ -1,19 +1,14 @@
 import gleam/list
 import gleam/option
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,Pipe} as infra
 import vxml.{type VXML, T, V}
 
-const ins = string.inspect
-
-fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case list.contains(extra, tag) {
+      case list.contains(param, tag) {
         True -> {
           Ok(V(
             blame,
@@ -30,24 +25,31 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Extra =
-  List(String)
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-pub fn encode_spaces_in_first_and_last_child(extra: Extra) -> Pipe {
+type Param = List(String)
+type InnerParam = Param
+
+pub fn encode_spaces_in_first_and_last_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "encode_spaces_in_first_and_last_child",
-      option.Some(ins(extra)),
+      option.Some(ins(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

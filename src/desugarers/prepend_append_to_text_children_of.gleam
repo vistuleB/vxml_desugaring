@@ -3,10 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -39,7 +36,7 @@ fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   )
 }
 
-fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
@@ -67,8 +64,8 @@ fn param_transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn extra_to_param(extra: Extra) -> Param {
-  extra
+fn param_to_inner_param(param: Param) ->  Result(InnerParam, DesugaringError) {
+  param
   |> list.map(fn(tuple) {
     let #(t1, t2, tag) = tuple
     let contents1 = string.split(t1, "\n")
@@ -90,33 +87,36 @@ fn extra_to_param(extra: Extra) -> Param {
     #(tag, #(v1, v2))
   })
   |> dict.from_list
+  |> Ok
 }
 
-type Param =
-  Dict(String, #(VXML, VXML))
-
-//***********************************
-// - String: text to prepend
-// - String: text to append
-// - String: parent tag
-type Extra =
-  List(#(String, String, String))
-
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
+fn desugarer_factory(param: InnerParam) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-pub fn prepend_append_to_text_children_of(extra: Extra) -> Pipe {
+type Param =
+  List(#(String, String, String))
+// - String: text to prepend
+// - String: text to append
+// - String: parent tag
+
+type InnerParam =
+  Dict(String, #(VXML, VXML))
+
+pub fn prepend_append_to_text_children_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "prepend_append_to_text_children_of",
-      Some(ins(extra)),
+      Some(ins(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra |> extra_to_param),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

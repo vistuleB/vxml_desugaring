@@ -1,20 +1,17 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-pub fn wrap_element_children_transform(
+fn transform(
   vxml: VXML,
-  extra: #(List(String), String),
+  param: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attributes, children) -> {
-      let #(element_tags, wrap_with) = extra
+      let #(element_tags, wrap_with) = param
       case list.contains(element_tags, tag) {
         True -> {
           let new_children =
@@ -27,23 +24,31 @@ pub fn wrap_element_children_transform(
   }
 }
 
-fn transform_factory(
-  extra: #(List(String), String),
-) -> infra.NodeToNodeTransform {
-  wrap_element_children_transform(_, extra)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: #(List(String), String)) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-pub fn wrap_element_children_desugarer(extra: #(List(String), String)) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = #(List(String), String)
+type InnerParam = Param
+
+pub fn wrap_element_children_desugarer(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "wrap_element_children_desugarer",
-      option.Some(string.inspect(extra)),
+      option.Some(string.inspect(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

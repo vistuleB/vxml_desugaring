@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import vxml.{type VXML, BlamedContent, T, V}
 
 fn append_to_prev_text_node(fold_as: String, node: VXML) -> List(VXML) {
   case node {
@@ -30,15 +27,15 @@ fn append_to_prev_text_node(fold_as: String, node: VXML) -> List(VXML) {
   }
 }
 
-fn param_transform(
+fn transform(
   vxml: VXML,
   _: List(VXML),
   _: List(VXML),
   _: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  extra: Extra,
+  param: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
-  let #(tag_to_fold, fold_as) = extra
+  let #(tag_to_fold, fold_as) = param
 
   case vxml {
     V(_, tag, _, _) if tag == tag_to_fold -> Ok([])
@@ -54,26 +51,34 @@ fn param_transform(
   }
 }
 
-type Extra =
-  #(String, String)
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(param: InnerParam) -> infra.NodeToNodesFancyTransform {
   fn(node, ancestors, s1, s2, s3) {
-    param_transform(node, ancestors, s1, s2, s3, extra)
+    transform(node, ancestors, s1, s2, s3, param)
   }
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(param))
 }
 
-pub fn fold_tag_into_prev_text_node(extra: Extra) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = #(String, String)
+type InnerParam = Param
+
+pub fn fold_tag_into_prev_text_node(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "fold_tag_into_prev_text_node",
       None,
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

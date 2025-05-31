@@ -3,9 +3,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect
@@ -81,22 +79,20 @@ fn div_with_id_title_and_menu_items(
   ])
 }
 
-fn the_desugarer(root: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   let #(
     table_of_contents_tag,
     type_of_chapters_title_component_name,
     chapter_link_component_name,
     maybe_spacer,
-  ) = extra
+  ) = param
   let chapters = infra.children_with_tag(root, "Chapter")
   let bootcamps = infra.children_with_tag(root, "Bootcamp")
 
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
       chapters
-      |> list.index_map(fn(chapter: VXML, index) {
-        chapter_link(chapter_link_component_name, chapter, index + 1)
-      })
+      |> list.index_map(fn(chapter: VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) })
       |> result.all
     },
     with_on_error: Error,
@@ -151,7 +147,15 @@ fn the_desugarer(root: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   ))
 }
 
-type Extra =
+fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
+  at_root(_, param)
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   #(String, String, String, Option(String))
 
 // - first string: tag name for table of contents
@@ -159,13 +163,18 @@ type Extra =
 // - third string: tag name for individual chapter links
 // - third string: optional tag name for spacer between two groups of chapter links
 
-pub fn generate_lbp_table_of_contents(extra: Extra) -> Pipe {
+type InnerParam = Param
+
+pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "generate_lbp_table_of_contents",
       option.None,
       "...",
     ),
-    desugarer: the_desugarer(_, extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

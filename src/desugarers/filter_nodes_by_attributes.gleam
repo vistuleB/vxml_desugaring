@@ -2,12 +2,12 @@ import desugarers/remove_outside_subtrees.{remove_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Pipe, DesugarerDescription, Pipe}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, Pipe}
 import vxml.{type VXML, V}
 
-fn matches_a_selector(vxml: VXML, extra: Extra) -> Bool {
+fn matches_a_selector(vxml: VXML, param: InnerParam) -> Bool {
   let assert V(b, _, attrs, _) = vxml
-  list.any(extra, fn(selector) {
+  list.any(param, fn(selector) {
     let #(path, key, value) = selector
     {
       string.contains(b.filename, path)
@@ -21,37 +21,44 @@ fn matches_a_selector(vxml: VXML, extra: Extra) -> Bool {
   })
 }
 
-type Extra =
-  List(#(String, String, String))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-//         ↖        ↖       ↖
-//         path     key     value
+//                  path     key     value
+type Param = List(#(String, String, String))
+type InnerParam = Param
 
 /// filters by identifying nodes whose
 /// blame.filename contain the extra.path
-/// as a substring and whose attributes 
+/// as a substring and whose attributes
 /// match at least one of the given #(key, value)
 /// pairs, with a match counting as true
 /// if key == ""; keeps only nodes that
-/// are descendants of such nodes, or 
+/// are descendants of such nodes, or
 /// ancestors of such nodes
-pub fn filter_nodes_by_attributes(extra: Extra) -> Pipe {
+pub fn filter_nodes_by_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "filter_nodes_by_attributes",
-      option.Some(extra |> ins),
-      "filters by identifying nodes whose
+      option.Some(ins(param)),
+      "
+filters by identifying nodes whose
 blame.filename contain the extra.path
-as a substring and whose attributes 
+as a substring and whose attributes
 match at least one of the given #(key, value)
 pairs, with a match counting as true
 if key == \"\"; keeps only nodes that
-are descendants of such nodes, or 
-ancestors of such nodes",
+are descendants of such nodes, or
+ancestors of such nodes
+      ",
     ),
-    desugarer: case extra {
-      [] -> fn(vxml) { Ok(vxml) }
-      _ -> remove_outside_subtrees(matches_a_selector(_, extra)).desugarer
-    },
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> case inner_param {
+        [] -> fn(vxml) { Ok(vxml) }
+        _ -> remove_outside_subtrees(matches_a_selector(_, inner_param)).desugarer
+      }
+    }
   )
 }

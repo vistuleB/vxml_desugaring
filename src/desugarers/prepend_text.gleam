@@ -2,10 +2,10 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{ type VXML, BlamedContent, T, V }
 
-fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
+fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
@@ -30,29 +30,33 @@ fn param_transform(vxml: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
+fn desugarer_factory(param: InnerParam) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Param =
-  Dict(String, String)
+fn param_to_inner_param(param: Param) ->  Result(InnerParam, DesugaringError) {
+ infra.dict_from_list_with_desugaring_error(param)
+}
 
-type Extra =
+type Param =
   List(#(String, String))
 //        tag     text
 
-pub fn prepend_text(extra: Extra) -> Pipe {
+type InnerParam =
+  Dict(String, String)
+
+pub fn prepend_text(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "prepend_text",
-      option.Some(string.inspect(extra)),
+      option.Some(string.inspect(param)),
       "...",
     ),
-    desugarer: case infra.dict_from_list_with_desugaring_error(extra) {
+    desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)
     }

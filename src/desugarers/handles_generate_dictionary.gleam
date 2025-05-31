@@ -1,19 +1,17 @@
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/pair
 import gleam/option.{None}
 import gleam/result
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
-  Dict(String, #(String, String, String))
-
-//   handle   local path, element id, string value
-//   name     of page     on page     of handle
+  Dict(String, #(String,     String,     String))
+//     handle    local path, element id, string value
+//     name      of page     on page     of handle
 
 fn convert_handles_to_attributes(
   handles: HandleInstances,
@@ -66,19 +64,19 @@ fn get_handles_from_attributes(
 fn children_loop(
   children: List(VXML),
   handles: HandleInstances,
-  extra: Extra,
+  param: Param,
   local_path: String,
 ) {
   case children {
     [] -> Ok(#(children, handles))
     [first, ..rest] -> {
       use #(updated_child, updated_handles) <- result.try(
-        handles_dict_factory_transform(first, handles, False, extra, local_path),
+        handles_dict_factory_transform(first, handles, False, param, local_path),
       )
       use #(updated_children, updated_handles) <- result.try(children_loop(
         rest,
         updated_handles,
-        extra,
+        param,
         local_path,
       ))
       Ok(#(list.flatten([[updated_child], updated_children]), updated_handles))
@@ -88,12 +86,12 @@ fn children_loop(
 
 fn update_local_path(
   node: VXML,
-  extra: Extra,
+  param: Param,
   local_path: String,
 ) -> Result(String, DesugaringError) {
   let assert V(b, t, attributes, _) = node
   case
-    list.find(extra, fn(e) {
+    list.find(param, fn(e) {
       let #(tag, _) = e
       tag == t
     })
@@ -116,13 +114,13 @@ fn handles_dict_factory_transform(
   vxml: VXML,
   handles: HandleInstances,
   is_root: Bool,
-  extra: Extra,
+  param: Param,
   local_path: String,
 ) -> Result(#(VXML, HandleInstances), DesugaringError) {
   case vxml {
     V(b, t, attributes, children) -> {
-      // check local path in extra list
-      use local_path <- result.try(update_local_path(vxml, extra, local_path))
+      // check local path in param list
+      use local_path <- result.try(update_local_path(vxml, param, local_path))
 
       let #(attributes, extracted_handles) =
         attributes
@@ -139,7 +137,7 @@ fn handles_dict_factory_transform(
       use #(updated_children, updated_handles) <- result.try(children_loop(
         children,
         handles,
-        extra,
+        param,
         local_path,
       ))
 
@@ -162,15 +160,14 @@ fn handles_dict_factory_transform(
   }
 }
 
-type Extra =
+type Param =
   List(#(String, String))
-
 //        ^        ^
 //  tags to      attribute key
 //  get local    that mentions
 //  path from    local path
 
-pub fn handles_generate_dictionary(extra: Extra) -> Pipe {
+pub fn handles_generate_dictionary(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "handles_generate_dictionary",
@@ -178,14 +175,10 @@ pub fn handles_generate_dictionary(extra: Extra) -> Pipe {
       "...",
     ),
     desugarer: fn(vxml) {
-      use #(vxml, _) <- result.try(handles_dict_factory_transform(
-        vxml,
-        dict.new(),
-        True,
-        extra,
-        "",
-      ))
-      Ok(vxml)
+      result.map(
+        handles_dict_factory_transform(vxml, dict.new(), True, param, ""),
+        pair.first
+      )
     },
   )
 }

@@ -17,9 +17,8 @@ import vxml.{
 
 type HandleInstances =
   Dict(String, #(String, String, String))
-
-//   handle   local path, element id, string value
-//   name     of page     on page     of handle
+//     handle   local path, element id, string value
+//     name     of page     on page     of handle
 
 fn target_is_on_same_chapter(
   current_filename: String, // eg: /article/chapter1
@@ -34,7 +33,7 @@ fn target_is_on_same_chapter(
 fn construct_hyperlink(
   blame: Blame,
   handle: #(String, String, String),
-  extra: Extra
+  param: InnerParam
 ) {
   let #(id, filename, value) = handle
   let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
@@ -43,7 +42,7 @@ fn construct_hyperlink(
   }
 
   V(blame, tag, list.flatten([
-      list.map(extra, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
+      list.map(param, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
       [
         BlamedAttribute(blame, "href", filename <> "?id=" <> id),
         BlamedAttribute(blame, "class", classes),
@@ -58,7 +57,7 @@ fn handle_handle_matches(
   matches: List(regexp.Match),
   splits: List(String),
   handles: HandleInstances,
-  extra: Extra
+  param: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
   case matches {
     [] -> {
@@ -82,12 +81,12 @@ fn handle_handle_matches(
             rest,
             rest_splits,
             handles,
-            extra
+            param
           ))
           Ok(
             list.flatten([
               [T(blame, [BlamedContent(blame, first_split)])],
-              [construct_hyperlink(blame, handle, extra)],
+              [construct_hyperlink(blame, handle, param)],
               rest_content,
             ]),
           )
@@ -100,27 +99,27 @@ fn handle_handle_matches(
 fn print_handle(
   blamed_line: BlamedContent,
   handles: HandleInstances,
-  extra: Extra
+  param: InnerParam
 
 ) -> Result(List(VXML), DesugaringError) {
   let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
 
   let matches = regexp.scan(re, blamed_line.content)
   let splits = regexp.split(re, blamed_line.content)
-  handle_handle_matches(blamed_line.blame, matches, splits, handles, extra)
+  handle_handle_matches(blamed_line.blame, matches, splits, handles, param)
 }
 
 fn print_handle_for_contents(
   contents: List(BlamedContent),
   handles: HandleInstances,
-  extra: Extra
+  param: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
 
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
-      use updated_line <- result.try(print_handle(first, handles, extra))
-      use updated_rest <- result.try(print_handle_for_contents(rest, handles, extra))
+      use updated_line <- result.try(print_handle(first, handles, param))
+      use updated_rest <- result.try(print_handle_for_contents(rest, handles, param))
 
       Ok(list.flatten([updated_line, updated_rest]))
     }
@@ -136,7 +135,7 @@ fn get_handles_from_root_attributes(
       att.key == "handle"
     })
 
-  let extracted_handles = 
+  let extracted_handles =
     handle_attributes
     |> list.fold(dict.new(), fn(acc, att) {
       let assert [handle_name, id, filename, value] = att.value |> string.split(" | ")
@@ -169,14 +168,14 @@ fn counter_handles_transform_to_get_handles(
 fn counter_handles_transform_to_replace_handles(
   vxml: VXML,
   handles: HandleInstances,
-  extra: Extra
+  param: InnerParam
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   case vxml {
     T(_, contents) -> {
       use update_contents <- result.try(print_handle_for_contents(
         contents,
         handles,
-        extra
+        param
       ))
       Ok(#(update_contents, handles))
     }
@@ -192,10 +191,7 @@ fn counter_handles_transform_to_replace_handles(
   }
 }
 
-type Extra = List(#(String, String)) 
-// list of additional key-value pair to attach to anchor tag
-
-fn counter_handle_transform_factory(extra: Extra) -> infra.StatefulDownAndUpNodeToNodesTransform(
+fn counter_handle_transform_factory(param: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
   HandleInstances,
 ) {
   infra.StatefulDownAndUpNodeToNodesTransform(
@@ -208,32 +204,51 @@ fn counter_handle_transform_factory(extra: Extra) -> infra.StatefulDownAndUpNode
     },
     after_transforming_children: fn(vxml, _, new) {
       use #(vxml, handles) <- result.try(
-        counter_handles_transform_to_replace_handles(vxml, new, extra),
+        counter_handles_transform_to_replace_handles(vxml, new, param),
       )
       Ok(#(vxml, handles))
     },
   )
 }
 
-fn desugarer_factory(extra) -> Desugarer {
+fn desugarer_factory(param) -> Desugarer {
   infra.stateful_down_up_node_to_nodes_desugarer_factory(
-    counter_handle_transform_factory(extra),
+    counter_handle_transform_factory(param),
     dict.new(),
   )
 }
 
-/// Looks for handle definitions in GrandWrapper and 
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = List(#(String, String))
+// list of additional key-value pairs to attach to anchor tag
+
+type InnerParam = Param
+
+/// Looks for handle definitions in GrandWrapper and
 /// replaces >>handle occurences with defined value
 /// Returns error if there's a handle occurence with no definition
-/// # Extra
+/// # Param
 /// list of additional key-value pairs to attach to anchor tag
-pub fn handles_substitute(extra: Extra) -> Pipe {
+pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
-    description: DesugarerDescription("handles_substitute", option.None, "
-    Looks for handle definitions in GrandWrapper and replaces >>handle occurences with defined value \n
-    Returns error if there's a handle occurence with no definition
-    "),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      "handles_substitute",
+      option.None,
+      "
+Looks for handle definitions in GrandWrapper and
+replaces >>handle occurences with defined value
+Returns error if there's a handle occurence with no definition
+# Param
+list of additional key-value pairs to attach to anchor tag
+      "
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

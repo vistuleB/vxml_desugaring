@@ -1,10 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn updated_node(
@@ -51,8 +48,8 @@ fn updated_node(
   V(blame, tag, attributes, new_children)
 }
 
-fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
-  let #(counter_command, #(key, value), prefixes, wrapper) = extra
+fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+  let #(counter_command, #(key, value), prefixes, wrapper) = param
 
   case vxml {
     T(_, _) -> Ok(vxml)
@@ -103,26 +100,39 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(param_transform(_, extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform(_, param))
 }
 
-type Extra =
-  #(String, #(String, String), List(String), Option(String))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-/// # Extra:
-/// 
+type Param = #(String, #(String, String), List(String), Option(String))
+type InnerParam = Param
+
+/// # Param:
+///
 ///  - Counter command to insert . ex: "::++Counter"
 ///  - key-value pair of node to insert counter command
 ///  - list of strings before counter command
 ///  - A wrapper tag to wrap the counter command string
-pub fn insert_ti2_counter_commands(extra: Extra) -> Pipe {
+pub fn insert_ti2_counter_commands(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "insert_ti2_counter_commands",
-      option.Some(string.inspect(extra)),
-      "...",
+      option.Some(string.inspect(param)),
+      "
+# Param:
+ - Counter command to insert . ex: \"::++Counter\"
+ - key-value pair of node to insert counter command
+ - list of strings before counter command
+ - A wrapper tag to wrap the counter command string      
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

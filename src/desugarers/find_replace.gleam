@@ -1,25 +1,35 @@
-import gleam/option.{Some}
+import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
-  let #(string_pairs, forbidden_parents) = extra
+fn transform_factory(param: InnerParam) -> infra.NodeToNodesFancyTransform {
+  let #(string_pairs, forbidden_parents) = param
   infra.find_replace_in_node_transform_version(_, string_pairs)
   |> infra.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(param))
 }
 
-type Extra =
-  #(List(#(String, String)), List(String))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-//         from    to        keep_out_of
+//                    from    to        keep_out_of
+type Param = #(List(#(String, String)), List(String))
+type InnerParam = Param
 
-pub fn find_replace(extra: Extra) -> Pipe {
+pub fn find_replace(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("find_replace", Some(ins(extra)), "..."),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      "find_replace",
+      option.Some(ins(param)),
+      "..."
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
