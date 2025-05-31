@@ -6,15 +6,10 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
 import infrastructure as infra
 import roman
-import vxml.{
-  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
-  BlamedContent, T, V,
-}
+import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 type CounterType {
   ArabicCounter
@@ -38,13 +33,9 @@ type StringAndRegexVersion {
 }
 
 const loud = StringAndRegexVersion(string: "::", regex_string: "::")
-
 const soft = StringAndRegexVersion(string: "..", regex_string: "\\.\\.")
-
 const increment = StringAndRegexVersion(string: "++", regex_string: "\\+\\+")
-
 const decrement = StringAndRegexVersion(string: "--", regex_string: "--")
-
 const no_change = StringAndRegexVersion(string: "øø", regex_string: "øø")
 
 fn mutate(
@@ -824,7 +815,8 @@ attributes of the form
 handle_<handleName> <counterValue>
 
 on the parent tag to be later used by the
-'handles_generate_dictionary' desugarer",
+'handles_generate_dictionary' desugarer
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error)}
