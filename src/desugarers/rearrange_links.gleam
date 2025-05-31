@@ -182,7 +182,7 @@ fn match_internal(
       }
 
     [Space, ..pattern_rest] -> case atomized {
-      [V(_, "__OneSpace", _, _), ..atomized_rest] -> {
+      [V(_, tag, _, _), ..atomized_rest] if tag == "__OneSpace" || tag == "__OneNewLine" -> {
         match_internal(
           atomized_rest |> fast_forward_past_spaces,
           pattern_rest,
