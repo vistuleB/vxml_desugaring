@@ -2,9 +2,7 @@ import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
-} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 const ins = string.inspect

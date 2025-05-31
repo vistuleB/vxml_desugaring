@@ -1,4 +1,4 @@
-import blamedlines.{type Blame, Blame}
+import blamedlines.{type Blame}
 import gleam/float
 import gleam/int
 import gleam/list

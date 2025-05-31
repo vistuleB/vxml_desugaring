@@ -2,10 +2,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 const ins = string.inspect
@@ -13,10 +10,10 @@ const ins = string.inspect
 fn update_attributes(
   tag: String,
   attributes: List(BlamedAttribute),
-  extra: Extra,
+  param: InnerParam,
 ) -> List(BlamedAttribute) {
   list.fold(
-    over: extra,
+    over: param,
     from: attributes,
     with: fn(
       current_attributes: List(BlamedAttribute),
@@ -48,14 +45,31 @@ fn update_attributes(
   )
 }
 
-fn transform_param(node: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attributes, children) -> {
-      Ok(V(blame, tag, update_attributes(tag, attributes, extra), children))
+      Ok(V(blame, tag, update_attributes(tag, attributes, param), children))
     }
   }
 }
+
+
+
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  infra.node_to_node_desugarer_factory(transform(_, param))
+}
+
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
+  List(#(String, String))
 
 //**********************************
 // List(#(String,                  String))
@@ -64,27 +78,22 @@ fn transform_param(node: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
 //             tag if set to ""         if set to ""
 //
 // ...will convert int to float for all attributes
-// keys that match one of the entries in 'extra', per
+// keys that match one of the entries in 'param', per
 // the matching rules above
 //**********************************
-type Extra =
-  List(#(String, String))
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  infra.node_to_node_desugarer_factory(transform_param(_, extra))
-}
+type InnerParam = Param
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
-}
-
-pub fn convert_int_attributes_to_float(extra: Extra) -> Pipe {
+pub fn convert_int_attributes_to_float(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "convert_int_attributes_to_float",
-      Some(ins(extra)),
+      Some(ins(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

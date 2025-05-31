@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -31,7 +31,7 @@ fn inside_text_node(node: VXML) -> VXML {
 }
 
 fn fold_tags_into_text_children_accumulator(
-  tags: Extra,
+  tags: Param,
   already_processed: List(VXML),
   optional_last_t: Option(VXML),
   optional_last_v: Option(VXML),
@@ -42,9 +42,9 @@ fn fold_tags_into_text_children_accumulator(
   //   reverse order (last stuff is first in the list)
   //
   // - optional_last_t is:
-  //   * the node right before optional_last_v if 
+  //   * the node right before optional_last_v if
   //     optional_last_v != None
-  //   * the last node before remaining if 
+  //   * the last node before remaining if
   //     optional_last_v == None
   //
   // - optional_last_v is a possible previoux v-node that
@@ -350,7 +350,7 @@ fn fold_tags_into_text_children_accumulator(
   }
 }
 
-fn param_transform(node: VXML, tags: Extra) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, tags: Param) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
@@ -361,29 +361,38 @@ fn param_transform(node: VXML, tags: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
+fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: Param) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
 }
 
 //*********************************
 // list of tags whose contents should
 // be folded into surrounding text
-type Extra =
+type Param =
   List(String)
 
-pub fn fold_tag_contents_into_text(extra: Extra) -> Pipe {
+type InnerParam = Param
+
+pub fn fold_tag_contents_into_text(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "REQUIRES VERIFICATION/DOCUMENTATION;
+    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(param)), "REQUIRES VERIFICATION/DOCUMENTATION;
 seemingly replaces specified tags by
-their contents (like 'unwrap'), but with 
+their contents (like 'unwrap'), but with
 the first/last text node of the contents
-being, if any, being glued to surrounding 
-text nodes (in end-of-last-line to 
+being, if any, being glued to surrounding
+text nodes (in end-of-last-line to
 beginning-of-first-line fashion)"),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

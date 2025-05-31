@@ -29,11 +29,11 @@ type Extra =
 
 /// filters by identifying nodes whose
 /// blame.filename contain the extra.path
-/// as a substring and whose attributes 
+/// as a substring and whose attributes
 /// match at least one of the given #(key, value)
 /// pairs, with a match counting as true
 /// if key == ""; keeps only nodes that
-/// are descendants of such nodes, or 
+/// are descendants of such nodes, or
 /// ancestors of such nodes
 pub fn filter_nodes_by_attributes(extra: Extra) -> Pipe {
   Pipe(
@@ -42,11 +42,11 @@ pub fn filter_nodes_by_attributes(extra: Extra) -> Pipe {
       option.Some(extra |> ins),
       "filters by identifying nodes whose
 blame.filename contain the extra.path
-as a substring and whose attributes 
+as a substring and whose attributes
 match at least one of the given #(key, value)
 pairs, with a match counting as true
 if key == \"\"; keeps only nodes that
-are descendants of such nodes, or 
+are descendants of such nodes, or
 ancestors of such nodes",
     ),
     desugarer: case extra {

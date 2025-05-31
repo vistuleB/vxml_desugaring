@@ -2,10 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 const ins = string.inspect
@@ -45,9 +42,9 @@ fn fold_tags_into_text_children_accumulator(
   //   reverse order (last stuff is first in the list)
   //
   // - optional_last_t is:
-  //   * the node right before optional_last_v if 
+  //   * the node right before optional_last_v if
   //     optional_last_v != None
-  //   * the last node before remaining if 
+  //   * the last node before remaining if
   //     optional_last_v == None
   //
   // - optional_last_v is a possible previoux v-node that
@@ -342,9 +339,9 @@ fn fold_tags_into_text_children_accumulator(
   }
 }
 
-fn param_transform(
+fn transform(
   node: VXML,
-  tags_and_texts: Param,
+  tags_and_texts: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
@@ -362,34 +359,53 @@ fn param_transform(
   }
 }
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  param_transform(_, param)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
+fn desugarer_factory(param: InnerParam) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  infra.dict_from_list_with_desugaring_error(param)
+}
+
 type Param =
-  Dict(String, String)
+  List(#(String, String))
 
 //*********************************
 // - first string is tag name
 // - second string is replacement value to use
-type Extra =
-  List(#(String, String))
 
-pub fn fold_tags_into_text(extra: Extra) -> Pipe {
+type InnerParam =
+  Dict(String, String)
+
+/// seemingly replaces specified tags by
+/// specified strings that are glued to
+/// surrounding text nodes (in end-of-last-line
+/// glued to beginning-of-first-line fashion),
+/// without regards for the tag's contents
+/// or attributes, that are destroyed in the
+/// process
+pub fn fold_tags_into_text(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "fold_tags_into_text", Some(ins(extra)), "REQUIRES VERIFICATION/DOCUMENTATION;
+      "fold_tags_into_text",
+      Some(ins(param)),
+      "
 seemingly replaces specified tags by
 specified strings that are glued to
 surrounding text nodes (in end-of-last-line
-glued to beginning-of-first-line fashion), 
-without regards for the tag's contents 
-or attributes, that are destroyed in the 
-process"),
-    desugarer: desugarer_factory(extra |> dict.from_list),
+glued to beginning-of-first-line fashion),
+without regards for the tag's contents
+or attributes, that are destroyed in the
+process
+      "
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }

@@ -1,51 +1,57 @@
 import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, V}
 
-fn concatenate_tags_in_list(vxmls: List(VXML), extra: Extra) -> List(VXML) {
+fn concatenate_tags_in_list(vxmls: List(VXML), param: InnerParam) -> List(VXML) {
   case vxmls {
     [] -> []
     [V(_, tag1, _, _) as v1, V(_, tag2, _, _) as v2, ..rest] -> {
-      case tag1 == tag2 && list.contains(extra, tag1) {
-        True -> [v1, ..concatenate_tags_in_list(rest, extra)]
-        False -> [v1, ..concatenate_tags_in_list([v2, ..rest], extra)]
+      case tag1 == tag2 && list.contains(param, tag1) {
+        True -> [v1, ..concatenate_tags_in_list(rest, param)]
+        False -> [v1, ..concatenate_tags_in_list([v2, ..rest], param)]
       }
     }
-    [first, ..rest] -> [first, ..concatenate_tags_in_list(rest, extra)]
+    [first, ..rest] -> [first, ..concatenate_tags_in_list(rest, param)]
   }
 }
 
-fn param_transform(node: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn transform(node: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attrs, children) ->
-      Ok(V(blame, tag, attrs, children |> concatenate_tags_in_list(extra)))
+      Ok(V(blame, tag, attrs, children |> concatenate_tags_in_list(param)))
     _ -> Ok(node)
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
-type Extra =
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   List(String)
 
-pub fn concatenate_tags(extra: Extra) -> Pipe {
+type InnerParam = Param
+
+pub fn concatenate_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "concatenate_tags",
-      Some(ins(extra)),
+      Some(ins(param)),
       "...",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(param) -> desugarer_factory(param)
+    }
   )
 }
