@@ -418,7 +418,7 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
 
 fn transform(
   vxml: VXML,
-  extra: ExtraTransformed,
+  param: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(b, tag, attributes, children) -> {
@@ -427,7 +427,7 @@ fn transform(
         with_on_error: fn(_) { Ok(vxml) },
       )
       list.fold(
-        extra,
+        param,
         atomized,
         match_until_end,
       )
@@ -677,8 +677,16 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   Ok(#(pattern1, pattern2))
 }
 
-fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
-  extra
+fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, param)
+}
+ 
+fn desugarer_factory(param: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(param))
+}
+ 
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  param
   |> list.try_map(fn(string_pair) {
     let #(s1, s2) = string_pair
     use #(pattern1, pattern2) <- result.then(string_pair_to_link_pattern_pair(string_pair))
@@ -707,21 +715,10 @@ fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
   })
 }
  
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  case extra |> extra_transform {
-    Ok(transformed_extra) -> fn(node) { transform(node, transformed_extra) }
-    Error(error) -> fn(_) { Error(error) }
-  }
-}
- 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
-}
- 
-type ExtraTransformed =
+type InnerParam =
   List(#(LinkPattern, LinkPattern))
  
-type Extra =
+type Param =
   List(#(String, String))
  
 /// matches appearance of first String
@@ -729,7 +726,7 @@ type Extra =
 /// and replaces it with the second String
 /// (x) can be used in second String to use
 /// the variable from first String
-pub fn rearrange_links(extra: Extra) -> Pipe {
+pub fn rearrange_links(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "rearrange_links",
@@ -739,10 +736,12 @@ matches appearance of first String
 while considering (x) as a variable
 and replaces it with the second String
 (x) can be used in second String to use
-the variable from first String",
+the variable from first String
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner_param) -> desugarer_factory(inner_param)
+    }
   )
 }
- 
- 
