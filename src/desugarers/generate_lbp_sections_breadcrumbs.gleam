@@ -104,6 +104,19 @@ case infra.get_children(node) |> list.first, fallback {
   }
 }
 
+fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
+  let blame = infra.blame_us("generate_lbp_sections_breadcrumbs")
+
+   let link = V(blame, "InChapterLink", [
+        BlamedAttribute(blame, "href", "?id=" <> target_id),
+      ], children)
+
+  V(blame, "li", [
+    BlamedAttribute(blame, "class", "breadcrumb"),
+    BlamedAttribute(blame, "id", "breadcrumb-" <> ins(index)),
+  ], [link])
+}
+
 fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
   // throw error if first child is not verticalChunk
   use vertical_chunk <- result.then(first_child_must_be(section, "VerticalChunk", None, fn(child){
@@ -113,33 +126,40 @@ fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
   // fallback to Section x if first child is not b
   first_child_must_be(vertical_chunk, "b", Some("Section " <> ins(index)), fn(child){
       let assert V(_, _, _, children) = child
-      let blame = infra.blame_us("generate_lbp_sections_breadcrumbs")
-      let children = transform_children(children)
-
-      let link = V(blame, "InChapterLink", [
-        BlamedAttribute(blame, "href", "?id=section-" <> ins(index + 1)),
-      ], children)
-
-      V(blame, "li", [
-        BlamedAttribute(blame, "class", "breadcrumb"),
-        BlamedAttribute(blame, "id", "breadcrumb-" <> ins(index)),
-      ], [link])
+      children
+      |> transform_children
+      |> construct_breadcrumb("section-" <> ins(index + 1), index)
   })
 }
 
-fn generate_sections_list(sections: List(VXML)) -> Result(VXML, DesugaringError) {
+fn generate_sections_list(sections: List(VXML), exercises: List(VXML)) -> Result(VXML, DesugaringError) {
   use sections_nodes <- result.try(
     list.index_map(sections, map_section)
     |> result.all
   )
-  Ok(V(infra.blame_us("generate_lbp_sections_breadcrumbs"), "SectionsBreadcrumbs", [], sections_nodes))
+  let exercises_node = case exercises {
+    [] -> []
+    [one] -> {
+      [
+        construct_breadcrumb(
+          [T(one.blame, [BlamedContent(one.blame, "exercises")])],
+          "exercises",
+          list.length(sections_nodes)
+        )
+      ]
+    }
+    _ -> panic as "We don't have more than one exercises section"
+  }
+
+  Ok(V(infra.blame_us("generate_lbp_sections_breadcrumbs"), "SectionsBreadcrumbs", [], list.flatten([sections_nodes, exercises_node])))
 }
 
 fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
   case child {
     V(b, "Chapter", a, children) -> {
       let sections = infra.children_with_tag(child, "Section")
-      use sections_ul <- result.try(generate_sections_list(sections)) 
+      let exercises = infra.children_with_tag(child, "Exercises")
+      use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
       Ok(V(b, "Chapter", a, [sections_ul, ..children]))
     }
     _ -> Ok(child)
