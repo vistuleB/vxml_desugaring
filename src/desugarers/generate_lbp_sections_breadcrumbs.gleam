@@ -162,6 +162,12 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
       use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
       Ok(V(b, "Chapter", a, [sections_ul, ..children]))
     }
+    V(b, "Bootcamp", a, children) -> {
+      let sections = infra.children_with_tag(child, "Section")
+      let exercises = infra.children_with_tag(child, "Exercises")
+      use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
+      Ok(V(b, "Bootcamp", a, [sections_ul, ..children]))
+    }
     _ -> Ok(child)
   }
 }
