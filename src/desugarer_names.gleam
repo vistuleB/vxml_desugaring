@@ -27,6 +27,7 @@ import desugarers/handles_substitute
 import desugarers/identity
 import desugarers/insert_bookend_tags
 import desugarers/insert_indent
+import desugarers/normalize_math_delimiters_inside
 import desugarers/pair_bookends
 import desugarers/prepend_text
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
@@ -77,6 +78,7 @@ pub const handles_substitute = handles_substitute.handles_substitute
 pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_indent = insert_indent.insert_indent
+pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const prepend_text = prepend_text.prepend_text
 pub const rearrange_links = rearrange_links.rearrange_links
