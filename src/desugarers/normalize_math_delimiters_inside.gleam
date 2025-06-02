@@ -72,14 +72,14 @@ fn assert_node_has_one_t(node: VXML) -> Result(VXML, DesugaringError) {
 fn transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   let #(tags, delimiter_pair) = param
   case node {
-    V(_, tag, _ , _) -> {
+    V(b, tag, a , _) -> {
       use <- infra.on_false_on_true(
         list.contains(tags, tag),
         Ok(node)
       )
       use t_node <- result.try(assert_node_has_one_t(node))
-
-      normalize_delimiters(t_node, delimiter_pair)
+      use normalized <- result.try(normalize_delimiters(t_node, delimiter_pair))
+      Ok(V(b, tag, a, [normalized]))
     }
     _ -> Ok(node)
   }
