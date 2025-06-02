@@ -10,26 +10,23 @@ fn strip_delimiter_pair_if_there(
   t_node: VXML,
   to_strip: LatexDelimiterPair,
 ) -> Result(VXML, DesugaringError) {
-  let to_strip = infra.opening_and_closing_string_for_pair(to_strip)
-
+  let #(opening, closing)  = infra.opening_and_closing_string_for_pair(to_strip)
   let assert T(blame, lines) = 
     t_node
-    |> infra.t_extract_starting_spaces()
-    |> pair.second
-    |> infra.t_extract_ending_spaces()
-    |> pair.second
+    |> infra.t_trim_start
+    |> infra.t_trim_end
 
   let assert [first_line, ..] = lines
   let assert [last_line, ..] = lines |> list.reverse
 
-  case string.starts_with(first_line.content, to_strip |> pair.first), 
-       string.ends_with(last_line.content, to_strip |> pair.second)
+  case string.starts_with(first_line.content, opening), 
+       string.ends_with(last_line.content, closing)
   {
     False, False -> Ok(t_node)
     True, True -> {
       T(blame, lines)
-      |> infra.t_drop_start(to_strip |> pair.first |> string.length)
-      |> infra.t_drop_end(to_strip |> pair.second |> string.length)
+      |> infra.t_drop_start(opening |> string.length)
+      |> infra.t_drop_end(closing |> string.length)
       |> Ok
     }
     True, _ -> Error(DesugaringError(blame, "Missing closing delimiter"))

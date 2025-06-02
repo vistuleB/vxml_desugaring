@@ -722,6 +722,18 @@ pub fn extract_ending_spaces_from_text(content: String) -> #(String, String) {
   #(string.repeat(" ", num_spaces), new_content)
 }
 
+pub fn t_trim_start(node: VXML) -> VXML {
+  node
+  |> t_extract_starting_spaces()
+  |> pair.second
+}
+
+pub fn t_trim_end(node: VXML) -> VXML {
+  node
+  |> t_extract_ending_spaces()
+  |> pair.second
+}
+
 pub fn t_drop_start(node: VXML, to_drop: Int) -> VXML {
   let assert T(blame, blamed_contents) = node
   let assert [first, ..rest] = blamed_contents
