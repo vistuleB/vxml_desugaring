@@ -149,7 +149,7 @@ pub fn create_mathblock_and_math_elements(
     display_math_pipe,
     inline_math_pipe,
     reinserting_delims_pipe,
-    de_normalization
+    de_normalization,
   ]
   |> list.flatten
 }
