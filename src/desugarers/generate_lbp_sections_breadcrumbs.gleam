@@ -176,7 +176,8 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
   let children = infra.get_children(root)
 
   use updated_children <- result.try(
-    list.map(children, map_chapter)
+    children
+    |> list.map(map_chapter)
     |> result.all
   )
 
