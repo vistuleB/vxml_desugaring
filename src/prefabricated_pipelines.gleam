@@ -1,30 +1,29 @@
 import gleam/list
 import indexed_regex_splitting.{type RegexWithIndexedGroup} as irs
-import infrastructure.{type Pipe}
+import infrastructure.{
+  type Pipe,
+  type LatexDelimiterPair,
+  type LatexDelimiterSingleton,
+  DoubleDollar, 
+  SingleDollar, 
+  DoubleDollarSingleton,
+  SingleDollarSingleton,
+  BackslashParenthesis,
+  BackslashOpeningParenthesis,
+  BackslashClosingParenthesis,
+  BackslashSquareBracket,
+  BackslashOpeningSquareBracket,
+  BackslashClosingSquareBracket 
+}
 import desugarers/split_by_indexed_regexes.{split_by_indexed_regexes}
 import desugarers/pair_bookends.{pair_bookends}
 import desugarers/fold_tags_into_text.{fold_tags_into_text}
 import desugarers/insert_bookend_tags.{insert_bookend_tags}
+import desugarer_names as dn
 
 //******************
 // math delimiter stuff
 //******************
-
-type LatexDelimiterSingleton {
-  DoubleDollarSingleton
-  SingleDollarSingleton
-  BackslashOpeningParenthesis
-  BackslashClosingParenthesis
-  BackslashOpeningSquareBracket
-  BackslashClosingSquareBracket
-}
-
-pub type LatexDelimiterPair {
-  DoubleDollar
-  SingleDollar
-  BackslashParenthesis
-  BackslashSquareBracket
-}
 
 fn opening_and_closing_singletons_for_pair(
   pair: LatexDelimiterPair
@@ -106,17 +105,26 @@ pub fn create_mathblock_and_math_elements(
   let #(display_math_delimiters, display_math_default_delimeters) = display_math_delimiters
   let #(single_math_delimiters, inline_math_default_delimeters) = single_math_delimiters
 
+  let normalization = [
+    dn.rename(#("MathBlock", "UserDefinedMathBlock")),
+    dn.normalize_math_delimiters_inside(#(["UserDefinedMathBlock"], DoubleDollar))
+  ]
+
+   let de_normalization = [
+    dn.rename(#("UserDefinedMathBlock", "MathBlock")),
+  ]
+
   let display_math_pipe =
     list.map(
       display_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock"])
+      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock", "UserDefinedMathBlock"])
     )
     |> list.flatten
 
   let inline_math_pipe =
     list.map(
       single_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "Math", ["Math", "MathBlock"])
+      split_pair_fold_for_delimiter_pair(_, "Math", ["Math", "MathBlock", "UserDefinedMathBlock"])
     )
     |> list.flatten
 
@@ -137,9 +145,11 @@ pub fn create_mathblock_and_math_elements(
   ]
 
   [
+    normalization,
     display_math_pipe,
     inline_math_pipe,
     reinserting_delims_pipe,
+    de_normalization,
   ]
   |> list.flatten
 }
