@@ -111,7 +111,7 @@ fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> 
         BlamedAttribute(blame, "href", "?id=" <> target_id),
       ], children)
 
-  V(blame, "li", [
+  V(blame, "BreadcrumbItem", [
     BlamedAttribute(blame, "class", "breadcrumb"),
     BlamedAttribute(blame, "id", "breadcrumb-" <> ins(index)),
   ], [link])
