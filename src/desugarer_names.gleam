@@ -37,6 +37,7 @@ import desugarers/remove_empty_lines
 import desugarers/remove_empty_text_nodes
 import desugarers/remove_starting_and_ending_empty_lines
 import desugarers/remove_starting_and_ending_spaces
+import desugarers/rename_attributes
 import desugarers/rename
 import desugarers/rename_with_attributes
 import desugarers/rename_when_child_of
@@ -88,6 +89,7 @@ pub const remove_empty_text_nodes = remove_empty_text_nodes.remove_empty_text_no
 pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_empty_lines.remove_starting_and_ending_empty_lines
 pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
 pub const rename = rename.rename
+pub const rename_attributes = rename_attributes.rename_attributes
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const unwrap_when_child_of= unwrap_when_child_of.unwrap_when_child_of
