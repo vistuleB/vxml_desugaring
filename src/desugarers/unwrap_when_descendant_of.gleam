@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/option.{Some}
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,

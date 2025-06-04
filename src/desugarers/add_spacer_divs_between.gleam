@@ -1,11 +1,7 @@
-import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
-import gleam/option.{None, Some}
+import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn intersperse_children_with_spacers(
@@ -70,7 +66,7 @@ pub fn add_spacer_divs_between(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       "add_spacer_divs_between",
-      Some(ins(param)),
+      option.Some(ins(param)),
       "...",
     ),
     desugarer: case infra.dict_from_list_with_desugaring_error(param) {
