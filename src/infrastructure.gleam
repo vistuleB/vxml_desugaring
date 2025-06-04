@@ -9,6 +9,38 @@ import gleam/string.{inspect as ins}
 import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V}
 
 
+pub type LatexDelimiterSingleton {
+  DoubleDollarSingleton
+  SingleDollarSingleton
+  BackslashOpeningParenthesis
+  BackslashClosingParenthesis
+  BackslashOpeningSquareBracket
+  BackslashClosingSquareBracket
+}
+
+pub type LatexDelimiterPair {
+  DoubleDollar
+  SingleDollar
+  BackslashParenthesis
+  BackslashSquareBracket
+}
+
+pub fn latex_delimiter_pairs_list(
+) -> List(LatexDelimiterPair) {
+  [DoubleDollar, SingleDollar, BackslashParenthesis, BackslashSquareBracket]
+}
+
+pub fn opening_and_closing_string_for_pair(
+  pair: LatexDelimiterPair
+) -> #(String, String) {
+  case pair {
+    DoubleDollar -> #("$$", "$$")
+    SingleDollar -> #("$", "$")
+    BackslashParenthesis -> #("\\(", "\\)")
+    BackslashSquareBracket -> #("\\[", "\\]")
+  }
+}
+
 pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
   case node {
     T(_, _) -> False
@@ -688,6 +720,30 @@ pub fn extract_ending_spaces_from_text(content: String) -> #(String, String) {
   let new_content = string.trim_end(content)
   let num_spaces = string.length(content) - string.length(new_content)
   #(string.repeat(" ", num_spaces), new_content)
+}
+
+pub fn t_trim_start(node: VXML) -> VXML {
+  node
+  |> t_extract_starting_spaces()
+  |> pair.second
+}
+
+pub fn t_trim_end(node: VXML) -> VXML {
+  node
+  |> t_extract_ending_spaces()
+  |> pair.second
+}
+
+pub fn t_drop_start(node: VXML, to_drop: Int) -> VXML {
+  let assert T(blame, blamed_contents) = node
+  let assert [first, ..rest] = blamed_contents
+  T(blame, [BlamedContent(first.blame, string.drop_start(first.content, to_drop) ), ..rest])
+}
+
+pub fn t_drop_end(node: VXML, to_drop: Int) -> VXML {
+  let assert T(blame, blamed_contents) = node
+  let assert [first, ..rest] = blamed_contents |> list.reverse
+  T(blame, [BlamedContent(first.blame, string.drop_end(first.content, to_drop) ), ..rest] |> list.reverse)
 }
 
 pub fn t_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
