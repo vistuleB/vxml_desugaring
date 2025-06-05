@@ -285,13 +285,20 @@ pub fn contains_one_of_tags(vxmls: List(VXML), tags: List(String)) -> Bool {
 //* dictionary-building functions
 //**************************************************************
 
+pub fn validate_unique_keys(
+  l: List(#(a, b))
+) -> Result(List(#(a, b)), DesugaringError) {
+  case get_duplicate(list.map(l, pair.first)) {
+    Some(guy) -> Error(DesugaringError(blamedlines.empty_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
+    None -> Ok(l)
+  }
+}
+
 pub fn dict_from_list_with_desugaring_error(
   l: List(#(a, b))
 ) -> Result(Dict(a, b), DesugaringError) {
-  case get_duplicate(list.map(l, pair.first)) {
-    Some(guy) -> Error(DesugaringError(blamedlines.empty_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
-    None -> Ok(dict.from_list(l))
-  }
+  validate_unique_keys(l)
+  |> result.map(dict.from_list(_))
 }
 
 pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
@@ -1896,8 +1903,8 @@ pub type Desugarer =
 
 pub type DesugarerDescription {
   DesugarerDescription(
-    function_name: String,
-    extra: Option(String),
+    desugarer_name: String,
+    stringified_param: Option(String),
     general_description: String,
   )
 }
