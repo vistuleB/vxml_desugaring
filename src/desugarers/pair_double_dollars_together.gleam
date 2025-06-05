@@ -1,17 +1,17 @@
 import blamedlines.{type Blame}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
   case x {
-    T(_, _) -> None
+    T(_, _) -> option.None
     V(blame, tag, _, _) ->
       case tag == "DoubleDollar" {
-        True -> Some(blame)
-        False -> None
+        True -> option.Some(blame)
+        False -> option.None
       }
   }
 }
@@ -20,11 +20,11 @@ pub fn scan_to_next_double_dollar(
   vxmls: List(VXML),
 ) -> #(List(VXML), Option(#(Blame, List(VXML)))) {
   case vxmls {
-    [] -> #([], None)
+    [] -> #([], option.None)
     [first, ..rest] ->
       case is_double_dollar(first) {
-        Some(blame) -> #([], Some(#(blame, rest)))
-        None -> {
+        option.Some(blame) -> #([], option.Some(#(blame, rest)))
+        option.None -> {
           let #(list, option) = scan_to_next_double_dollar(rest)
           #([first, ..list], option)
         }
@@ -37,7 +37,7 @@ fn pair_double_dollars_odd(
   blame_of_guy_to_pair: Blame,
 ) -> Result(#(List(VXML), List(VXML)), DesugaringError) {
   case scan_to_next_double_dollar(vxmls) {
-    #(before_first_double_dollar, Some(#(_, after_first_double_dollar))) ->
+    #(before_first_double_dollar, option.Some(#(_, after_first_double_dollar))) ->
       case pair_double_dollars_even(after_first_double_dollar) {
         Ok(after_first_double_dollar_transformed) ->
           Ok(#(
@@ -46,7 +46,7 @@ fn pair_double_dollars_odd(
           ))
         Error(err) -> Error(err)
       }
-    #(_, None) ->
+    #(_, option.None) ->
       Error(DesugaringError(blame_of_guy_to_pair, "$$ missing matching pair"))
   }
 }
@@ -57,7 +57,7 @@ fn pair_double_dollars_even(
   case scan_to_next_double_dollar(vxmls) {
     #(
       before_first_double_dollar,
-      Some(#(first_double_dollar_blame, after_first_double_dollar)),
+      option.Some(#(first_double_dollar_blame, after_first_double_dollar)),
     ) ->
       case
         pair_double_dollars_odd(
@@ -84,11 +84,11 @@ fn pair_double_dollars_even(
         }
         Error(err) -> Error(err)
       }
-    #(before_first_double_dollar, None) -> Ok(before_first_double_dollar)
+    #(before_first_double_dollar, option.None) -> Ok(before_first_double_dollar)
   }
 }
 
-pub fn pair_double_dollars_together_transform(
+fn transform(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -100,12 +100,12 @@ pub fn pair_double_dollars_together_transform(
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
-  pair_double_dollars_together_transform
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -113,18 +113,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
+/// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
 pub fn pair_double_dollars_together_desugarer() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "pair_double_dollars_together_desugarer",
-      option.None,
-      "...",
+      desugarer_name: "pair_double_dollars_together_desugarer",
+      stringified_param: option.None,
+      general_description: "
+/// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

@@ -67,7 +67,9 @@ fn map_bootcamps(bootcamp: #(VXML, Int), local_index: Int, length: Int) {
   #(new, global_index)
 }
 
-fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  root: VXML,
+) -> Result(VXML, DesugaringError) {
   let assert V(root_b, root_t, root_a, children) = root
   let chapters = infra.index_children_with_tag(root, "Chapter")
   let bootcamps = infra.index_children_with_tag(root, "Bootcamp")
@@ -159,13 +161,35 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(V(root_b, root_t, root_a, children))
 }
 
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
+}
+
+fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
+
+/// generates navigation links for LBP content (chapters and bootcamps)
 pub fn generate_lbp_links() -> Pipe {
   infra.Pipe(
-    DesugarerDescription(
-      "generate_lbp_links",
-      option.None,
-      "..."
+    description: DesugarerDescription(
+      desugarer_name: "generate_lbp_links",
+      stringified_param: option.None,
+      general_description: "
+/// generates navigation links for LBP content (chapters and bootcamps)
+      ",
     ),
-    fn(vxml) { the_desugarer(vxml) },
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

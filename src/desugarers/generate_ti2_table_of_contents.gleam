@@ -1,8 +1,8 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
@@ -51,8 +51,8 @@ fn chapter_link(
   )
 
   let on_mobile_attr = case infra.get_attribute_by_name(item, "on_mobile") {
-    Some(attr) -> attr
-    None -> label_attr
+    option.Some(attr) -> attr
+    option.None -> label_attr
   }
 
   let link =
@@ -93,8 +93,11 @@ fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML 
   ])
 }
 
-fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
-  let #(table_of_contents_tag, chapter_link_component_name) = param
+fn transform(
+  root: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
+  let #(table_of_contents_tag, chapter_link_component_name) = inner
   let sections = infra.descendants_with_tag(root, "Section")
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
@@ -116,31 +119,41 @@ fn transform(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   ))
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String, String)
+type Param =
+  #(String, String)
+//  ↖       ↖
+//  table   chapter
+//  of      link
+//  contents component
+//  tag     name
+
 type InnerParam = Param
 
+/// generates table of contents for TI2 content with sections
 pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "generate_ti2_table_of_contents",
-      option.None,
-      "...",
+      desugarer_name: "generate_ti2_table_of_contents",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// generates table of contents for TI2 content with sections
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

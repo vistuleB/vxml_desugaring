@@ -71,7 +71,10 @@ fn merge_attributes(
   })
 }
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
@@ -81,7 +84,7 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
             case child {
               T(_, _) -> Ok(child)
               V(child_blame, child_tag, child_attrs, grandchildren) -> {
-                case list.contains(param, #(tag, child_tag)) {
+                case list.contains(inner, #(tag, child_tag)) {
                   False -> Ok(child)
                   True -> {
                     case merge_attributes(attrs, child_attrs) {
@@ -103,35 +106,38 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(#(String, String))
+type Param =
+  List(#(String, String))
+//       ↖       ↖
+//       parent  child
+
 type InnerParam = Param
 
-//********************************
-//       parent, child
-//********************************
-
+/// merges parent attributes into child elements for specified parent-child tag pairs
 pub fn merge_parent_attributes_into_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "merge_parent_attributes_into_child",
-      option.Some(param |> ins),
-      "...",
+      desugarer_name: "merge_parent_attributes_into_child",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// merges parent attributes into child elements for specified parent-child tag pairs
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

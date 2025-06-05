@@ -1,12 +1,10 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
-
-const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
   Blame("generate_lbp_toc:" <> note, -1, -1, [])
@@ -36,8 +34,8 @@ fn chapter_link(
   )
 
   let on_mobile_attr = case infra.get_attribute_by_name(item, "on_mobile") {
-    Some(attr) -> attr
-    None -> label_attr
+    option.Some(attr) -> attr
+    option.None -> label_attr
   }
 
   Ok(
@@ -79,13 +77,16 @@ fn div_with_id_title_and_menu_items(
   ])
 }
 
-fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  root: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   let #(
     table_of_contents_tag,
     type_of_chapters_title_component_name,
     chapter_link_component_name,
     maybe_spacer,
-  ) = param
+  ) = inner
   let chapters = infra.children_with_tag(root, "Chapter")
   let bootcamps = infra.children_with_tag(root, "Bootcamp")
 
@@ -133,8 +134,8 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
     True, True, _ -> []
     False, True, _ -> [chapters_div]
     True, False, _ -> [bootcamps_div]
-    False, False, None -> [chapters_div, bootcamps_div]
-    False, False, Some(spacer_tag) -> [
+    False, False, option.None -> [chapters_div, bootcamps_div]
+    False, False, option.Some(spacer_tag) -> [
       chapters_div,
       V(blame_us("L145"), spacer_tag, [], []),
       bootcamps_div,
@@ -147,8 +148,12 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   ))
 }
 
-fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
-  at_root(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -157,24 +162,29 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   #(String, String, String, Option(String))
-
-// - first string: tag name for table of contents
-// - second string: tag name of "big title" (Chapters, Bootcamps)
-// - third string: tag name for individual chapter links
-// - third string: optional tag name for spacer between two groups of chapter links
+//  ↖       ↖       ↖       ↖
+//  tag     tag     tag     optional
+//  name    name    name    spacer tag
+//  for     of      for     name
+//  table   "big    indiv   between
+//  of      title"  chapter groups
+//  contents        links
 
 type InnerParam = Param
 
+/// generates table of contents for LBP with chapters and bootcamps
 pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "generate_lbp_table_of_contents",
-      option.None,
-      "...",
+      desugarer_name: "generate_lbp_table_of_contents",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// generates table of contents for LBP with chapters and bootcamps
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

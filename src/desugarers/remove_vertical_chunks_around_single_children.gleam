@@ -20,12 +20,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_)
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -36,16 +36,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+/// removes VerticalChunk tags that have only a single child
 pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "remove_vertical_chunks_around_single_children_desugarer",
-      option.None,
-      "...",
+      desugarer_name: "remove_vertical_chunks_around_single_children_desugarer",
+      stringified_param: option.None,
+      general_description: "
+/// removes VerticalChunk tags that have only a single child
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

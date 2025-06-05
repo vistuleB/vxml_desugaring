@@ -1,6 +1,6 @@
 import gleam/io
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
@@ -73,12 +73,12 @@ fn transform(vxml: VXML, _: List(VXML)) -> infra.EarlyReturn(VXML) {
   infra.GoBack(vxml)
 }
 
-fn transform_factory(_param: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
+fn transform_factory(_: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.early_return_node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -86,14 +86,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
+/// distributes slice wrappers around inner elements for LBP content
 pub fn lbp_distribute_slices() -> Pipe {
   Pipe(
-    description: DesugarerDescription("lbp_distribute_slices", None, "..."),
+    description: DesugarerDescription(
+      desugarer_name: "lbp_distribute_slices",
+      stringified_param: option.None,
+      general_description: "
+/// distributes slice wrappers around inner elements for LBP content
+      ",
+    ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

@@ -1,15 +1,19 @@
 import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
 } as infra
 import vxml.{type VXML, T, V}
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      let #(from, to) = param
+      let #(from, to) = inner
       case from == tag {
         False -> Ok(vxml)
         True -> Ok(V(blame, to, attrs, children))
@@ -18,12 +22,12 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -35,18 +39,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String)
+
 type InnerParam = Param
 
+/// renames one tag
 pub fn rename(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "rename",
-      option.None,
-      "renames one tag"
+      desugarer_name: "rename",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// renames one tag
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

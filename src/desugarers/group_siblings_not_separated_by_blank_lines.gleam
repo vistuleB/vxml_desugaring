@@ -24,13 +24,16 @@ pub fn chunk_constructor(
   V(blame, wrapper, [], children)
 }
 
-fn transform(vxml: VXML, wrapper: String) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
       let new_children =
         lists_of_non_blank_line_chunks(children)
-        |> list.map(chunk_constructor(_, wrapper))
+        |> list.map(chunk_constructor(_, inner.0))
       Ok(V(blame, tag, attrs, new_children))
     }
   }
@@ -38,7 +41,7 @@ fn transform(vxml: VXML, wrapper: String) -> Result(VXML, DesugaringError) {
 
 fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   infra.prevent_node_to_node_transform_inside(
-    transform(_, inner.0),
+    transform(_, inner),
     inner.1,
   )
 }

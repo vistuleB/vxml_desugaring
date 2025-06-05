@@ -5,7 +5,7 @@ import gleam/list
 import gleam/option
 import gleam/regexp
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
@@ -17,6 +17,7 @@ import vxml.{
 
 type HandleInstances =
   Dict(String, #(String, String, String))
+//     ↖        ↖                      
 //     handle   local path, element id, string value
 //     name     of page     on page     of handle
 
@@ -33,7 +34,7 @@ fn target_is_on_same_chapter(
 fn construct_hyperlink(
   blame: Blame,
   handle: #(String, String, String),
-  param: InnerParam
+  inner: InnerParam
 ) {
   let #(id, filename, value) = handle
   let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
@@ -42,7 +43,7 @@ fn construct_hyperlink(
   }
 
   V(blame, tag, list.flatten([
-      list.map(param, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
+      list.map(inner, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
       [
         BlamedAttribute(blame, "href", filename <> "?id=" <> id),
         BlamedAttribute(blame, "class", classes),
@@ -57,7 +58,7 @@ fn handle_handle_matches(
   matches: List(regexp.Match),
   splits: List(String),
   handles: HandleInstances,
-  param: InnerParam
+  inner: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
   case matches {
     [] -> {
@@ -81,12 +82,12 @@ fn handle_handle_matches(
             rest,
             rest_splits,
             handles,
-            param
+            inner
           ))
           Ok(
             list.flatten([
               [T(blame, [BlamedContent(blame, first_split)])],
-              [construct_hyperlink(blame, handle, param)],
+              [construct_hyperlink(blame, handle, inner)],
               rest_content,
             ]),
           )
@@ -99,27 +100,27 @@ fn handle_handle_matches(
 fn print_handle(
   blamed_line: BlamedContent,
   handles: HandleInstances,
-  param: InnerParam
+  inner: InnerParam
 
 ) -> Result(List(VXML), DesugaringError) {
   let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
 
   let matches = regexp.scan(re, blamed_line.content)
   let splits = regexp.split(re, blamed_line.content)
-  handle_handle_matches(blamed_line.blame, matches, splits, handles, param)
+  handle_handle_matches(blamed_line.blame, matches, splits, handles, inner)
 }
 
 fn print_handle_for_contents(
   contents: List(BlamedContent),
   handles: HandleInstances,
-  param: InnerParam
+  inner: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
 
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
-      use updated_line <- result.try(print_handle(first, handles, param))
-      use updated_rest <- result.try(print_handle_for_contents(rest, handles, param))
+      use updated_line <- result.try(print_handle(first, handles, inner))
+      use updated_rest <- result.try(print_handle_for_contents(rest, handles, inner))
 
       Ok(list.flatten([updated_line, updated_rest]))
     }
@@ -168,14 +169,14 @@ fn counter_handles_transform_to_get_handles(
 fn counter_handles_transform_to_replace_handles(
   vxml: VXML,
   handles: HandleInstances,
-  param: InnerParam
+  inner: InnerParam
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   case vxml {
     T(_, contents) -> {
       use update_contents <- result.try(print_handle_for_contents(
         contents,
         handles,
-        param
+        inner
       ))
       Ok(#(update_contents, handles))
     }
@@ -191,7 +192,7 @@ fn counter_handles_transform_to_replace_handles(
   }
 }
 
-fn counter_handle_transform_factory(param: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
+fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
   HandleInstances,
 ) {
   infra.StatefulDownAndUpNodeToNodesTransform(
@@ -204,16 +205,22 @@ fn counter_handle_transform_factory(param: InnerParam) -> infra.StatefulDownAndU
     },
     after_transforming_children: fn(vxml, _, new) {
       use #(vxml, handles) <- result.try(
-        counter_handles_transform_to_replace_handles(vxml, new, param),
+        counter_handles_transform_to_replace_handles(vxml, new, inner),
       )
       Ok(#(vxml, handles))
     },
   )
 }
 
-fn desugarer_factory(param) -> Desugarer {
+fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
+  HandleInstances,
+) {
+  counter_handle_transform_factory(inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
   infra.stateful_down_up_node_to_nodes_desugarer_factory(
-    counter_handle_transform_factory(param),
+    transform_factory(inner),
     dict.new(),
   )
 }
@@ -222,8 +229,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(#(String, String))
-// list of additional key-value pairs to attach to anchor tag
+type Param =
+  List(#(String, String))
+//       ↖       ↖
+//       additional key-value pairs
+//       to attach to anchor tag
 
 type InnerParam = Param
 
@@ -236,19 +246,19 @@ pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
     description: DesugarerDescription(
-      "handles_substitute",
-      option.None,
-      "
-Looks for handle definitions in GrandWrapper and
-replaces >>handle occurences with defined value
-Returns error if there's a handle occurence with no definition
-# Param
-list of additional key-value pairs to attach to anchor tag
-      "
+      desugarer_name: "handles_substitute",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// Looks for handle definitions in GrandWrapper and
+/// replaces >>handle occurences with defined value
+/// Returns error if there's a handle occurence with no definition
+/// # Param
+/// list of additional key-value pairs to attach to anchor tag
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

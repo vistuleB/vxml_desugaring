@@ -1,12 +1,13 @@
 import gleam/list
 import gleam/option
 import gleam/pair
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
   vxml: VXML,
-  inner: InnerParam
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, tag, atts, children) -> {
@@ -47,16 +48,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String))
+//       ↖      ↖       ↖
+//       tag    start   end
+//              tag     tag
 
 type InnerParam =
   List(#(String, #(String, String)))
 
+/// inserts bookend tags at the beginning and end of specified tags
 pub fn insert_bookend_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "insert_bookend_tags",
-      option.None,
-      "...",
+      desugarer_name: "insert_bookend_tags",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// inserts bookend tags at the beginning and end of specified tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

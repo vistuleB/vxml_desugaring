@@ -7,12 +7,12 @@ import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn transform(
   vxml: VXML,
-  param: InnerParam
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, old_attributes, children) -> {
-      case dict.get(param, tag) {
+      case dict.get(inner, tag) {
         Ok(counter_names) -> {
           let #(unassigned_handle_attributes, other_attributes) =
             list.partition(old_attributes, fn(attr) {
@@ -58,12 +58,12 @@ fn transform(
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -72,23 +72,27 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String))
-//       tag     counter_name
+//       ↖      ↖
+//       tag    counter_name
 
 type InnerParam =
-    Dict(String, List(String))
+  Dict(String, List(String))
 
+/// associates counters by prepending incrementing attributes to specified tags
 pub fn associate_counter_by_prepending_incrementing_attribute(
   param: Param,
 ) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "associate_counter_by_prepending_incrementing_attribute",
-      option.Some(ins(param)),
-      "...",
+      desugarer_name: "associate_counter_by_prepending_incrementing_attribute",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// associates counters by prepending incrementing attributes to specified tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     },
   )
 }

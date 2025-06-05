@@ -1,18 +1,16 @@
 import gleam/list
-import gleam/option.{Some}
-import gleam/string
+import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, V}
 
-const ins = string.inspect
-
 fn transform(
   node: VXML,
-  param: InnerParam,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     V(_, tag, _, children) ->
-      case list.contains(param, tag) {
+      case list.contains(inner, tag) {
         False -> Ok([node])
         True -> Ok(children)
       }
@@ -20,12 +18,12 @@ fn transform(
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodesTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -33,6 +31,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
+
 type InnerParam = Param
 
 /// to 'unwrap' a tag means to replace the
@@ -43,19 +42,19 @@ type InnerParam = Param
 pub fn unwrap(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "unwrap",
-      Some(ins(param)),
-      "
-to 'unwrap' a tag means to replace the
-tag by its children (replace a V- VXML node by
-its children in the tree); this function unwraps
-tags based solely on their name, as given by a
-list of names of tags to unwrap
-      "
+      desugarer_name: "unwrap",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// to 'unwrap' a tag means to replace the
+/// tag by its children (replace a V- VXML node by
+/// its children in the tree); this function unwraps
+/// tags based solely on their name, as given by a
+/// list of names of tags to unwrap
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

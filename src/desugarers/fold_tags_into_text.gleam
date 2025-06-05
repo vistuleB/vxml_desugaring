@@ -1,11 +1,9 @@
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{type Option, None, Some}
-import gleam/string
+import gleam/option.{type Option}
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
-
-const ins = string.inspect
 
 fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   let assert T(blame1, lines1) = node1
@@ -63,9 +61,9 @@ fn fold_tags_into_text_children_accumulator(
   case remaining {
     [] ->
       case optional_last_t {
-        None -> {
+        option.None -> {
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case N00: - no following node
               //           - no previous t node
@@ -74,7 +72,7 @@ fn fold_tags_into_text_children_accumulator(
               // we reverse the list
               // *
               already_processed |> list.reverse
-            Some(#(last_v, last_v_text)) ->
+            option.Some(#(last_v, last_v_text)) ->
               // *
               // case N01: - no following node
               //           - no previous t node
@@ -86,9 +84,9 @@ fn fold_tags_into_text_children_accumulator(
               |> list.reverse
           }
         }
-        Some(last_t) ->
+        option.Some(last_t) ->
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case N10: - no following node
               //           - there is a previous t node
@@ -97,7 +95,7 @@ fn fold_tags_into_text_children_accumulator(
               // we add the t to already_processed, reverse the list
               // *
               [last_t, ..already_processed] |> list.reverse
-            Some(#(_, replacement_text)) ->
+            option.Some(#(_, replacement_text)) ->
               // *
               // case N11: - no following node
               //           - there is a previous t node
@@ -114,9 +112,9 @@ fn fold_tags_into_text_children_accumulator(
       }
     [T(_, _) as first, ..rest] ->
       case optional_last_t {
-        None ->
+        option.None ->
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case T00: - 'first' is a Text node
               //           - no previous t node
@@ -127,11 +125,11 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags2texts,
                 already_processed,
-                Some(first),
-                None,
+                option.Some(first),
+                option.None,
                 rest,
               )
-            Some(#(_, last_v_text)) ->
+            option.Some(#(_, last_v_text)) ->
               // *
               // case T01: - 'first' is a Text node
               //           - no previous t node
@@ -142,14 +140,14 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags2texts,
                 already_processed,
-                Some(infra.t_start_insert_text(first, last_v_text)),
-                None,
+                option.Some(infra.t_start_insert_text(first, last_v_text)),
+                option.None,
                 rest,
               )
           }
-        Some(last_t) -> {
+        option.Some(last_t) -> {
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case T10: - 'first' is a Text node
               //           - there exists a previous t node
@@ -160,11 +158,11 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags2texts,
                 [last_t, ..already_processed],
-                Some(first),
-                None,
+                option.Some(first),
+                option.None,
                 rest,
               )
-            Some(#(_, text)) -> {
+            option.Some(#(_, text)) -> {
               // *
               // case T11: - 'first' is a Text node
               //           - there exists a previous t node
@@ -175,11 +173,11 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags2texts,
                 already_processed,
-                Some(last_line_concatenate_with_first_line(
+                option.Some(last_line_concatenate_with_first_line(
                   last_t,
                   infra.t_start_insert_text(first, text),
                 )),
-                None,
+                option.None,
                 rest,
               )
             }
@@ -188,9 +186,9 @@ fn fold_tags_into_text_children_accumulator(
       }
     [V(_, tag, _, _) as first, ..rest] ->
       case optional_last_t {
-        None -> {
+        option.None -> {
           case optional_last_v {
-            None ->
+            option.None ->
               case dict.get(tags2texts, tag) {
                 Error(Nil) ->
                   // *
@@ -203,8 +201,8 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     [first, ..already_processed],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 Ok(text) ->
@@ -218,12 +216,12 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
-                    None,
-                    Some(#(first, text)),
+                    option.None,
+                    option.Some(#(first, text)),
                     rest,
                   )
               }
-            Some(#(last_v, last_v_text)) ->
+            option.Some(#(last_v, last_v_text)) ->
               case dict.get(tags2texts, tag) {
                 Error(Nil) ->
                   // *
@@ -240,8 +238,8 @@ fn fold_tags_into_text_children_accumulator(
                       turn_into_text_node(last_v, last_v_text),
                       ..already_processed
                     ],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 Ok(text) ->
@@ -255,16 +253,16 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
-                    Some(turn_into_text_node(last_v, last_v_text)),
-                    Some(#(first, text)),
+                    option.Some(turn_into_text_node(last_v, last_v_text)),
+                    option.Some(#(first, text)),
                     rest,
                   )
               }
           }
         }
-        Some(last_t) ->
+        option.Some(last_t) ->
           case optional_last_v {
-            None ->
+            option.None ->
               case dict.get(tags2texts, tag) {
                 Error(Nil) ->
                   // *
@@ -277,8 +275,8 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     [first, last_t, ..already_processed],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 Ok(text) ->
@@ -293,11 +291,11 @@ fn fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
                     optional_last_t,
-                    Some(#(first, text)),
+                    option.Some(#(first, text)),
                     rest,
                   )
               }
-            Some(#(_, last_v_text)) ->
+            option.Some(#(_, last_v_text)) ->
               case dict.get(tags2texts, tag) {
                 Error(Nil) ->
                   // *
@@ -314,8 +312,8 @@ fn fold_tags_into_text_children_accumulator(
                       infra.t_end_insert_text(last_t, last_v_text),
                       ..already_processed
                     ],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 Ok(text) ->
@@ -329,8 +327,8 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags2texts,
                     already_processed,
-                    Some(infra.t_end_insert_text(last_t, text)),
-                    Some(#(first, text)),
+                    option.Some(infra.t_end_insert_text(last_t, text)),
+                    option.Some(#(first, text)),
                     rest,
                   )
               }
@@ -341,17 +339,17 @@ fn fold_tags_into_text_children_accumulator(
 
 fn transform(
   node: VXML,
-  tags_and_texts: InnerParam,
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       let new_children =
         fold_tags_into_text_children_accumulator(
-          tags_and_texts,
+          inner,
           [],
-          None,
-          None,
+          option.None,
+          option.None,
           children,
         )
       Ok(V(blame, tag, attrs, new_children))
@@ -359,12 +357,12 @@ fn transform(
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -373,8 +371,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String,      String))
-//       ↖ tag name   ↖ replacement
-//                      tag to use
+//       ↖            ↖
+//       tag name     replacement
+//                    tag to use
 
 type InnerParam =
   Dict(String, String)
@@ -389,21 +388,21 @@ type InnerParam =
 pub fn fold_tags_into_text(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "fold_tags_into_text",
-      Some(ins(param)),
-      "
-seemingly replaces specified tags by
-specified strings that are glued to
-surrounding text nodes (in end-of-last-line
-glued to beginning-of-first-line fashion),
-without regards for the tag's contents
-or attributes, that are destroyed in the
-process
-      "
+      desugarer_name: "fold_tags_into_text",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// seemingly replaces specified tags by
+/// specified strings that are glued to
+/// surrounding text nodes (in end-of-last-line
+/// glued to beginning-of-first-line fashion),
+/// without regards for the tag's contents
+/// or attributes, that are destroyed in the
+/// process
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

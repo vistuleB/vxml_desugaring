@@ -1,7 +1,7 @@
 import blamedlines.{type Blame}
 import gleam/int
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
@@ -13,7 +13,9 @@ fn generate_id(blame: Blame) -> String {
   <> string.inspect(int.random(9999))
 }
 
-fn transform(node: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  node: VXML,
+) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(b, t, attributes, c) -> {
@@ -43,8 +45,8 @@ fn transform(node: VXML) -> Result(VXML, DesugaringError) {
         })
 
       let id_attribute = case list.is_empty(has_handles), infra.get_attribute_by_name(node, "id") {
-        False, None -> [BlamedAttribute(b, key: "id", value: id)]
-        False, Some(id_attribute) -> [id_attribute]
+        False, option.None -> [BlamedAttribute(b, key: "id", value: id)]
+        False, option.Some(id_attribute) -> [id_attribute]
         _, _ -> []
       }
 
@@ -53,12 +55,12 @@ fn transform(node: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -66,18 +68,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
+/// unique Id generator for handles
 pub fn handles_generate_ids() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "handles_generate_ids",
-      option.None,
-      "unique Id generator for handles",
+      desugarer_name: "handles_generate_ids",
+      stringified_param: option.None,
+      general_description: "
+/// unique Id generator for handles
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

@@ -1,6 +1,6 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
-import gleam/string
+import gleam/option.{type Option}
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
@@ -48,8 +48,11 @@ fn updated_node(
   V(blame, tag, attributes, new_children)
 }
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
-  let #(counter_command, #(key, value), prefixes, wrapper) = param
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
+  let #(counter_command, #(key, value), prefixes, wrapper) = inner
 
   case vxml {
     T(_, _) -> Ok(vxml)
@@ -81,7 +84,7 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
 
               updated_node(
                 vxml,
-                Some(blamed_prefix),
+                option.Some(blamed_prefix),
                 #(blamed_cc, wrapper),
                 rest,
               )
@@ -89,7 +92,7 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
             }
             Error(_), True -> {
               let blamed_cc = BlamedContent(t_blame, counter_command)
-              updated_node(vxml, None, #(blamed_cc, wrapper), first_line) |> Ok
+              updated_node(vxml, option.None, #(blamed_cc, wrapper), first_line) |> Ok
             }
             Error(_), False -> Ok(vxml)
           }
@@ -100,19 +103,31 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform(_, param))
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String, #(String, String), List(String), Option(String))
+type Param =
+  #(String, #(String, String), List(String), Option(String))
+//  ↖       ↖                  ↖            ↖
+//  counter key-value pair     list of      wrapper
+//  command to insert         strings      tag to
+//  to      counter command   before       wrap the
+//  insert                    counter      counter
+//                           command      command
+
 type InnerParam = Param
 
+/// inserts TI2 counter commands into text nodes of specified elements
 /// # Param:
-///
 ///  - Counter command to insert . ex: "::++Counter"
 ///  - key-value pair of node to insert counter command
 ///  - list of strings before counter command
@@ -120,19 +135,20 @@ type InnerParam = Param
 pub fn insert_ti2_counter_commands(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "insert_ti2_counter_commands",
-      option.Some(string.inspect(param)),
-      "
-# Param:
- - Counter command to insert . ex: \"::++Counter\"
- - key-value pair of node to insert counter command
- - list of strings before counter command
- - A wrapper tag to wrap the counter command string      
+      desugarer_name: "insert_ti2_counter_commands",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// inserts TI2 counter commands into text nodes of specified elements
+/// # Param:
+///  - Counter command to insert . ex: \"::++Counter\"
+///  - key-value pair of node to insert counter command
+///  - list of strings before counter command
+///  - A wrapper tag to wrap the counter command string
       ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

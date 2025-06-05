@@ -1,12 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/pair
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
-
-const ins = string.inspect
 
 fn list_first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
   case l {
@@ -32,7 +30,7 @@ fn prepend_first_item_to_second_item(p: #(a, List(a))) -> List(a) {
 
 fn update_children(
   children: List(VXML),
-  param: InnerParam,
+  inner: InnerParam,
 ) -> List(VXML) {
   use #(first, rest) <- result_map_both(
     list_first_rest(children),
@@ -55,7 +53,7 @@ fn update_children(
         ),
           V(_, incoming_tag, _, _)
         -> {
-          case dict.get(param, previous_sibiling_tag) {
+          case dict.get(inner, previous_sibiling_tag) {
             Error(Nil) -> #(incoming, [previous_sibling, ..already_bundled])
             Ok(absorbed_tags) -> {
               case list.contains(absorbed_tags, incoming_tag) {
@@ -83,20 +81,23 @@ fn update_children(
   |> list.reverse
 }
 
-fn transform(node: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  node: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attributes, children) ->
-      Ok(V(blame, tag, attributes, update_children(children, param)))
+      Ok(V(blame, tag, attributes, update_children(children, inner)))
     _ -> Ok(node)
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -105,14 +106,15 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String,         String))
-//       ↖ tag that      ↖ tag that will
-//         will absorb     be absorbed by
-//         next sibling    previous sibling
+//       ↖              ↖
+//       tag that       tag that will
+//       will absorb    be absorbed by
+//       next sibling   previous sibling
 
 type InnerParam =
   Dict(String, List(String))
 
-/// if the arguments are [#("Tag1\", "Child1"),
+/// if the arguments are [#("Tag1", "Child1"),
 /// ("Tag1", "Child1")] then will cause Tag1
 /// nodes to absorb all subsequent Child1 & Child2
 /// nodes, as long as they come immediately after
@@ -120,19 +122,19 @@ type InnerParam =
 pub fn absorb_next_sibling_while(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "absorb_next_sibling_while",
-      Some(ins(param)),
-      "
-if the arguments are [#(\"Tag1\", \"Child1\"),
-(\"Tag1\", \"Child1\")] then will cause Tag1
-nodes to absorb all subsequent Child1 & Child2
-nodes, as long as they come immediately after
-Tag1 (in any order)
+      desugarer_name: "absorb_next_sibling_while",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// if the arguments are [#(\"Tag1\", \"Child1\"),
+/// (\"Tag1\", \"Child1\")] then will cause Tag1
+/// nodes to absorb all subsequent Child1 & Child2
+/// nodes, as long as they come immediately after
+/// Tag1 (in any order)
       ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }
