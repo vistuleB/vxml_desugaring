@@ -1,4 +1,3 @@
-import gleam/pair
 import gleam/result
 import gleam/list
 import gleam/option
@@ -29,8 +28,8 @@ fn strip_delimiter_pair_if_there(
       |> infra.t_drop_end(closing |> string.length)
       |> Ok
     }
-    True, _ -> Error(DesugaringError(blame, "Missing closing delimiter"))
-    _, True -> Error(DesugaringError(blame, "Missing opening delimiter"))
+    True, _ -> Error(DesugaringError(blame, "Missing closing '" <> closing <> "' delimiter"))
+    _, True -> Error(DesugaringError(blame, "Missing opening '" <> opening <> "' delimiter"))
   }
 }
 
@@ -90,7 +89,12 @@ fn desugarer_factory(param: Param) -> Desugarer {
   infra.node_to_node_desugarer_factory(transform_factory(param))
 }
 
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
 type Param = #(List(String), LatexDelimiterPair)
+type InnerParam = Param
 
 /// adds flexiblilty to user's custom
 /// mathblock element
@@ -106,22 +110,26 @@ type Param = #(List(String), LatexDelimiterPair)
 pub fn normalize_math_delimiters_inside(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "normalize_math_delimiters_inside",
-      option.Some(param |> ins),
+      desugarer_name: "normalize_math_delimiters_inside",
+      stringified_param: option.Some(ins(param)),
+      general_description:
       "
-adds flexiblilty to user's custom
-mathblock element
-```
-|> Mathblock
-    math
-```
-should be same as
-```
-|> Mathblock
-    $$math$$
-```
+/// adds flexiblilty to user's custom
+/// mathblock element
+/// ```
+/// |> Mathblock
+///     math
+/// ```
+/// should be same as
+/// ```
+/// |> Mathblock
+///     $$math$$
+/// ```
       ",
     ),
-    desugarer: desugarer_factory(param)
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error)}
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

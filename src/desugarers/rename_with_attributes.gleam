@@ -58,7 +58,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       }
     })
     |> result.all
-    |> result.map(fn(_) {Nil})
   )
   Ok(infra.triples_to_dict(param))
 }

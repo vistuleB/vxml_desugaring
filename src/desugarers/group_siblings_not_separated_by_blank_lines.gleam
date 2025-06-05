@@ -1,6 +1,6 @@
 import blamedlines.{type Blame}
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
@@ -36,16 +36,15 @@ fn transform(vxml: VXML, wrapper: String) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeFancyTransform {
-  let #(wrapper, excluded_tags) = param
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   infra.prevent_node_to_node_transform_inside(
-    transform(_, wrapper),
-    excluded_tags,
+    transform(_, inner.0),
+    inner.1,
   )
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -53,12 +52,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  #(String, List(String))
-
-//********************************
-// - String: name of wrapper tag
-// - List(String): keep out of these
-//********************************
+  #(String,      List(String))
+//  ↖            ↖
+//  name of      keep out
+//  wrapper      of these
+//  tag
 
 type InnerParam = Param
 
@@ -70,19 +68,20 @@ type InnerParam = Param
 pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "group_siblings_not_separated_by_blank_lines",
-      Some(ins(param)),
+      desugarer_name: "group_siblings_not_separated_by_blank_lines",
+      stringified_param: option.Some(ins(param)),
+      general_description:
       "
-wrap siblings that are not separated by
-WriterlyBlankLine inside a designated tag
-and remove WriterlyBlankLine elements;
-stays out of subtrees designated by
-tags in the second 'List(String)' argument
+/// wrap siblings that are not separated by
+/// WriterlyBlankLine inside a designated tag
+/// and remove WriterlyBlankLine elements;
+/// stays out of subtrees designated by
+/// tags in the second 'List(String)' argument
       ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

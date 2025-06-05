@@ -6,11 +6,11 @@ import vxml.{type VXML, T, V}
 
 fn transform(
   vxml: VXML,
-  param: InnerParam
+  inner: InnerParam
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, tag, atts, children) -> {
-      case list.find(param, fn(pair) { pair |> pair.first == tag }) {
+      case list.find(inner, fn(pair) { pair |> pair.first == tag }) {
         Error(Nil) -> Ok(vxml)
         Ok(#(_, #(start_tag, end_tag))) -> {
           Ok(V(
@@ -31,12 +31,12 @@ fn transform(
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -53,10 +53,14 @@ type InnerParam =
 
 pub fn insert_bookend_tags(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("insert_bookend_tags", option.None, "..."),
+    description: DesugarerDescription(
+      "insert_bookend_tags",
+      option.None,
+      "...",
+    ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }
