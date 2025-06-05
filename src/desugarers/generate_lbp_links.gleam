@@ -72,7 +72,7 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
   let chapters = infra.index_children_with_tag(root, "Chapter")
   let bootcamps = infra.index_children_with_tag(root, "Bootcamp")
 
-  let toc = infra.index_children_with_tag(root, "TOCAuthorSuppliedContent")
+  let toc = infra.index_children_with_tag(root, "TOCAuthorSuppliedContents")
   let assert [#(toc, _)] = toc
 
   let #(chapters, bootcamps, toc) = case
@@ -149,7 +149,7 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
       use _ <- infra.on_error_on_ok(over: bootcamp, with_on_ok: fn(c) { c })
 
       use <- infra.on_true_on_false(
-        over: tag == "TOCAuthorSuppliedContent",
+        over: tag == "TOCAuthorSuppliedContents",
         with_on_true: toc,
       )
 
