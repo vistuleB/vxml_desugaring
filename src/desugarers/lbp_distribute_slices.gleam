@@ -11,7 +11,7 @@ fn is_known_outer_element(vxml: VXML) -> Bool {
         list.contains(
           [
             "Book", "Chapter", "Bootcamp", "Section", "TOCAuthorSuppliedContent",
-            "PanelAuthorSuppliedContent", "Example", "Exercises", "Exercise",
+            "HamburgerPanelAuthorSuppliedContents", "Example", "Exercises", "Exercise",
             "Solution",
           ],
           tag,
