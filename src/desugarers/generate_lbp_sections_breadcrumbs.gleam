@@ -1,9 +1,11 @@
-import gleam/string.{inspect as ins}
+import gleam/string
 import gleam/result
 import gleam/list
 import infrastructure.{type Pipe, Pipe, DesugarerDescription, type DesugaringError, DesugaringError} as infra
-import gleam/option.{type Option}
-import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
+import gleam/option.{type Option, Some, None}
+import vxml.{type VXML, V, T, BlamedContent, type BlamedContent, BlamedAttribute}
+
+const ins = string.inspect
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use last <- infra.on_error_on_ok(
@@ -67,7 +69,7 @@ fn small_caps_nodes(nodes: List(VXML), result: List(VXML)) -> List(VXML) {
     [] -> result |> list.reverse
     [first, ..rest] -> {
       case first {
-        T(_, _) -> small_caps_nodes(rest, [small_caps_t(first), ..result])
+        T(_, _) -> small_caps_nodes(rest, [small_caps_t(first), ..result])  
         V(b, t, a, children) -> small_caps_nodes(rest, [
           V(b, t, a, small_caps_nodes(children, [])),
           ..result
@@ -86,13 +88,13 @@ fn transform_children(children: List(VXML)) -> List(VXML){
 fn first_child_must_be(node: VXML, tag: String, fallback: Option(String), callback: fn(VXML) -> VXML) -> Result(VXML, DesugaringError) {
 case infra.get_children(node) |> list.first, fallback {
     Ok(V(_, t, _, _) as node), _ if t == tag -> Ok(callback(node))
-    Ok(node), option.Some(fallback) -> {
+    Ok(node), Some(fallback) -> {
       [T(node.blame, [BlamedContent(node.blame, fallback)])]
       |> V(node.blame, "", [], _)
       |> callback
       |> Ok
     }
-    Ok(node), option.None -> {
+    Ok(node), None -> {
       Error(DesugaringError(
         node.blame,
         "First child must be a " <> tag
@@ -104,12 +106,12 @@ case infra.get_children(node) |> list.first, fallback {
 
 fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
   // throw error if first child is not verticalChunk
-  use vertical_chunk <- result.then(first_child_must_be(section, "VerticalChunk", option.None, fn(child){
+  use vertical_chunk <- result.then(first_child_must_be(section, "VerticalChunk", None, fn(child){
       child
   }))
 
   // fallback to Section x if first child is not b
-  first_child_must_be(vertical_chunk, "b", option.Some("Section " <> ins(index)), fn(child){
+  first_child_must_be(vertical_chunk, "b", Some("Section " <> ins(index)), fn(child){
       let assert V(_, _, _, children) = child
       let blame = infra.blame_us("generate_lbp_sections_breadcrumbs")
       let children = transform_children(children)
@@ -137,16 +139,14 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
   case child {
     V(b, "Chapter", a, children) -> {
       let sections = infra.children_with_tag(child, "Section")
-      use sections_ul <- result.try(generate_sections_list(sections))
+      use sections_ul <- result.try(generate_sections_list(sections)) 
       Ok(V(b, "Chapter", a, [sections_ul, ..children]))
     }
     _ -> Ok(child)
   }
 }
 
-fn transform(
-  root: VXML,
-) -> Result(VXML, DesugaringError) {
+fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
   let children = infra.get_children(root)
 
   use updated_children <- result.try(
@@ -157,35 +157,13 @@ fn transform(
   Ok(infra.replace_children_with(root, updated_children))
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
-}
-
-fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
-}
-
-fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
-}
-
-type Param = Nil
-
-type InnerParam = Nil
-
-/// generates breadcrumb navigation for LBP sections
 pub fn generate_lbp_sections_breadcrumbs() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "generate_lbp_sections_breadcrumbs",
-      stringified_param: option.None,
-      general_description: "
-/// generates breadcrumb navigation for LBP sections
-      ",
+      "generate_lbp_sections_breadcrumbs",
+      option.None,
+      "...",
     ),
-    desugarer: case param_to_inner_param(Nil) {
-      Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
-    }
+    desugarer: the_desugarer(_),
   )
 }

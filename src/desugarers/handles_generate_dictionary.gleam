@@ -2,17 +2,16 @@ import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/pair
-import gleam/option
+import gleam/option.{None}
 import gleam/result
-import gleam/string.{inspect as ins}
+import gleam/string
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandleInstances =
   Dict(String, #(String,     String,     String))
-//     ↖        ↖            ↖            ↖
-//     handle   local path,  element id,  string value
-//     name     of page      on page      of handle
+//     handle    local path, element id, string value
+//     name      of page     on page     of handle
 
 fn convert_handles_to_attributes(
   handles: HandleInstances,
@@ -65,19 +64,19 @@ fn get_handles_from_attributes(
 fn children_loop(
   children: List(VXML),
   handles: HandleInstances,
-  inner: InnerParam,
+  param: Param,
   local_path: String,
 ) {
   case children {
     [] -> Ok(#(children, handles))
     [first, ..rest] -> {
       use #(updated_child, updated_handles) <- result.try(
-        handles_dict_factory_transform(first, handles, False, inner, local_path),
+        handles_dict_factory_transform(first, handles, False, param, local_path),
       )
       use #(updated_children, updated_handles) <- result.try(children_loop(
         rest,
         updated_handles,
-        inner,
+        param,
         local_path,
       ))
       Ok(#(list.flatten([[updated_child], updated_children]), updated_handles))
@@ -87,12 +86,12 @@ fn children_loop(
 
 fn update_local_path(
   node: VXML,
-  inner: InnerParam,
+  param: Param,
   local_path: String,
 ) -> Result(String, DesugaringError) {
   let assert V(b, t, attributes, _) = node
   case
-    list.find(inner, fn(e) {
+    list.find(param, fn(e) {
       let #(tag, _) = e
       tag == t
     })
@@ -115,13 +114,13 @@ fn handles_dict_factory_transform(
   vxml: VXML,
   handles: HandleInstances,
   is_root: Bool,
-  inner: InnerParam,
+  param: Param,
   local_path: String,
 ) -> Result(#(VXML, HandleInstances), DesugaringError) {
   case vxml {
     V(b, t, attributes, children) -> {
       // check local path in param list
-      use local_path <- result.try(update_local_path(vxml, inner, local_path))
+      use local_path <- result.try(update_local_path(vxml, param, local_path))
 
       let #(attributes, extracted_handles) =
         attributes
@@ -138,7 +137,7 @@ fn handles_dict_factory_transform(
       use #(updated_children, updated_handles) <- result.try(children_loop(
         children,
         handles,
-        inner,
+        param,
         local_path,
       ))
 
@@ -161,53 +160,25 @@ fn handles_dict_factory_transform(
   }
 }
 
-fn transform(
-  vxml: VXML,
-  inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
-  result.map(
-    handles_dict_factory_transform(vxml, dict.new(), True, inner, ""),
-    pair.first
-  )
-}
-
-fn transform_factory(inner: InnerParam) -> infrastructure.NodeToNodeTransform {
-  transform(_, inner)
-}
-
-fn desugarer_factory(inner: InnerParam) -> infrastructure.Desugarer {
-  infrastructure.node_to_node_desugarer_factory(transform_factory(inner))
-}
-
-fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
-}
-
 type Param =
   List(#(String, String))
-//       ↖       ↖
-//       tags    attribute key
-//       to      that mentions
-//       get     local path
-//       local
-//       path
-//       from
+//        ^        ^
+//  tags to      attribute key
+//  get local    that mentions
+//  path from    local path
 
-type InnerParam = Param
-
-/// generates a dictionary of handles from handle attributes throughout the document
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "handles_generate_dictionary",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// generates a dictionary of handles from handle attributes throughout the document
-      ",
+      "handles_generate_dictionary",
+      None,
+      "...",
     ),
-    desugarer: case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
-    }
+    desugarer: fn(vxml) {
+      result.map(
+        handles_dict_factory_transform(vxml, dict.new(), True, param, ""),
+        pair.first
+      )
+    },
   )
 }
