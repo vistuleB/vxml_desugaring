@@ -704,9 +704,7 @@ type State =
 fn transform_factory(_: InnerParam) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
   let regexes = our_two_regexes()
   infra.StatefulDownAndUpNodeToNodeTransform(
-    v_before_transforming_children: fn(vxml, state) {
-      v_before_transforming_children(vxml, state, regexes)
-    },
+    v_before_transforming_children: fn(vxml, state) { v_before_transforming_children(vxml, state, regexes) },
     v_after_transforming_children: v_after_transforming_children,
     t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },
   )
