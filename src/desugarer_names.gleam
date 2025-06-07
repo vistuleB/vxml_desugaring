@@ -45,7 +45,7 @@ import desugarers/rename_when_child_of
 import desugarers/unwrap
 import desugarers/unwrap_vertical_chunks_with_no_text_child
 import desugarers/unwrap_when_descendant_of
-import desugarers/unwrap_when_single_child
+import desugarers/unwrap_when_zero_or_one_children
 import desugarers/unwrap_when_child_of
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
@@ -97,7 +97,7 @@ pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const unwrap_when_child_of= unwrap_when_child_of.unwrap_when_child_of
 pub const unwrap = unwrap.unwrap
 pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
-pub const unwrap_when_single_child = unwrap_when_single_child.unwrap_when_single_child
+pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.unwrap_when_zero_or_one_children
 pub const unwrap_vertical_chunks_with_no_text_child = unwrap_vertical_chunks_with_no_text_child.unwrap_vertical_chunks_with_no_text_child
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break

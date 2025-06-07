@@ -63,7 +63,9 @@ fn update_children(nodes: List(VXML), dollar: String) -> List(VXML) {
   }
 }
 
-fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
   let math_map = dict.from_list([#("Math", "$"), #("MathBlock", "$$")])
 
   case vxml {
@@ -79,12 +81,12 @@ fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_)
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -95,16 +97,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+/// reinserts dollar delimiters into Math and MathBlock elements
 pub fn reinsert_math_dollar() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "reinsert_math_dollar",
-      option.None,
-      "...",
+      desugarer_name: "reinsert_math_dollar",
+      stringified_param: option.None,
+      general_description: "
+/// reinserts dollar delimiters into Math and MathBlock elements
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

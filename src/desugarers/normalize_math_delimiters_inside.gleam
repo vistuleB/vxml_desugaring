@@ -65,8 +65,11 @@ fn assert_node_has_one_t(node: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
-  let #(tags, delimiter_pair) = param
+fn transform(
+  node: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
+  let #(tags, delimiter_pair) = inner
   case node {
     V(b, tag, a , _) -> {
       use <- infra.on_false_on_true(
@@ -81,19 +84,24 @@ fn transform(node: VXML, param: Param) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: Param) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: Param) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(List(String), LatexDelimiterPair)
+type Param =
+  #(List(String), LatexDelimiterPair)
+//  ↖             ↖
+//  tags          delimiter pair
+//                to use
+
 type InnerParam = Param
 
 /// adds flexiblilty to user's custom
@@ -112,8 +120,7 @@ pub fn normalize_math_delimiters_inside(param: Param) -> Pipe {
     description: DesugarerDescription(
       desugarer_name: "normalize_math_delimiters_inside",
       stringified_param: option.Some(ins(param)),
-      general_description:
-      "
+      general_description: "
 /// adds flexiblilty to user's custom
 /// mathblock element
 /// ```
@@ -128,7 +135,7 @@ pub fn normalize_math_delimiters_inside(param: Param) -> Pipe {
       ",
     ),
     desugarer: case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error)}
+      Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
   )

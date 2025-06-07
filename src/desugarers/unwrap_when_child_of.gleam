@@ -10,12 +10,12 @@ fn transform(
   _: List(VXML),
   _: List(VXML),
   _: List(VXML),
-  param: InnerParam,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
     V(_, tag, _, children) -> {
-      case infra.use_list_pair_as_dict(param, tag) {
+      case infra.use_list_pair_as_dict(inner, tag) {
         Error(Nil) -> Ok([vxml])
         Ok(parent_tags) -> {
           case list.first(ancestors) {
@@ -34,14 +34,14 @@ fn transform(
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
   fn(node, ancestors, s1, s2, s3) {
-    transform(node, ancestors, s1, s2, s3, param)
+    transform(node, ancestors, s1, s2, s3, inner)
   }
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -50,9 +50,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String,     List(String)))
-//        ↖            ↖
-//         tag to be    list of parent tag names
-//         unwrapped    that will cause child to unwrap
+//       ↖          ↖
+//       tag to be  list of parent tag names
+//       unwrapped  that will cause child to unwrap
 
 type InnerParam = Param
 
@@ -61,16 +61,16 @@ type InnerParam = Param
 pub fn unwrap_when_child_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "unwrap_when_child_of",
-      option.Some(ins(param)),
-      "
-unwrap nodes based on parent-child
-relationships
-      "
+      desugarer_name: "unwrap_when_child_of",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// unwrap nodes based on parent-child
+/// relationships
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

@@ -1,15 +1,18 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{ type VXML, BlamedContent, T, V }
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case dict.get(param, tag) {
+      case dict.get(inner, tag) {
         Ok(text) -> {
           let contents = string.split(text, "\n")
           let new_text_node =
@@ -30,35 +33,39 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
-fn param_to_inner_param(param: Param) ->  Result(InnerParam, DesugaringError) {
- infra.dict_from_list_with_desugaring_error(param)
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  infra.dict_from_list_with_desugaring_error(param)
 }
 
 type Param =
   List(#(String, String))
-//        tag     text
+//       ↖      ↖
+//       tag    text
 
 type InnerParam =
   Dict(String, String)
 
+/// prepends text to the beginning of specified tags
 pub fn prepend_text(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "prepend_text",
-      option.Some(string.inspect(param)),
-      "...",
+      desugarer_name: "prepend_text",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// prepends text to the beginning of specified tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

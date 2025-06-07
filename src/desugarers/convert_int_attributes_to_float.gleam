@@ -1,6 +1,6 @@
 import gleam/int
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
@@ -8,10 +8,10 @@ import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 fn update_attributes(
   tag: String,
   attributes: List(BlamedAttribute),
-  param: InnerParam,
+  inner: InnerParam,
 ) -> List(BlamedAttribute) {
   list.fold(
-    over: param,
+    over: inner,
     from: attributes,
     with: fn(
       current_attributes: List(BlamedAttribute),
@@ -43,23 +43,24 @@ fn update_attributes(
   )
 }
 
-fn transform(node: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  node: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attributes, children) -> {
-      Ok(V(blame, tag, update_attributes(tag, attributes, param), children))
+      Ok(V(blame, tag, update_attributes(tag, attributes, inner), children))
     }
   }
 }
 
-
-
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  infra.node_to_node_desugarer_factory(transform(_, param))
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -68,9 +69,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String,              String))
-//       ↖ tag name,          ↖ attribute name,
-//         matches all          matches all attributes
-//         tag if set to ""     if set to ""
+//       ↖                    ↖
+//       tag name,            attribute name,
+//       matches all          matches all attributes
+//       tag if set to ""     if set to ""
 
 type InnerParam = Param
 
@@ -80,13 +82,17 @@ type InnerParam = Param
 pub fn convert_int_attributes_to_float(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "convert_int_attributes_to_float",
-      Some(ins(param)),
-      "...",
+      desugarer_name: "convert_int_attributes_to_float",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// converts int to float for all attributes
+/// keys that match one of the entries in 'param', per
+/// the matching rules above
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error)}
-      Ok(param) -> desugarer_factory(param)
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

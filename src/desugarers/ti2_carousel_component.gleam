@@ -1,8 +1,11 @@
-import gleam/option.{None}
+import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, _, _, _) -> {
       // remove carousel buttons
@@ -44,12 +47,12 @@ fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_)
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -59,12 +62,17 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
+/// converts Bootstrap carousel components to custom Carousel components
 pub fn ti2_carousel_component() -> Pipe {
   Pipe(
-    description: DesugarerDescription("ti2_carousel_component", None, "..."),
+    description: DesugarerDescription(
+      desugarer_name: "ti2_carousel_component",
+      stringified_param: option.Some(ins(Nil)),
+      general_description: "/// converts Bootstrap carousel components to custom Carousel components",
+    ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

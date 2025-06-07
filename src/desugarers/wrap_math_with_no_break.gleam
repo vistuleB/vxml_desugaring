@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
@@ -34,7 +34,7 @@ fn wrap_second_element_if_its_math_and_recurse(
         math.blame,
         "NoBreak",
         [],
-        [last_word_of_first, Some(math)]
+        [last_word_of_first, option.Some(math)]
           |> option.values,
       ),
       ..wrap_second_element_if_its_math_and_recurse(after_second)
@@ -50,7 +50,7 @@ fn wrap_second_element_if_its_math_and_recurse(
       math.blame,
       "NoBreak",
       [],
-      [last_word_of_first, Some(math), first_word_of_third]
+      [last_word_of_first, option.Some(math), first_word_of_third]
         |> option.values,
     ),
     ..wrap_second_element_if_its_math_and_recurse([third, ..after_third])
@@ -75,12 +75,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_)
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -91,16 +91,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+/// wraps math elements with no-break containers to prevent line breaks
 pub fn wrap_math_with_no_break() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "wrap_math_with_no_break",
-      option.None,
-      "...",
+      desugarer_name: "wrap_math_with_no_break",
+      stringified_param: option.None,
+      general_description: "
+/// wraps math elements with no-break containers to prevent line breaks
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

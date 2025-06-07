@@ -704,17 +704,15 @@ type State =
 fn transform_factory(_: InnerParam) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
   let regexes = our_two_regexes()
   infra.StatefulDownAndUpNodeToNodeTransform(
-    v_before_transforming_children: fn(vxml, state) {
-      v_before_transforming_children(vxml, state, regexes)
-    },
+    v_before_transforming_children: fn(vxml, state) { v_before_transforming_children(vxml, state, regexes) },
     v_after_transforming_children: v_after_transforming_children,
     t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },
   )
 }
 
-fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
+fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
   infra.stateful_down_up_node_to_node_desugarer_factory(
-    transform_factory(param),
+    transform_factory(inner),
     #([], []),
   )
 }
@@ -771,56 +769,57 @@ type InnerParam = Nil
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "counters_substitute_and_assign_handles",
-      option.Some(string.inspect(None)),
+      desugarer_name: "counters_substitute_and_assign_handles",
+      stringified_param: option.Some(string.inspect(Nil)),
+      general_description:
       "
-Substitutes counters by their numerical
-value, converted to a string, and assiging those
-values to prefixed handles.
-
-If a counter named 'MyCounterName' is defined by
-ancestor, replaces strings of the form
-
-<aa><bb>MyCounterName
-
-where
-
-<aa> == \"::\"|\"..\" indicates whether
-the counter occurrence should be echoed as a
-string appearing in the document or not (\"::\" == echo,
-\"..\" == suppress), and where
-
-<bb> ==  \"++\"|\"--\"|\"øø\" indicates whether
-the counter should be incremented, decremented, or
-neither prior to possible insertion,
-
-by the appropriate replacement string (possibly
-none), and assigns handles coming to the left
-using the '<<' assignment, e.g.,
-
-handleName<<..++MyCounterName
-
-would assign the stringified incremented value
-of MyCounterName to handle 'handleName' without
-echoing the value to the document, whereas
-
-handleName<<::++MyCounterName
-
-will do the same but also insert the new counter
-value at that point in the document.
-
-The computed handle assignments are recorded as
-attributes of the form
-
-handle_<handleName> <counterValue>
-
-on the parent tag to be later used by the
-'handles_generate_dictionary' desugarer
+/// Substitutes counters by their numerical
+/// value converted to string form and assigns those
+/// values to prefixed handles.
+///
+/// If a counter named 'MyCounterName' is defined by
+/// an ancestor, replaces strings of the form
+///
+/// \\<aa>\\<bb>MyCounterName
+///
+/// where
+///
+/// \\<aa> == \"::\"|\"..\" indicates whether
+/// the counter occurrence should be echoed as a
+/// string appearing in the document or not (\"::\" == echo,
+/// \"..\" == suppress), and where
+///
+/// \\<bb> ==  \"++\"|\"--\"|\"øø\" indicates whether
+/// the counter should be incremented, decremented, or
+/// neither prior to possible insertion,
+///
+/// by the appropriate replacement string (possibly
+/// none), and assigns handles coming to the left
+/// using the '<<' assignment, e.g.,
+///
+/// handleName<<..++MyCounterName
+///
+/// would assign the stringified incremented value
+/// of MyCounterName to handle 'handleName' without
+/// echoing the value to the document, whereas
+///
+/// handleName<<::++MyCounterName
+///
+/// will do the same but also insert the new counter
+/// value at that point in the document.
+///
+/// The computed handle assignments are recorded as
+/// attributes of the form
+///
+/// handle_\\<handleName> <counterValue>
+///
+/// on the parent tag to be later used by the
+/// 'handles_generate_dictionary' desugarer
       ",
     ),
     desugarer: case param_to_inner_param(Nil) {
-      Error(error) -> fn(_) { Error(error)}
-      Ok(param) -> desugarer_factory(param)
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
@@ -16,18 +16,18 @@ fn pair_bookends_children_accumulator(
   case remaining {
     [] ->
       case last_opening {
-        None -> {
+        option.None -> {
           let assert [] = after_last_opening
           already_processed |> list.reverse
         }
-        Some(dude) -> {
+        option.Some(dude) -> {
           list.flatten([after_last_opening, [dude, ..already_processed]])
           |> list.reverse
         }
       }
     [T(_, _) as first, ..rest] ->
       case last_opening {
-        None -> {
+        option.None -> {
           // *
           // absorb the T-node into already_processed
           // *
@@ -37,12 +37,12 @@ fn pair_bookends_children_accumulator(
             closing,
             enclosing,
             [first, ..already_processed],
-            None,
+            option.None,
             [],
             rest,
           )
         }
-        Some(_) ->
+        option.Some(_) ->
           // *
           // absorb the T-node into after_last_opening
           // *
@@ -63,7 +63,7 @@ fn pair_bookends_children_accumulator(
           // treat the V-node like the T-node above
           // *
           case last_opening {
-            None -> {
+            option.None -> {
               // *
               // absorb the V-node into already_processed
               // *
@@ -73,12 +73,12 @@ fn pair_bookends_children_accumulator(
                 closing,
                 enclosing,
                 [first, ..already_processed],
-                None,
+                option.None,
                 [],
                 rest,
               )
             }
-            Some(_) ->
+            option.Some(_) ->
               // *
               // absorb the V-node into after_last_opening
               // *
@@ -94,7 +94,7 @@ fn pair_bookends_children_accumulator(
           }
         True, False ->
           case last_opening {
-            None -> {
+            option.None -> {
               // *
               // we make the V-node the new value of last_opening
               // *
@@ -104,12 +104,12 @@ fn pair_bookends_children_accumulator(
                 closing,
                 enclosing,
                 already_processed,
-                Some(first),
+                option.Some(first),
                 [],
                 rest,
               )
             }
-            Some(dude) ->
+            option.Some(dude) ->
               // *
               // we discard the previous last_opening and his followers and make the V-node the new value of last_opening
               // *
@@ -118,14 +118,14 @@ fn pair_bookends_children_accumulator(
                 closing,
                 enclosing,
                 list.flatten([after_last_opening, [dude, ..already_processed]]),
-                Some(first),
+                option.Some(first),
                 [],
                 rest,
               )
           }
         False, True ->
           case last_opening {
-            None -> {
+            option.None -> {
               // *
               // we absorb the V-node into already_processed
               // *
@@ -135,12 +135,12 @@ fn pair_bookends_children_accumulator(
                 closing,
                 enclosing,
                 [first, ..already_processed],
-                None,
+                option.None,
                 [],
                 rest,
               )
             }
-            Some(dude) ->
+            option.Some(dude) ->
               // *
               // we do a pairing
               // *
@@ -160,14 +160,14 @@ fn pair_bookends_children_accumulator(
                   ),
                   ..already_processed
                 ],
-                None,
+                option.None,
                 [],
                 rest,
               )
           }
         True, True ->
           case last_opening {
-            None -> {
+            option.None -> {
               // *
               // we make the V-node the new value of last_opening
               // *
@@ -177,12 +177,12 @@ fn pair_bookends_children_accumulator(
                 closing,
                 enclosing,
                 already_processed,
-                Some(first),
+                option.Some(first),
                 [],
                 rest,
               )
             }
-            Some(dude) ->
+            option.Some(dude) ->
               // *
               // we do a pairing
               // *
@@ -202,7 +202,7 @@ fn pair_bookends_children_accumulator(
                   ),
                   ..already_processed
                 ],
-                None,
+                option.None,
                 [],
                 rest,
               )
@@ -213,10 +213,9 @@ fn pair_bookends_children_accumulator(
 
 fn transform(
   node: VXML,
-  opening: List(String),
-  closing: List(String),
-  enclosing: String,
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
+  let #(opening, closing, enclosing) = inner
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
@@ -226,7 +225,7 @@ fn transform(
           closing,
           enclosing,
           [],
-          None,
+          option.None,
           [],
           children,
         )
@@ -235,34 +234,39 @@ fn transform(
   }
 }
 
-fn transform_factory(
-  param: InnerParam,
-) -> infra.NodeToNodeTransform {
-  let #(opening, closing, enclosing) = param
-  transform(_, opening, closing, enclosing)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(List(String), List(String), String)
+type Param =
+  #(List(String), List(String), String)
+//  ↖             ↖             ↖
+//  opening       closing       enclosing
+//  tags          tags          tag
+
 type InnerParam = Param
 
+/// pairs opening and closing bookend tags by wrapping content between them in an enclosing tag
 pub fn pair_bookends(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "pair_bookends",
-      option.Some(ins(param)),
-      "..."
+      desugarer_name: "pair_bookends",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// pairs opening and closing bookend tags by wrapping content between them in an enclosing tag
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

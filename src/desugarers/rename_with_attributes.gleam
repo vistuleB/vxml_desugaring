@@ -8,7 +8,7 @@ import vxml.{type VXML, V, BlamedAttribute}
 
 fn transform(
   vxml: VXML,
-  param: InnerParam,
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   use blame, tag, attributes, children <- infra.on_t_on_v(
     vxml,
@@ -16,7 +16,7 @@ fn transform(
   )
 
   use #(new_name, attributes_to_add) <- infra.on_error_on_ok(
-    dict.get(param, tag),
+    dict.get(inner, tag),
     fn(_) { Ok(vxml) }
   )
 
@@ -39,12 +39,12 @@ fn transform(
   Ok(V(blame, new_name, list.append(attributes, attributes_to_add), children))
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -64,20 +64,23 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, List(#(String, String))))
+//       ↖      ↖       ↖
+//       from   to      attributes to add
 
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
 
+/// renames tags and optionally adds attributes
 pub fn rename_with_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "rename_with_attributes",
-      option.Some(ins(param)),
-      "..."
+      desugarer_name: "rename_with_attributes",
+      stringified_param: option.Some(ins(param)),
+      general_description: "/// renames tags and optionally adds attributes",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

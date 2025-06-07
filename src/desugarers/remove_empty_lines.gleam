@@ -25,12 +25,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodesTransform {
-  transform(_)
+fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -38,6 +38,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
 /// for each text node, removes each line whose
@@ -46,17 +47,17 @@ type InnerParam = Nil
 pub fn remove_empty_lines() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "remove_empty_lines",
-      option.None,
-      "
-for each text node, removes each line whose
-content is the empty string & destroys
-text nodes that end up with 0 lines
+      desugarer_name: "remove_empty_lines",
+      stringified_param: option.None,
+      general_description: "
+/// for each text node, removes each line whose
+/// content is the empty string & destroys
+/// text nodes that end up with 0 lines
       ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

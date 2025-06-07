@@ -1,34 +1,37 @@
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
-fn replacer(mister: BlamedAttribute, param: InnerParam) -> BlamedAttribute {
+fn replacer(mister: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
   BlamedAttribute(
     mister.blame,
     mister.key,
-    list.fold(param, mister.value, fn(current, pair) {
+    list.fold(inner, mister.value, fn(current, pair) {
       let #(from, to) = pair
       string.replace(current, from, to)
     }),
   )
 }
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) ->
-      Ok(V(blame, tag, attrs |> list.map(replacer(_, param)), children))
+      Ok(V(blame, tag, attrs |> list.map(replacer(_, inner)), children))
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -37,6 +40,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String))
+//       ↖      ↖
+//       from   to
 
 type InnerParam = Param
 
@@ -46,17 +51,18 @@ type InnerParam = Param
 pub fn replace_in_attribute_values(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "replace_in_attribute_values",
-      Some(ins(param)),
+      desugarer_name: "replace_in_attribute_values",
+      stringified_param: option.Some(ins(param)),
+      general_description:
       "
-performs exact match find-replace in every
-attribute value of every node using the
-'string.replace' function
+/// performs exact match find-replace in every
+/// attribute value of every node using the
+/// 'string.replace' function
       ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

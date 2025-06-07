@@ -1,14 +1,18 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case dict.get(param, tag) {
+      case dict.get(inner, tag) {
         Error(Nil) -> Ok(vxml)
         Ok(inner_dict) -> {
           let new_children =
@@ -31,12 +35,12 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -71,22 +75,25 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String,   String,   String))
-//       old_name, new_name, parent
-//********************************
+//       ↖        ↖         ↖
+//       old_name new_name   parent
 
 type InnerParam =
   Dict(String, Dict(String, String))
 
+/// renames tags when they are children of specified parent tags
 pub fn rename_when_child_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "rename_when_child_of",
-      option.None,
-      "..."
+      desugarer_name: "rename_when_child_of",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// renames tags when they are children of specified parent tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

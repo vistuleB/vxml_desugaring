@@ -1,10 +1,12 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T}
 
-fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(blame, lines) -> {
       case lines {
@@ -29,12 +31,12 @@ fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_)
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -42,18 +44,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
+/// replaces multiple consecutive spaces with a single space
 pub fn replace_multiple_spaces_by_one() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "replace_multiple_spaces_by_one",
-      None,
-      "...",
+      desugarer_name: "replace_multiple_spaces_by_one",
+      stringified_param: option.None,
+      general_description: "
+/// replaces multiple consecutive spaces with a single space
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

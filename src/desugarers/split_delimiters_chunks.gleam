@@ -394,25 +394,25 @@ fn split_chunk_children(
 ///    element that accepts nesting
 fn transform(
   node: VXML,
-  param: InnerParam,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) -> Ok([node])
     V(_, "VerticalChunk", _, children) -> {
       children
-      |> split_chunk_children("VerticalChunk", param)
+      |> split_chunk_children("VerticalChunk", inner)
       |> Ok()
     }
     V(_, _, _, _) -> Ok([node])
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodesTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -420,18 +420,23 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String, String, Bool, List(String))
+//            ↖       ↖       ↖       ↖     ↖
+//            open    close   tag     split can_be_nested
+//            delim   delim   name    chunks
+
 type InnerParam = Param
 
+/// splits content within VerticalChunk by delimiters
 pub fn split_delimiters_chunks_desugarer(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "split_delimiters_chunks_desugarer",
-      option.Some(ins(param)),
-      "...",
+      desugarer_name: "split_delimiters_chunks_desugarer",
+      stringified_param: option.Some(ins(param)),
+      general_description: "/// splits content within VerticalChunk by delimiters",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

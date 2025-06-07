@@ -1,14 +1,17 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case list.contains(param, tag) {
+      case list.contains(inner, tag) {
         True -> {
           Ok(V(
             blame,
@@ -25,12 +28,12 @@ fn transform(vxml: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -38,18 +41,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
+
 type InnerParam = Param
 
+/// encodes spaces in first and last child of specified tags
 pub fn encode_spaces_in_first_and_last_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "encode_spaces_in_first_and_last_child",
-      option.Some(ins(param)),
-      "...",
+      desugarer_name: "encode_spaces_in_first_and_last_child",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// encodes spaces in first and last child of specified tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error)}
-      Ok(param) -> desugarer_factory(param)
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

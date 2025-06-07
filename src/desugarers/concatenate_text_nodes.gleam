@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option.{None}
+import gleam/option
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
@@ -17,7 +17,9 @@ fn concatenate_lines_in(nodes: List(VXML)) -> VXML {
   T(blame, all_lines)
 }
 
-fn transform(node: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  node: VXML,
+) -> Result(VXML, DesugaringError) {
   case node {
     V(blame, tag, attributes, children) -> {
       let new_children =
@@ -34,12 +36,12 @@ fn transform(node: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(_param: InnerParam) -> infra.NodeToNodeTransform {
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -47,14 +49,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
+/// concatenates adjacent text nodes into single text nodes
 pub fn concatenate_text_nodes() -> Pipe {
   Pipe(
-    description: DesugarerDescription("concatenate_text_nodes", None, "..."),
+    description: DesugarerDescription(
+      desugarer_name: "concatenate_text_nodes",
+      stringified_param: option.None,
+      general_description: "
+/// concatenates adjacent text nodes into single text nodes
+      ",
+    ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(param) -> desugarer_factory(param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }
