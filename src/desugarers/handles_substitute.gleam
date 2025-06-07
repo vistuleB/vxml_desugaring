@@ -227,11 +227,43 @@ type Param = List(#(String, String))
 
 type InnerParam = Param
 
-/// Looks for handle definitions in GrandWrapper and
-/// replaces >>handle occurences with defined value
-/// Returns error if there's a handle occurence with no definition
-/// # Param
-/// list of additional key-value pairs to attach to anchor tag
+
+/// Expects a document with root 
+/// 'GrandWrapper' whose attributes
+///  comprise of key-value pairs of
+///  the form :
+/// handle_name | id | filename | value
+/// and with a unique child being the 
+/// root of the original document.
+/// 
+/// Decodes the attributes into a dictionary
+/// of the form:
+/// ```
+/// Dict(String, #(String, String, String))
+/// ```
+/// 
+/// Traverses the document and replaces 
+/// each >>handle_name occurrence by 
+/// 1. if filename is the same as the 
+///    current document's filename:
+/// ```
+/// <InChapterLink href='filename?id=id'>
+///   handle_value
+/// </InChapterLink>
+/// ```
+/// 2. if filename is different:
+/// ```
+/// <a href='filename?id=id'>
+///  handle_value
+/// </a>
+/// ```
+/// 
+/// Destroys the GrandWrapper on exit
+/// returning its unique child of GrandWrapper. 
+/// 
+/// Throws errors if handle_name in
+/// >>handle_name doesn't exist in the 
+/// GrandWrapper attributes.
 pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
@@ -239,11 +271,42 @@ pub fn handles_substitute(param: Param) -> Pipe {
       "handles_substitute",
       option.None,
       "
-Looks for handle definitions in GrandWrapper and
-replaces >>handle occurences with defined value
-Returns error if there's a handle occurence with no definition
-# Param
-list of additional key-value pairs to attach to anchor tag
+Expects a document with root 
+'GrandWrapper' whose attributes
+ comprise of key-value pairs of
+ the form :
+handle_name | id | filename | value
+and with a unique child being the 
+root of the original document.
+
+Decodes the attributes into a dictionary
+of the form:
+```
+Dict(String, #(String, String, String))
+```
+
+Traverses the document and replaces 
+each >>handle_name occurrence by 
+1. if filename is the same as the 
+   current document's filename:
+```
+<InChapterLink href='filename?id=id'>
+  handle_value
+</InChapterLink>
+```
+2. if filename is different:
+```
+<a href='filename?id=id'>
+ handle_value
+</a>
+```
+
+Destroys the GrandWrapper on exit
+returning its unique child of GrandWrapper. 
+
+Throws errors if handle_name in
+>>handle_name doesn't exist in the 
+GrandWrapper attributes.
       "
     ),
     desugarer: case param_to_inner_param(param) {

@@ -167,6 +167,35 @@ type Param =
 //  get local    that mentions
 //  path from    local path
 
+/// Looks for `handle` attributes 
+/// in the V nodes and transforms
+/// which are expected to be in form:
+/// `handle | element_id | value`.
+/// ( panics if not in this form )
+/// 
+/// Transform the values into a dict
+/// where the key is the handle name
+/// 
+/// and Adds new field of data ( path )
+/// which represents the filename
+/// and is expected to be available
+/// In attribute value of node with
+/// Param.0 tag Param.1 attribute_key
+/// 
+/// Wraps the document root by a V
+/// node with tag GrandWrapper
+/// and transform back the dict as the
+/// grandwrapper's attributes
+/// 
+/// Returns a pair of newly created
+/// node and state of handles used
+/// to check for name uniqueness
+/// 
+/// Throws error if
+/// 1. there are multiple handles
+///    with same handle_name
+/// 2. no node found with 
+/// Param.0 tag Param.1 attribute_key
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
