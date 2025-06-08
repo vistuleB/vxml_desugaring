@@ -27,7 +27,7 @@ fn transform(
   let #(parent_tag, child_tag, key) = inner
   case node {
     V(b, tag, attributes, children) if tag == parent_tag -> {
-        case infra.get_attribute_by_name(node, key) {
+        case infra.v_attribute_with_key(node, key) {
           option.None -> Ok(node)
           option.Some(attribute) -> {
             let new_attribites = attributes |> list.filter(fn(x) {

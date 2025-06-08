@@ -29,7 +29,7 @@ fn chapter_link(
   let item_blame = infra.get_blame(item)
 
   use label_attr <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "title_gr"),
+    infra.v_attribute_with_key(item, "title_gr"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
@@ -39,7 +39,7 @@ fn chapter_link(
   )
 
   use href_attr <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "title_en"),
+    infra.v_attribute_with_key(item, "title_en"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
@@ -49,7 +49,7 @@ fn chapter_link(
   )
 
   use number_attribute <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "number"),
+    infra.v_attribute_with_key(item, "number"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
@@ -101,7 +101,7 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
   let item_blame = infra.get_blame(item)
 
   use number_attribute <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "number"),
+    infra.v_attribute_with_key(item, "number"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "

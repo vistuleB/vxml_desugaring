@@ -5,7 +5,7 @@ import gleam/list
 import gleam/option
 import gleam/regexp
 import gleam/result
-import gleam/string.{inspect as ins}
+import gleam/string
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,

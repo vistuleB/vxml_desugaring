@@ -1,20 +1,20 @@
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/pair
-import gleam/option.{None}
+import gleam/option.{Some, None}
 import gleam/result
+import gleam/pair
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
-type HandleInstances =
+type HandlesDict =
   Dict(String, #(String,     String,     String))
-//     handle    local path, element id, string value
+//     handle    local path  element id  string value
 //     name      of page     on page     of handle
 
 fn convert_handles_to_attributes(
-  handles: HandleInstances,
+  handles: HandlesDict,
 ) -> List(BlamedAttribute) {
   let blame = Blame("", 0, 0, [])
 
@@ -30,7 +30,7 @@ fn convert_handles_to_attributes(
 
 fn check_handle_already_defined(
   new_handle_name: String,
-  handles: HandleInstances,
+  handles: HandlesDict,
   blame: Blame,
 ) -> Result(Nil, DesugaringError) {
   case dict.get(handles, new_handle_name) {
@@ -61,12 +61,30 @@ fn get_handles_from_attributes(
   #(filtered_attributes, extracted_handles)
 }
 
-fn children_loop(
-  children: List(VXML),
-  handles: HandleInstances,
+fn update_local_path(
+  node: VXML,
   param: Param,
   local_path: String,
-) {
+) -> Result(String, DesugaringError) {
+  let assert V(_, _, _, _) = node
+
+  case infra.use_list_pair_as_dict(param, node.tag) {
+    Ok(att_key) -> {
+      case infra.v_attribute_with_key(node, att_key) {
+        Some(BlamedAttribute(_, _, value)) -> Ok(value)
+        None -> Error(DesugaringError(node.blame, "attribute " <> att_key <> " not found for node " <> node.tag))
+      }
+    }
+    Error(_) -> Ok(local_path)
+  }
+}
+
+fn children_loop(
+  children: List(VXML),
+  handles: HandlesDict,
+  param: Param,
+  local_path: String,
+) -> Result(#(List(VXML), HandlesDict), DesugaringError) {
   case children {
     [] -> Ok(#(children, handles))
     [first, ..rest] -> {
@@ -84,39 +102,13 @@ fn children_loop(
   }
 }
 
-fn update_local_path(
-  node: VXML,
-  param: Param,
-  local_path: String,
-) -> Result(String, DesugaringError) {
-  let assert V(b, t, attributes, _) = node
-  case
-    list.find(param, fn(e) {
-      let #(tag, _) = e
-      tag == t
-    })
-  {
-    Ok(#(_, att_key)) -> {
-      case attributes |> list.find(fn(att) { att.key == att_key }) {
-        Ok(BlamedAttribute(_, _, value)) -> Ok(value)
-        Error(_) ->
-          Error(DesugaringError(
-            b,
-            "Attribute " <> att_key <> " not found for node " <> t,
-          ))
-      }
-    }
-    Error(_) -> Ok(local_path)
-  }
-}
-
 fn handles_dict_factory_transform(
   vxml: VXML,
-  handles: HandleInstances,
+  handles: HandlesDict,
   is_root: Bool,
   param: Param,
   local_path: String,
-) -> Result(#(VXML, HandleInstances), DesugaringError) {
+) -> Result(#(VXML, HandlesDict), DesugaringError) {
   case vxml {
     V(b, t, attributes, children) -> {
       // check local path in param list
@@ -170,32 +162,34 @@ type Param =
 /// Looks for `handle` attributes 
 /// in the V nodes and transforms
 /// which are expected to be in form:
-/// `handle | element_id | value`.
+/// `handle | id | value`.
 /// ( panics if not in this form )
 /// 
 /// Transform the values into a dict
 /// where the key is the handle name
+/// and the values are tuples 
+/// #(String, String, String) comprising
+/// the handle, id, and value.
 /// 
-/// and Adds new field of data ( path )
+/// Adds new field of data (path)
 /// which represents the filename
 /// and is expected to be available
 /// In attribute value of node with
-/// Param.0 tag Param.1 attribute_key
+/// Param.0 tag Param.1 attribute_key.
 /// 
 /// Wraps the document root by a V
 /// node with tag GrandWrapper
 /// and transform back the dict as the
-/// grandwrapper's attributes
+/// grandwrapper's attributes.
 /// 
 /// Returns a pair of newly created
 /// node and state of handles used
-/// to check for name uniqueness
+/// to check for name uniqueness.
 /// 
 /// Throws error if
 /// 1. there are multiple handles
 ///    with same handle_name
-/// 2. no node found with 
-/// Param.0 tag Param.1 attribute_key
+/// 2. no node found with Param.0 tag Param.1 attribute_key
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(

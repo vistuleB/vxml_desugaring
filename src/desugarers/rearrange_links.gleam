@@ -167,7 +167,7 @@ fn match_internal(
     [Word(word), ..pattern_rest] ->
       case atomized {
         [V(_, "__OneWord", _, _) as v, ..atomized_rest] -> {
-          let assert Some(attr) = infra.get_attribute_by_name(v, "val")
+          let assert Some(attr) = infra.v_attribute_with_key(v, "val")
           case attr.value == word {
             True -> match_internal(
               atomized_rest,

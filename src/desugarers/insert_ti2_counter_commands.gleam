@@ -58,7 +58,7 @@ fn transform(
     T(_, _) -> Ok(vxml)
     V(_, _, _, children) -> {
       use <- infra.on_false_on_true(
-        over: infra.has_attribute(vxml, key, value),
+        over: infra.v_has_key_value_attribute(vxml, key, value),
         with_on_false: Ok(vxml),
       )
 

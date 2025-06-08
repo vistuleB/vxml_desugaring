@@ -230,6 +230,24 @@ pub fn io_debug_digests(vxmls: List(VXML), announce: String) -> List(VXML) {
   vxmls
 }
 
+pub fn readable_attribute(attr: BlamedAttribute) -> String {
+  "   " <> attr.key <> "=" <> attr.value
+}
+
+pub fn v_readable_attribute(vxml: VXML) -> String {
+  let assert V(_, _, attributes, _) = vxml
+  attributes
+  |> list.map(readable_attribute)
+  |> string.join("\n")
+}
+
+pub fn v_echo_readable_attributes(vxml: VXML) -> Nil {
+  let assert V(_, _, attributes, _) = vxml
+  attributes
+  |> list.map(readable_attribute)
+  |> list.each(fn(s) {echo s})
+}
+
 pub fn announce_error(message: String) -> fn(e) -> Nil {
   fn(error) { io.println(message <> ": " <> ins(error)) }
 }
@@ -362,10 +380,31 @@ pub fn use_list_pair_as_dict(
 ) -> Result(b, Nil) {
   case list_pairs {
     [] -> Error(Nil)
-    [#(alice, bob)] if alice == key -> Ok(bob)
+    [#(alice, bob), ..] if alice == key -> Ok(bob)
     [_, ..rest] -> use_list_pair_as_dict(rest, key)
   }
 }
+
+// pub fn use_list_pair_as_dict_debug(
+//   list_pairs: List(#(a, b)),
+//   key: a
+// ) -> Result(b, Nil) {
+//   echo "entering use_list_pair_as_dict_debug"
+//   let return_value = 
+//     case list_pairs {
+//       [] -> Error(Nil)
+//       [#(alice, bob), ..rest] if alice == key -> {
+//         echo "found alice"
+//         Ok(bob)
+//       }
+//       [#(alice, _), ..rest] -> {
+//         echo "alice was: " <> ins(alice)
+//         use_list_pair_as_dict(rest, key)
+//       }
+//     }
+//   echo "returning: " <> ins(return_value)
+//   return_value
+// }
 
 //**************************************************************
 //* either-or functions
@@ -1037,9 +1076,9 @@ pub fn prepend_unique_key_attribute(
   vxml: VXML,
   attr: BlamedAttribute,
 ) -> Result(VXML, Nil) {
-  case get_attribute_by_name(vxml, attr.key) {
-    Some(_) -> Error(Nil)
-    None -> Ok(prepend_attribute(vxml, attr))
+  case v_has_attribute_with_key(vxml, attr.key) {
+    True -> Error(Nil)
+    False -> Ok(prepend_attribute(vxml, attr))
   }
 }
 
@@ -1053,28 +1092,38 @@ pub fn get_attribute_keys(attrs: List(BlamedAttribute)) -> List(String) {
   |> list.map(fn(attr) { attr.key })
 }
 
-pub fn get_attribute_by_name(
+pub fn v_attribute_with_key(
   vxml: VXML,
-  name: String,
+  key: String,
 ) -> Option(BlamedAttribute) {
-  let assert V(_, _, blamed_attributes, _) = vxml
-  case
-    list.find(blamed_attributes, fn(blamed_attribute) {
-      blamed_attribute.key == name
-    })
+  let assert V(_, _, attrs, _) = vxml
+  case list.find(attrs, fn(b) { b.key == key })
   {
     Error(Nil) -> None
     Ok(thing) -> Some(thing)
   }
 }
 
-pub fn has_attribute(vxml: VXML, name: String, value: String) -> Bool {
-  let assert V(_, _, blamed_attributes, _) = vxml
-  case
-    list.find(blamed_attributes, fn(blamed_attribute) {
-      blamed_attribute.key == name && blamed_attribute.value == value
-    })
-  {
+pub fn v_all_attributes_with_key(
+  vxml: VXML,
+  key: String,
+) -> List(BlamedAttribute) {
+  let assert V(_, _, attrs, _) = vxml
+  attrs
+  |> list.filter(fn(b) {b.key == key})
+}
+
+pub fn v_has_attribute_with_key(vxml: VXML, key: String) -> Bool {
+  let assert V(_, _, attrs, _) = vxml
+  case list.find(attrs, fn(b) { b.key == key }) {
+    Error(Nil) -> False
+    Ok(_) -> True
+  }
+}
+
+pub fn v_has_key_value_attribute(vxml: VXML, key: String, value: String) -> Bool {
+  let assert V(_, _, attrs, _) = vxml
+  case list.find(attrs, fn(b) { b.key == key && b.value == value }) {
     Error(Nil) -> False
     Ok(_) -> True
   }
@@ -1101,7 +1150,7 @@ pub fn is_v_and_has_attr(vxml: VXML, key: String, value: String) -> Bool {
   case vxml {
     T(_, _) -> False
     _ -> {
-      has_attribute(vxml, key, value)
+      v_has_key_value_attribute(vxml, key, value)
     }
   }
 }
@@ -1150,11 +1199,6 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
       ])
     }
   }
-}
-
-pub fn children_with_attr(vxml: VXML, key: String, value: String) -> List(VXML) {
-  let assert V(_, _, _, _) = vxml
-  filter_children(vxml, is_v_and_has_attr(_, key, value))
 }
 
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
@@ -1301,7 +1345,7 @@ pub type NodeToNodeFancyTransform =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(VXML, DesugaringError)
 
-fn fancy_depth_first_node_to_node_children_traversal(
+fn fancy_node_to_node_children_traversal(
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
@@ -1315,7 +1359,7 @@ fn fancy_depth_first_node_to_node_children_traversal(
       )
     [first, ..rest] -> {
       use first_replacement <- result.then(
-        fancy_depth_first_node_to_node_desugar_one(
+        fancy_node_to_node_desugar_one(
           first,
           ancestors,
           previous_siblings_before_mapping,
@@ -1324,7 +1368,7 @@ fn fancy_depth_first_node_to_node_children_traversal(
           transform,
         ),
       )
-      fancy_depth_first_node_to_node_children_traversal(
+      fancy_node_to_node_children_traversal(
         ancestors,
         [first, ..previous_siblings_before_mapping],
         [first_replacement, ..previous_siblings_after_mapping],
@@ -1335,7 +1379,7 @@ fn fancy_depth_first_node_to_node_children_traversal(
   }
 }
 
-fn fancy_depth_first_node_to_node_desugar_one(
+fn fancy_node_to_node_desugar_one(
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
@@ -1352,26 +1396,24 @@ fn fancy_depth_first_node_to_node_desugar_one(
         previous_siblings_after_mapping,
         following_siblings_before_mapping,
       )
+
     V(blame, tag, attrs, children) -> {
-      case
-        fancy_depth_first_node_to_node_children_traversal(
+      use #(_, reversed_children, _) <- result.then(
+        fancy_node_to_node_children_traversal(
           [node, ..ancestors],
           [],
           [],
           children,
           transform,
-        )
-      {
-        Ok(#(_, mapped_children, _)) ->
-          transform(
-            V(blame, tag, attrs, mapped_children |> list.reverse),
-            ancestors,
-            previous_siblings_before_mapping,
-            previous_siblings_after_mapping,
-            following_siblings_before_mapping,
-          )
-        Error(err) -> Error(err)
-      }
+      ))
+
+      transform(
+        V(blame, tag, attrs, reversed_children |> list.reverse),
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+      )
     }
   }
 }
@@ -1379,7 +1421,7 @@ fn fancy_depth_first_node_to_node_desugar_one(
 pub fn node_to_node_fancy_desugarer_factory(
   transform: NodeToNodeFancyTransform,
 ) -> Desugarer {
-  fancy_depth_first_node_to_node_desugar_one(_, [], [], [], [], transform)
+  fancy_node_to_node_desugar_one(_, [], [], [], [], transform)
 }
 
 //**********************************************************************
@@ -1391,7 +1433,7 @@ pub type NodeToNodesFancyTransform =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(List(VXML), DesugaringError)
 
-fn fancy_depth_first_node_to_nodes_children_traversal(
+fn fancy_node_to_nodes_children_traversal(
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
@@ -1405,7 +1447,7 @@ fn fancy_depth_first_node_to_nodes_children_traversal(
       )
     [first, ..rest] -> {
       use first_replacement <- result.then(
-        fancy_depth_first_node_to_nodes_desugar_one(
+        fancy_node_to_nodes_desugar_one(
           first,
           ancestors,
           previous_siblings_before_mapping,
@@ -1414,7 +1456,7 @@ fn fancy_depth_first_node_to_nodes_children_traversal(
           transform,
         ),
       )
-      fancy_depth_first_node_to_nodes_children_traversal(
+      fancy_node_to_nodes_children_traversal(
         ancestors,
         [first, ..previous_siblings_before_mapping],
         list.flatten([
@@ -1428,7 +1470,7 @@ fn fancy_depth_first_node_to_nodes_children_traversal(
   }
 }
 
-fn fancy_depth_first_node_to_nodes_desugar_one(
+fn fancy_node_to_nodes_desugar_one(
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
@@ -1447,7 +1489,7 @@ fn fancy_depth_first_node_to_nodes_desugar_one(
       )
     V(blame, tag, attrs, children) -> {
       case
-        fancy_depth_first_node_to_nodes_children_traversal(
+        fancy_node_to_nodes_children_traversal(
           [node, ..ancestors],
           [],
           [],
@@ -1473,7 +1515,7 @@ pub fn node_to_nodes_fancy_desugarer_factory(
   transform: NodeToNodesFancyTransform,
 ) -> Desugarer {
   fn(root: VXML) {
-    use vxmls <- result.then(fancy_depth_first_node_to_nodes_desugar_one(
+    use vxmls <- result.then(fancy_node_to_nodes_desugar_one(
       root,
       [],
       [],
@@ -1606,6 +1648,110 @@ pub fn stateful_node_to_node_desugarer_factory(
 }
 
 //**********************************************************************
+//* desugaring efforts #1.85: stateful node-to-node with fancy
+//* transform (NOT CURRENTLY USED == NOT CURRENTLY TESTED)
+//**********************************************************************
+
+pub type StatefulNodeToNodeFancyTransform(a) =
+  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
+    Result(#(VXML, a), DesugaringError)
+
+fn stateful_fancy_depth_first_node_to_node_children_traversal(
+  state: a,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  transform: StatefulNodeToNodeFancyTransform(a),
+) -> Result(#(List(VXML), List(VXML), List(VXML), a), DesugaringError) {
+  case following_siblings_before_mapping {
+    [] ->
+      Ok(
+        #(previous_siblings_before_mapping, previous_siblings_after_mapping, [], state),
+      )
+    [first, ..rest] -> {
+      use #(first_replacement, state) <- result.then(
+        stateful_fancy_depth_first_node_to_node_desugar_one(
+          state,
+          first,
+          ancestors,
+          previous_siblings_before_mapping,
+          previous_siblings_after_mapping,
+          rest,
+          transform,
+        ),
+      )
+      stateful_fancy_depth_first_node_to_node_children_traversal(
+        state,
+        ancestors,
+        [first, ..previous_siblings_before_mapping],
+        [first_replacement, ..previous_siblings_after_mapping],
+        rest,
+        transform,
+      )
+    }
+  }
+}
+
+fn stateful_fancy_depth_first_node_to_node_desugar_one(
+  state: a,
+  node: VXML,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  transform: StatefulNodeToNodeFancyTransform(a),
+) -> Result(#(VXML, a), DesugaringError) {
+  case node {
+    T(_, _) ->
+      transform(
+        node,
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+        state,
+      )
+    V(blame, tag, attrs, children) -> {
+      case
+        stateful_fancy_depth_first_node_to_node_children_traversal(
+          state,
+          [node, ..ancestors],
+          [],
+          [],
+          children,
+          transform,
+        )
+      {
+        Ok(#(_, mapped_children, _, state)) ->
+          transform(
+            V(blame, tag, attrs, mapped_children |> list.reverse),
+            ancestors,
+            previous_siblings_before_mapping,
+            previous_siblings_after_mapping,
+            following_siblings_before_mapping,
+            state,
+          )
+
+        Error(err) -> Error(err)
+      }
+    }
+  }
+}
+
+pub fn stateful_node_to_node_fancy_desugarer_factory(
+  transform: StatefulNodeToNodeFancyTransform(a),
+  initial_state: a,
+) -> Desugarer {
+  fn(vxml) {
+    case stateful_fancy_depth_first_node_to_node_desugar_one(initial_state, vxml, [], [], [], [], transform) {
+      Error(err) -> Error(err)
+      Ok(#(vxml, _)) -> Ok(vxml)
+    }
+  }
+}
+
+//**********************************************************************
 //* desugaring efforts #1.9: stateful down-up node-to-node
 //**********************************************************************
 
@@ -1663,6 +1809,137 @@ pub fn stateful_down_up_node_to_node_desugarer_factory(
       vxml,
       transform
     ))
+    Ok(vxml)
+  }
+}
+
+//**********************************************************************
+//* desugaring efforts #1.9: stateful down-up node-to-node
+//**********************************************************************
+
+pub type StatefulDownAndUpNodeToNodeFancyTransform(a) {
+  StatefulDownAndUpNodeToNodeFancyTransform(
+    v_before_transforming_children: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
+      Result(#(VXML, a), DesugaringError),
+    v_after_transforming_children: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a, a) ->
+      Result(#(VXML, a), DesugaringError),
+    t_transform: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
+      Result(#(VXML, a), DesugaringError),
+  )
+}
+
+fn stateful_down_up_fancy_node_to_node_children_traversal(
+  state: a,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
+) -> Result(#(List(VXML), List(VXML), List(VXML), a), DesugaringError) {
+  case following_siblings_before_mapping {
+    [] ->
+      Ok(
+        #(previous_siblings_before_mapping, previous_siblings_after_mapping, [], state),
+      )
+    [first, ..rest] -> {
+      use #(first_replacement, state) <- result.then(
+        stateful_down_up_fancy_node_to_node_one(
+          state,
+          first,
+          ancestors,
+          previous_siblings_before_mapping,
+          previous_siblings_after_mapping,
+          rest,
+          transform,
+        ),
+      )
+      stateful_down_up_fancy_node_to_node_children_traversal(
+        state,
+        ancestors,
+        [first, ..previous_siblings_before_mapping],
+        [first_replacement, ..previous_siblings_after_mapping],
+        rest,
+        transform,
+      )
+    }
+  }
+}
+
+fn stateful_down_up_fancy_node_to_node_one(
+  original_state: a,
+  node: VXML,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
+) -> Result(#(VXML, a), DesugaringError) {
+  case node {
+    V(_, _, _, children) -> {
+      use #(node, state) <- result.then(
+        transform.v_before_transforming_children(
+          node,
+          ancestors,
+          previous_siblings_before_mapping,
+          previous_siblings_after_mapping,
+          following_siblings_before_mapping,
+          original_state,
+        ),
+      )
+
+      let assert V(_, _, _, _) = node
+
+      use #(_, reversed_children, _, state) <- result.then(
+        stateful_down_up_fancy_node_to_node_children_traversal(
+          state,
+          [node, ..ancestors],
+          [],
+          [],
+          children,
+          transform,
+        )
+      )
+
+      let node = V(..node, children: reversed_children |> list.reverse)
+      
+      transform.v_after_transforming_children(
+        node,
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+        original_state,
+        state,
+      )
+    }
+
+    T(_, _) -> transform.t_transform(
+      node,
+      ancestors,
+      previous_siblings_before_mapping,
+      previous_siblings_after_mapping,
+      following_siblings_before_mapping,
+      original_state,
+    )
+  }
+}
+
+pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
+  transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
+  initial_state: a,
+) -> Desugarer {
+  fn(vxml) {
+    use #(vxml, _) <- result.then(
+      stateful_down_up_fancy_node_to_node_one(
+        initial_state,
+        vxml,
+        [],
+        [],
+        [],
+        [],
+        transform,
+      )
+    )
     Ok(vxml)
   }
 }

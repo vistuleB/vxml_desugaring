@@ -10,22 +10,22 @@ fn transform(
     V(blame, _, _, _) -> {
       // remove carousel buttons
       use <- infra.on_true_on_false(
-        over: infra.has_attribute(vxml, "data-slide", "prev"),
+        over: infra.v_has_key_value_attribute(vxml, "data-slide", "prev"),
         with_on_true: Ok(T(blame, [])),
       )
       use <- infra.on_true_on_false(
-        over: infra.has_attribute(vxml, "data-slide", "next"),
+        over: infra.v_has_key_value_attribute(vxml, "data-slide", "next"),
         with_on_true: Ok(T(blame, [])),
       )
-      infra.get_attribute_by_name(vxml, "data-slide-to")
+      infra.v_attribute_with_key(vxml, "data-slide-to")
       use <- infra.on_true_on_false(
-        over: infra.get_attribute_by_name(vxml, "data-slide-to")
+        over: infra.v_attribute_with_key(vxml, "data-slide-to")
           |> option.is_some,
         with_on_true: Ok(T(blame, [])),
       )
       // carousel
       use <- infra.on_true_on_false(
-        over: !{ infra.has_attribute(vxml, "class", "carousel") },
+        over: !{ infra.v_has_key_value_attribute(vxml, "class", "carousel") },
         with_on_true: Ok(vxml),
       )
       // vxml is node with carousel class
@@ -34,7 +34,7 @@ fn transform(
 
       let attributes =
         infra.on_true_on_false(
-          over: infra.has_attribute(vxml, "id", "cyk-demo"),
+          over: infra.v_has_key_value_attribute(vxml, "id", "cyk-demo"),
           with_on_true: [
             vxml.BlamedAttribute(blame, "jumpToLast", "true"),
           ],

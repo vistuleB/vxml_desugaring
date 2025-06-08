@@ -7,7 +7,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
@@ -497,6 +497,8 @@ pub fn run_renderer(
       Error(SourceParserError(error))
     },
   )
+
+  io.println("(starting pipeline)")
 
   use desugared <- infra.on_error_on_ok(
     over: pipeline_runner(

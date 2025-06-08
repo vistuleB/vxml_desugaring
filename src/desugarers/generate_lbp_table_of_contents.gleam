@@ -28,14 +28,14 @@ fn chapter_link(
   let item_blame = infra.get_blame(item)
 
   use label_attr <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "title"),
+    infra.v_attribute_with_key(item, "title"),
     with_on_none: Error(DesugaringError(
       item_blame,
       tp <> " missing title attribute",
     )),
   )
 
-  let on_mobile_attr = case infra.get_attribute_by_name(item, "on_mobile") {
+  let on_mobile_attr = case infra.v_attribute_with_key(item, "on_mobile") {
     Some(attr) -> attr
     None -> label_attr
   }

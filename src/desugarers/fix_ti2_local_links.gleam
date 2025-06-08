@@ -10,7 +10,7 @@ fn transform(
   case vxml {
     V(blame, tag, atts, children) -> {
       use href <- infra.on_none_on_some(
-        infra.get_attribute_by_name(vxml, "href"),
+        infra.v_attribute_with_key(vxml, "href"),
         Ok(vxml),
       )
       use <- infra.on_false_on_true(
