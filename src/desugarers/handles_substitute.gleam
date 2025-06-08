@@ -150,65 +150,59 @@ fn counter_handles_transform_to_get_handles(
   vxml: VXML,
   handles: HandleInstances,
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  case vxml {
-    V(b, t, attributes, c) -> {
-      case t == "GrandWrapper" {
-        False -> Ok(#([vxml], handles))
-        True -> {
-          let #(filtered_attributes, handles) =
-            get_handles_from_root_attributes(attributes)
+  let assert V(b, t, attributes, c) = vxml
+  case t == "GrandWrapper" {
+    False -> Ok(#([vxml], handles))
+    True -> {
+      let #(filtered_attributes, handles) =
+        get_handles_from_root_attributes(attributes)
 
-          Ok(#([V(b, t, filtered_attributes, c)], handles))
-        }
-      }
+      Ok(#([V(b, t, filtered_attributes, c)], handles))
     }
-    _ -> Ok(#([vxml], handles))
   }
 }
 
 fn counter_handles_transform_to_replace_handles(
   vxml: VXML,
-  handles: HandleInstances,
-  inner: InnerParam
+  handles: HandleInstances
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  case vxml {
-    T(_, contents) -> {
-      use update_contents <- result.try(print_handle_for_contents(
-        contents,
-        handles,
-        inner
-      ))
-      Ok(#(update_contents, handles))
-    }
-    V(_, t, _, children) -> {
-      case t == "GrandWrapper" {
-        False -> Ok(#([vxml], handles))
-        True -> {
-          let assert [first_child] = children
-          Ok(#([first_child], handles))
-        }
-      }
+  let assert V(_, t, _, children)  = vxml
+  case t == "GrandWrapper" {
+    False -> Ok(#([vxml], handles))
+    True -> {
+      let assert [first_child] = children
+      Ok(#([first_child], handles))
     }
   }
+}
+
+fn t_transform(vxml: VXML, handles: HandleInstances, inner: InnerParam) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
+  let assert T(_, contents)  = vxml
+  use update_contents <- result.try(print_handle_for_contents(
+    contents,
+    handles,
+    inner
+  ))
+  Ok(#(update_contents, handles))
 }
 
 fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
   HandleInstances,
 ) {
   infra.StatefulDownAndUpNodeToNodesTransform(
-    before_transforming_children: fn(vxml, s) {
+    v_before_transforming_children: fn(vxml, s) {
       use #(vxml, handles) <- result.try(
         counter_handles_transform_to_get_handles(vxml, s),
       )
       let assert [vxml] = vxml
       Ok(#(vxml, handles))
     },
-    after_transforming_children: fn(vxml, _, new) {
-      use #(vxml, handles) <- result.try(
-        counter_handles_transform_to_replace_handles(vxml, new, inner),
-      )
-      Ok(#(vxml, handles))
+    v_after_transforming_children: fn(vxml, _, new) {
+      counter_handles_transform_to_replace_handles(vxml, new)
     },
+    t_transform: fn(vxml, state) {
+      t_transform(vxml, state, inner)
+    }
   )
 }
 
