@@ -2140,6 +2140,11 @@ pub type DesugaringError {
   GetRootError(message: String)
 }
 
+pub type DetailedDesugaringError {
+  DetailedDesugaringError(error: DesugaringError, name: String, step: Int)
+}
+
+
 pub type Desugarer =
   fn(VXML) -> Result(VXML, DesugaringError)
 
