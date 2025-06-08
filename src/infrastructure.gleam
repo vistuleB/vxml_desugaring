@@ -385,27 +385,6 @@ pub fn use_list_pair_as_dict(
   }
 }
 
-// pub fn use_list_pair_as_dict_debug(
-//   list_pairs: List(#(a, b)),
-//   key: a
-// ) -> Result(b, Nil) {
-//   echo "entering use_list_pair_as_dict_debug"
-//   let return_value = 
-//     case list_pairs {
-//       [] -> Error(Nil)
-//       [#(alice, bob), ..rest] if alice == key -> {
-//         echo "found alice"
-//         Ok(bob)
-//       }
-//       [#(alice, _), ..rest] -> {
-//         echo "alice was: " <> ins(alice)
-//         use_list_pair_as_dict(rest, key)
-//       }
-//     }
-//   echo "returning: " <> ins(return_value)
-//   return_value
-// }
-
 //**************************************************************
 //* either-or functions
 //**************************************************************
@@ -1814,7 +1793,7 @@ pub fn stateful_down_up_node_to_node_desugarer_factory(
 }
 
 //**********************************************************************
-//* desugaring efforts #1.9: stateful down-up node-to-node
+//* desugaring efforts #1.91: stateful down-up node-to-node
 //**********************************************************************
 
 pub type StatefulDownAndUpNodeToNodeFancyTransform(a) {
