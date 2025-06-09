@@ -1957,22 +1957,6 @@ fn stateful_down_up_node_to_nodes_many(
   }
 }
 
-fn stateful_down_up_node_to_nodes_apply_to_children(
-  state: a,
-  node: VXML,
-  transform_pair: StatefulDownAndUpNodeToNodesTransform(a),
-) -> Result(#(VXML, a), DesugaringError) {
-  case node {
-    T(_, _) -> Ok(#(node, state))
-    V(blame, tag, attrs, children) -> {
-      use #(new_children, new_state) <- result.then(
-        stateful_down_up_node_to_nodes_many(state, children, transform_pair),
-      )
-      Ok(#(V(blame, tag, attrs, new_children), new_state))
-    }
-  }
-}
-
 fn stateful_down_up_node_to_nodes_one(
   original_state: a,
   node: VXML,
@@ -1987,13 +1971,11 @@ fn stateful_down_up_node_to_nodes_one(
         ),
       )
 
-      use #(children, state) <- result.then(
-        try_map_fold(
-          children,
-          state,
-          fn (x, y) { stateful_down_up_node_to_nodes_apply_to_children(x, y, transform) }
-        )
-      )
+      use #(children, state) <- result.then(stateful_down_up_node_to_nodes_many(
+        state,
+        children,
+        transform,
+      ))
       
       transform.v_after_transforming_children(
         node |> replace_children_with(children),

@@ -80,11 +80,8 @@ fn update_local_path(
   }
 }
 
-fn t_transform( vxml: VXML,
-  _,
-  _,
-  _,
-  _,
+fn t_transform(
+  vxml: VXML,
   state: State
 ) -> Result(#(VXML, State), DesugaringError) {
   Ok(#(vxml, state))
@@ -113,10 +110,6 @@ fn v_before_transforming_children(
 fn v_after_transforming_children(
   vxml: VXML,
   ancestors: List(VXML),
-  _,
-  _,
-  _,
-  _: State,
   state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(b, _, _, _) = vxml
@@ -134,18 +127,15 @@ fn v_after_transforming_children(
 
 fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodeFancyTransform(State) {
    infra.StatefulDownAndUpNodeToNodeFancyTransform(
-    v_before_transforming_children: fn(
-      vxml: VXML,
-      _: List(VXML),
-      _,
-      _,
-      _,
-      state: State,
-    ){
+    v_before_transforming_children: fn(vxml, _, _, _, _, state){
       v_before_transforming_children(vxml, state, inner)
     },
-    v_after_transforming_children: v_after_transforming_children,
-    t_transform: t_transform,
+    v_after_transforming_children: fn(vxml, ancestors, _, _, _, _, state){
+      v_after_transforming_children(vxml, ancestors, state)
+    },
+    t_transform: fn(vxml, _, _, _, _, state){
+      t_transform(vxml, state)
+    },
   )
 }
 
