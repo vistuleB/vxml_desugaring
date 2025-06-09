@@ -1,10 +1,16 @@
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, T, V, type BlamedAttribute, BlamedAttribute}
+
+fn rename(attr: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
+  case infra.use_list_pair_as_dict(inner, attr.key) {
+    Ok(key) -> BlamedAttribute(..attr, key: key)
+    Error(_) -> attr
+  }
+}
 
 fn transform(
   vxml: VXML,
@@ -12,24 +18,8 @@ fn transform(
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
-    V(blame, tag, attrs, children) -> {
-      case list.find(inner, fn(attr_pair){
-        infra.get_attribute_keys(attrs) |> list.contains(attr_pair |> pair.first)
-      })
-      {
-        Error(_) -> Ok(vxml)
-        Ok(attr_pair) -> {
-          attrs
-          |> list.map(fn(attr){
-            case pair.first(attr_pair) == attr.key {
-              True -> vxml.BlamedAttribute(..attr, key: pair.second(attr_pair))
-              False -> attr
-            }
-          })
-          |> V(blame, tag, _, children)
-          |> Ok
-        }
-      }
+    V(_, _, attrs, _) -> {
+      Ok(V(..vxml, attributes: list.map(attrs, rename(_, inner) )))
     }
   }
 }
