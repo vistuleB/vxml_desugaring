@@ -2,10 +2,9 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-
 import vxml.{type VXML, T, V, type BlamedAttribute, BlamedAttribute}
 
-fn rename(attr: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
+fn rename_maybe(attr: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
   case infra.use_list_pair_as_dict(inner, attr.key) {
     Ok(key) -> BlamedAttribute(..attr, key: key)
     Error(_) -> attr
@@ -19,7 +18,7 @@ fn transform(
   case vxml {
     T(_, _) -> Ok(vxml)
     V(_, _, attrs, _) -> {
-      Ok(V(..vxml, attributes: list.map(attrs, rename(_, inner) )))
+      Ok(V(..vxml, attributes: list.map(attrs, rename_maybe(_, inner))))
     }
   }
 }
@@ -38,8 +37,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String))
-//       ↖      ↖
-//       from   to
+//       ↖       ↖
+//       from    to
 
 type InnerParam = Param
 
