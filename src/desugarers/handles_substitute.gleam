@@ -75,15 +75,18 @@ fn handle_handle_matches(
             blame,
             "Handle " <> handle_name <> " was not assigned",
           ))
+
         Ok(handle) -> {
           let assert [first_split, _, _, ..rest_splits] = splits
-          use rest_content <- result.try(handle_handle_matches(
+
+          use rest_content <- result.then(handle_handle_matches(
             blame,
             rest,
             rest_splits,
             handles,
             inner
           ))
+
           Ok(
             list.flatten([
               [T(blame, [BlamedContent(blame, first_split)])],
@@ -119,8 +122,8 @@ fn print_handle_for_contents(
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
-      use updated_line <- result.try(print_handle(first, handles, inner))
-      use updated_rest <- result.try(print_handle_for_contents(rest, handles, inner))
+      use updated_line <- result.then(print_handle(first, handles, inner))
+      use updated_rest <- result.then(print_handle_for_contents(rest, handles, inner))
 
       Ok(list.flatten([updated_line, updated_rest]))
     }
@@ -178,7 +181,7 @@ fn counter_handles_transform_to_replace_handles(
 
 fn t_transform(vxml: VXML, handles: HandleInstances, inner: InnerParam) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   let assert T(_, contents)  = vxml
-  use update_contents <- result.try(print_handle_for_contents(
+  use update_contents <- result.then(print_handle_for_contents(
     contents,
     handles,
     inner
@@ -191,7 +194,7 @@ fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndU
 ) {
   infra.StatefulDownAndUpNodeToNodesTransform(
     v_before_transforming_children: fn(vxml, s) {
-      use #(vxml, handles) <- result.try(
+      use #(vxml, handles) <- result.then(
         counter_handles_transform_to_get_handles(vxml, s),
       )
       let assert [vxml] = vxml

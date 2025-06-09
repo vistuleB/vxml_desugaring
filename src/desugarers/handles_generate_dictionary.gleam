@@ -18,15 +18,18 @@ fn convert_handles_to_attributes(
   handles: HandlesDict,
 ) -> List(BlamedAttribute) {
   let blame = Blame("", 0, 0, [])
-
-  list.map2(dict.keys(handles), dict.values(handles), fn(key, values) {
-    let #(id, filename, value) = values
-    BlamedAttribute(
-      blame: blame,
-      key: "handle",
-      value: key <> " | " <> id <> " | " <> filename <> " | " <> value,
-    )
-  })
+  list.map2(
+    dict.keys(handles),
+    dict.values(handles),
+    fn (key, values) {
+      let #(id, filename, value) = values
+      BlamedAttribute(
+        blame: blame,
+        key: "handle",
+        value: key <> " | " <> id <> " | " <> filename <> " | " <> value,
+      )
+    }
+  )
 }
 
 fn check_handle_already_defined(
@@ -47,14 +50,13 @@ fn check_handle_already_defined(
 fn get_handles_from_attributes(
   attributes: List(BlamedAttribute),
 ) -> #(List(BlamedAttribute), List(#(String, String, String))) {
-
   let #(handle_attributes, filtered_attributes) =
-    list.partition(attributes, fn(att) {
-      att.key == "handle"
-    })
+    attributes
+    |> list.partition(fn(att) {att.key == "handle"})
 
   let extracted_handles =
-    list.map(handle_attributes, fn(att) {
+    handle_attributes
+    |> list.map(fn(att) {
       let assert [handle_name, id, value] = string.split(att.value, " | ")
       #(handle_name, id, value)
     })
@@ -82,7 +84,7 @@ fn update_local_path(
 
 fn t_transform(
   vxml: VXML,
-  state: State
+  state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
   Ok(#(vxml, state))
 }
@@ -96,6 +98,7 @@ fn v_before_transforming_children(
   let #(handles, local_path) = state
   use local_path <- result.try(update_local_path(vxml, inner, local_path))
   let #(attributes, extracted_handles) = get_handles_from_attributes(attributes)
+
   use handles <- result.try(
     list.try_fold(extracted_handles, handles, fn(acc, handle) {
       let #(handle_name, id, handle_value) = handle
@@ -127,13 +130,13 @@ fn v_after_transforming_children(
 
 fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodeFancyTransform(State) {
    infra.StatefulDownAndUpNodeToNodeFancyTransform(
-    v_before_transforming_children: fn(vxml, _, _, _, _, state){
+    v_before_transforming_children: fn(vxml, _, _, _, _, state) {
       v_before_transforming_children(vxml, state, inner)
     },
-    v_after_transforming_children: fn(vxml, ancestors, _, _, _, _, state){
+    v_after_transforming_children: fn(vxml, ancestors, _, _, _, _, state) {
       v_after_transforming_children(vxml, ancestors, state)
     },
-    t_transform: fn(vxml, _, _, _, _, state){
+    t_transform: fn(vxml, _, _, _, _, state) {
       t_transform(vxml, state)
     },
   )
@@ -151,11 +154,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-//        ^        ^
-//  tags to      attribute key
-//  get local    that mentions
-//  path from    local path
+  List(#(String,     String))
+//       ↖           ↖
+//       tags to     key of attribute
+//       get local   holding the
+//       path from   local path
 
 type InnerParam = Param
 
