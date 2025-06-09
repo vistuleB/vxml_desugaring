@@ -4,7 +4,9 @@ import gleam/string
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
-fn transform(vxml: VXML) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, "Exercises", attributes, children) -> {
       let new_attribute = [
@@ -41,14 +43,18 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
+
 type InnerParam = Nil
 
+/// adds labels attribute to Exercises tags with indexed children
 pub fn add_exercise_labels() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "add_exercise_labels",
-      option.None,
-      "..."
+      desugarer_name: "add_exercise_labels",
+      stringified_param: option.None,
+      general_description: "
+/// adds labels attribute to Exercises tags with indexed children
+      ",
     ),
     desugarer: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }

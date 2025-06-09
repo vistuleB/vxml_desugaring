@@ -2,11 +2,8 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/pair
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn build_blamed_attributes(
@@ -19,11 +16,14 @@ fn build_blamed_attributes(
   })
 }
 
-fn transform(vxml: VXML, inner_param: InnerParam) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, old_attributes, children) -> {
-      case dict.get(inner_param, tag) {
+      case dict.get(inner, tag) {
         Ok(new_attributes) -> {
           Ok(V(
             blame,
@@ -41,12 +41,12 @@ fn transform(vxml: VXML, inner_param: InnerParam) -> Result(VXML, DesugaringErro
   }
 }
 
-fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner_param)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner_param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -55,21 +55,25 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String))
-//        tag     attr   value
+//       ↖      ↖       ↖
+//       tag    attr    value
 
 type InnerParam =
   Dict(String, List(#(String, String)))
 
+/// adds attributes to tags
 pub fn add_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "add_attributes",
-      option.Some(string.inspect(param)),
-      "...",
+      desugarer_name: "add_attributes",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// adds attributes to tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner_param) -> desugarer_factory(inner_param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

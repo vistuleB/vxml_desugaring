@@ -1,24 +1,21 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn param_transform(
+fn transform(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
   _: List(VXML),
   _: List(VXML),
-  extra: Extra,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
     V(_, tag, _, children) -> {
-      case infra.use_list_pair_as_dict(extra, tag) {
+      case infra.use_list_pair_as_dict(inner, tag) {
         Error(Nil) -> Ok([vxml])
         Ok(parent_tags) -> {
           case list.first(ancestors) {
@@ -37,28 +34,43 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
   fn(node, ancestors, s1, s2, s3) {
-    param_transform(node, ancestors, s1, s2, s3, extra)
+    transform(node, ancestors, s1, s2, s3, inner)
   }
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
-type Extra =
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   List(#(String,     List(String)))
-//        ↖            ↖
-//         tag to be    list of parent tag names
-//         unwrapped    that will cause child to unwrap
+//       ↖          ↖
+//       tag to be  list of parent tag names
+//       unwrapped  that will cause child to unwrap
+
+type InnerParam = Param
 
 /// unwrap nodes based on parent-child
 /// relationships
-pub fn unwrap_when_child_of(extra: Extra) -> Pipe {
+pub fn unwrap_when_child_of(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("unwrap_when_child_of", option.Some(ins(extra)), "unwrap nodes based on parent-child
-relationships"),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      desugarer_name: "unwrap_when_child_of",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// unwrap nodes based on parent-child
+/// relationships
+      ",
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe } as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn content_is_nonempty(blamed_content: BlamedContent) {
@@ -10,7 +10,7 @@ fn content_is_nonempty(blamed_content: BlamedContent) {
   }
 }
 
-fn remove_empty_lines_transform(
+fn transform(
   node: VXML,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
@@ -25,26 +25,39 @@ fn remove_empty_lines_transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodesTransform {
-  remove_empty_lines_transform
+fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
+  transform
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory())
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
 
 /// for each text node, removes each line whose
-/// content is the empty string & destroys 
+/// content is the empty string & destroys
 /// text nodes that end up with 0 lines
 pub fn remove_empty_lines() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "remove_empty_lines",
-      option.None,
-      "for each text node, removes each line whose
-content is the empty string & destroys 
-text nodes that end up with 0 lines",
+      desugarer_name: "remove_empty_lines",
+      stringified_param: option.None,
+      general_description: "
+/// for each text node, removes each line whose
+/// content is the empty string & destroys
+/// text nodes that end up with 0 lines
+      ",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

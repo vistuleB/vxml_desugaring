@@ -1,19 +1,17 @@
 import gleam/list
-import gleam/option.{None}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/option
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn param_transform(
+fn transform(
   vxml: VXML,
-  extra: Extra,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
     V(blame, tag, _, children) -> {
-      let #(del_tag, opening, closing) = extra
+      let #(del_tag, opening, closing) = inner
       case del_tag == tag {
         True -> {
           let opening = V(blame, opening, [], [])
@@ -26,24 +24,36 @@ fn param_transform(
   }
 }
 
-type Extra =
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   #(String, String, String)
+//  ↖       ↖       ↖
+//  del_tag opening closing
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
-  param_transform(_, extra)
-}
+type InnerParam = Param
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
-}
-
-pub fn replace_text_parent_by_text_bookends(extra: Extra) -> Pipe {
+/// replaces parent tag with opening and closing bookend tags
+pub fn replace_text_parent_by_text_bookends(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "replace_text_parent_by_text_bookends",
-      None,
-      "...",
+      desugarer_name: "replace_text_parent_by_text_bookends",
+      stringified_param: option.Some(ins(param)),
+      general_description: "/// replaces parent tag with opening and closing bookend tags",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

@@ -1,12 +1,9 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import vxml.{type VXML, BlamedAttribute, V}
 
 fn transform(
   vxml: VXML,
@@ -14,7 +11,7 @@ fn transform(
   _: List(VXML),
   _: List(VXML),
   _: List(VXML),
-  inner_param: InnerParam,
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   use blame, tag, attributes, children <- infra.on_t_on_v(vxml, fn(_, _) {
     Ok(vxml)
@@ -25,7 +22,7 @@ fn transform(
   let assert V(_, parent_tag, _, _) = parent
 
   use attributes_to_add <- infra.on_error_on_ok(
-    dict.get(inner_param, #(tag, parent_tag)),
+    dict.get(inner, #(tag, parent_tag)),
     fn(_) { Ok(vxml)}
   )
 
@@ -48,14 +45,14 @@ fn transform(
   Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))
 }
 
-fn transform_factory(inner_param: InnerParam) -> infra.NodeToNodeFancyTransform {
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   fn(vxml, ancestors, s1, s2, s3) {
-    transform(vxml, ancestors, s1, s2, s3, inner_param)
+    transform(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
-fn desugarer_factory(inner_param: InnerParam) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner_param))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -66,7 +63,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String, String))
-//       tag     parent  attr    value
+//       ↖      ↖       ↖       ↖
+//       tag    parent  attr    value
 
 type InnerParam =
   Dict(#(String, String), List(#(String, String)))
@@ -78,18 +76,18 @@ type InnerParam =
 pub fn add_attribute_when_child_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "add_attribute_when_child_of",
-      option.Some(string.inspect(param)),
-      "
-adds an attribute-pair to a tag
-when it is the child of another specified
-tag; will not overwrite if attribute with
-that key already exists
+      desugarer_name: "add_attribute_when_child_of",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// adds an attribute-pair to a tag
+/// when it is the child of another specified
+/// tag; will not overwrite if attribute with
+/// that key already exists
       ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner_param) -> desugarer_factory(inner_param)
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }

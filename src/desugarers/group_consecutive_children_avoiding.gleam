@@ -1,10 +1,9 @@
 import gleam/list
-import gleam/option.{Some}
-import gleam/string
-import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
+import gleam/option
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-const ins = string.inspect
 
 fn is_forbidden(elem: VXML, forbidden: List(String)) {
   case elem {
@@ -13,12 +12,12 @@ fn is_forbidden(elem: VXML, forbidden: List(String)) {
   }
 }
 
-fn param_transform(
+fn transform(
   vxml: VXML,
   _: List(VXML),
-  extra: Extra,
+  inner: InnerParam,
 ) -> infra.EarlyReturn(VXML) {
-  let #(wrapper_tag, forbidden_to_include, forbidden_to_enter) = extra
+  let #(wrapper_tag, forbidden_to_include, forbidden_to_enter) = inner
   case vxml {
     T(_, _) -> infra.GoBack(vxml)
     V(blame, tag, attrs, children) -> {
@@ -47,33 +46,49 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.EarlyReturnNodeToNodeTransform {
-  fn(vxml, ancestors) { param_transform(vxml, ancestors, extra) }
+fn transform_factory(inner: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
+  fn(vxml, ancestors) { transform(vxml, ancestors, inner) }
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.early_return_node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
 }
 
-//********************************
-// - String: name of wrapper tag
-// - List(String): do not wrap these
-// - List(String): do not even enter these
-//********************************
-type Extra =
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   #(String, List(String), List(String))
+//  ↖       ↖            ↖
+//  name    do not       do not
+//  of      wrap         even
+//  wrapper these        enter
+//  tag                  these
 
-pub fn group_consecutive_children_avoiding(extra: Extra) -> Pipe {
+type InnerParam = Param
+
+/// wrap consecutive children whose tags
+/// are not in the excluded list inside
+/// of a designated parent tag; stay
+/// out of subtrees rooted at tags
+/// in the second argument
+pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "group_consecutive_children_avoiding",
-      Some(ins(extra)),
-      "wrap consecutive children whose tags
-are not in the excluded list inside
-of a designated parent tag; stay
-out of subtrees rooted at tags
-in the second argument",
+      desugarer_name: "group_consecutive_children_avoiding",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// wrap consecutive children whose tags
+/// are not in the excluded list inside
+/// of a designated parent tag; stay
+/// out of subtrees rooted at tags
+/// in the second argument
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

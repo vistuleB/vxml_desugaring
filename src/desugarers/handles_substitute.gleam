@@ -17,9 +17,9 @@ import vxml.{
 
 type HandleInstances =
   Dict(String, #(String, String, String))
-
-//   handle   local path, element id, string value
-//   name     of page     on page     of handle
+//     ↖        ↖                      
+//     handle   local path, element id, string value
+//     name     of page     on page     of handle
 
 fn target_is_on_same_chapter(
   current_filename: String, // eg: /article/chapter1
@@ -34,7 +34,7 @@ fn target_is_on_same_chapter(
 fn construct_hyperlink(
   blame: Blame,
   handle: #(String, String, String),
-  extra: Extra
+  inner: InnerParam
 ) {
   let #(id, filename, value) = handle
   let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
@@ -43,7 +43,7 @@ fn construct_hyperlink(
   }
 
   V(blame, tag, list.flatten([
-      list.map(extra, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
+      list.map(inner, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
       [
         BlamedAttribute(blame, "href", filename <> "?id=" <> id),
         BlamedAttribute(blame, "class", classes),
@@ -58,7 +58,7 @@ fn handle_handle_matches(
   matches: List(regexp.Match),
   splits: List(String),
   handles: HandleInstances,
-  extra: Extra
+  inner: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
   case matches {
     [] -> {
@@ -82,12 +82,12 @@ fn handle_handle_matches(
             rest,
             rest_splits,
             handles,
-            extra
+            inner
           ))
           Ok(
             list.flatten([
               [T(blame, [BlamedContent(blame, first_split)])],
-              [construct_hyperlink(blame, handle, extra)],
+              [construct_hyperlink(blame, handle, inner)],
               rest_content,
             ]),
           )
@@ -100,27 +100,27 @@ fn handle_handle_matches(
 fn print_handle(
   blamed_line: BlamedContent,
   handles: HandleInstances,
-  extra: Extra
+  inner: InnerParam
 
 ) -> Result(List(VXML), DesugaringError) {
   let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
 
   let matches = regexp.scan(re, blamed_line.content)
   let splits = regexp.split(re, blamed_line.content)
-  handle_handle_matches(blamed_line.blame, matches, splits, handles, extra)
+  handle_handle_matches(blamed_line.blame, matches, splits, handles, inner)
 }
 
 fn print_handle_for_contents(
   contents: List(BlamedContent),
   handles: HandleInstances,
-  extra: Extra
+  inner: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
 
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
-      use updated_line <- result.try(print_handle(first, handles, extra))
-      use updated_rest <- result.try(print_handle_for_contents(rest, handles, extra))
+      use updated_line <- result.try(print_handle(first, handles, inner))
+      use updated_rest <- result.try(print_handle_for_contents(rest, handles, inner))
 
       Ok(list.flatten([updated_line, updated_rest]))
     }
@@ -136,7 +136,7 @@ fn get_handles_from_root_attributes(
       att.key == "handle"
     })
 
-  let extracted_handles = 
+  let extracted_handles =
     handle_attributes
     |> list.fold(dict.new(), fn(acc, att) {
       let assert [handle_name, id, filename, value] = att.value |> string.split(" | ")
@@ -150,90 +150,172 @@ fn counter_handles_transform_to_get_handles(
   vxml: VXML,
   handles: HandleInstances,
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  case vxml {
-    V(b, t, attributes, c) -> {
-      case t == "GrandWrapper" {
-        False -> Ok(#([vxml], handles))
-        True -> {
-          let #(filtered_attributes, handles) =
-            get_handles_from_root_attributes(attributes)
+  let assert V(b, t, attributes, c) = vxml
+  case t == "GrandWrapper" {
+    False -> Ok(#([vxml], handles))
+    True -> {
+      let #(filtered_attributes, handles) =
+        get_handles_from_root_attributes(attributes)
 
-          Ok(#([V(b, t, filtered_attributes, c)], handles))
-        }
-      }
+      Ok(#([V(b, t, filtered_attributes, c)], handles))
     }
-    _ -> Ok(#([vxml], handles))
   }
 }
 
 fn counter_handles_transform_to_replace_handles(
   vxml: VXML,
-  handles: HandleInstances,
-  extra: Extra
+  handles: HandleInstances
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  case vxml {
-    T(_, contents) -> {
-      use update_contents <- result.try(print_handle_for_contents(
-        contents,
-        handles,
-        extra
-      ))
-      Ok(#(update_contents, handles))
-    }
-    V(_, t, _, children) -> {
-      case t == "GrandWrapper" {
-        False -> Ok(#([vxml], handles))
-        True -> {
-          let assert [first_child] = children
-          Ok(#([first_child], handles))
-        }
-      }
+  let assert V(_, t, _, children)  = vxml
+  case t == "GrandWrapper" {
+    False -> Ok(#([vxml], handles))
+    True -> {
+      let assert [first_child] = children
+      Ok(#([first_child], handles))
     }
   }
 }
 
-type Extra = List(#(String, String)) 
-// list of additional key-value pair to attach to anchor tag
+fn t_transform(vxml: VXML, handles: HandleInstances, inner: InnerParam) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
+  let assert T(_, contents)  = vxml
+  use update_contents <- result.try(print_handle_for_contents(
+    contents,
+    handles,
+    inner
+  ))
+  Ok(#(update_contents, handles))
+}
 
-fn counter_handle_transform_factory(extra: Extra) -> infra.StatefulDownAndUpNodeToNodesTransform(
+fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
   HandleInstances,
 ) {
   infra.StatefulDownAndUpNodeToNodesTransform(
-    before_transforming_children: fn(vxml, s) {
+    v_before_transforming_children: fn(vxml, s) {
       use #(vxml, handles) <- result.try(
         counter_handles_transform_to_get_handles(vxml, s),
       )
       let assert [vxml] = vxml
       Ok(#(vxml, handles))
     },
-    after_transforming_children: fn(vxml, _, new) {
-      use #(vxml, handles) <- result.try(
-        counter_handles_transform_to_replace_handles(vxml, new, extra),
-      )
-      Ok(#(vxml, handles))
+    v_after_transforming_children: fn(vxml, _, new) {
+      counter_handles_transform_to_replace_handles(vxml, new)
     },
+    t_transform: fn(vxml, state) {
+      t_transform(vxml, state, inner)
+    }
   )
 }
 
-fn desugarer_factory(extra) -> Desugarer {
+fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
+  HandleInstances,
+) {
+  counter_handle_transform_factory(inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
   infra.stateful_down_up_node_to_nodes_desugarer_factory(
-    counter_handle_transform_factory(extra),
+    transform_factory(inner),
     dict.new(),
   )
 }
 
-/// Looks for handle definitions in GrandWrapper and 
-/// replaces >>handle occurences with defined value
-/// Returns error if there's a handle occurence with no definition
-/// # Extra
-/// list of additional key-value pairs to attach to anchor tag
-pub fn handles_substitute(extra: Extra) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
+  List(#(String, String))
+//       ↖       ↖
+//       additional key-value pairs
+//       to attach to anchor tag
+
+type InnerParam = Param
+
+
+/// Expects a document with root 
+/// 'GrandWrapper' whose attributes
+///  comprise of key-value pairs of
+///  the form :
+/// handle_name | id | filename | value
+/// and with a unique child being the 
+/// root of the original document.
+/// 
+/// Decodes the attributes into a dictionary
+/// of the form:
+/// ```
+/// Dict(String, #(String, String, String))
+/// ```
+/// 
+/// Traverses the document and replaces 
+/// each >>handle_name occurrence by 
+/// 1. if filename is the same as the 
+///    current document's filename:
+/// ```
+/// <InChapterLink href='filename?id=id'>
+///   handle_value
+/// </InChapterLink>
+/// ```
+/// 2. if filename is different:
+/// ```
+/// <a href='filename?id=id'>
+///  handle_value
+/// </a>
+/// ```
+/// 
+/// Destroys the GrandWrapper on exit
+/// returning its unique child of GrandWrapper. 
+/// 
+/// Throws errors if handle_name in
+/// >>handle_name doesn't exist in the 
+/// GrandWrapper attributes.
+pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
-    description: DesugarerDescription("handles_substitute", option.None, "
-    Looks for handle definitions in GrandWrapper and replaces >>handle occurences with defined value \n
-    Returns error if there's a handle occurence with no definition
-    "),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      "handles_substitute",
+      option.None,
+      "
+Expects a document with root 
+'GrandWrapper' whose attributes
+ comprise of key-value pairs of
+ the form :
+handle_name | id | filename | value
+and with a unique child being the 
+root of the original document.
+
+Decodes the attributes into a dictionary
+of the form:
+```
+Dict(String, #(String, String, String))
+```
+
+Traverses the document and replaces 
+each >>handle_name occurrence by 
+1. if filename is the same as the 
+   current document's filename:
+```
+<InChapterLink href='filename?id=id'>
+  handle_value
+</InChapterLink>
+```
+2. if filename is different:
+```
+<a href='filename?id=id'>
+ handle_value
+</a>
+```
+
+Destroys the GrandWrapper on exit
+returning its unique child of GrandWrapper. 
+
+Throws errors if handle_name in
+>>handle_name doesn't exist in the 
+GrandWrapper attributes.
+      "
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

@@ -1,20 +1,17 @@
 import gleam/list
 import gleam/option
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-pub fn wrap_element_children_transform(
+fn transform(
   vxml: VXML,
-  extra: #(List(String), String),
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attributes, children) -> {
-      let #(element_tags, wrap_with) = extra
+      let #(element_tags, wrap_with) = inner
       case list.contains(element_tags, tag) {
         True -> {
           let new_children =
@@ -27,23 +24,39 @@ pub fn wrap_element_children_transform(
   }
 }
 
-fn transform_factory(
-  extra: #(List(String), String),
-) -> infra.NodeToNodeTransform {
-  wrap_element_children_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(extra: #(List(String), String)) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
-pub fn wrap_element_children_desugarer(extra: #(List(String), String)) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
+  #(List(String), String)
+//  ↖            ↖
+//  element      wrap each
+//  tags         child with
+
+type InnerParam = Param
+
+/// wraps each child of specified elements with a wrapper tag
+pub fn wrap_element_children_desugarer(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "wrap_element_children_desugarer",
-      option.Some(string.inspect(extra)),
-      "...",
+      desugarer_name: "wrap_element_children_desugarer",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// wraps each child of specified elements with a wrapper tag
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

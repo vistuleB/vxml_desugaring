@@ -1,10 +1,8 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
-import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import gleam/option.{type Option}
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
-
-const ins = string.inspect
 
 fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
   let assert T(blame1, lines1) = node1
@@ -31,7 +29,7 @@ fn inside_text_node(node: VXML) -> VXML {
 }
 
 fn fold_tags_into_text_children_accumulator(
-  tags: Extra,
+  tags: InnerParam,
   already_processed: List(VXML),
   optional_last_t: Option(VXML),
   optional_last_v: Option(VXML),
@@ -42,9 +40,9 @@ fn fold_tags_into_text_children_accumulator(
   //   reverse order (last stuff is first in the list)
   //
   // - optional_last_t is:
-  //   * the node right before optional_last_v if 
+  //   * the node right before optional_last_v if
   //     optional_last_v != None
-  //   * the last node before remaining if 
+  //   * the last node before remaining if
   //     optional_last_v == None
   //
   // - optional_last_v is a possible previoux v-node that
@@ -63,9 +61,9 @@ fn fold_tags_into_text_children_accumulator(
   case remaining {
     [] ->
       case optional_last_t {
-        None -> {
+        option.None -> {
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case N00: - no following node
               //           - no previous t node
@@ -74,7 +72,7 @@ fn fold_tags_into_text_children_accumulator(
               // we reverse the list
               // *
               already_processed |> list.reverse
-            Some(last_v) ->
+            option.Some(last_v) ->
               // *
               // case N01: - no following node
               //           - no previous t node
@@ -86,9 +84,9 @@ fn fold_tags_into_text_children_accumulator(
               |> list.reverse
           }
         }
-        Some(last_t) ->
+        option.Some(last_t) ->
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case N10: - no following node
               //           - there is a previous t node
@@ -97,7 +95,7 @@ fn fold_tags_into_text_children_accumulator(
               // we add the t to already_processed, reverse the list
               // *
               [last_t, ..already_processed] |> list.reverse
-            Some(last_v) ->
+            option.Some(last_v) ->
               // *
               // case N11: - no following node
               //           - there is a previous t node
@@ -117,9 +115,9 @@ fn fold_tags_into_text_children_accumulator(
       }
     [T(_, _) as first, ..rest] ->
       case optional_last_t {
-        None ->
+        option.None ->
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case T00: - 'first' is a Text node
               //           - no previous t node
@@ -130,11 +128,11 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags,
                 already_processed,
-                Some(first),
-                None,
+                option.Some(first),
+                option.None,
                 rest,
               )
-            Some(last_v) ->
+            option.Some(last_v) ->
               // *
               // case T01: - 'first' is a Text node
               //           - no previous t node
@@ -145,17 +143,17 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags,
                 already_processed,
-                Some(last_line_concatenate_with_first_line(
+                option.Some(last_line_concatenate_with_first_line(
                   inside_text_node(last_v),
                   first,
                 )),
-                None,
+                option.None,
                 rest,
               )
           }
-        Some(last_t) -> {
+        option.Some(last_t) -> {
           case optional_last_v {
-            None ->
+            option.None ->
               // *
               // case T10: - 'first' is a Text node
               //           - there exists a previous t node
@@ -166,11 +164,11 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags,
                 [last_t, ..already_processed],
-                Some(first),
-                None,
+                option.Some(first),
+                option.None,
                 rest,
               )
-            Some(last_v) -> {
+            option.Some(last_v) -> {
               // *
               // case T11: - 'first' is a Text node
               //           - there exists a previous t node
@@ -181,14 +179,14 @@ fn fold_tags_into_text_children_accumulator(
               fold_tags_into_text_children_accumulator(
                 tags,
                 already_processed,
-                Some(last_line_concatenate_with_first_line(
+                option.Some(last_line_concatenate_with_first_line(
                   last_t,
                   last_line_concatenate_with_first_line(
                     inside_text_node(last_v),
                     first,
                   ),
                 )),
-                None,
+                option.None,
                 rest,
               )
             }
@@ -197,9 +195,9 @@ fn fold_tags_into_text_children_accumulator(
       }
     [V(_, tag, _, _) as first, ..rest] ->
       case optional_last_t {
-        None -> {
+        option.None -> {
           case optional_last_v {
-            None ->
+            option.None ->
               case list.contains(tags, tag) {
                 False ->
                   // *
@@ -212,8 +210,8 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     [first, ..already_processed],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 True ->
@@ -227,12 +225,12 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     already_processed,
-                    None,
-                    Some(first),
+                    option.None,
+                    option.Some(first),
                     rest,
                   )
               }
-            Some(last_v) ->
+            option.Some(last_v) ->
               case list.contains(tags, tag) {
                 False ->
                   // *
@@ -245,8 +243,8 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     [first, inside_text_node(last_v), ..already_processed],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 True ->
@@ -260,16 +258,16 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     already_processed,
-                    Some(inside_text_node(last_v)),
-                    Some(first),
+                    option.Some(inside_text_node(last_v)),
+                    option.Some(first),
                     rest,
                   )
               }
           }
         }
-        Some(last_t) ->
+        option.Some(last_t) ->
           case optional_last_v {
-            None ->
+            option.None ->
               case list.contains(tags, tag) {
                 False ->
                   // *
@@ -282,8 +280,8 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     [first, last_t, ..already_processed],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 True ->
@@ -298,11 +296,11 @@ fn fold_tags_into_text_children_accumulator(
                     tags,
                     already_processed,
                     optional_last_t,
-                    Some(first),
+                    option.Some(first),
                     rest,
                   )
               }
-            Some(last_v) ->
+            option.Some(last_v) ->
               case list.contains(tags, tag) {
                 False ->
                   // *
@@ -322,8 +320,8 @@ fn fold_tags_into_text_children_accumulator(
                       ),
                       ..already_processed
                     ],
-                    None,
-                    None,
+                    option.None,
+                    option.None,
                     rest,
                   )
                 True ->
@@ -337,11 +335,11 @@ fn fold_tags_into_text_children_accumulator(
                   fold_tags_into_text_children_accumulator(
                     tags,
                     already_processed,
-                    Some(last_line_concatenate_with_first_line(
+                    option.Some(last_line_concatenate_with_first_line(
                       last_t,
                       inside_text_node(last_v),
                     )),
-                    Some(first),
+                    option.Some(first),
                     rest,
                   )
               }
@@ -350,40 +348,60 @@ fn fold_tags_into_text_children_accumulator(
   }
 }
 
-fn param_transform(node: VXML, tags: Extra) -> Result(VXML, DesugaringError) {
+fn transform(
+  node: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       let new_children =
-        fold_tags_into_text_children_accumulator(tags, [], None, None, children)
+        fold_tags_into_text_children_accumulator(inner, [], option.None, option.None, children)
       Ok(V(blame, tag, attrs, new_children))
     }
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
-//*********************************
-// list of tags whose contents should
-// be folded into surrounding text
-type Extra =
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   List(String)
 
-pub fn fold_tag_contents_into_text(extra: Extra) -> Pipe {
+type InnerParam = Param
+
+/// seemingly replaces specified tags by
+/// their contents (like 'unwrap'), but with
+/// the first/last text node of the contents
+/// being, if any, being glued to surrounding
+/// text nodes (in end-of-last-line to
+/// beginning-of-first-line fashion)
+pub fn fold_tag_contents_into_text(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription("fold_tag_contents_into_text", Some(ins(extra)), "REQUIRES VERIFICATION/DOCUMENTATION;
-seemingly replaces specified tags by
-their contents (like 'unwrap'), but with 
-the first/last text node of the contents
-being, if any, being glued to surrounding 
-text nodes (in end-of-last-line to 
-beginning-of-first-line fashion)"),
-    desugarer: desugarer_factory(extra),
+    description: DesugarerDescription(
+      desugarer_name: "fold_tag_contents_into_text",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// seemingly replaces specified tags by
+/// their contents (like 'unwrap'), but with
+/// the first/last text node of the contents
+/// being, if any, being glued to surrounding
+/// text nodes (in end-of-last-line to
+/// beginning-of-first-line fashion)
+      ",
+    ),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

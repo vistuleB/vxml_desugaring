@@ -7,11 +7,11 @@ import gleam/regexp
 import gleam/result
 import gleam/string
 import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
-import vxml.{ type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V }
+import vxml.{ type VXML, BlamedAttribute, BlamedContent, T, V }
 import xmlm
- 
+
 const ins = string.inspect
- 
+
 type LinkPatternToken {
   Word(String)    // (does not contain whitespace)
   Space
@@ -43,19 +43,19 @@ fn word_to_node(blame: Blame, word: String) {
     [],
   )
 }
- 
+
 fn space_node(blame: Blame) {
   V(blame, "__OneSpace", [], [])
 }
- 
+
 fn line_node(blame: Blame) {
   V(blame, "__OneNewLine", [], [])
 }
- 
+
 fn end_node(blame: Blame) {
   V(blame, "__EndAtomizedT", [], [])
 }
- 
+
 fn deatomize_vxmls(
   children: List(VXML),
   accumulated_contents: List(vxml.BlamedContent),
@@ -106,7 +106,7 @@ fn deatomize_vxmls(
           let assert True = list.is_empty(accumulated_contents)
           let V(_, ze_tag, _, _) = first
           let updated_children = deatomize_vxmls(children, [], [])
- 
+
           deatomize_vxmls(rest, [], [V(b, ze_tag, a, updated_children), ..accumulated_nodes])
         }
 
@@ -120,7 +120,7 @@ fn deatomize_vxmls(
     }
   }
 }
- 
+
 fn fast_forward_past_spaces(
   atomized: List(VXML),
 ) -> List(VXML) {
@@ -167,7 +167,7 @@ fn match_internal(
     [Word(word), ..pattern_rest] ->
       case atomized {
         [V(_, "__OneWord", _, _) as v, ..atomized_rest] -> {
-          let assert Some(attr) = infra.get_attribute_by_name(v, "val")
+          let assert Some(attr) = infra.v_attribute_with_key(v, "val")
           case attr.value == word {
             True -> match_internal(
               atomized_rest,
@@ -334,7 +334,7 @@ fn match_until_end_internal(
   already_done: List(VXML),
 ) -> List(VXML) {
   case atomized {
-    [] -> already_done |> list.reverse 
+    [] -> already_done |> list.reverse
     [first, ..rest] -> case match(atomized, pattern1) {
       None -> match_until_end_internal(
         rest,
@@ -386,7 +386,7 @@ fn atomize_text_node(vxml: VXML) -> List(VXML) {
   |> list.flatten
   |> list.append([end_node(blame)])
 }
- 
+
 fn atomize_if_t_or_a_with_single_t_child(vxml: VXML) -> List(VXML) {
   case vxml {
     V(blame, "a", attributes, [T(_, _) as t]) -> {
@@ -399,7 +399,7 @@ fn atomize_if_t_or_a_with_single_t_child(vxml: VXML) -> List(VXML) {
     T(_, _) -> atomize_text_node(vxml)
   }
 }
- 
+
 fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
   case
     list.any(children, fn(v) {
@@ -407,7 +407,7 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
       || infra.is_v_and_tag_equals(v, "InChapterLink")
     })
   {
-    True -> 
+    True ->
       children
       |> list.map(atomize_if_t_or_a_with_single_t_child)
       |> list.flatten
@@ -418,7 +418,7 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
 
 fn transform(
   vxml: VXML,
-  extra: ExtraTransformed,
+  param: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(b, tag, attributes, children) -> {
@@ -427,7 +427,7 @@ fn transform(
         with_on_error: fn(_) { Ok(vxml) },
       )
       list.fold(
-        extra,
+        param,
         atomized,
         match_until_end,
       )
@@ -438,7 +438,7 @@ fn transform(
     _ -> Ok(vxml)
   }
 }
- 
+
 fn is_variable(token: String) -> Option(Int) {
   let length = string.length(token)
   let start = string.slice(token, 0, 1)
@@ -449,7 +449,7 @@ fn is_variable(token: String) -> Option(Int) {
     _, _, _ -> None
   }
 }
- 
+
 fn keep_some_remove_none_and_unwrap(l: List(Option(a))) -> List(a) {
   l
   |> list.filter_map(fn(x) {
@@ -459,19 +459,19 @@ fn keep_some_remove_none_and_unwrap(l: List(Option(a))) -> List(a) {
     }
   })
 }
- 
+
 fn xmlm_tag_name(t: xmlm.Tag) -> String {
   let xmlm.Tag(xmlm.Name(_, ze_name), _) = t
   ze_name
 }
- 
+
 fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
   case t {
     xmlm.Attribute(xmlm.Name(_, ze_name), _) if ze_name == name -> True
     _ -> False
   }
 }
- 
+
 fn match_tag_and_children(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
@@ -503,7 +503,7 @@ fn match_tag_and_children(
   let class_attribute =
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "class"))
-  let xmlm.Attribute(_, value) = 
+  let xmlm.Attribute(_, value) =
     href_attribute
   use value <- result.then(
     int.parse(value)
@@ -523,7 +523,7 @@ fn match_tag_and_children(
   }
   Ok([A(xmlm_tag_name(xmlm_tag), classes, value, tag_content_patterns)])
 }
- 
+
 fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) {
   splits
   |> list.filter(fn(x) { !{ x |> string.is_empty } })
@@ -535,14 +535,14 @@ fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) 
   })
   |> Some
 }
- 
+
 fn word_to_optional_tokens(word: String) -> Option(LinkPattern) {
   case word {
     "" -> None
     _ -> Some([Word(word)])
   }
 }
- 
+
 fn split_variables(words: List(String)) -> List(Option(LinkPattern)) {
   let assert Ok(re) = regexp.from_string("(_[0-9]+_)")
   words
@@ -557,7 +557,7 @@ fn split_variables(words: List(String)) -> List(Option(LinkPattern)) {
     }
   })
 }
- 
+
 fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
   content
   |> string.split(" ")
@@ -567,7 +567,7 @@ fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
   |> list.flatten
   |> Ok
 }
- 
+
 fn extra_string_to_link_pattern(
   s: String,
 ) -> Result(LinkPattern, DesugaringError) {
@@ -583,11 +583,11 @@ fn extra_string_to_link_pattern(
       Error(DesugaringError(infra.blame_us(""), ins(input_error)))
   }
 }
- 
+
 fn make_sure_attributes_are_quoted(input: String) -> String {
   let assert Ok(pattern) =
     regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
- 
+
   regexp.match_map(pattern, input, fn(match: regexp.Match) {
     case match.submatches {
       [Some(key), Some(value)] -> {
@@ -658,7 +658,7 @@ fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
     Some(int) -> Error(int)
   }
 }
- 
+
 fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
   let #(s1, s2) = string_pair
 
@@ -677,8 +677,16 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   Ok(#(pattern1, pattern2))
 }
 
-fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
-  extra
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  param
   |> list.try_map(fn(string_pair) {
     let #(s1, s2) = string_pair
     use #(pattern1, pattern2) <- result.then(string_pair_to_link_pattern_pair(string_pair))
@@ -706,43 +714,37 @@ fn extra_transform(extra: Extra) -> Result(ExtraTransformed, DesugaringError) {
     Ok(#(pattern1, pattern2))
   })
 }
- 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  case extra |> extra_transform {
-    Ok(transformed_extra) -> fn(node) { transform(node, transformed_extra) }
-    Error(error) -> fn(_) { Error(error) }
-  }
-}
- 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
-}
- 
-type ExtraTransformed =
-  List(#(LinkPattern, LinkPattern))
- 
-type Extra =
+
+type Param =
   List(#(String, String))
- 
+//       ↖       ↖
+//       source  target
+//       pattern pattern
+
+type InnerParam =
+  List(#(LinkPattern, LinkPattern))
+
 /// matches appearance of first String
 /// while considering (x) as a variable
 /// and replaces it with the second String
 /// (x) can be used in second String to use
 /// the variable from first String
-pub fn rearrange_links(extra: Extra) -> Pipe {
+pub fn rearrange_links(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "rearrange_links",
-      option.None,
-      "
-matches appearance of first String
-while considering (x) as a variable
-and replaces it with the second String
-(x) can be used in second String to use
-the variable from first String",
+      desugarer_name: "rearrange_links",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// matches appearance of first String
+/// while considering (x) as a variable
+/// and replaces it with the second String
+/// (x) can be used in second String to use
+/// the variable from first String
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }
- 
- 

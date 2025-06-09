@@ -3,11 +3,8 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/order
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type Splits {
@@ -381,56 +378,65 @@ fn split_chunk_children(
 }
 
 /// The idea is as follows :
-/// 1. split all the children into flatten content and inline 
+/// 1. split all the children into flatten content and inline
 ///    tags, flatten content will have all contents followed by
 ///    each other ignoring any inline tags in between, inline tags
 ///    should save the tags in between with their position so
-///    we can re-merge later 
+///    we can re-merge later
 /// 2. split flattened content by delimiter into splits of what
 ///    come before delimiter and the delimiter content and what
 ///    comes after , splits should also save the original position
 ///    of the line for the re-merge
 /// 3. each split is then merged with tags that comes before it
-///    and give the vxml reltive 
+///    and give the vxml reltive
 /// 4. if the delimiter can be nested inside other one , we check
 ///    the mapped_vxml and call the desugarer recursevly on the
 ///    element that accepts nesting
-pub fn split_delimiters_chunks_transform(
+fn transform(
   node: VXML,
-  extra: #(String, String, String, Bool, List(String)),
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) -> Ok([node])
     V(_, "VerticalChunk", _, children) -> {
       children
-      |> split_chunk_children("VerticalChunk", extra)
+      |> split_chunk_children("VerticalChunk", inner)
       |> Ok()
     }
     V(_, _, _, _) -> Ok([node])
   }
 }
 
-fn transform_factory(
-  extra: #(String, String, String, Bool, List(String)),
-) -> infra.NodeToNodesTransform {
-  split_delimiters_chunks_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(
-  extra: #(String, String, String, Bool, List(String)),
-) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
-pub fn split_delimiters_chunks_desugarer(
-  extra: #(String, String, String, Bool, List(String)),
-) -> Pipe {
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = #(String, String, String, Bool, List(String))
+//            ↖       ↖       ↖       ↖     ↖
+//            open    close   tag     split can_be_nested
+//            delim   delim   name    chunks
+
+type InnerParam = Param
+
+/// splits content within VerticalChunk by delimiters
+pub fn split_delimiters_chunks_desugarer(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "split_delimiters_chunks_desugarer",
-      option.Some(string.inspect(extra)),
-      "...",
+      desugarer_name: "split_delimiters_chunks_desugarer",
+      stringified_param: option.Some(ins(param)),
+      general_description: "/// splits content within VerticalChunk by delimiters",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

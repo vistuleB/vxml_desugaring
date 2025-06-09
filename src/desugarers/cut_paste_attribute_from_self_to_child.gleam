@@ -1,10 +1,7 @@
 import gleam/list
-import gleam/option.{Some, None}
+import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, V, type BlamedAttribute, BlamedAttribute}
 
 fn update_child(children: List(VXML), child_tag: String, attribute: BlamedAttribute)
@@ -23,18 +20,16 @@ fn update_child(children: List(VXML), child_tag: String, attribute: BlamedAttrib
   })
 }
 
-fn param_transform(
+fn transform(
   node: VXML,
-  extra: Extra
+  inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
-  let #(parent_tag, child_tag, key) = extra
+  let #(parent_tag, child_tag, key) = inner
   case node {
     V(b, tag, attributes, children) if tag == parent_tag -> {
-        
-        
-        case infra.get_attribute_by_name(node, key) {
-          None -> Ok(node)
-          Some(attribute) -> {
+        case infra.v_attribute_with_key(node, key) {
+          option.None -> Ok(node)
+          option.Some(attribute) -> {
             let new_attribites = attributes |> list.filter(fn(x) {
               case x {
                 BlamedAttribute(_, k, _) if k == key -> False
@@ -49,29 +44,44 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-    param_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+    transform(_, inner)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
-type Extra = #(String, String, String)
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-/// Moves an attribute with key `key` from the first child of a node with tag 
+type Param =
+  #(String, String, String)
+//  ↖       ↖       ↖
+//  parent  child   attribute
+//  tag     tag     key
+
+type InnerParam = Param
+
+/// Moves an attribute with key `key` from the first child of a node with tag
 /// `parent_tag` to the node itself.
-/// #Extra
-/// - `parent tag` - 
-/// - `child tag` - 
-/// - `attribute key` - 
-pub fn cut_paste_attribute_from_self_to_child(extra: Extra) -> Pipe {
+/// #Param
+/// - `parent tag` -
+/// - `child tag` -
+/// - `attribute key` -
+pub fn cut_paste_attribute_from_self_to_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "cut_paste_attribute_from_self_to_child",
-      Some(ins(extra)),
-      "Moves an attribute with key `key` from parent to a child.",
+      desugarer_name: "cut_paste_attribute_from_self_to_child",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// Moves an attribute with key `key` from parent to a child.
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

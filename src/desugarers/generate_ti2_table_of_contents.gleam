@@ -1,11 +1,9 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option
 import gleam/result
-import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -29,7 +27,7 @@ fn chapter_link(
   let item_blame = infra.get_blame(item)
 
   use label_attr <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "title_gr"),
+    infra.v_attribute_with_key(item, "title_gr"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents)" <> tp <> " missing title_gr attribute",
@@ -37,7 +35,7 @@ fn chapter_link(
   )
 
   use href_attr <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "title_en"),
+    infra.v_attribute_with_key(item, "title_en"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents)" <> tp <> " missing title_en attribute",
@@ -45,16 +43,16 @@ fn chapter_link(
   )
 
   use number_attribute <- infra.on_none_on_some(
-    infra.get_attribute_by_name(item, "number"),
+    infra.v_attribute_with_key(item, "number"),
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents)" <> tp <> " missing number attribute",
     )),
   )
 
-  let on_mobile_attr = case infra.get_attribute_by_name(item, "on_mobile") {
-    Some(attr) -> attr
-    None -> label_attr
+  let on_mobile_attr = case infra.v_attribute_with_key(item, "on_mobile") {
+    option.Some(attr) -> attr
+    option.None -> label_attr
   }
 
   let link =
@@ -95,8 +93,11 @@ fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML 
   ])
 }
 
-fn the_desugarer(root: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
-  let #(table_of_contents_tag, chapter_link_component_name) = extra
+fn transform(
+  root: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
+  let #(table_of_contents_tag, chapter_link_component_name) = inner
   let sections = infra.descendants_with_tag(root, "Section")
   use chapter_menu_items <- infra.on_error_on_ok(
     over: {
@@ -118,20 +119,41 @@ fn the_desugarer(root: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   ))
 }
 
-type Extra =
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
+}
+
+fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param =
   #(String, String)
+//  ↖       ↖
+//  table   chapter
+//  of      link
+//  contents component
+//  tag     name
 
-// - first string: tag name for table of contents
-// - second string: tag name for individual chapter links
-// - third string: optional tag name for spacer between two groups of chapter links
+type InnerParam = Param
 
-pub fn generate_ti2_table_of_contents(extra: Extra) -> Pipe {
+/// generates table of contents for TI2 content with sections
+pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "generate_ti2_table_of_contents",
-      option.None,
-      "...",
+      desugarer_name: "generate_ti2_table_of_contents",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// generates table of contents for TI2 content with sections
+      ",
     ),
-    desugarer: the_desugarer(_, extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

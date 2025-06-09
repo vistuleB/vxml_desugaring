@@ -1,26 +1,21 @@
 import gleam/list
-import gleam/option.{Some}
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/option
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-const ins = string.inspect
-
-fn param_transform(
+fn transform(
   vxml: VXML,
-  extra: Extra,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     T(_, _) -> Ok([vxml])
     V(_, tag, _, _) -> {
-      case list.contains(extra, tag) {
+      case list.contains(inner, tag) {
         True -> {
           let #(before, vxml) = vxml |> infra.v_extract_starting_spaces
           let #(after, vxml) = vxml |> infra.v_extract_ending_spaces
-          Ok(option.values([before, Some(vxml), after]))
+          Ok(option.values([before, option.Some(vxml), after]))
         }
         False -> Ok([vxml])
       }
@@ -28,24 +23,35 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
-  param_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
-type Extra =
-  List(String)
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-pub fn extract_starting_and_ending_spaces(extra: Extra) -> Pipe {
+type Param = List(String)
+
+type InnerParam = Param
+
+/// extracts starting and ending spaces from specified tags into separate text nodes
+pub fn extract_starting_and_ending_spaces(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "extract_starting_and_ending_spaces",
-      option.Some(ins(extra)),
-      "...",
+      desugarer_name: "extract_starting_and_ending_spaces",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// extracts starting and ending spaces from specified tags into separate text nodes
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

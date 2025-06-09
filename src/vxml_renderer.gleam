@@ -7,7 +7,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type DetailedDesugaringError, DetailedDesugaringError, type Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
@@ -93,12 +93,7 @@ pub fn default_html_source_parser(
   )
 
   filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
-  |> result.map_error(fn(e: infra.DesugaringError) {
-    case e {
-      infra.DesugaringError(_, message) -> SourceParserError(message)
-      infra.GetRootError(message) -> SourceParserError(message)
-    }
-  })
+  |> result.map_error(fn(e: infra.DesugaringError) { SourceParserError(e.message) })
 }
 
 // *************
@@ -360,7 +355,7 @@ fn pipeline_runner(
   pipeline: List(Pipe),
   pipeline_debug_options: PipelineDebugOptions,
   step: Int,
-) -> Result(VXML, DesugaringError) {
+) -> Result(VXML, DetailedDesugaringError) {
   case pipeline {
     [] -> Ok(vxml)
     [pipe, ..rest] -> {
@@ -373,7 +368,7 @@ fn pipeline_runner(
           )
           |> io.print
       }
-
+  
       case pipe.desugarer(vxml) {
         Ok(vxml) -> {
           case pipeline_debug_options.debug_print(step, pipe) {
@@ -382,7 +377,12 @@ fn pipeline_runner(
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
-        Error(error) -> Error(error)
+        Error(error) -> Error(DetailedDesugaringError(
+          blame: error.blame, 
+          message: error.message,
+          desugarer: pipe.description.desugarer_name,
+          step: step,
+        ))
       }
     }
   }
@@ -425,8 +425,7 @@ pub fn possible_error_message(
 pub type RendererError(a, c, e, f, h) {
   AssemblyError(a)
   SourceParserError(c)
-  GetRootError(String)
-  PipelineError(DesugaringError)
+  PipelineError(DetailedDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
   ArtifactPrintingError(String)
@@ -498,6 +497,8 @@ pub fn run_renderer(
     },
   )
 
+  io.println("(starting pipeline)")
+
   use desugared <- infra.on_error_on_ok(
     over: pipeline_runner(
       parsed,
@@ -505,10 +506,19 @@ pub fn run_renderer(
       debug_options.pipeline_debug_options,
       1,
     ),
-    with_on_error: fn(e: DesugaringError) {
+    with_on_error: fn(e: DetailedDesugaringError) {
       case debug_options.error_messages {
-        True -> io.println(ins(e))
-        _ -> Nil
+        True -> {
+          {
+            "\nError thrown by " <> e.desugarer <> ".gleam desugarer" <>
+            "\nPipeline position: " <> ins(e.step) <>
+            "\nBlame: " <> ins(e.blame) <>
+            "\nMessage: " <> e.message <>
+            "\n"
+          }
+          |> io.print
+        }
+        False -> Nil
       }
       Error(PipelineError(e))
     },
@@ -1156,7 +1166,7 @@ pub fn db_amend_pipeline_debug_options(
       || { start == -2 && end == -2 && step == list.length(pipeline) }
       || {
         list.is_empty(names) == False
-        && list.contains(names, pipe.description.function_name)
+        && list.contains(names, pipe.description.desugarer_name)
       }
     },
     artifact_print,

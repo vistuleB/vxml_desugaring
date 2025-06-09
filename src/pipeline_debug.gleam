@@ -52,12 +52,12 @@ pub fn desugarer_description_star_block(
   desugarer_desc: infra.DesugarerDescription,
   step: Int,
 ) -> String {
-  let desugarer_name_and_extra =
-    desugarer_desc.function_name
-    <> case desugarer_desc.extra {
-      Some(extra) ->
+  let desugarer_name_and_param =
+    desugarer_desc.desugarer_name
+    <> case desugarer_desc.stringified_param {
+      Some(desc) ->
         " "
-        <> ins(extra)
+        <> ins(desc)
         |> string.drop_start(1)
         |> string.drop_end(1)
         |> string.replace("\\\"", "\"")
@@ -66,13 +66,22 @@ pub fn desugarer_description_star_block(
 
   let desugarer_description_lines = case string.is_empty(desugarer_desc.general_description) {
     True -> []
-    False -> string.split(string.trim(desugarer_desc.general_description), "\n")
+    False -> 
+      desugarer_desc.general_description
+      |> string.trim
+      |> string.split("\n")
+      |> list.map(fn(line) {
+        case string.starts_with(line, "/// ") {
+          True -> string.drop_start(line, 4)
+          False -> line
+        }
+      })
   }
 
   star_block(
     True,
     list.append(
-      ["DESUGARER " <> ins(step), "", desugarer_name_and_extra, ""],
+      ["DESUGARER " <> ins(step), "", desugarer_name_and_param, ""],
       desugarer_description_lines,
     ),
     True,

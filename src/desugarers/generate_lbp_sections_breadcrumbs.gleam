@@ -3,7 +3,7 @@ import gleam/result
 import gleam/list
 import infrastructure.{type Pipe, Pipe, DesugarerDescription, type DesugaringError, DesugaringError} as infra
 import gleam/option.{type Option, Some, None}
-import vxml.{type VXML, V, T, BlamedContent, type BlamedContent, BlamedAttribute}
+import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 
 const ins = string.inspect
 

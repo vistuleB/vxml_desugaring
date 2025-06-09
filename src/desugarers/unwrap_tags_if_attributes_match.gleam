@@ -1,11 +1,8 @@
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, T, V}
 
 fn matches_all_key_value_pairs(
@@ -18,14 +15,14 @@ fn matches_all_key_value_pairs(
   })
 }
 
-fn param_transform(
+fn transform(
   node: VXML,
-  extra: Extra,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) -> Ok([node])
     V(_, tag, attrs, children) -> {
-      case list.find(extra, fn(pair) { pair |> pair.first == tag }) {
+      case list.find(inner, fn(pair) { pair |> pair.first == tag }) {
         Error(Nil) -> Ok([node])
         Ok(#(_, attrs_to_match)) -> {
           case matches_all_key_value_pairs(attrs, attrs_to_match) {
@@ -39,24 +36,35 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodesTransform {
-  param_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
-type Extra =
-  List(#(String, List(#(String, String))))
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-pub fn unwrap_tags_if_attributes_match(extra: Extra) -> Pipe {
+type Param = List(#(String, List(#(String, String))))
+//              ↖       ↖
+//              tag     attributes to match
+
+type InnerParam = Param
+
+/// unwraps tags if all specified attributes match
+pub fn unwrap_tags_if_attributes_match(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "unwrap_tags_if_attributes_match",
-      Some(ins(extra)),
-      "...",
+      desugarer_name: "unwrap_tags_if_attributes_match",
+      stringified_param: option.Some(ins(param)),
+      general_description: "/// unwraps tags if all specified attributes match",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

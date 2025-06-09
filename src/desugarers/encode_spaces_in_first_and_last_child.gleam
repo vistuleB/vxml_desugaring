@@ -1,19 +1,17 @@
 import gleam/list
 import gleam/option
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-const ins = string.inspect
-
-fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
+fn transform(
+  vxml: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case list.contains(extra, tag) {
+      case list.contains(inner, tag) {
         True -> {
           Ok(V(
             blame,
@@ -30,24 +28,35 @@ fn param_transform(vxml: VXML, extra: Extra) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeTransform {
-  param_transform(_, extra)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+  transform(_, inner)
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
-type Extra =
-  List(String)
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-pub fn encode_spaces_in_first_and_last_child(extra: Extra) -> Pipe {
+type Param = List(String)
+
+type InnerParam = Param
+
+/// encodes spaces in first and last child of specified tags
+pub fn encode_spaces_in_first_and_last_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "encode_spaces_in_first_and_last_child",
-      option.Some(ins(extra)),
-      "...",
+      desugarer_name: "encode_spaces_in_first_and_last_child",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// encodes spaces in first and last child of specified tags
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

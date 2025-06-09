@@ -17,9 +17,7 @@ fn test_pipeline() -> List(Pipe) {
       #("b", "*", "*"),
       #("strong", "*", "*"),
     ]),
-    unwrap_tags_if_no_attributes.unwrap_tags_if_no_attributes([
-      "i", "b", "strong",
-    ]),
+    unwrap_tags_if_no_attributes(["i", "b", "strong"]),
   ]
 }
 

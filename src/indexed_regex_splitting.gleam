@@ -1,7 +1,7 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/regexp.{type Regexp}
-import gleam/string
+import gleam/string.{inspect as ins}
 import vxml.{ type BlamedContent, type VXML, BlamedContent, T, V }
 import infrastructure.{type EitherOr, Or, Either, type DesugaringError } as infra
 
@@ -67,12 +67,20 @@ pub fn split_string_by_regex_with_indexed_group(
   content: String,
   indexed_regex: RegexWithIndexedGroup,
 ) -> List(String) {
+  use <- infra.on_true_on_false(content == "", [""])
   let #(re, dropped_group, num_groups, pattern) = indexed_regex
   let splits = regexp.split(re, content)
   let num_matches: Int = { list.length(splits) - 1 } / { num_groups + 1 }
   case { num_matches * { num_groups + 1 } } + 1 == list.length(splits) {
     True -> Nil
-    False -> panic as { "pattern split failed: " <> pattern <> "[END]" }
+    False -> panic as {
+"pattern split failed:
+  -- content: " <> content <> "[END]" <> "
+  -- splits: " <> ins(splits) <> "
+  -- num_groups: " <> ins(num_groups) <> "
+  -- num_matches: " <> ins(num_matches) <> "
+  -- pattern: " <> ins(pattern)
+    }
   }
   list.index_map(
     splits,

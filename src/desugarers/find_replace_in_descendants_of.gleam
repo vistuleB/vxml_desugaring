@@ -1,21 +1,21 @@
 import gleam/list
-import gleam/option.{Some}
+import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn param_transform(
+fn transform(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
   _: List(VXML),
   _: List(VXML),
-  extra: Extra,
+  inner: InnerParam,
 ) -> Result(VXML, infra.DesugaringError) {
   case vxml {
     V(_, _, _, _) -> Ok(vxml)
     T(_, _) -> {
-      list.fold(extra, vxml, fn(v, tuple) -> VXML {
+      list.fold(inner, vxml, fn(v, tuple) -> VXML {
         let #(ancestor, list_pairs) = tuple
         case list.any(ancestors, fn(a) { infra.get_tag(a) == ancestor }) {
           False -> v
@@ -27,29 +27,40 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   fn(vxml, ancestors, s1, s2, s3) {
-    param_transform(vxml, ancestors, s1, s2, s3, extra)
+    transform(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
-fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
-type Extra =
-  List(
-    #(String, List(#(String, String))),
-    //    ancestor       from    to
-  )
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
 
-pub fn find_replace_in_descendants_of(extra: Extra) -> Pipe {
+type Param =
+  List(#(String, List(#(String, String))))
+//       ↖      ↖
+//       ancestor from/to pairs
+
+type InnerParam = Param
+
+/// find and replace strings in text nodes that are descendants of specified ancestor tags
+pub fn find_replace_in_descendants_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "find_replace_in_descendants_of",
-      Some(ins(extra)),
-      "...",
+      desugarer_name: "find_replace_in_descendants_of",
+      stringified_param: option.Some(ins(param)),
+      general_description: "
+/// find and replace strings in text nodes that are descendants of specified ancestor tags
+      ",
     ),
-    desugarer: desugarer_factory(extra),
+    desugarer: case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

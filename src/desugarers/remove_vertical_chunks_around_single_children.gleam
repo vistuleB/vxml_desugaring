@@ -1,11 +1,8 @@
 import gleam/option
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
-fn remove_vertical_chunks_around_single_children_transform(
+fn transform(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -23,21 +20,35 @@ fn remove_vertical_chunks_around_single_children_transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodeTransform {
-  remove_vertical_chunks_around_single_children_transform
+fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
+  transform
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory())
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+
+type InnerParam = Nil
+
+/// removes VerticalChunk tags that have only a single child
 pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "remove_vertical_chunks_around_single_children_desugarer",
-      option.None,
-      "...",
+      desugarer_name: "remove_vertical_chunks_around_single_children_desugarer",
+      stringified_param: option.None,
+      general_description: "
+/// removes VerticalChunk tags that have only a single child
+      ",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn is_text(child: VXML) {
@@ -10,7 +11,7 @@ fn is_text(child: VXML) {
   }
 }
 
-pub fn transform(
+fn transform(
   node: VXML,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
@@ -30,21 +31,32 @@ pub fn transform(
   }
 }
 
-fn transform_factory() -> infra.NodeToNodesTransform {
+fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
   transform
 }
 
-fn desugarer_factory() -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory())
+fn desugarer_factory(inner: InnerParam) -> Desugarer {
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
+
+/// unwraps VerticalChunk tags that contain no text children
 pub fn unwrap_vertical_chunks_with_no_text_child() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "unwrap_vertical_chunks_with_no_text_child",
-      option.None,
-      "...",
+      desugarer_name: "unwrap_vertical_chunks_with_no_text_child",
+      stringified_param: option.Some(ins(Nil)),
+      general_description: "/// unwraps VerticalChunk tags that contain no text children",
     ),
-    desugarer: desugarer_factory(),
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> desugarer_factory(inner)
+    }
   )
 }

@@ -1,13 +1,9 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option
-import gleam/string
-import infrastructure.{
-  type DesugaringError, type Pipe, DesugarerDescription, DesugaringError,
-} as infra
+import gleam/string.{inspect as ins}
+import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription} as infra
 import vxml.{type VXML, BlamedAttribute, V}
-
-const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
   Blame("generate_lbp_links:" <> note, -1, -1, [])
@@ -76,7 +72,7 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
   let chapters = infra.index_children_with_tag(root, "Chapter")
   let bootcamps = infra.index_children_with_tag(root, "Bootcamp")
 
-  let toc = infra.index_children_with_tag(root, "TOCAuthorSuppliedContent")
+  let toc = infra.index_children_with_tag(root, "TOCAuthorSuppliedContents")
   let assert [#(toc, _)] = toc
 
   let #(chapters, bootcamps, toc) = case
@@ -153,7 +149,7 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
       use _ <- infra.on_error_on_ok(over: bootcamp, with_on_ok: fn(c) { c })
 
       use <- infra.on_true_on_false(
-        over: tag == "TOCAuthorSuppliedContent",
+        over: tag == "TOCAuthorSuppliedContents",
         with_on_true: toc,
       )
 
@@ -165,7 +161,11 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
 
 pub fn generate_lbp_links() -> Pipe {
   infra.Pipe(
-    DesugarerDescription("generate_lbp_links", option.None, "..."),
+    DesugarerDescription(
+      "generate_lbp_links",
+      option.None,
+      "..."
+    ),
     fn(vxml) { the_desugarer(vxml) },
   )
 }

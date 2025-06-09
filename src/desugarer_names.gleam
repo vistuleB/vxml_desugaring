@@ -27,6 +27,7 @@ import desugarers/handles_substitute
 import desugarers/identity
 import desugarers/insert_bookend_tags
 import desugarers/insert_indent
+import desugarers/normalize_math_delimiters_inside
 import desugarers/pair_bookends
 import desugarers/prepend_text
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
@@ -37,13 +38,14 @@ import desugarers/remove_empty_lines
 import desugarers/remove_empty_text_nodes
 import desugarers/remove_starting_and_ending_empty_lines
 import desugarers/remove_starting_and_ending_spaces
+import desugarers/rename_attributes
 import desugarers/rename
 import desugarers/rename_with_attributes
 import desugarers/rename_when_child_of
 import desugarers/unwrap
 import desugarers/unwrap_vertical_chunks_with_no_text_child
 import desugarers/unwrap_when_descendant_of
-import desugarers/unwrap_when_single_child
+import desugarers/unwrap_when_zero_or_one_children
 import desugarers/unwrap_when_child_of
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
@@ -77,6 +79,7 @@ pub const handles_substitute = handles_substitute.handles_substitute
 pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_indent = insert_indent.insert_indent
+pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const prepend_text = prepend_text.prepend_text
 pub const rearrange_links = rearrange_links.rearrange_links
@@ -88,12 +91,13 @@ pub const remove_empty_text_nodes = remove_empty_text_nodes.remove_empty_text_no
 pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_empty_lines.remove_starting_and_ending_empty_lines
 pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
 pub const rename = rename.rename
+pub const rename_attributes = rename_attributes.rename_attributes
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const unwrap_when_child_of= unwrap_when_child_of.unwrap_when_child_of
 pub const unwrap = unwrap.unwrap
 pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
-pub const unwrap_when_single_child = unwrap_when_single_child.unwrap_when_single_child
+pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.unwrap_when_zero_or_one_children
 pub const unwrap_vertical_chunks_with_no_text_child = unwrap_vertical_chunks_with_no_text_child.unwrap_vertical_chunks_with_no_text_child
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break
