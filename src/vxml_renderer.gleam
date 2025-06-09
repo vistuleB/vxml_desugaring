@@ -93,12 +93,7 @@ pub fn default_html_source_parser(
   )
 
   filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
-  |> result.map_error(fn(e: infra.DesugaringError) {
-    case e {
-      infra.DesugaringError(_, message) -> SourceParserError(message)
-      infra.GetRootError(message) -> SourceParserError(message)
-    }
-  })
+  |> result.map_error(fn(e: infra.DesugaringError) { SourceParserError(e.message) })
 }
 
 // *************
@@ -425,8 +420,7 @@ pub fn possible_error_message(
 pub type RendererError(a, c, e, f, h) {
   AssemblyError(a)
   SourceParserError(c)
-  GetRootError(String)
-  PipelineError(DesugaringError)
+  PipelineError(DetailedDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
   ArtifactPrintingError(String)
@@ -511,18 +505,19 @@ pub fn run_renderer(
       let DetailedDesugaringError(desugaring_error, name, step) = e
       case debug_options.error_messages {
         True -> {
-          let assert DesugaringError(blame, message) = desugaring_error
-          io.println_error(
-            "An error has occured on pipeline: " 
-            <> name
-          )
-          io.println_error( "Pipe number: " <> ins(step))
-          io.println_error( "Source: " <> ins(blame))
-          io.println_error( "Message: " <> message)
+          let DesugaringError(blame, message) = desugaring_error
+          [
+            "",
+            "Error thrown by " <> name <> ".gleam desugarer",
+            "Pipeline position: " <> ins(step),
+            "Blame: " <> ins(blame),
+            "Message: " <> message,
+          ]
+          |> list.each(io.println)
         }
         _ -> Nil
       }
-      Error(PipelineError(desugaring_error))
+      Error(PipelineError(e))
     },
   )
 
