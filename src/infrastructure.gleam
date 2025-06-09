@@ -2140,9 +2140,13 @@ pub type DesugaringError {
 }
 
 pub type DetailedDesugaringError {
-  DetailedDesugaringError(error: DesugaringError, name: String, step: Int)
+  DetailedDesugaringError(
+    blame: Blame,
+    message: String,
+    desugarer: String,
+    step: Int,
+  )
 }
-
 
 pub type Desugarer =
   fn(VXML) -> Result(VXML, DesugaringError)

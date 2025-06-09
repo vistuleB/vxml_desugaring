@@ -7,7 +7,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type DetailedDesugaringError, DetailedDesugaringError, DesugaringError, type Pipe} as infra
+import infrastructure.{type DetailedDesugaringError, DetailedDesugaringError, type Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
@@ -377,7 +377,12 @@ fn pipeline_runner(
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
-        Error(error) -> Error(DetailedDesugaringError(error, pipe.description.desugarer_name, step))
+        Error(error) -> Error(DetailedDesugaringError(
+          blame: error.blame, 
+          message: error.message,
+          desugarer: pipe.description.desugarer_name,
+          step: step,
+        ))
       }
     }
   }
@@ -502,20 +507,18 @@ pub fn run_renderer(
       1,
     ),
     with_on_error: fn(e: DetailedDesugaringError) {
-      let DetailedDesugaringError(desugaring_error, name, step) = e
       case debug_options.error_messages {
         True -> {
-          let DesugaringError(blame, message) = desugaring_error
-          [
-            "",
-            "Error thrown by " <> name <> ".gleam desugarer",
-            "Pipeline position: " <> ins(step),
-            "Blame: " <> ins(blame),
-            "Message: " <> message,
-          ]
-          |> list.each(io.println)
+          {
+            "\nError thrown by " <> e.desugarer <> ".gleam desugarer" <>
+            "\nPipeline position: " <> ins(e.step) <>
+            "\nBlame: " <> ins(e.blame) <>
+            "\nMessage: " <> e.message <>
+            "\n"
+          }
+          |> io.print
         }
-        _ -> Nil
+        False -> Nil
       }
       Error(PipelineError(e))
     },
