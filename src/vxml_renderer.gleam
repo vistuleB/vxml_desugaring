@@ -7,7 +7,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type DetailedDesugaringError, DetailedDesugaringError, DesugaringError, type Pipe} as infra
+import infrastructure.{type DetailedDesugaringError, DetailedDesugaringError, type Pipe} as infra
 import pipeline_debug
 import shellout
 import simplifile
@@ -93,12 +93,7 @@ pub fn default_html_source_parser(
   )
 
   filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
-  |> result.map_error(fn(e: infra.DesugaringError) {
-    case e {
-      infra.DesugaringError(_, message) -> SourceParserError(message)
-      infra.GetRootError(message) -> SourceParserError(message)
-    }
-  })
+  |> result.map_error(fn(e: infra.DesugaringError) { SourceParserError(e.message) })
 }
 
 // *************
@@ -382,7 +377,12 @@ fn pipeline_runner(
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
-        Error(error) -> Error(DetailedDesugaringError(error, pipe.description.desugarer_name, step))
+        Error(error) -> Error(DetailedDesugaringError(
+          blame: error.blame, 
+          message: error.message,
+          desugarer: pipe.description.desugarer_name,
+          step: step,
+        ))
       }
     }
   }
@@ -425,8 +425,7 @@ pub fn possible_error_message(
 pub type RendererError(a, c, e, f, h) {
   AssemblyError(a)
   SourceParserError(c)
-  GetRootError(String)
-  PipelineError(DesugaringError)
+  PipelineError(DetailedDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
   ArtifactPrintingError(String)
@@ -508,21 +507,20 @@ pub fn run_renderer(
       1,
     ),
     with_on_error: fn(e: DetailedDesugaringError) {
-      let DetailedDesugaringError(desugaring_error, name, step) = e
       case debug_options.error_messages {
         True -> {
-          let assert DesugaringError(blame, message) = desugaring_error
-          io.println_error(
-            "An error has occured on pipeline: " 
-            <> name
-          )
-          io.println_error( "Pipe number: " <> ins(step))
-          io.println_error( "Source: " <> ins(blame))
-          io.println_error( "Message: " <> message)
+          {
+            "\nError thrown by " <> e.desugarer <> ".gleam desugarer" <>
+            "\nPipeline position: " <> ins(e.step) <>
+            "\nBlame: " <> ins(e.blame) <>
+            "\nMessage: " <> e.message <>
+            "\n"
+          }
+          |> io.print
         }
-        _ -> Nil
+        False -> Nil
       }
-      Error(PipelineError(desugaring_error))
+      Error(PipelineError(e))
     },
   )
 

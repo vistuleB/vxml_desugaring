@@ -1505,7 +1505,7 @@ pub fn node_to_nodes_fancy_desugarer_factory(
 
     case get_root(vxmls) {
       Ok(r) -> Ok(r)
-      Error(message) -> Error(GetRootError(message))
+      Error(message) -> Error(DesugaringError(blamedlines.empty_blame(), message))
     }
   }
 }
@@ -2046,7 +2046,7 @@ pub fn node_to_nodes_desugarer_factory(
 
     case get_root(vxmls) {
       Ok(r) -> Ok(r)
-      Error(message) -> Error(GetRootError(message))
+      Error(message) -> Error(DesugaringError(blamedlines.empty_blame(), message))
     }
   }
 }
@@ -2119,13 +2119,16 @@ pub fn blame_us(message: String) -> Blame {
 
 pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
-  GetRootError(message: String)
 }
 
 pub type DetailedDesugaringError {
-  DetailedDesugaringError(error: DesugaringError, name: String, step: Int)
+  DetailedDesugaringError(
+    blame: Blame,
+    message: String,
+    desugarer: String,
+    step: Int,
+  )
 }
-
 
 pub type Desugarer =
   fn(VXML) -> Result(VXML, DesugaringError)
