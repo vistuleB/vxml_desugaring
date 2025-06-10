@@ -1,14 +1,7 @@
 import gleam/list
 import gleam/option
 import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe } as infra
-import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
-
-fn content_is_nonempty(blamed_content: BlamedContent) {
-  case blamed_content {
-    BlamedContent(_, "") -> False
-    _ -> True
-  }
-}
+import vxml.{type VXML, T, V}
 
 fn transform(
   node: VXML,
@@ -16,7 +9,7 @@ fn transform(
   case node {
     V(_, _, _, _) -> Ok([node])
     T(blame, lines) -> {
-      let nonempty_lines = list.filter(lines, content_is_nonempty)
+      let nonempty_lines = list.filter(lines, fn (b) { b.content != "" })
       case list.is_empty(nonempty_lines) {
         True -> Ok([])
         False -> Ok([T(blame, lines)])
@@ -41,14 +34,16 @@ type Param = Nil
 
 type InnerParam = Nil
 
-/// removes text nodes that contain only empty strings
-pub fn remove_empty_text_nodes() -> Pipe {
+/// removes text nodes that contain only empty
+/// strings, leaves other text nodes untouched
+pub fn remove_text_nodes_where_all_lines_are_empty_strings() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_empty_text_nodes",
+      desugarer_name: "remove_text_nodes_where_all_lines_are_empty_strings",
       stringified_param: option.None,
       general_description: "
-/// removes text nodes that contain only empty strings
+/// removes text nodes that contain only empty
+/// strings, leaves other text nodes untouched
       ",
     ),
     desugarer: case param_to_inner_param(Nil) {

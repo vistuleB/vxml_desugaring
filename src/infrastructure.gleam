@@ -610,6 +610,16 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //* misc (children collecting, inserting, ...)
 //**************************************************************
 
+pub fn first_line(lines: List(BlamedContent)) -> BlamedContent {
+  let assert [first, ..] = lines
+  first
+}
+
+pub fn t_first_line(node: VXML) -> BlamedContent {
+  let assert T(_, lines) = node
+  lines |> first_line
+}
+
 pub fn t_t_last_to_first_concatenation(node1: VXML, node2: VXML) -> VXML {
   let assert T(blame1, lines1) = node1
   let assert T(_, lines2) = node2

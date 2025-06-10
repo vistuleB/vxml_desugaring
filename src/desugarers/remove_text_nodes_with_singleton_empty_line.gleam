@@ -9,8 +9,7 @@ fn transform(
   case node {
     V(_, _, _, _) -> Ok([node])
     T(blame, lines) -> {
-      let lines = list.filter(lines, fn (b) { b.content != "" })
-      case list.is_empty(lines) {
+      case list.length(lines) == 1 && infra.first_line(lines).content == "" {
         True -> Ok([])
         False -> Ok([T(blame, lines)])
       }
@@ -34,18 +33,16 @@ type Param = Nil
 
 type InnerParam = Nil
 
-/// for each text node, removes each line whose
-/// content is the empty string & destroys
-/// text nodes that end up with 0 lines
-pub fn remove_empty_lines() -> Pipe {
+/// removes text nodes containing a single line
+/// consisting of an empty string
+pub fn remove_text_nodes_with_singleton_empty_line() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_empty_lines",
+      desugarer_name: "remove_text_nodes_with_singleton_empty_line",
       stringified_param: option.None,
       general_description: "
-/// for each text node, removes each line whose
-/// content is the empty string & destroys
-/// text nodes that end up with 0 lines
+/// removes text nodes containing a single line
+/// consisting of an empty string
       ",
     ),
     desugarer: case param_to_inner_param(Nil) {
