@@ -118,7 +118,7 @@ fn split_line_by_regex_with_indexed_group(
   
   // Track character position as we split
   let splits = split_string_by_regex_with_indexed_group(content, re)
-  
+
   // Create a list of character positions for each split
   let char_positions = calculate_char_positions(splits)
    

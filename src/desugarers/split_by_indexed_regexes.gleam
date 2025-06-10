@@ -21,8 +21,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(List(#(rs.RegexWithIndexedGroup, String)), List(String))
-//              ↖                                        ↖
-//              regexes_and_tags                         forbidden_parents
+//              ↖                                         ↖
+//              regexes_and_tags                          forbidden_parents
 
 type InnerParam = Param
 

@@ -191,12 +191,13 @@ pub fn symmetric_delim_splitting(
   tag: String,
   forbidden: List(String),
 ) -> List(Pipe) {
-  let opening_ir = irs.l_m_r_1_3_indexed_regex("[\\s]|^", delim_regex_form, "[^\\s]|$")
+  let opening_ir = irs.l_m_r_1_3_indexed_regex("[\\s]", delim_regex_form, "[^\\s]|$")
   let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", delim_regex_form, "[^\\s]|$")
-  let closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", delim_regex_form, "[\\s]|$")
+  let closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", delim_regex_form, "[\\s]")
   [
     split_by_indexed_regexes(#(
         [
+          #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
           #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
           #(opening_ir, "OpeningSymmetricDelim"),
           #(closing_ir, "ClosingSymmetricDelim"),
