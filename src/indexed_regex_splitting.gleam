@@ -20,7 +20,7 @@ pub type RegexWithIndexedGroup =
 // RegexWithIndexedGroup constructor helpers
 //********
 
-const regex_prefix_to_make_unescaped = "(?<!\\\\)((?:\\\\\\\\)*)"
+const regex_prefix_to_make_unescaped = "(?<!\\\\)(?:(?:\\\\\\\\)*)"
 
 fn assert_ok_regexp_from_string(s: String) -> regexp.Regexp {
   let assert Ok(re) = regexp.from_string(s)
@@ -45,9 +45,14 @@ fn compile_into_indexed_group(
 // RegexWithIndexedGroup public constructors
 //********
 
+pub fn unescaped_suffix(suffix: String) -> String {
+  regex_prefix_to_make_unescaped <> "(" <> suffix <> ")"
+}
+
 pub fn unescaped_suffix_indexed_regex(suffix: String) -> RegexWithIndexedGroup {
-  { regex_prefix_to_make_unescaped <> "(" <> suffix <> ")" }
-  |> compile_into_indexed_group(1, 2)
+  suffix
+  |> unescaped_suffix
+  |> compile_into_indexed_group(0, 1)
 }
 
 pub fn l_m_r_1_3_indexed_regex(
@@ -56,6 +61,15 @@ pub fn l_m_r_1_3_indexed_regex(
   right: String,
 ) -> RegexWithIndexedGroup {
   { "(" <> left <> ")(" <> middle <> ")(" <> right <> ")" }
+  |> compile_into_indexed_group(1, 3)
+}
+
+pub fn l_m_r_1_3_indexed_regex_no_middle_par(
+  left: String,
+  middle: String,
+  right: String,
+) -> RegexWithIndexedGroup {
+  { "(" <> left <> ")" <> middle <> "(" <> right <> ")" }
   |> compile_into_indexed_group(1, 3)
 }
 
