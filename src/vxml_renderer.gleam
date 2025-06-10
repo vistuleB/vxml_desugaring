@@ -1166,7 +1166,7 @@ pub fn db_amend_pipeline_debug_options(
       || { start == -2 && end == -2 && step == list.length(pipeline) }
       || {
         list.is_empty(names) == False
-        && list.contains(names, pipe.description.desugarer_name)
+        && list.any(names, fn (name) { string.contains(pipe.description.desugarer_name, name) })
       }
     },
     artifact_print,
