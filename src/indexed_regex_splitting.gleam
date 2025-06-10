@@ -121,7 +121,7 @@ fn split_line_by_regex_with_indexed_group(
 
   // Create a list of character positions for each split
   let char_positions = calculate_char_positions(splits)
-   
+
   // Map each split to a BlamedContent with updated char_no
   list.index_map(
     splits,

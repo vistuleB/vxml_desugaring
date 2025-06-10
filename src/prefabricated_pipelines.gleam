@@ -198,7 +198,7 @@ pub fn symmetric_delim_splitting(
     split_by_indexed_regexes(#(
         [
           #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
-          #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
+          #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"), // need second guy for this pattern: Gr_i_gorinovich (or second occurrence is shadowed by first occurrence)
           #(opening_ir, "OpeningSymmetricDelim"),
           #(closing_ir, "ClosingSymmetricDelim"),
         ],
