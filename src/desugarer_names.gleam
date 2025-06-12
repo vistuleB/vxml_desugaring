@@ -1,5 +1,6 @@
 import desugarers/absorb_next_sibling_while
 import desugarers/add_attributes
+import desugarers/add_attribute_to_second_of_kind
 import desugarers/add_before_tags_but_not_first_child_tags
 import desugarers/add_between_tag_and_text_node
 import desugarers/add_between_tags
@@ -26,7 +27,6 @@ import desugarers/handles_generate_ids
 import desugarers/handles_substitute
 import desugarers/identity
 import desugarers/insert_bookend_tags
-import desugarers/insert_indent
 import desugarers/normalize_math_delimiters_inside
 import desugarers/pair_bookends
 import desugarers/prepend_text
@@ -52,6 +52,7 @@ import desugarers/wrap_children_before_in
 
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
 pub const add_attributes = add_attributes.add_attributes
+pub const add_attribute_to_second_of_kind = add_attribute_to_second_of_kind.add_attribute_to_second_of_kind
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
 pub const add_between_tag_and_text_node = add_between_tag_and_text_node.add_between_tag_and_text_node
 pub const add_between_tags = add_between_tags.add_between_tags
@@ -78,7 +79,6 @@ pub const handles_generate_ids = handles_generate_ids.handles_generate_ids
 pub const handles_substitute = handles_substitute.handles_substitute
 pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
-pub const insert_indent = insert_indent.insert_indent
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const prepend_text = prepend_text.prepend_text
