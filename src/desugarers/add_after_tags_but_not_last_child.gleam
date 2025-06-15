@@ -1,49 +1,59 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, BlamedAttribute, V, T}
 
-fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
-  case children {
+fn add_before_2nd_or_above(
+  vxmls: List(VXML),
+  inner: InnerParam,
+) -> List(VXML) {
+  case vxmls {
     [first, V(blame, tag, _, _) as second, ..rest] -> {
       case dict.get(inner, tag) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-        Ok(#(new_element_tag, new_element_attributes)) -> {
-          [
-            first,
-            V(
-              blame,
-              new_element_tag,
-              list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-              }),
-              [],
-            ),
-            ..add_in_list([second, ..rest], inner)
-          ]
-        }
+        Error(Nil) -> [
+          first, 
+        ..add_before_2nd_or_above([second, ..rest], inner)
+        ]
+        Ok(#(new_element_tag, new_element_attributes)) -> [
+          first,
+          V(
+            infra.blame_us("add_after_tags_but_not_last_child"),
+            new_element_tag,
+            list.map(new_element_attributes, fn(pair) {BlamedAttribute(blame, pair.0, pair.1)}),
+            [],
+          ),
+          ..add_before_2nd_or_above([second, ..rest], inner)
+        ]
       }
     }
-    _ -> children
+    [first, T(_, _) as second, ..rest] -> [
+      first,
+      ..add_before_2nd_or_above([second, ..rest], inner)
+    ]
+    _ -> vxmls
   }
 }
 
+fn transform_children(
+  children: List(VXML),
+  inner: InnerParam,
+) -> List(VXML) {
+  children
+  |> list.reverse
+  |> add_before_2nd_or_above(inner)
+  |> list.reverse
+}
+
 fn transform(
-  node: VXML,
+  vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
-  case node {
-    V(blame, tag, attributes, children) ->
-      Ok(V(
-        blame,
-        tag,
-        attributes,
-        add_in_list(children |> list.reverse, inner) |> list.reverse,
-      ))
-    _ -> Ok(node)
+  case vxml {
+    V(_, _, _, _) -> 
+      Ok(V(..vxml, children: transform_children(vxml.children, inner)))
+    _ -> Ok(vxml)
   }
 }
 
@@ -60,7 +70,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String,          String,           List(#(String, String))))
+  List(#(String,        String,          List(#(String, String))))
 //       ↖              ↖                ↖
 //       insert after   tag name         attributes
 //       tag of this    of new element
@@ -70,14 +80,16 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
 
-/// adds new elements after specified tags but not if they are the last child
+/// adds new elements after specified tags
+/// but not if they are the last child
 pub fn add_after_tags_but_not_first_child_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: "add_after_tags_but_not_first_child_tags",
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// adds new elements after specified tags but not if they are the last child
+/// adds new elements after specified tags
+/// but not if they are the last child
       ",
     ),
     desugarer: case param_to_inner_param(param) {

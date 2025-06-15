@@ -539,6 +539,13 @@ pub fn either_or_misceginator(
   })
 }
 
+pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
+  case l {
+    [] -> Error(Nil)
+    [first, ..rest] -> Ok(#(first, rest))
+  }
+}
+
 //**************************************************************
 //* find replace 
 //**************************************************************
