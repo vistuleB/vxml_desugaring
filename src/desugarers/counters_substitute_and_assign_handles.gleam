@@ -13,6 +13,7 @@ import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribut
 type CounterType {
   ArabicCounter
   RomanCounter
+  UnaryCounter
 }
 
 type CounterInstance {
@@ -21,6 +22,7 @@ type CounterInstance {
     name: String,
     current_value: String,
     step: Float,
+    unary_char: Option(String),
   )
 }
 
@@ -29,6 +31,11 @@ type HandleAssignment =
 
 type StringAndRegexVersion {
   StringAndRegexVersion(string: String, regex_string: String)
+}
+
+type FloatOrString {
+  Float(Float)
+  String(String)
 }
 
 const loud = StringAndRegexVersion(string: "::", regex_string: "::")
@@ -41,6 +48,7 @@ fn mutate(
   counter_type: CounterType,
   value: String,
   mutate_by: Float,
+  unary_char: Option(String),
 ) -> Result(String, String) {
   case counter_type {
     ArabicCounter -> {
@@ -80,6 +88,19 @@ fn mutate(
           |> Ok()
       }
     }
+    UnaryCounter -> {
+      let assert Some(unary_char) = unary_char
+      case mutate_by, string.is_empty(value) {
+        -1.0, True -> {
+          Error("Unary counter can't be decremented")
+        }
+        -1.0, False -> {
+          Ok(value |> string.drop_end(1))
+        }
+        0.0, _ -> Ok(value)
+        _ , _-> Ok(value <> unary_char)
+      }
+    }
   }
 }
 
@@ -97,6 +118,7 @@ fn update_counter(
               x.counter_type,
               x.current_value,
               x.step,
+              x.unary_char
             ))
             Ok(CounterInstance(..x, current_value: new_value))
           }
@@ -105,6 +127,7 @@ fn update_counter(
               x.counter_type,
               x.current_value,
               x.step *. -1.0,
+              x.unary_char
             ))
             Ok(CounterInstance(..x, current_value: new_value))
           }
@@ -419,9 +442,9 @@ fn parse_value(value: String, message: String) -> Result(Float, DesugaringError)
 }
 
 fn handle_att_value(
-  value: String,
+  attribute: BlamedAttribute,
 ) -> Result(#(String, Option(String), Option(Float)), DesugaringError) {
-  let splits = string.split(value, " ")
+  let splits = string.split(attribute.value, " ")
   case splits {
     [counter_name, default_value, step] -> {
       use _ <- result.try(parse_value(
@@ -446,7 +469,22 @@ fn handle_att_value(
     [counter_name] -> Ok(#(counter_name, None, None))
     _ ->
       Error(DesugaringError(
-        infra.blame_us("..."),
+        attribute.blame,
+        "Counter attribute must have a name",
+      ))
+  }
+}
+
+fn handle_unary_att_value(
+ attribute: BlamedAttribute,
+) -> Result(#(String, String), DesugaringError) {
+  let splits = string.split(attribute.value, " ")
+  case splits {
+    [counter_name, unary_char] -> Ok(#(counter_name, unary_char))
+    [counter_name] -> Ok(#(counter_name, "1"))
+    _ ->
+      Error(DesugaringError(
+        attribute.blame,
         "Counter attribute must have a name",
       ))
   }
@@ -459,7 +497,7 @@ fn get_counters_from_attributes(
   case attribute.key {
     "counter" -> {
       use #(counter_name, default_value, step) <- result.try(handle_att_value(
-        attribute.value,
+        attribute,
       ))
       use _ <- result.try(check_counter_already_defined(
         counter_name,
@@ -472,27 +510,48 @@ fn get_counters_from_attributes(
           counter_name,
           option.unwrap(default_value, "0"),
           option.unwrap(step, 1.0),
+          None
         ),
       ])
     }
-    "roman_counter" -> {
-      use #(counter_name, default_value, step) <- result.try(handle_att_value(
-        attribute.value,
-      ))
-      use _ <- result.try(check_counter_already_defined(
-        counter_name,
-        counters,
-        attribute.blame,
-      ))
-      Ok([
-        CounterInstance(
-          RomanCounter,
+      "roman_counter" -> {
+        use #(counter_name, default_value, step) <- result.try(handle_att_value(
+          attribute,
+        ))
+        use _ <- result.try(check_counter_already_defined(
           counter_name,
-          option.unwrap(default_value, "."),
-          option.unwrap(step, 1.0),
-        ),
-      ])
-    }
+          counters,
+          attribute.blame,
+        ))
+        Ok([
+          CounterInstance(
+            RomanCounter,
+            counter_name,
+            option.unwrap(default_value, "."),
+            option.unwrap(step, 1.0),
+            None
+          ),
+        ])
+      }
+      "unary_counter" -> {
+        use #(counter_name, unary_char) <- result.try(handle_unary_att_value(
+          attribute,
+        ))
+        use _ <- result.try(check_counter_already_defined(
+          counter_name,
+          counters,
+          attribute.blame,
+        ))
+         Ok([
+          CounterInstance(
+            UnaryCounter,
+            counter_name,
+            "",
+            1.0,
+            Some(unary_char),
+          ),
+        ])
+      }
     _ -> Ok([])
   }
 }
