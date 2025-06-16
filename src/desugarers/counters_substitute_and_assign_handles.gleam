@@ -33,11 +33,6 @@ type StringAndRegexVersion {
   StringAndRegexVersion(string: String, regex_string: String)
 }
 
-type FloatOrString {
-  Float(Float)
-  String(String)
-}
-
 const loud = StringAndRegexVersion(string: "::", regex_string: "::")
 const soft = StringAndRegexVersion(string: "..", regex_string: "\\.\\.")
 const increment = StringAndRegexVersion(string: "++", regex_string: "\\+\\+")
@@ -514,7 +509,7 @@ fn get_counters_from_attributes(
         ),
       ])
     }
-      "roman_counter" -> {
+      "roman-counter" -> {
         use #(counter_name, default_value, step) <- result.try(handle_att_value(
           attribute,
         ))
@@ -533,7 +528,7 @@ fn get_counters_from_attributes(
           ),
         ])
       }
-      "unary_counter" -> {
+      "unary-counter" -> {
         use #(counter_name, unary_char) <- result.try(handle_unary_att_value(
           attribute,
         ))
