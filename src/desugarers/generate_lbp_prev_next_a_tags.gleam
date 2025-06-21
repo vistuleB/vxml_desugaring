@@ -4,11 +4,22 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn try_prepand_link_attribute(vxml: VXML, link_value: String, link_key: String) -> VXML {
+fn try_prepand_link(vxml: VXML, link_value: String, class: String) -> VXML {
   case link_value {
     "" -> vxml
     _ ->
-    infra.prepend_attribute(vxml, BlamedAttribute(vxml.blame, link_key, link_value))
+      infra.prepend_child(
+        vxml,
+        V(
+          vxml.blame,
+          "a",
+          [
+            BlamedAttribute(vxml.blame, "class", class),
+            BlamedAttribute(vxml.blame, "href", link_value),
+          ],
+          [],
+        ),
+      )
   }
 }
 
@@ -26,8 +37,8 @@ fn map_chapters(chapter: #(VXML, Int), local_index: Int, length: Int) -> #(VXML,
   }
   let new =
     chapter_vxml
-    |> try_prepand_link_attribute(prev_link, "prev-page")
-    |> try_prepand_link_attribute(next_link, "next-page")
+    |> try_prepand_link(prev_link, "prev-page")
+    |> try_prepand_link(next_link, "next-page")
 
   #(new, global_index)
 }
@@ -45,13 +56,13 @@ fn map_bootcamps(bootcamp: #(VXML, Int), local_index: Int, length: Int) -> #(VXM
   }
   let new =
     bootcamp_vxml
-    |> try_prepand_link_attribute(prev_link, "prev-page")
-    |> try_prepand_link_attribute(next_link, "next-page")
+    |> try_prepand_link(prev_link, "prev-page")
+    |> try_prepand_link(next_link, "next-page")
 
   #(new, global_index)
 }
 
-fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let assert V(root_b, root_t, root_a, children) = root
   let chapters = infra.index_children_with_tag(root, "Chapter")
   let bootcamps = infra.index_children_with_tag(root, "Bootcamp")
@@ -77,8 +88,8 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
 
       let toc =
         toc
-        |> try_prepand_link_attribute("/article/bootcamp1", "prev-page")
-        |> try_prepand_link_attribute("/article/chapter1", "next-page")
+        |> try_prepand_link("/article/bootcamp1", "prev-page")
+        |> try_prepand_link("/article/chapter1", "next-page")
 
       #(chapters, bootcamps, toc)
     }
@@ -91,7 +102,7 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
 
       let toc =
         toc
-        |> try_prepand_link_attribute("/article/bootcamp1", "prev-page")
+        |> try_prepand_link("/article/bootcamp1", "prev-page")
 
       #([], bootcamps, toc)
     }
@@ -102,7 +113,7 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
 
       let toc =
         toc
-        |> try_prepand_link_attribute("/article/chapter1", "next-page")
+        |> try_prepand_link("/article/chapter1", "next-page")
 
       #(chapters, bootcamps, toc)
     }
@@ -144,13 +155,27 @@ fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(V(root_b, root_t, root_a, children))
 }
 
-pub fn generate_lbp_links() -> Pipe {
+fn desugarer_factory() -> infra.Desugarer {
+  at_root
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
+
+pub fn generate_lbp_prev_next_a_tags() -> Pipe {
   infra.Pipe(
-    DesugarerDescription(
-      "generate_lbp_links",
+    description: DesugarerDescription(
+      "generate_lbp_prev_next_a_tags",
       option.None,
       "..."
     ),
-    fn(vxml) { the_desugarer(vxml) },
+    desugarer: case param_to_inner_param(Nil) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(_) -> desugarer_factory()
+    }
   )
-}
+} 
