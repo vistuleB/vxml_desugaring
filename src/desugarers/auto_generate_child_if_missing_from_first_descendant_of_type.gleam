@@ -31,7 +31,8 @@ fn transform(
           V(
             ..descendant,
             tag: child_tag,
-          )
+          ),
+          ..node.children
         ]
       ))
     }
