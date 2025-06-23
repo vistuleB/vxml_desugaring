@@ -151,6 +151,17 @@ pub fn on_none_on_some(
   }
 }
 
+pub fn on_lazy_none_on_some(
+  over option: Option(a),
+  with_on_none f1: fn() -> b,
+  with_on_some f2: fn(a) -> b,
+) -> b {
+  case option {
+    None -> f1()
+    Some(z) -> f2(z)
+  }
+}
+
 pub fn on_some_on_none(
   over option: Option(a),
   with_on_some f2: fn(a) -> b,
@@ -557,6 +568,17 @@ pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
   }
 }
 
+pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
+  case l {
+    [] -> Error(Nil)
+    [last] -> Ok(#([], last))
+    [first, ..rest] -> {
+      let assert Ok(#(head, last)) = head_last(rest)
+      Ok(#([first, ..head], last))
+    }
+  }
+}
+
 //**************************************************************
 //* find replace 
 //**************************************************************
@@ -785,6 +807,42 @@ pub fn t_trim_end(node: VXML) -> VXML {
   node
   |> t_extract_ending_spaces()
   |> pair.second
+}
+
+pub fn t_super_trim_end(node: VXML) -> Option(VXML) {
+  let assert T(blame, blamed_contents) = node
+  let blamed_contents =
+    blamed_contents
+    |> list.reverse
+    |> list.take_while(fn(bc) { string.trim_end(bc.content) == "" })
+  case blamed_contents {
+    [] -> None
+    _ -> Some(T(blame, blamed_contents |> list.reverse))
+  }
+}
+
+pub fn t_super_trim_end_and_remove_ending_period(node: VXML) -> Option(VXML) {
+  let assert T(blame, blamed_contents) = node
+
+  let blamed_contents =
+    blamed_contents
+    |> list.reverse
+    |> list.drop_while(fn(bc) { string.trim_end(bc.content) == "" })
+
+  case blamed_contents {
+    [] -> None
+    [last, ..rest] -> {
+      let content = string.trim_end(last.content)
+      case string.ends_with(content, ".") && !string.ends_with(content, "..") {
+        True -> {
+          let last = BlamedContent(..last, content: {content |> string.drop_end(1)})
+          T(blame, [last, ..rest] |> list.reverse)
+          |> t_super_trim_end_and_remove_ending_period
+        }
+        False -> Some(T(blame, [last, ..rest] |> list.reverse))
+      }
+    }
+  }
 }
 
 pub fn t_drop_start(node: VXML, to_drop: Int) -> VXML {
