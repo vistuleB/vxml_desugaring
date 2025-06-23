@@ -173,6 +173,17 @@ pub fn on_error_on_ok(
   }
 }
 
+pub fn on_ok_on_error(
+  over res: Result(a, b),
+  with_on_ok f1: fn(a) -> c,
+  with_on_error f2: fn(b) -> c,
+) -> c {
+  case res {
+    Ok(r) -> f1(r)
+    Error(e) -> f2(e)
+  }
+}
+
 pub fn on_empty_on_nonempty(l: List(a), f1: c, f2: fn(a, List(a)) -> c) -> c {
   case l {
     [] -> f1
