@@ -8,32 +8,13 @@ fn replace_value(value: String, replacement: String) -> String {
   string.replace(replacement, "()", value)
 }
 
-fn update_attributes(
-  attributes: List(BlamedAttribute),
+fn update_attribute(
+  attr: BlamedAttribute,
   inner: InnerParam,
-) -> List(BlamedAttribute) {
-  case attributes {
-    [] -> attributes
-    [first, ..rest] -> {
-      case
-        inner
-        |> list.find(fn(x) {
-          let #(key, _) = x
-          key == first.key
-        })
-      {
-        Ok(#(_, replacement)) -> {
-          [
-            BlamedAttribute(
-              ..first,
-              value: replace_value(first.value, replacement),
-            ),
-            ..update_attributes(rest, inner)
-          ]
-        }
-        Error(_) -> [first, ..update_attributes(rest, inner)]
-      }
-    }
+) -> BlamedAttribute {
+  case list.find(inner, fn(x) {x.0 == attr.key}) {
+    Ok(#(_, replacement)) -> BlamedAttribute(..attr, value: replace_value(attr.value, replacement))
+    _ -> attr
   }
 }
 
@@ -43,8 +24,8 @@ fn transform(
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
-    V(blame, tag, attributes, children) -> {
-      Ok(V(blame, tag, update_attributes(attributes, inner), children))
+    V(_, _, _, _) -> {
+      Ok(V(..vxml, attributes: list.map(vxml.attributes, update_attribute(_, inner))))
     }
   }
 }
@@ -62,14 +43,14 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String,           String))
-//       ↖                ↖
-//       attribute key     replacement of attribute value string
-//                         "()" can be used to echo the current value
-//                         ex:
-//                           current value: image/img.png
-//                           replacement: /()
-//                           result: /image/img.png
+  List(#(String,         String))
+//       ↖               ↖
+//       attribute key   replacement of attribute value string
+//                       "()" can be used to echo the current value
+//                       ex:
+//                         current value: image/img.png
+//                         replacement: /()
+//                         result: /image/img.png
 
 type InnerParam = Param
 
