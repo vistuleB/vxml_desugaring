@@ -6,7 +6,10 @@ import desugarers/add_between_tag_and_text_node
 import desugarers/add_between_tags
 import desugarers/add_attribute_when_child_of
 import desugarers/associate_counter_by_prepending_incrementing_attribute
+<<<<<<< HEAD
 import desugarers/auto_generate_child_if_missing_from_attribute
+=======
+>>>>>>> main
 import desugarers/auto_generate_child_if_missing_from_first_descendant_of_type
 import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
