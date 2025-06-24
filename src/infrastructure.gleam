@@ -580,7 +580,7 @@ pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
 }
 
 //**************************************************************
-//* find replace 
+//* find replace
 //**************************************************************
 
 fn find_replace_in_blamed_content(
@@ -1269,7 +1269,7 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
   case node {
     V(b, t, a, _) -> V(b, t, a, children)
-    _ -> node 
+    _ -> node
   }
 }
 
@@ -1302,7 +1302,7 @@ pub fn digest(vxml: VXML) -> String {
 }
 
 pub fn valid_tag(tag: String) -> Bool {
-  !string.is_empty(tag) && 
+  !string.is_empty(tag) &&
   !string.contains(tag, " ") &&
   !string.contains(tag, ".") &&
   !string.contains(tag, "\n") &&
@@ -1310,7 +1310,7 @@ pub fn valid_tag(tag: String) -> Bool {
 }
 
 pub fn valid_attribute_key(tag: String) -> Bool {
-  !string.is_empty(tag) && 
+  !string.is_empty(tag) &&
   !string.contains(tag, " ") &&
   !string.contains(tag, "\n") &&
   !string.contains(tag, "\t")
@@ -1853,7 +1853,7 @@ fn stateful_down_up_node_to_node_one(
           fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
         )
       )
-      
+
       transform.v_after_transforming_children(
         node |> replace_children_with(children),
         original_state,
@@ -1966,7 +1966,7 @@ fn stateful_down_up_fancy_node_to_node_one(
       )
 
       let node = V(..node, children: reversed_children |> list.reverse)
-      
+
       transform.v_after_transforming_children(
         node,
         ancestors,
@@ -2062,7 +2062,7 @@ fn stateful_down_up_node_to_nodes_one(
         children,
         transform,
       ))
-      
+
       transform.v_after_transforming_children(
         node |> replace_children_with(children),
         original_state,
