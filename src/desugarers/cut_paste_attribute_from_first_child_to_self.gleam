@@ -92,22 +92,30 @@ type Param =
 
 type InnerParam = Param
 
-/// Moves an attribute with key `key` from the first child of a node with tag
-/// `parent_tag` to the node itself.
-/// #Param
-/// - `parent tag` -
-/// - `attribute key` -
+/// Moves an attribute with key `key` from the
+/// first child of a node with tag `parent_tag`
+/// to the node itself.
+/// ```
+/// #Param:
+/// - parent tag
+/// - child tag
+/// - attribute key
+/// ```
 pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: "cut_paste_attribute_from_first_child_to_self",
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// Moves an attribute with key `key` from the first child of a node with tag
-/// `parent_tag` to the node itself.
-/// #Param
-/// - `parent tag` -
-/// - `attribute key` -
+/// Moves an attribute with key `key` from the
+/// first child of a node with tag `parent_tag`
+/// to the node itself.
+/// ```
+/// #Param:
+/// - parent tag
+/// - child tag
+/// - attribute key
+/// ```
       ",
     ),
     desugarer: case param_to_inner_param(param) {
