@@ -15,6 +15,7 @@ import desugarers/convert_int_attributes_to_float
 import desugarers/counters_substitute_and_assign_handles
 import desugarers/cut_paste_attribute_from_first_child_to_self
 import desugarers/cut_paste_attribute_from_self_to_child
+import desugarers/extract_starting_and_ending_spaces
 import desugarers/find_replace
 import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
@@ -30,6 +31,7 @@ import desugarers/handles_generate_ids
 import desugarers/handles_substitute
 import desugarers/identity
 import desugarers/insert_bookend_tags
+import desugarers/insert_bookend_text_if_no_attributes
 import desugarers/normalize_math_delimiters_inside
 import desugarers/pair_bookends
 import desugarers/prepend_text
@@ -46,6 +48,7 @@ import desugarers/rename_attributes
 import desugarers/rename_when_child_of
 import desugarers/rename_with_attributes
 import desugarers/unwrap
+import desugarers/unwrap_tags_if_no_attributes
 import desugarers/unwrap_vertical_chunks_with_no_text_child
 import desugarers/unwrap_when_child_of
 import desugarers/unwrap_when_descendant_of
@@ -70,6 +73,7 @@ pub const convert_int_attributes_to_float = convert_int_attributes_to_float.conv
 pub const counters_substitute_and_assign_handles = counters_substitute_and_assign_handles.counters_substitute_and_assign_handles
 pub const cut_paste_attribute_from_first_child_to_self = cut_paste_attribute_from_first_child_to_self.cut_paste_attribute_from_first_child_to_self
 pub const cut_paste_attribute_from_self_to_child = cut_paste_attribute_from_self_to_child.cut_paste_attribute_from_self_to_child
+pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
 pub const find_replace = find_replace.find_replace
@@ -85,6 +89,7 @@ pub const handles_generate_ids = handles_generate_ids.handles_generate_ids
 pub const handles_substitute = handles_substitute.handles_substitute
 pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
+pub const insert_bookend_text_if_no_attributes = insert_bookend_text_if_no_attributes.insert_bookend_text_if_no_attributes
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const prepend_text = prepend_text.prepend_text
@@ -101,6 +106,7 @@ pub const rename_attributes = rename_attributes.rename_attributes
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const unwrap = unwrap.unwrap
+pub const unwrap_tags_if_no_attributes = unwrap_tags_if_no_attributes.unwrap_tags_if_no_attributes
 pub const unwrap_vertical_chunks_with_no_text_child = unwrap_vertical_chunks_with_no_text_child.unwrap_vertical_chunks_with_no_text_child
 pub const unwrap_when_child_of= unwrap_when_child_of.unwrap_when_child_of
 pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
