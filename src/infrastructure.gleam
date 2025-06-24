@@ -235,6 +235,17 @@ pub fn on_t_on_v(
   }
 }
 
+pub fn on_t_on_v_no_deconstruct(
+  node: VXML,
+  f1: fn(Blame, List(BlamedContent)) -> c,
+  f2: fn() -> c,
+) -> c {
+  case node {
+    T(blame, blamed_contents) -> f1(blame, blamed_contents)
+    _ -> f2()
+  }
+}
+
 pub fn on_v_identity_on_t(
   node: VXML,
   f2: fn(Blame, List(BlamedContent)) -> VXML,
