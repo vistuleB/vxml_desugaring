@@ -88,23 +88,28 @@ type Param = Nil
 
 type InnerParam = Nil
 
-/// Generates a unique ID and
-/// filters attributes to find
-/// any that start with "handle"
-/// in which their values are expected
-/// to be in the format: handle_name handle_value
+//------------------------------------------------53
+
+/// Generates a unique ID and filters attributes to
+/// find any that start with "handle" in which their
+/// values are expected to be in the format 
+/// ```
+/// ...=handle_name handle_value
+/// ```
 /// It does the following two things:
-/// 1- Processes these "handle" attributes values by:
+/// 1- Processes these "handle" attributes values 
+/// by:
 ///  . Splitting their values on space
-///  . Reformatting them to include the 
-///    generated ID in the format: 
-///    handle_name | id | handle_value
-///    or  just value | id 
+///  . Reformatting them to include the  generated
+///    ID in the format:
+///      handle_name | id | handle_value
+///    or just
+///      value | id 
 ///    if the value is not splitable,
 ///  
 /// 2- Add id attribute to the node
 ///    ( usefull for html href link ?id=x )
-
+/// 
 /// Returns a new V node with the transformed attributes
 pub fn handles_generate_ids() -> Pipe {
   Pipe(
@@ -112,22 +117,27 @@ pub fn handles_generate_ids() -> Pipe {
       "handles_generate_ids",
       option.None,
       "
-Generates a unique ID and
-filters attributes to find
-any that start with \"handle\"
-in which their values are expected
-to be in the format: handle_name handle_value
-It does the following two things:
-1- Processes these \"handle\" attributes values by:
- . Splitting their values on space
- . Reformatting them to include the 
-   generated ID in the format: 
-   handle_name | id | handle_value
-   or  just value | id 
-   if the value is not splitable,
- 
-2- Add id attribute to the node
-   ( usefull for html href link ?id=x )
+/// Generates a unique ID and filters attributes to
+/// find any that start with \"handle\" in which their
+/// values are expected to be in the format 
+/// ```
+/// ...=handle_name handle_value
+/// ```
+/// It does the following two things:
+/// 1- Processes these \"handle\" attributes values 
+/// by:
+///  . Splitting their values on space
+///  . Reformatting them to include the  generated
+///    ID in the format:
+///      handle_name | id | handle_value
+///    or just
+///      value | id 
+///    if the value is not splitable,
+///  
+/// 2- Add id attribute to the node
+///    ( usefull for html href link ?id=x )
+/// 
+/// Returns a new V node with the transformed attributes
 ",
     ),
     desugarer: case param_to_inner_param(Nil) {

@@ -48,7 +48,7 @@ fn transform(
           Ok(V(
             blame,
             tag,
-            list.flatten([other_attributes, new_attributes]),
+            list.flatten([new_attributes, other_attributes]),
             children,
           ))
         }

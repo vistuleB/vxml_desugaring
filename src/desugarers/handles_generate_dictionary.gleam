@@ -1,6 +1,7 @@
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
+import gleam/io
 import gleam/option.{Some, None}
 import gleam/result
 import gleam/string
@@ -195,6 +196,7 @@ type InnerParam = Param
 /// 2. no node found with Param.0 tag Param.1 attribute_key
 
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
+  io.println("welcome to handles_generate_dictionary")
   Pipe(
     description: DesugarerDescription(
       "handles_generate_dictionary",
