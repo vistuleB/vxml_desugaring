@@ -78,7 +78,23 @@ type Param =
 type InnerParam =
   Dict(String, List(String))
 
-/// associates counters by prepending incrementing attributes to specified tags
+/// For each #(tag, counter_name) pair in the 
+/// parameter list, this desugarer adds an 
+/// attribute of the form
+/// ```
+/// .=counter_name ::++counter_name
+/// ```
+/// to each node of tag 'tag', where the key is
+/// a period '.' and the value is the string 
+/// '<counter_name> ::++<counter_name>'. As 
+/// counters are evaluated and substitued also
+/// inside of key-value pairs, adding this 
+/// key-value pair causes the counter <counter_name>
+/// to increment at each occurrence of a node
+/// of tag 'tag'. Also assigns unassigned 
+/// handles of the attribute list of node 'tag'
+/// to the first counter being incremented in
+/// this fashion, by this desugarer.
 pub fn associate_counter_by_prepending_incrementing_attribute(
   param: Param,
 ) -> Pipe {
@@ -87,7 +103,23 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
       desugarer_name: "associate_counter_by_prepending_incrementing_attribute",
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// associates counters by prepending incrementing attributes to specified tags
+/// For each #(tag, counter_name) pair in the 
+/// parameter list, this desugarer adds an 
+/// attribute of the form
+/// ```
+/// .=counter_name ::++counter_name
+/// ```
+/// to each node of tag 'tag', where the key is
+/// a period '.' and the value is the string 
+/// '<counter_name> ::++<counter_name>'. As 
+/// counters are evaluated and substitued also
+/// inside of key-value pairs, adding this 
+/// key-value pair causes the counter <counter_name>
+/// to increment at each occurrence of a node
+/// of tag 'tag'. Also assigns unassigned 
+/// handles of the attribute list of node 'tag'
+/// to the first counter being incremented in
+/// this fashion, by this desugarer.
       ",
     ),
     desugarer: case param_to_inner_param(param) {
