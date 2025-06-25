@@ -256,16 +256,9 @@ fn update_blamed_content(
   #(BlamedContent, CounterDict, List(HandleAssignment)),
   DesugaringError,
 ) {
-  case 
-    substitute_counters_and_generate_handle_assignments(
-      bl.content,
-      counters,
-      regexes,
-    )
-  {
-    Ok(#(updated_content, counters, handles)) -> {
-      Ok(#(BlamedContent(bl.blame, updated_content), counters, handles))
-    }
+  case substitute_counters_and_generate_handle_assignments(bl.content, counters, regexes) {
+    Ok(#(updated_content, counters, handles)) ->
+      Ok(#(BlamedContent(..bl, content: updated_content), counters, handles))
     Error(e) -> Error(DesugaringError(bl.blame, e))
   }
 }
@@ -279,19 +272,22 @@ fn update_blamed_contents(
   DesugaringError,
 ) {
   let init_acc = #([], counters, [])
-
   contents
-  |> list.try_fold(init_acc, fn(acc, content) {
-    let #(old_contents, counters, handles) = acc
-    use #(updated_content, updated_counters, new_handles) <- result.try(
-      update_blamed_content(content, counters, regexes),
-    )
-    Ok(#(
-      list.append(old_contents, [updated_content]),
-      updated_counters,
-      list.flatten([handles, new_handles]),
-    ))
-  })
+  |> list.try_fold(
+    init_acc,
+    fn(acc, content) {
+      let #(old_contents, counters, handles) = acc
+      use #(updated_content, updated_counters, new_handles) <- result.then(
+        update_blamed_content(content, counters, regexes)
+      )
+      Ok(#(
+        [updated_content, ..old_contents],
+        updated_counters,
+        list.flatten([handles, new_handles]),
+      ))
+    }
+  )
+  |> result.map(fn(acc) { #(acc.0 |> list.reverse, acc.1, acc.2) })
 }
 
 fn handle_assignment_blamed_attributes_from_handle_assignments(
@@ -445,7 +441,6 @@ fn fancy_attribute_processor(
 ) -> Result(#(List(BlamedAttribute), CounterDict), DesugaringError) {
   case yet_to_be_processed {
     [] -> Ok(#(already_processed |> list.reverse, counters))
-
     [next, ..rest] -> {
       use #(next, counters, assignments) <- result.then(
         fancy_one_attribute_processor(next, counters, regexes),
@@ -454,11 +449,7 @@ fn fancy_attribute_processor(
       let assignment_attributes =
         list.map(assignments, fn(handle_assignment) {
           let #(handle_name, handle_value) = handle_assignment
-          BlamedAttribute(
-            next.blame,
-            "handle",
-            handle_name <> " " <> handle_value,
-          )
+          BlamedAttribute(next.blame, "handle", handle_name <> " " <> handle_value)
         })
 
       use new_counter <- result.then(read_counter_definition(next))
@@ -470,7 +461,6 @@ fn fancy_attribute_processor(
       let already_processed =
         list.flatten([
           assignment_attributes |> list.reverse,
-          // try to keep order of assignments same as order they occur in source
           [next],
           already_processed,
         ])
@@ -528,10 +518,13 @@ fn t_transform(
   )
 
   Ok(
-    #(T(blame, contents), #(
-      updated_counters,
-      list.flatten([old_handles, new_handles]),
-    )),
+    #(
+      T(blame, contents),
+      #(
+        updated_counters,
+        list.flatten([old_handles, new_handles]),
+      )
+    ),
   )
 }
 
