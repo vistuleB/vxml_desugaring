@@ -163,38 +163,35 @@ type Param =
 
 type InnerParam = Param
 
-/// Looks for `handle` attributes 
-/// in the V nodes and transforms
-/// which are expected to be in form:
-/// `handle | id | value`.
-/// ( panics if not in this form )
+// -----------------------------------------------53
+
+/// Looks for `handle` attributes in the V nodes
+/// and transforms which are expected to be in form:
+/// `handle | id | value`. (Panics if not in this 
+/// form.)
 /// 
-/// Transform the values into a dict
-/// where the key is the handle name
-/// and the values are tuples 
-/// #(String, String, String) comprising
-/// the handle, id, and value.
+/// Transform the values into a dict where the key 
+/// is the handle name and the values are tuples 
+/// #(String, String, String) comprising the handle, 
+/// id, and value.
 /// 
-/// Adds new field of data (path)
-/// which represents the filename
-/// and is expected to be available
-/// In attribute value of node with
-/// Param.0 tag Param.1 attribute_key.
+/// Adds new field of data (path) which represents 
+/// the filename and is expected to be available
+/// In attribute value of node with Param.0 tag 
+/// Param.1 attribute_key.
 /// 
-/// Wraps the document root by a V
-/// node with tag GrandWrapper
-/// and transform back the dict as the
+/// Wraps the document root by a V node with tag 
+/// GrandWrapper and transform back the dict as the
 /// grandwrapper's attributes.
 /// 
-/// Returns a pair of newly created
-/// node and state of handles used
-/// to check for name uniqueness.
+/// Returns a pair of newly created node and state 
+/// of handles used to check for name uniqueness.
 /// 
 /// Throws error if
-/// 1. there are multiple handles
-///    with same handle_name
-/// 2. no node found with Param.0 tag Param.1 attribute_key
-
+/// 1. there are multiple handles with same 
+///    handle_name
+/// 2. no node found with Param.0 tag Param.1 
+///    attribute_key
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
   io.println("welcome to handles_generate_dictionary")
   Pipe(
@@ -202,37 +199,34 @@ pub fn handles_generate_dictionary(param: Param) -> Pipe {
       "handles_generate_dictionary",
       None,
       "
-Looks for `handle` attributes 
-in the V nodes and transforms
-which are expected to be in form:
-`handle | id | value`.
-( panics if not in this form )
-
-Transform the values into a dict
-where the key is the handle name
-and the values are tuples 
-#(String, String, String) comprising
-the handle, id, and value.
-
-Adds new field of data (path)
-which represents the filename
-and is expected to be available
-In attribute value of node with
-Param.0 tag Param.1 attribute_key.
-
-Wraps the document root by a V
-node with tag GrandWrapper
-and transform back the dict as the
-grandwrapper's attributes.
-
-Returns a pair of newly created
-node and state of handles used
-to check for name uniqueness.
-
-Throws error if
-1. there are multiple handles
-   with same handle_name
-2. no node found with Param.0 tag Param.1 attribute_key",
+/// Looks for `handle` attributes in the V nodes
+/// and transforms which are expected to be in form:
+/// `handle | id | value`. (Panics if not in this 
+/// form.)
+/// 
+/// Transform the values into a dict where the key 
+/// is the handle name and the values are tuples 
+/// #(String, String, String) comprising the handle, 
+/// id, and value.
+/// 
+/// Adds new field of data (path) which represents 
+/// the filename and is expected to be available
+/// In attribute value of node with Param.0 tag 
+/// Param.1 attribute_key.
+/// 
+/// Wraps the document root by a V node with tag 
+/// GrandWrapper and transform back the dict as the
+/// grandwrapper's attributes.
+/// 
+/// Returns a pair of newly created node and state 
+/// of handles used to check for name uniqueness.
+/// 
+/// Throws error if
+/// 1. there are multiple handles with same 
+///    handle_name
+/// 2. no node found with Param.0 tag Param.1 
+///    attribute_key
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
