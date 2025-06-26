@@ -2,7 +2,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import gleam/list
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml.{type VXML, V, T}
+import vxml.{type VXML, V}
 
 fn transform(
   node: VXML,
@@ -65,7 +65,7 @@ type InnerParam = Param
 /// parent_tag, child_tag, descendant_tag
 /// ```
 /// will, for each node of tag `parent_tag`,
-/// generate, if the node has no existing 
+/// generate, if the node has no existing
 /// children tag `child_tag`, a node of type
 /// `child_tag` by copy-pasting the contents
 /// and attributes of the first descendant
@@ -83,7 +83,7 @@ pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param
 /// parent_tag, child_tag, descendant_tag
 /// ```
 /// will, for each node of tag `parent_tag`,
-/// generate, if the node has no existing 
+/// generate, if the node has no existing
 /// children tag `child_tag`, a node of type
 /// `child_tag` by copy-pasting the contents
 /// and attributes of the first descendant
@@ -97,4 +97,4 @@ pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param
       Ok(inner) -> desugarer_factory(inner)
     }
   )
-} 
+}

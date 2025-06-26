@@ -16,6 +16,7 @@ fn test_pipeline() -> List(Pipe) {
       #("strong", "*", "*"),
     ]),
     dn.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
+    dn.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
 
   ]
 }
@@ -54,7 +55,7 @@ fn test_renderer() {
 
   let parameters =
     vr.RendererParameters(
-      input_dir: "test/content",
+      input_dir: "test/content/__parent.emu",
       output_dir: Some("test/output"),
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)

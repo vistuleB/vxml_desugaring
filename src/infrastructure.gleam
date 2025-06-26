@@ -389,9 +389,13 @@ pub fn triples_third(l: #(a, b, c)) -> c {
 
 pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
   l
-  |> list.map(fn(triple) {
-    let #(a, b, c) = triple
-    #(a, #(b, c))
+  |> list.map(fn(t) {#(t.0, #(t.1, t.2))})
+}
+
+pub fn quads_to_pairs(l: List(#(a, b, c, d))) -> List(#(a, #(b, c, d))) {
+  l
+  |> list.map(fn(quad) {
+    #(quad.0, #(quad.1, quad.2, quad.3))
   })
 }
 
