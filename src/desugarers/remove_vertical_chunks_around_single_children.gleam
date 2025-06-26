@@ -36,14 +36,16 @@ type Param = Nil
 
 type InnerParam = Nil
 
-/// removes VerticalChunk tags that have only a single child
+/// removes VerticalChunk tags that have only 
+/// a single child
 pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: "remove_vertical_chunks_around_single_children_desugarer",
       stringified_param: option.None,
       general_description: "
-/// removes VerticalChunk tags that have only a single child
+/// removes VerticalChunk tags that have only 
+/// a single child
       ",
     ),
     desugarer: case param_to_inner_param(Nil) {

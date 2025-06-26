@@ -76,7 +76,9 @@ pub fn rename_with_attributes(param: Param) -> Pipe {
     description: DesugarerDescription(
       desugarer_name: "rename_with_attributes",
       stringified_param: option.Some(ins(param)),
-      general_description: "/// renames tags and optionally adds attributes",
+      general_description: "
+/// renames tags and optionally adds attributes
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
