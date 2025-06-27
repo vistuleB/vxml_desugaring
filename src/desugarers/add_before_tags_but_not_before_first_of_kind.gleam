@@ -4,34 +4,40 @@ import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, BlamedAttribute, T, V}
 
-fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
-  case children {
-    [V(_,tag_first,_,_) as first, V(blame, tag_second, _, _) as second, ..rest] -> {
-      case tag_first == tag_second {
-        True ->
-          case dict.get(inner, tag_second) {
-            Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-            Ok(#(new_element_tag, new_element_attributes)) -> {
+fn add_in_list(
+  previous_tags: List(String),
+  upcoming: List(VXML), 
+  inner: InnerParam,
+) -> List(VXML) {
+  case upcoming {
+    [] -> []
+    [T(_, _) as first, ..rest] -> [first, ..add_in_list(previous_tags, rest, inner)]
+    [V(_, tag, _, _) as first, ..rest] -> {
+      case dict.get(inner, tag) {
+        Error(_) -> [first, ..add_in_list(previous_tags, rest, inner)]
+        Ok(tag_and_attributes) -> {
+          case list.contains(previous_tags, tag) {
+            False -> [first, ..add_in_list([tag, ..previous_tags], rest, inner)]
+            True -> {
+              let blame = infra.blame_us("add_before_tags_but_not_before_first_of_kind")
+              let new_node = V(
+                blame,
+                tag_and_attributes.0,
+                list.map(tag_and_attributes.1, fn(kv) { BlamedAttribute(blame, kv.0, kv.1)}),
+                [],
+              )
               [
+                new_node,
                 first,
-                V(
-                  blame,
-                  new_element_tag,
-                  list.map(new_element_attributes, fn(pair) {
-                    BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-                  }),
-                  [],
-                ),
-                ..add_in_list([second, ..rest], inner)
+                ..add_in_list(previous_tags, rest, inner),
               ]
             }
           }
-      False -> [first, ..add_in_list([second, ..rest], inner)]
+        }
       }
     }
-    _ -> children
   }
 }
 
@@ -40,8 +46,8 @@ fn transform(
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    V(blame, tag, attributes, children) ->
-      Ok(V(blame, tag, attributes, add_in_list(children, inner)))
+    V(_, _, _, children) ->
+      Ok(V(..node, children: add_in_list([], children, inner)))
     _ -> Ok(node)
   }
 }
