@@ -36,11 +36,11 @@ fn chapter_link(
   // }
 
   use title_element <- infra.on_error_on_ok(
-    infra.unique_child_with_tag(item, "ArticleTitleNewStyle"),
+    infra.unique_child_with_tag(item, "ArticleTitle"),
     fn (s) {
       case s {
-        infra.MoreThanOne -> Error(DesugaringError(item.blame, "has more than one ArticleTitleNewStyle child"))
-        infra.LessThanOne -> Error(DesugaringError(item.blame, "has no ArticleTitleNewStyle child"))
+        infra.MoreThanOne -> Error(DesugaringError(item.blame, "has more than one ArticleTitle child"))
+        infra.LessThanOne -> Error(DesugaringError(item.blame, "has no ArticleTitle child"))
       }
     }
   )
