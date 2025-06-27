@@ -2,11 +2,9 @@ import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
-
-const ins = string.inspect
 
 fn blame_us(note: String) -> Blame {
   Blame("generate_lbp_toc:" <> note, -1, -1, [])
@@ -17,40 +15,49 @@ fn chapter_link(
   item: VXML,
   count: Int,
 ) -> Result(VXML, DesugaringError) {
-  let tp = case infra.tag_equals(item, "Chapter") {
-    True -> "chapter"
-    False -> {
-      let assert True = infra.tag_equals(item, "Bootcamp")
-      "bootcamp"
-    }
+  let assert V(blame, tag, _, _) = item
+  let tp = case tag {
+    _ if tag == "Chapter" -> "chapter"
+    _ if tag == "Bootcamp" -> "bootcamp"
+    _ -> panic as "expecting 'Chapter' or 'Bootcamp'"
   }
 
-  let item_blame = infra.get_blame(item)
+  // use label_attr <- infra.on_none_on_some(
+  //   infra.v_attribute_with_key(item, "title"),
+  //   with_on_none: Error(DesugaringError(
+  //     blame,
+  //     tp <> " missing title attribute",
+  //   )),
+  // )
 
-  use label_attr <- infra.on_none_on_some(
-    infra.v_attribute_with_key(item, "title"),
-    with_on_none: Error(DesugaringError(
-      item_blame,
-      tp <> " missing title attribute",
-    )),
+  // let on_mobile_attr = case infra.v_attribute_with_key(item, "on_mobile") {
+  //   Some(attr) -> attr
+  //   None -> label_attr
+  // }
+
+  use title_element <- infra.on_error_on_ok(
+    infra.unique_child_with_tag(item, "ArticleTitleNewStyle"),
+    fn (s) {
+      case s {
+        infra.MoreThanOne -> Error(DesugaringError(item.blame, "has more than one ArticleTitleNewStyle child"))
+        infra.LessThanOne -> Error(DesugaringError(item.blame, "has no ArticleTitleNewStyle child"))
+      }
+    }
   )
 
-  let on_mobile_attr = case infra.v_attribute_with_key(item, "on_mobile") {
-    Some(attr) -> attr
-    None -> label_attr
-  }
+  let assert V(_, _, _, _) = title_element
 
   Ok(
     V(
-      item_blame,
+      blame,
       chapter_link_component_name,
       [
         BlamedAttribute(blame_us("L41"), "article_type", ins(count)),
-        BlamedAttribute(label_attr.blame, "label", label_attr.value),
-        BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
+        // BlamedAttribute(label_attr.blame, "label", label_attr.value),
+        // BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
         BlamedAttribute(blame_us("L44"), "href", tp <> ins(count)),
       ],
-      [],
+      title_element.children,
     ),
   )
 }
@@ -156,12 +163,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  #(String, String, String, Option(String))
-
-// - first string: tag name for table of contents
-// - second string: tag name of "big title" (Chapters, Bootcamps)
-// - third string: tag name for individual chapter links
-// - third string: optional tag name for spacer between two groups of chapter links
+  #(String,   String,                String,        Option(String))
+//  ↖         ↖                      ↖              ↖
+//  tag name  tag name               tag name       optional tag name
+//  table of  of 'big title'         individual     for spacer between
+//  contents  (Chapters, Bootcamps)  chapter links  two groups of chapter links
 
 type InnerParam = Param
 

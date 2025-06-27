@@ -672,9 +672,10 @@ pub fn counters_substitute_and_assign_handles() -> Pipe {
 /// string appearing in the document or not (\"::\" 
 /// == echo, \"..\" == suppress), and where
 ///
-/// \\<bb> ==  \"++\"|\"--\"|\"øø\" indicates whether
-/// the counter should be incremented, decremented,
-/// or neither prior to possible insertion,
+/// \\<bb> ==  \"++\"|\"--\"|\"øø\" indicates 
+/// whether the counter should be incremented, 
+/// decremented, or neither prior to possible 
+/// insertion,
 ///
 /// by the appropriate replacement string (possibly
 /// none), and assigns handles coming to the left

@@ -63,8 +63,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String, String))
-//       ↖      ↖       ↖       ↖
-//       tag    parent  attr    value
+//       ↖       ↖       ↖       ↖
+//       tag     parent  attr    value
 
 type InnerParam =
   Dict(#(String, String), List(#(String, String)))
