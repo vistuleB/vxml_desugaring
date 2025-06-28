@@ -107,7 +107,6 @@ fn print_handle(
 
 ) -> Result(List(VXML), DesugaringError) {
   let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
-
   let matches = regexp.scan(re, blamed_line.content)
   let splits = regexp.split(re, blamed_line.content)
   handle_handle_matches(blamed_line.blame, matches, splits, handles, inner)
@@ -118,14 +117,15 @@ fn print_handle_for_contents(
   handles: HandleInstances,
   inner: InnerParam
 ) -> Result(List(VXML), DesugaringError) {
-
   case contents {
     [] -> Ok([])
     [first, ..rest] -> {
       use updated_line <- result.then(print_handle(first, handles, inner))
       use updated_rest <- result.then(print_handle_for_contents(rest, handles, inner))
-
-      Ok(list.flatten([updated_line, updated_rest]))
+      Ok(
+        list.flatten([updated_line, updated_rest])
+        |> infra.plain_concatenation_in_list
+      )
     }
   }
 }
@@ -181,12 +181,12 @@ fn counter_handles_transform_to_replace_handles(
 
 fn t_transform(vxml: VXML, handles: HandleInstances, inner: InnerParam) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
   let assert T(_, contents)  = vxml
-  use update_contents <- result.then(print_handle_for_contents(
+  use updated_contents <- result.then(print_handle_for_contents(
     contents,
     handles,
     inner
   ))
-  Ok(#(update_contents, handles))
+  Ok(#(updated_contents, handles))
 }
 
 fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
@@ -234,43 +234,35 @@ type Param =
 
 type InnerParam = Param
 
-
-/// Expects a document with root 
-/// 'GrandWrapper' whose attributes
-///  comprise of key-value pairs of
-///  the form :
-/// handle_name | id | filename | value
-/// and with a unique child being the 
-/// root of the original document.
+//------------------------------------------------53
+/// Expects a document with root 'GrandWrapper' 
+/// whose attributes comprise of key-value pairs of
+/// the form : handle_name | id | filename | value
+/// and with a unique child being the  root of the 
+/// original document.
 /// 
-/// Decodes the attributes into a dictionary
-/// of the form:
-/// ```
-/// Dict(String, #(String, String, String))
-/// ```
-/// 
-/// Traverses the document and replaces 
-/// each >>handle_name occurrence by 
-/// 1. if filename is the same as the 
-///    current document's filename:
+/// Traverses the document and replaces each 
+/// >>handle_name occurrence by...
 /// ```
 /// <InChapterLink href='filename?id=id'>
 ///   handle_value
 /// </InChapterLink>
 /// ```
-/// 2. if filename is different:
+/// ...if the filename is the same as the current 
+/// document's filename, or...
 /// ```
 /// <a href='filename?id=id'>
 ///  handle_value
 /// </a>
 /// ```
+/// ...elsewise.
 /// 
-/// Destroys the GrandWrapper on exit
-/// returning its unique child of GrandWrapper. 
+/// Destroys the GrandWrapper on exit, returning its
+/// unique child. 
 /// 
-/// Throws errors if handle_name in
-/// >>handle_name doesn't exist in the 
-/// GrandWrapper attributes.
+/// Throws a DesugaringError if handle_name in
+/// >>handle_name doesn't exist in the GrandWrapper 
+/// attributes.
 pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
@@ -278,42 +270,34 @@ pub fn handles_substitute(param: Param) -> Pipe {
       "handles_substitute",
       option.None,
       "
-Expects a document with root 
-'GrandWrapper' whose attributes
- comprise of key-value pairs of
- the form :
-handle_name | id | filename | value
-and with a unique child being the 
-root of the original document.
-
-Decodes the attributes into a dictionary
-of the form:
-```
-Dict(String, #(String, String, String))
-```
-
-Traverses the document and replaces 
-each >>handle_name occurrence by 
-1. if filename is the same as the 
-   current document's filename:
-```
-<InChapterLink href='filename?id=id'>
-  handle_value
-</InChapterLink>
-```
-2. if filename is different:
-```
-<a href='filename?id=id'>
- handle_value
-</a>
-```
-
-Destroys the GrandWrapper on exit
-returning its unique child of GrandWrapper. 
-
-Throws errors if handle_name in
->>handle_name doesn't exist in the 
-GrandWrapper attributes.
+/// Expects a document with root 'GrandWrapper' 
+/// whose attributes comprise of key-value pairs of
+/// the form : handle_name | id | filename | value
+/// and with a unique child being the  root of the 
+/// original document.
+/// 
+/// Traverses the document and replaces each 
+/// >>handle_name occurrence by...
+/// ```
+/// <InChapterLink href='filename?id=id'>
+///   handle_value
+/// </InChapterLink>
+/// ```
+/// ...if the filename is the same as the current 
+/// document's filename, or...
+/// ```
+/// <a href='filename?id=id'>
+///  handle_value
+/// </a>
+/// ```
+/// ...elsewise.
+/// 
+/// Destroys the GrandWrapper on exit, returning its
+/// unique child. 
+/// 
+/// Throws a DesugaringError if handle_name in
+/// >>handle_name doesn't exist in the GrandWrapper 
+/// attributes.
       "
     ),
     desugarer: case param_to_inner_param(param) {

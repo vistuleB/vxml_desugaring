@@ -737,6 +737,30 @@ pub fn v_last_to_first_concatenation(v: VXML) -> VXML {
   V(blame, tag, attributes, children)
 }
 
+fn nonempty_list_t_plain_concatenation(nodes: List(VXML)) -> VXML {
+  let assert [first, ..] = nodes
+  let assert T(blame, _) = first
+  let all_lines = {
+    nodes
+    |> list.map(fn(node) {
+      let assert T(_, blamed_lines) = node
+      blamed_lines
+    })
+    |> list.flatten
+  }
+  T(blame, all_lines)
+}
+
+pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
+  nodes
+  |> either_or_misceginator(is_text_node)
+  |> regroup_eithers_no_empty_lists
+  |> map_either_ors(
+    fn(either: List(VXML)) -> VXML { nonempty_list_t_plain_concatenation(either) },
+    fn(or: VXML) -> VXML { or },
+  )
+}
+
 pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
     [] -> []

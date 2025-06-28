@@ -1,36 +1,13 @@
-import gleam/list
 import gleam/option
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, T, V}
-
-fn concatenate_lines_in(nodes: List(VXML)) -> VXML {
-  let assert [first, ..] = nodes
-  let assert T(blame, _) = first
-  let all_lines = {
-    nodes
-    |> list.map(fn(node) {
-      let assert T(_, blamed_lines) = node
-      blamed_lines
-    })
-    |> list.flatten
-  }
-  T(blame, all_lines)
-}
 
 fn transform(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    V(blame, tag, attributes, children) -> {
-      let new_children =
-        children
-        |> infra.either_or_misceginator(infra.is_text_node)
-        |> infra.regroup_eithers_no_empty_lists
-        |> infra.map_either_ors(
-          fn(either: List(VXML)) -> VXML { concatenate_lines_in(either) },
-          fn(or: VXML) -> VXML { or },
-        )
-      Ok(V(blame, tag, attributes, new_children))
+    V(_, _, _, children) -> {
+      Ok(V(..node, children: infra.plain_concatenation_in_list(children)))
     }
     _ -> Ok(node)
   }
