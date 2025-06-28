@@ -2,7 +2,7 @@ import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, Some, None}
-import gleam/regexp.{type Regexp}
+import gleam/regexp.{type Regexp, type Match, Match}
 import gleam/result
 import gleam/string
 import infrastructure.{
@@ -27,110 +27,101 @@ type State {
   )
 }
 
+fn extract_handle_name(match) {
+  let assert Match(_, [_, option.Some(handle_name)]) = match
+  handle_name
+}
+
+fn hyperlink_constructor(
+    handle: #(String, String, String),
+    blame: Blame,
+    state: State,
+    inner: InnerParam,
+) {
+  let #(id, target_path, value) = handle
+  let assert Some(local_path) = state.local_path
+  let #(tag, classes) = case target_path == local_path {
+    True -> #("InChapterLink", "handle-in-chapter-link")
+    False -> #("a", "handle-out-of-chapter-link")
+  }
+  V(blame, tag, list.flatten([
+      list.map(inner, fn(x) { BlamedAttribute(blame, x.0, x.1) }),
+      [
+        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+        BlamedAttribute(blame, "class", classes),
+      ]
+    ]),
+    [T(blame, [BlamedContent(blame, value)])],
+  )
+}
+
+fn hyperlink_maybe(
+  handle_name: String,
+  blame: Blame,
+  state: State,
+  inner: InnerParam,
+) {
+  case dict.get(state.handles, handle_name) {
+    Ok(triple) -> Ok(hyperlink_constructor(triple, blame, state, inner))
+    _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
+  }
+}
+
 fn matches_2_hyperlinks(
-  matches: List(regexp.Match),
+  matches: List(Match),
   blame: Blame,
   state: State,
   inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
-  //************************//
-  // functions for the pipe //
-  //************************//
-  // function 1
-  let extract_name = fn(match) {
-    let assert regexp.Match(_, [_, option.Some(handle_name)]) = match
-    handle_name
-  }
-
-  // function 2
-  let handle_2_hyperlink = fn(
-    handle: #(String, String, String),
-  ) {
-    let #(id, target_path, value) = handle
-    let assert Some(local_path) = state.local_path
-    let #(tag, classes) = case target_path == local_path {
-      True -> #("InChapterLink", "handle-in-chapter-link")
-      False -> #("a", "handle-out-of-chapter-link")
-    }
-    V(blame, tag, list.flatten([
-        list.map(inner, fn(x) { BlamedAttribute(blame, x.0, x.1) }),
-        [
-          BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
-          BlamedAttribute(blame, "class", classes),
-        ]
-      ]),
-      [T(blame, [BlamedContent(blame, value)])],
-    )
-  }
-
-  // function 3
-  let hyperlink_maybe = fn(handle_name) {
-    case dict.get(state.handles, handle_name) {
-      Ok(triple) -> Ok(handle_2_hyperlink(triple))
-      _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
-    }
-  }
-
-  //************************//
-  // the pipe               //
-  //************************//
   matches
-  |> list.map(extract_name)
-  |> list.map(hyperlink_maybe)
+  |> list.map(extract_handle_name)
+  |> list.map(hyperlink_maybe(_, blame, state, inner))
   |> result.all
+}
+
+fn augment_to_1_mod_3(
+  splits: List(String),
+) -> List(String) {
+  case list.length(splits) % 3 != 1 {
+    True -> {
+      let assert True = list.is_empty(splits)
+      [""]
+    }
+    False -> splits
+  }
+}
+
+fn retain_0_mod_3(
+  splits: List(String),
+) -> List(String) {
+  splits
+  |> list.index_fold(
+    from: [],
+    with: fn(acc, split, index) {
+      case index % 3 == 0 {
+        True -> [split, ..acc]
+        False -> acc
+      }
+    }
+  )
+  |> list.reverse
+}
+
+fn split_2_t(
+  split: String,
+  blame: Blame,
+) -> VXML {
+  T(blame, [BlamedContent(blame, split)])
 }
 
 fn splits_2_text_nodes(
   splits: List(String),
   blame: Blame,
 ) -> List(VXML) {
-  //************************//
-  // functions for the pipe //
-  //************************//
-  // function 1
-  let augment_to_1_mod_3 = fn(
-    splits: List(String),
-  ) -> List(String) {
-    case list.length(splits) % 3 != 1 {
-      True -> {
-        let assert True = list.is_empty(splits)
-        [""]
-      }
-      False -> splits
-    }
-  }
-
-  // function 2
-  let retain_0_mod_3 = fn(
-    splits: List(String),
-  ) -> List(String) {
-    splits
-    |> list.index_fold(
-      from: [],
-      with: fn(acc, split, index) {
-        case index % 3 == 0 {
-          True -> [split, ..acc]
-          False -> acc
-        }
-      }
-    )
-    |> list.reverse
-  }
-
-  // function 3
-  let split_2_t = fn(
-    split: String,
-  ) -> VXML {
-    T(blame, [BlamedContent(blame, split)])
-  }
-
-  //************************//
-  // the pipe               //
-  //************************//
   splits
   |> augment_to_1_mod_3  
   |> retain_0_mod_3
-  |> list.map(split_2_t)
+  |> list.map(split_2_t(_, blame))
 }
 
 fn process_blamed_content(
