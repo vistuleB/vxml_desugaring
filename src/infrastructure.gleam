@@ -230,6 +230,11 @@ pub fn io_debug_digests(vxmls: List(VXML), announce: String) -> List(VXML) {
   vxmls
 }
 
+pub fn set_tag(vxml: VXML, tag: String) -> VXML {
+  let assert V(_, _, _, _) = vxml
+  V(..vxml, tag: tag)
+}
+
 pub fn readable_attribute(attr: BlamedAttribute) -> String {
   "   " <> attr.key <> "=" <> attr.value
 }
