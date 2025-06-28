@@ -21,9 +21,13 @@ type HandleInstances =
 //     name      of page     on page     of handle
 
 // this seems very fragile & basically incorrect;
-// we should be comparing a 'path' attribute installed
-// on the chapter/bootcamp node to the local_path
-// of the handle; the 'path' attribute 
+// we should be comparing the local_path of the handle
+// to a 'path' attribute installed on the ancestor 
+// chapter/bootcamp node of the handle occurrence;
+// bcause the 'path' attribute of the blame relates 
+// to the file structure of the source, that could 
+// be out of sync with the file structure of the
+// target (for example if we spotlight some chapters)
 fn target_is_on_same_chapter(
   target_path: String, // eg: /article/chapter1
   current_blame: Blame, // eg: chapter1/chapter.emu
@@ -33,82 +37,126 @@ fn target_is_on_same_chapter(
   current_blame_dir == target_dir
 }
 
-fn construct_hyperlink(
+fn matches_2_hyperlinks(
+  matches: List(regexp.Match),
   blame: Blame,
-  handle: #(String, String, String),
+  handles: HandleInstances,
   inner: InnerParam,
-) {
-  let #(id, filename, value) = handle
-  let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
-    True -> #("InChapterLink", "handle-in-chapter-link")
-    False -> #("a", "handle-out-of-chapter-link")
+) -> Result(List(VXML), DesugaringError) {
+  //************************//
+  // functions for the pipe //
+  //************************//
+  // function 1
+  let extract_name = fn(match) {
+    let assert regexp.Match(_, [_, option.Some(handle_name)]) = match
+    handle_name
   }
-  V(blame, tag, list.flatten([
-      list.map(inner, fn(x) { BlamedAttribute(blame, x.0, x.1) }),
-      [
-        BlamedAttribute(blame, "href", filename <> "?id=" <> id),
-        BlamedAttribute(blame, "class", classes),
-      ]
-    ]),
-    [T(blame, [BlamedContent(blame, value)])],
-  )
+
+  // function 2
+  let handle_2_hyperlink = fn(
+    handle: #(String, String, String),
+  ) {
+    let #(id, filename, value) = handle
+    let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
+      True -> #("InChapterLink", "handle-in-chapter-link")
+      False -> #("a", "handle-out-of-chapter-link")
+    }
+    V(blame, tag, list.flatten([
+        list.map(inner, fn(x) { BlamedAttribute(blame, x.0, x.1) }),
+        [
+          BlamedAttribute(blame, "href", filename <> "?id=" <> id),
+          BlamedAttribute(blame, "class", classes),
+        ]
+      ]),
+      [T(blame, [BlamedContent(blame, value)])],
+    )
+  }
+
+  // function 3
+  let hyperlink_maybe = fn(handle_name) {
+    case dict.get(handles, handle_name) {
+      Ok(triple) -> Ok(handle_2_hyperlink(triple))
+      _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
+    }
+  }
+
+  //************************//
+  // the pipe               //
+  //************************//
+  matches
+  |> list.map(extract_name)
+  |> list.map(hyperlink_maybe)
+  |> result.all
 }
 
-fn handle_handle_matches(
-  blame: Blame,
-  matches: List(regexp.Match),
+fn splits_2_text_nodes(
   splits: List(String),
-  handles: HandleInstances,
-  inner: InnerParam
-) -> Result(List(VXML), DesugaringError) {
-  case matches {
-    [] -> {
-      Ok([T(blame, [BlamedContent(blame, string.join(splits, " "))])])
+  blame: Blame,
+) -> List(VXML) {
+  //************************//
+  // functions for the pipe //
+  //************************//
+  // function 1
+  let augment_to_1_mod_3 = fn(
+    splits: List(String),
+  ) -> List(String) {
+    case list.length(splits) % 3 != 1 {
+      True -> {
+        let assert True = list.is_empty(splits)
+        [""]
+      }
+      False -> splits
     }
-    [first, ..rest] -> {
-      let regexp.Match(_, sub_matches) = first
-      let assert [_, handle_name] = sub_matches
-      let assert option.Some(handle_name) = handle_name
-      case dict.get(handles, handle_name) {
-        Error(_) ->
-          Error(DesugaringError(
-            blame,
-            "handle '" <> handle_name <> "' is not assigned",
-          ))
+  }
 
-        Ok(handle) -> {
-          let assert [first_split, _, _, ..rest_splits] = splits
-
-          use rest_content <- result.then(handle_handle_matches(
-            blame,
-            rest,
-            rest_splits,
-            handles,
-            inner
-          ))
-
-          Ok(
-            [
-              T(blame, [BlamedContent(blame, first_split)]),
-              construct_hyperlink(blame, handle, inner),
-              ..rest_content,
-            ],
-          )
+  // function 2
+  let retain_0_mod_3 = fn(
+    splits: List(String),
+  ) -> List(String) {
+    splits
+    |> list.index_fold(
+      from: [],
+      with: fn(acc, split, index) {
+        case index % 3 == 0 {
+          True -> [split, ..acc]
+          False -> acc
         }
       }
-    }
+    )
+    |> list.reverse
   }
+
+  // function 3
+  let split_2_t = fn(
+    split: String,
+  ) -> VXML {
+    T(blame, [BlamedContent(blame, split)])
+  }
+
+  //************************//
+  // the pipe               //
+  //************************//
+  splits
+  |> augment_to_1_mod_3  
+  |> retain_0_mod_3
+  |> list.map(split_2_t)
 }
 
-fn print_handle(
-  blamed_line: BlamedContent,
+fn handles_2_hyperlinks_in_content(
+  blamed_content: BlamedContent,
   handles: HandleInstances,
   inner: InnerParam,
   handle_regexp: Regexp,
 ) -> Result(List(VXML), DesugaringError) {
-  let matches = regexp.scan(handle_regexp, blamed_line.content)
-  let splits = regexp.split(handle_regexp, blamed_line.content)
-  handle_handle_matches(blamed_line.blame, matches, splits, handles, inner)
+  let BlamedContent(blame, content) = blamed_content
+  let matches = regexp.scan(handle_regexp, content)
+  let splits = regexp.split(handle_regexp, content)
+  use hyperlinks <- result.then(matches_2_hyperlinks(matches, blame, handles, inner))
+  let text_nodes = splits_2_text_nodes(splits, blame)
+  list.interleave([
+    text_nodes,
+    hyperlinks,
+  ]) |> Ok
 }
 
 fn print_handle_for_contents(
@@ -117,65 +165,48 @@ fn print_handle_for_contents(
   inner: InnerParam,
   handle_regexp: Regexp,
 ) -> Result(List(VXML), DesugaringError) {
-  case contents {
-    [] -> Ok([])
-    [first, ..rest] -> {
-      use updated_line <- result.then(print_handle(first, handles, inner, handle_regexp))
-      use updated_rest <- result.then(print_handle_for_contents(rest, handles, inner, handle_regexp))
-      Ok(
-        list.flatten([updated_line, updated_rest])
-        |> infra.plain_concatenation_in_list
-      )
-    }
-  }
+  contents
+    |> list.map(handles_2_hyperlinks_in_content(_, handles, inner, handle_regexp))
+    |> result.all
+    |> result.map(list.flatten)                      // you now have a list of t-nodes and of hyperlinks
+    |> result.map(infra.plain_concatenation_in_list) // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
 }
 
-fn get_handles_from_root_attributes(
+fn get_handles_instances_from_grand_wrapper(
   attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), HandleInstances) {
-
-   let #(handle_attributes, filtered_attributes) =
-    list.partition(attributes, fn(att) {
-      att.key == "handle"
-    })
-
-  let extracted_handles =
-    handle_attributes
-    |> list.fold(dict.new(), fn(acc, att) {
+) -> HandleInstances {
+  attributes
+  |> list.fold(
+    dict.new(),
+    fn(acc, att) {
       let assert [handle_name, id, filename, value] = att.value |> string.split(" | ")
       dict.insert(acc, handle_name, #(id, filename, value))
-    })
-
-  #(filtered_attributes, extracted_handles)
+    }
+  )
 }
 
 fn v_before_transform(
   vxml: VXML,
   handles: HandleInstances,
 ) -> Result(#(VXML, HandleInstances), DesugaringError) {
-  let assert V(b, t, attributes, c) = vxml
-  case t == "GrandWrapper" {
+  let assert V(_, tag, attributes, _) = vxml
+  case tag == "GrandWrapper" {
+    True -> Ok(#(vxml, get_handles_instances_from_grand_wrapper(attributes)))
     False -> Ok(#(vxml, handles))
-    True -> {
-      let #(filtered_attributes, handles) =
-        get_handles_from_root_attributes(attributes)
-
-      Ok(#(V(b, t, filtered_attributes, c), handles))
-    }
   }
 }
 
 fn v_after_transform(
   vxml: VXML,
-  handles: HandleInstances
+  handles: HandleInstances,
 ) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  let assert V(_, t, _, children)  = vxml
-  case t == "GrandWrapper" {
-    False -> Ok(#([vxml], handles))
+  let assert V(_, tag, _, children)  = vxml
+  case tag == "GrandWrapper" {
     True -> {
-      let assert [first_child] = children
-      Ok(#([first_child], handles))
+      let assert [V(_, "Book", _, _) as root] = children
+      Ok(#([root], handles))
     }
+    False -> Ok(#([vxml], handles))
   }
 }
 
