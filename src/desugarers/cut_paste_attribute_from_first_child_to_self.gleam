@@ -1,56 +1,23 @@
-import blamedlines
-import gleam/result
 import gleam/list
-import gleam/option.{type Option}
+import gleam/option.{type Option, Some, None}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
 import vxml.{type VXML, V, type BlamedAttribute}
 
 /// return option of
-/// - Attribute with key `key`
-/// - Modified children ( with removed attribute )
+/// - attribute with key `key`
+/// - modified children (with removed attribute)
 fn check_first_child(children: List(VXML), key: String)
--> Result(Option(#(BlamedAttribute, List(VXML))), DesugaringError) {
-  use first_child <- result.then(
-    list.first(children)
-    |> result.map_error(
-    fn(_) { DesugaringError(blamedlines.Blame("bobby", 0, 0, []), "No first child found") }
-  ))
-
-  case first_child {
-    V(b, t, attributes, sub_children) -> {
-      let attribute = list.find(attributes, fn(att) {
-        att.key == key
-      })
-
-      case attribute {
-        Error(_) -> {
-          use res <- result.try(check_first_child(sub_children, key))
-          case res {
-            option.None -> Ok(option.None)
-            option.Some(#(att, new_sub_children)) -> {
-              let assert [_, ..rest_children] = children
-              let new_first_child = V(b, t, attributes, new_sub_children)
-              Ok(option.Some(#(
-                att,
-                [new_first_child, ..rest_children]
-              )))
-            }
-          }
-        }
-        Ok(att) -> {
-          let assert [_, ..rest_children] = children
-          let new_first_child = V(b, t, list.filter(attributes, fn(att) { att.key != key }), sub_children)
-
-          Ok(option.Some(#(
-            att,
-            [new_first_child, ..rest_children]
-          )))
-        }
-      }
-    }
-    _ -> Ok(option.None)
-  }
+-> Option(#(BlamedAttribute, List(VXML))) {
+  use #(first, rest) <- infra.on_error_on_ok(infra.first_rest(children), fn(_){None})
+  use <- infra.on_t_on_v_no_deconstruct(first, fn(_, _){None})
+  let assert V(_, _, _, _) = first
+  use attribute <- infra.on_error_on_ok(
+    list.find(first.attributes, fn(att) {att.key == key}),
+    fn(_){None},
+  )
+  let first = V(..first, attributes: list.filter(first.attributes, fn(att) { att.key != key }))
+  Some(#(attribute, [first, ..rest]))
 }
 
 fn transform(
@@ -59,14 +26,11 @@ fn transform(
 ) -> Result(VXML, DesugaringError) {
   let #(parent_tag, key) = inner
   case node {
-    V(b, tag, original_attributes, children) if tag == parent_tag -> {
-
-        use res <- result.try(check_first_child(children, key))
-        case res {
-          option.None -> Ok(node)
-          option.Some(#(att, children)) ->  Ok(V(b, tag, [att, ..original_attributes], children))
-        }
-
+    V(_, tag, _, children) if tag == parent_tag -> {
+      case check_first_child(children, key) {
+        option.None -> Ok(node)
+        option.Some(#(att, children)) -> Ok(V(..node, attributes: list.append(node.attributes, [att]), children: children))
+      }
     }
     _ -> Ok(node)
   }
@@ -92,22 +56,30 @@ type Param =
 
 type InnerParam = Param
 
-/// Moves an attribute with key `key` from the first child of a node with tag
-/// `parent_tag` to the node itself.
-/// #Param
-/// - `parent tag` -
-/// - `attribute key` -
+/// Moves an attribute with key `key` from the
+/// first child of a node with tag `parent_tag`
+/// to the node itself.
+/// ```
+/// #Param:
+/// - parent tag
+/// - child tag
+/// - attribute key
+/// ```
 pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: "cut_paste_attribute_from_first_child_to_self",
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// Moves an attribute with key `key` from the first child of a node with tag
-/// `parent_tag` to the node itself.
-/// #Param
-/// - `parent tag` -
-/// - `attribute key` -
+/// Moves an attribute with key `key` from the
+/// first child of a node with tag `parent_tag`
+/// to the node itself.
+/// ```
+/// #Param:
+/// - parent tag
+/// - child tag
+/// - attribute key
+/// ```
       ",
     ),
     desugarer: case param_to_inner_param(param) {

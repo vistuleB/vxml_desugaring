@@ -71,7 +71,7 @@ pub fn desugarer_description_star_block(
       |> string.trim
       |> string.split("\n")
       |> list.map(fn(line) {
-        case string.starts_with(line, "/// ") {
+        case string.starts_with(line, "///") {
           True -> string.drop_start(line, 4)
           False -> line
         }

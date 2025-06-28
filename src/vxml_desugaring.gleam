@@ -1,23 +1,23 @@
 import argv
-import desugarers/extract_starting_and_ending_spaces.{extract_starting_and_ending_spaces}
-import desugarers/insert_bookend_text_if_no_attributes.{insert_bookend_text_if_no_attributes}
-import desugarers/unwrap_tags_if_no_attributes.{unwrap_tags_if_no_attributes}
 import gleam/io
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import writerly as wp
+import desugarer_names as dn
 
 fn test_pipeline() -> List(Pipe) {
   [
-    extract_starting_and_ending_spaces(["i", "b", "strong"]),
-    insert_bookend_text_if_no_attributes([
+    dn.extract_starting_and_ending_spaces(["i", "b", "strong"]),
+    dn.insert_bookend_text_if_no_attributes([
       #("i", "_", "_"),
       #("b", "*", "*"),
       #("strong", "*", "*"),
     ]),
-    unwrap_tags_if_no_attributes(["i", "b", "strong"]),
+    dn.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
+    dn.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
+
   ]
 }
 
@@ -55,7 +55,7 @@ fn test_renderer() {
 
   let parameters =
     vr.RendererParameters(
-      input_dir: "test/content",
+      input_dir: "test/content/__parent.emu",
       output_dir: Some("test/output"),
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)

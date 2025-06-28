@@ -1,4 +1,3 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -7,13 +6,19 @@ import vxml.{ type VXML, BlamedContent, T, V }
 
 fn transform(
   vxml: VXML,
+  ancestors: List(VXML),
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case dict.get(inner, tag) {
-        Ok(text) -> {
+      case infra.use_list_pair_as_dict(inner, tag) {
+        Ok(#(ancestor_tag, if_version, else_version)) -> {
+          let ancestor_tags = ancestors |> list.map(infra.get_tag)
+          let text = case list.contains(ancestor_tags, ancestor_tag) {
+            True -> if_version
+            False -> else_version
+          }
           let contents = string.split(text, "\n")
           let new_text_node =
             T(
@@ -33,36 +38,46 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
+  fn(vxml, ancestors, _, _, _) {
+    transform(vxml, ancestors, inner)
+  }
 }
 
 fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  infra.dict_from_list_with_desugaring_error(param)
+  param
+  |> infra.quads_to_pairs
+  |> Ok
 }
 
 type Param =
-  List(#(String, String))
-//       ↖      ↖
-//       tag    text
+  List(#(String, String,    String,      String))
+//       ↖       ↖          ↖            ↖
+//       tag     ancestor   if_version   else_version
 
 type InnerParam =
-  Dict(String, String)
+  List(#(String, #(String, String, String)))
 
-/// prepends text to the beginning of
-/// specified tags
-pub fn prepend_text(param: Param) -> Pipe {
+/// prepend one of two specified
+/// text fragments to nodes of a
+/// certain tag depending on wether
+/// the node has an ancestor of specified
+/// type or not
+pub fn prepend_text_if_has_ancestor_else(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "prepend_text",
+      desugarer_name: "prepend_text_if_has_ancestor_else",
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// prepends text to the beginning of
-/// specified tags
+/// prepend one of two specified
+/// text fragments to nodes of a
+/// certain tag depending on wether
+/// the node has an ancestor of specified
+/// type or not
       ",
     ),
     desugarer: case param_to_inner_param(param) {

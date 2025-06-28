@@ -151,6 +151,17 @@ pub fn on_none_on_some(
   }
 }
 
+pub fn on_lazy_none_on_some(
+  over option: Option(a),
+  with_on_none f1: fn() -> b,
+  with_on_some f2: fn(a) -> b,
+) -> b {
+  case option {
+    None -> f1()
+    Some(z) -> f2(z)
+  }
+}
+
 pub fn on_some_on_none(
   over option: Option(a),
   with_on_some f2: fn(a) -> b,
@@ -170,6 +181,17 @@ pub fn on_error_on_ok(
   case res {
     Error(e) -> f1(e)
     Ok(r) -> f2(r)
+  }
+}
+
+pub fn on_ok_on_error(
+  over res: Result(a, b),
+  with_on_ok f1: fn(a) -> c,
+  with_on_error f2: fn(b) -> c,
+) -> c {
+  case res {
+    Ok(r) -> f1(r)
+    Error(e) -> f2(e)
   }
 }
 
@@ -210,6 +232,17 @@ pub fn on_t_on_v(
   case node {
     T(blame, blamed_contents) -> f1(blame, blamed_contents)
     V(blame, tag, attributes, children) -> f2(blame, tag, attributes, children)
+  }
+}
+
+pub fn on_t_on_v_no_deconstruct(
+  node: VXML,
+  f1: fn(Blame, List(BlamedContent)) -> c,
+  f2: fn() -> c,
+) -> c {
+  case node {
+    T(blame, blamed_contents) -> f1(blame, blamed_contents)
+    _ -> f2()
   }
 }
 
@@ -361,9 +394,13 @@ pub fn triples_third(l: #(a, b, c)) -> c {
 
 pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
   l
-  |> list.map(fn(triple) {
-    let #(a, b, c) = triple
-    #(a, #(b, c))
+  |> list.map(fn(t) {#(t.0, #(t.1, t.2))})
+}
+
+pub fn quads_to_pairs(l: List(#(a, b, c, d))) -> List(#(a, #(b, c, d))) {
+  l
+  |> list.map(fn(quad) {
+    #(quad.0, #(quad.1, quad.2, quad.3))
   })
 }
 
@@ -551,8 +588,19 @@ pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
   }
 }
 
+pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
+  case l {
+    [] -> Error(Nil)
+    [last] -> Ok(#([], last))
+    [first, ..rest] -> {
+      let assert Ok(#(head, last)) = head_last(rest)
+      Ok(#([first, ..head], last))
+    }
+  }
+}
+
 //**************************************************************
-//* find replace 
+//* find replace
 //**************************************************************
 
 fn find_replace_in_blamed_content(
@@ -694,6 +742,30 @@ pub fn v_last_to_first_concatenation(v: VXML) -> VXML {
   V(blame, tag, attributes, children)
 }
 
+fn nonempty_list_t_plain_concatenation(nodes: List(VXML)) -> VXML {
+  let assert [first, ..] = nodes
+  let assert T(blame, _) = first
+  let all_lines = {
+    nodes
+    |> list.map(fn(node) {
+      let assert T(_, blamed_lines) = node
+      blamed_lines
+    })
+    |> list.flatten
+  }
+  T(blame, all_lines)
+}
+
+pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
+  nodes
+  |> either_or_misceginator(is_text_node)
+  |> regroup_eithers_no_empty_lists
+  |> map_either_ors(
+    fn(either: List(VXML)) -> VXML { nonempty_list_t_plain_concatenation(either) },
+    fn(or: VXML) -> VXML { or },
+  )
+}
+
 pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
     [] -> []
@@ -779,6 +851,42 @@ pub fn t_trim_end(node: VXML) -> VXML {
   node
   |> t_extract_ending_spaces()
   |> pair.second
+}
+
+pub fn t_super_trim_end(node: VXML) -> Option(VXML) {
+  let assert T(blame, blamed_contents) = node
+  let blamed_contents =
+    blamed_contents
+    |> list.reverse
+    |> list.take_while(fn(bc) { string.trim_end(bc.content) == "" })
+  case blamed_contents {
+    [] -> None
+    _ -> Some(T(blame, blamed_contents |> list.reverse))
+  }
+}
+
+pub fn t_super_trim_end_and_remove_ending_period(node: VXML) -> Option(VXML) {
+  let assert T(blame, blamed_contents) = node
+
+  let blamed_contents =
+    blamed_contents
+    |> list.reverse
+    |> list.drop_while(fn(bc) { string.trim_end(bc.content) == "" })
+
+  case blamed_contents {
+    [] -> None
+    [last, ..rest] -> {
+      let content = string.trim_end(last.content)
+      case string.ends_with(content, ".") && !string.ends_with(content, "..") {
+        True -> {
+          let last = BlamedContent(..last, content: {content |> string.drop_end(1)})
+          T(blame, [last, ..rest] |> list.reverse)
+          |> t_super_trim_end_and_remove_ending_period
+        }
+        False -> Some(T(blame, [last, ..rest] |> list.reverse))
+      }
+    }
+  }
 }
 
 pub fn t_drop_start(node: VXML, to_drop: Int) -> VXML {
@@ -1205,7 +1313,7 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
   case node {
     V(b, t, a, _) -> V(b, t, a, children)
-    _ -> node 
+    _ -> node
   }
 }
 
@@ -1238,7 +1346,7 @@ pub fn digest(vxml: VXML) -> String {
 }
 
 pub fn valid_tag(tag: String) -> Bool {
-  !string.is_empty(tag) && 
+  !string.is_empty(tag) &&
   !string.contains(tag, " ") &&
   !string.contains(tag, ".") &&
   !string.contains(tag, "\n") &&
@@ -1246,7 +1354,7 @@ pub fn valid_tag(tag: String) -> Bool {
 }
 
 pub fn valid_attribute_key(tag: String) -> Bool {
-  !string.is_empty(tag) && 
+  !string.is_empty(tag) &&
   !string.contains(tag, " ") &&
   !string.contains(tag, "\n") &&
   !string.contains(tag, "\t")
@@ -1789,7 +1897,7 @@ fn stateful_down_up_node_to_node_one(
           fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
         )
       )
-      
+
       transform.v_after_transforming_children(
         node |> replace_children_with(children),
         original_state,
@@ -1902,7 +2010,7 @@ fn stateful_down_up_fancy_node_to_node_one(
       )
 
       let node = V(..node, children: reversed_children |> list.reverse)
-      
+
       transform.v_after_transforming_children(
         node,
         ancestors,
@@ -1998,7 +2106,7 @@ fn stateful_down_up_node_to_nodes_one(
         children,
         transform,
       ))
-      
+
       transform.v_after_transforming_children(
         node |> replace_children_with(children),
         original_state,
