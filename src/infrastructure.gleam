@@ -1280,11 +1280,8 @@ pub fn index_filter_children(
 ) -> List(#(VXML, Int)) {
   let assert V(_, _, _, children) = vxml
   children
+  |> list.filter(condition)
   |> list.index_map(fn(v, idx) { #(v, idx) })
-  |> list.filter(fn(node) {
-    let #(v, _) = node
-    condition(v)
-  })
 }
 
 pub fn index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
