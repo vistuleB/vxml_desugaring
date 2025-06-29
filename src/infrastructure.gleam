@@ -1287,8 +1287,22 @@ pub fn index_filter_children(
   })
 }
 
+pub fn index_filter_kind_children(
+  vxml: VXML,
+  condition: fn(VXML) -> Bool,
+) -> List(#(VXML, Int)) {
+  let assert V(_, _, _, children) = vxml
+  children
+  |> list.filter(condition)  // Filter directly with the condition
+  |> list.index_map(fn(v, idx) { #(v, idx) })  // Then index the filtered results
+}
+
 pub fn index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
-  index_filter_children(vxml, is_v_and_tag_equals(_, tag))
+  index_filter_kind_children(vxml, is_v_and_tag_equals(_, tag))
+}
+
+pub fn index_kind_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
+  index_filter_kind_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
 pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
