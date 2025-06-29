@@ -1279,6 +1279,11 @@ pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
   filter_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
+pub fn children_with_tags(vxml: VXML, tags: List(String)) -> List(VXML) {
+  let assert V(_, _, _, _) = vxml
+  filter_children(vxml, fn (node){ tags |> list.any(is_v_and_tag_equals(node, _)) })
+}
+
 pub fn index_filter_children(
   vxml: VXML,
   condition: fn(VXML) -> Bool,
@@ -1312,6 +1317,17 @@ pub fn replace_children_with(node: VXML, children: List(VXML)) {
     V(b, t, a, _) -> V(b, t, a, children)
     _ -> node
   }
+}
+
+pub fn assert_pop_attribute(vxml: VXML, key: String) -> #(VXML, BlamedAttribute) {
+  let assert V(b, t, a, c) = vxml
+  let assert #([founded], rest) = list.partition(a, fn(b){b.key == key})
+  #(V(b, t, rest, c), founded)
+}
+
+pub fn assert_pop_attribute_value(vxml: VXML, key: String) -> #(VXML, String) {
+  let #(vxml, BlamedAttribute(_, _, value)) = assert_pop_attribute(vxml, key)
+  #(vxml, value)
 }
 
 pub type SingletonError {
