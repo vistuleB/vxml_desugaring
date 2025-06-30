@@ -4,7 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn try_prepand_link(vxml: VXML, link_value: String, class: String) -> VXML {
+fn try_prepend_link(vxml: VXML, link_value: String, class: String) -> VXML {
   case link_value {
     "" -> vxml
     _ ->
@@ -37,8 +37,8 @@ fn map_chapters(chapter: #(VXML, Int), local_index: Int, length: Int) -> #(VXML,
   }
   let new =
     chapter_vxml
-    |> try_prepand_link(prev_link, "prev-page")
-    |> try_prepand_link(next_link, "next-page")
+    |> try_prepend_link(prev_link, "prev-page")
+    |> try_prepend_link(next_link, "next-page")
 
   #(new, global_index)
 }
@@ -56,19 +56,22 @@ fn map_bootcamps(bootcamp: #(VXML, Int), local_index: Int, length: Int) -> #(VXM
   }
   let new =
     bootcamp_vxml
-    |> try_prepand_link(prev_link, "prev-page")
-    |> try_prepand_link(next_link, "next-page")
+    |> try_prepend_link(prev_link, "prev-page")
+    |> try_prepend_link(next_link, "next-page")
 
   #(new, global_index)
 }
 
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
+  echo "inside_at_root"
   let assert V(root_b, root_t, root_a, children) = root
   let chapters = infra.index_children_with_tag(root, "Chapter")
   let bootcamps = infra.index_children_with_tag(root, "Bootcamp")
 
   let toc = infra.index_children_with_tag(root, "TOC")
-  let assert [#(toc, _)] = toc
+  let assert [#(toc, toc_index)] = toc
+
+  echo "made it here " <> ins(toc_index)
 
   let #(chapters, bootcamps, toc) = case
     list.is_empty(chapters),
@@ -88,8 +91,8 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
 
       let toc =
         toc
-        |> try_prepand_link("/article/bootcamp1", "prev-page")
-        |> try_prepand_link("/article/chapter1", "next-page")
+        |> try_prepend_link("/article/bootcamp1", "prev-page")
+        |> try_prepend_link("/article/chapter1", "next-page")
 
       #(chapters, bootcamps, toc)
     }
@@ -102,7 +105,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
 
       let toc =
         toc
-        |> try_prepand_link("/article/bootcamp1", "prev-page")
+        |> try_prepend_link("/article/bootcamp1", "prev-page")
 
       #([], bootcamps, toc)
     }
@@ -113,7 +116,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
 
       let toc =
         toc
-        |> try_prepand_link("/article/chapter1", "next-page")
+        |> try_prepend_link("/article/chapter1", "next-page")
 
       #(chapters, bootcamps, toc)
     }
@@ -178,4 +181,4 @@ pub fn generate_lbp_prev_next_a_tags() -> Pipe {
       Ok(_) -> desugarer_factory()
     }
   )
-} 
+}

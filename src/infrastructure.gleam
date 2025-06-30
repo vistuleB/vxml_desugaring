@@ -1251,7 +1251,14 @@ pub fn tag_equals(vxml: VXML, tag: String) -> Bool {
 pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
   case vxml {
     T(_, _) -> False
-    _ -> tag_equals(vxml, tag)
+    V(_, _, _, _) -> vxml.tag == tag
+  }
+}
+
+pub fn is_v_and_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    V(_, _, _, _) -> list.contains(tags, vxml.tag)
   }
 }
 

@@ -22,19 +22,6 @@ fn chapter_link(
     _ -> panic as "expecting 'Chapter' or 'Bootcamp'"
   }
 
-  // use label_attr <- infra.on_none_on_some(
-  //   infra.v_attribute_with_key(item, "title"),
-  //   with_on_none: Error(DesugaringError(
-  //     blame,
-  //     tp <> " missing title attribute",
-  //   )),
-  // )
-
-  // let on_mobile_attr = case infra.v_attribute_with_key(item, "on_mobile") {
-  //   Some(attr) -> attr
-  //   None -> label_attr
-  // }
-
   use title_element <- infra.on_error_on_ok(
     infra.unique_child_with_tag(item, "ArticleTitle"),
     fn (s) {
@@ -147,6 +134,9 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
       bootcamps_div,
     ]
   }
+
+  echo "Hello-O"
+  echo table_of_contents_tag
 
   Ok(infra.prepend_child(
     root,
