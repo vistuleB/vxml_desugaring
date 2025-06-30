@@ -1321,8 +1321,8 @@ pub fn replace_children_with(node: VXML, children: List(VXML)) {
 
 pub fn assert_pop_attribute(vxml: VXML, key: String) -> #(VXML, BlamedAttribute) {
   let assert V(b, t, a, c) = vxml
-  let assert #([founded], rest) = list.partition(a, fn(b){b.key == key})
-  #(V(b, t, rest, c), founded)
+  let assert #([unique_guy_with_key], other_guys) = list.partition(a, fn(b){b.key == key})
+  #(V(b, t, other_guys, c), unique_guy_with_key)
 }
 
 pub fn assert_pop_attribute_value(vxml: VXML, key: String) -> #(VXML, String) {
