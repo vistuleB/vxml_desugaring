@@ -6,15 +6,13 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type DetailedDesugaringError, DetailedDesugaringError, type Pipe} as infra
-import pipeline_debug
+import star_block
 import shellout
 import simplifile
 import vxml.{type VXML, V} as vp
 import writerly as wp
-
-const ins = string.inspect
 
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
@@ -362,7 +360,7 @@ fn pipeline_runner(
       case pipeline_debug_options.debug_print(step, pipe) {
         False -> Nil
         True ->
-          pipeline_debug.desugarer_description_star_block(
+          star_block.desugarer_description_star_block(
             pipe.description,
             step,
           )

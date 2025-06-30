@@ -1,11 +1,9 @@
-import gleam/string
+import gleam/string.{inspect as ins}
 import gleam/result
 import gleam/list
 import infrastructure.{type Pipe, Pipe, DesugarerDescription, type DesugaringError, DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
-
-const ins = string.inspect
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use last <- infra.on_error_on_ok(

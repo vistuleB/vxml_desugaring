@@ -5,12 +5,10 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
 import vxml.{ type VXML, BlamedAttribute, BlamedContent, T, V }
 import xmlm
-
-const ins = string.inspect
 
 type LinkPatternToken {
   Word(String)    // (does not contain whitespace)

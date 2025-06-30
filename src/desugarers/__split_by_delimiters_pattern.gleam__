@@ -1,9 +1,7 @@
 import codepoints.{type DelimiterPattern}
 import gleam/option.{Some}
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe, DesugarerDescription, DesugaringError } as infra
-
-const ins = string.inspect
 
 type Extras =
   #(List(#(DelimiterPattern, String)), List(String))
