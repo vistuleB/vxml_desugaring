@@ -1,12 +1,10 @@
 import gleam/list
 import gleam/option.{None, Some}
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure as infra
 
-const ins = string.inspect
-
 // ************************
-// pipeline printing
+// pipeline 'star block' printer
 // ************************
 
 const star_line_length = 53
@@ -30,7 +28,7 @@ fn star_line(content: String) -> String {
   <> "\n"
 }
 
-pub fn star_block(
+fn star_block(
   first_finger: Bool,
   lines: List(String),
   second_finger: Bool,

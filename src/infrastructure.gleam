@@ -1290,11 +1290,8 @@ pub fn index_filter_children(
 ) -> List(#(VXML, Int)) {
   let assert V(_, _, _, children) = vxml
   children
+  |> list.filter(condition)
   |> list.index_map(fn(v, idx) { #(v, idx) })
-  |> list.filter(fn(node) {
-    let #(v, _) = node
-    condition(v)
-  })
 }
 
 pub fn index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
@@ -1324,8 +1321,8 @@ pub fn replace_children_with(node: VXML, children: List(VXML)) {
 
 pub fn assert_pop_attribute(vxml: VXML, key: String) -> #(VXML, BlamedAttribute) {
   let assert V(b, t, a, c) = vxml
-  let assert #([founded], rest) = list.partition(a, fn(b){b.key == key})
-  #(V(b, t, rest, c), founded)
+  let assert #([unique_guy_with_key], other_guys) = list.partition(a, fn(b){b.key == key})
+  #(V(b, t, other_guys, c), unique_guy_with_key)
 }
 
 pub fn assert_pop_attribute_value(vxml: VXML, key: String) -> #(VXML, String) {

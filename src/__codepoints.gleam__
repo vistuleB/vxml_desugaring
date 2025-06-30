@@ -1,8 +1,6 @@
 import gleam/io
 import gleam/list.{type ContinueOrStop, Continue, Stop}
-import gleam/string
-
-const ins = string.inspect
+import gleam/string.{inspect as ins}
 
 //********************
 // pub types
