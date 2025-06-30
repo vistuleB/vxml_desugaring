@@ -1,6 +1,6 @@
 import gleam/option
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, V}
 
 fn transform(
   node: VXML,
