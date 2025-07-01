@@ -57,29 +57,18 @@ fn add_links_to_toc(vxml: VXML, num_bootcamps: Int, num_chapters: Int) -> VXML {
 
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let assert V(_, _, _, children) = root
-  let chapters = infra.index_children_with_tag(root, "Chapter")
-  let bootcamps = infra.index_children_with_tag(root, "Bootcamp")
-  let toc = infra.index_children_with_tag(root, "TOC")
-  let assert [#(toc, _)] = toc
+  let chapters = infra.children_with_tag(root, "Chapter")
+  let bootcamps = infra.children_with_tag(root, "Bootcamp")
+  let assert [toc] = infra.children_with_tag(root, "TOC")
 
   let num_chapters = list.length(chapters)
   let num_bootcamps = list.length(bootcamps)
 
-  let chapters =
-    chapters
-    |> list.map(fn(pair) {add_links_to_chapter(pair.0, pair.1 + 1, num_chapters)})
-
-  let bootcamps =
-    bootcamps
-    |> list.map(fn(pair) {add_links_to_bootcamp(pair.0, pair.1 + 1, num_bootcamps)})
-
+  let chapters = list.index_map(chapters, fn(c, i) {add_links_to_chapter(c, i + 1, num_chapters)})
+  let bootcamps = list.index_map(bootcamps, fn(c, i) {add_links_to_bootcamp(c, i + 1, num_chapters)})
   let toc = add_links_to_toc(toc, num_bootcamps, num_chapters)
 
-  let other_children =
-    children
-    |> list.filter(fn(c) {
-      !infra.is_v_and_tag_is_one_of(c, ["TOC", "Chapter", "Bootcamp"])
-    })
+  let other_children = list.filter(children, fn(c) { !infra.is_v_and_tag_is_one_of(c, ["TOC", "Chapter", "Bootcamp"]) })
 
   Ok(V(..root, children: list.flatten([other_children, [toc], chapters, bootcamps])))
 }

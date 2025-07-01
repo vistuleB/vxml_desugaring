@@ -1,6 +1,6 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
-import gleam/option.{type Option, None, Some}
+import gleam/option.{type Option, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
@@ -39,10 +39,8 @@ fn chapter_link(
       blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(blame_us("L41"), "article_type", ins(count)),
-        // BlamedAttribute(label_attr.blame, "label", label_attr.value),
-        // BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
-        BlamedAttribute(blame_us("L44"), "href", tp <> ins(count)),
+        BlamedAttribute(blame_us("L42"), "article_type", ins(count)),
+        BlamedAttribute(blame_us("L43"), "href", tp <> ins(count)),
       ],
       title_element.children,
     ),
@@ -54,7 +52,7 @@ fn type_of_chapters_title(
   label: String,
 ) -> VXML {
   V(
-    blame_us("L52"),
+    blame_us("L55"),
     type_of_chapters_title_component_name,
     [BlamedAttribute(blame_us("L57"), "label", label)],
     [],
@@ -67,10 +65,15 @@ fn div_with_id_title_and_menu_items(
   title_label: String,
   menu_items: List(VXML),
 ) -> VXML {
-  V(blame_us("87"), "div", [BlamedAttribute(blame_us("L72"), "id", id)], [
-    type_of_chapters_title(type_of_chapters_title_component_name, title_label),
-    V(blame_us("L95"), "ul", [], menu_items),
-  ])
+  V(
+    blame_us("L69"),
+    "div",
+    [BlamedAttribute(blame_us("L71"), "id", id)], 
+    [
+      type_of_chapters_title(type_of_chapters_title_component_name, title_label),
+      V(blame_us("L74"), "ul", [], menu_items),
+    ]
+  )
 }
 
 fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
@@ -80,27 +83,17 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
     chapter_link_component_name,
     maybe_spacer,
   ) = param
-  let chapters = infra.children_with_tag(root, "Chapter")
-  let bootcamps = infra.children_with_tag(root, "Bootcamp")
 
-  use chapter_menu_items <- infra.on_error_on_ok(
-    over: {
-      chapters
-      |> list.index_map(fn(chapter: VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) })
-      |> result.all
-    },
-    with_on_error: Error,
+  use chapter_menu_items <- result.then(
+    infra.children_with_tag(root, "Chapter")
+    |> list.index_map(fn(chapter: VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) })
+    |> result.all
   )
 
-  use bootcamp_menu_items <- infra.on_error_on_ok(
-    over: {
-      bootcamps
-      |> list.index_map(fn(bootcamp: VXML, index) {
-        chapter_link(chapter_link_component_name, bootcamp, index + 1)
-      })
-      |> result.all
-    },
-    with_on_error: Error,
+  use bootcamp_menu_items <- result.then(
+    infra.children_with_tag(root, "Bootcamp")
+    |> list.index_map(fn(bootcamp: VXML, index) { chapter_link(chapter_link_component_name, bootcamp, index + 1) })
+    |> result.all
   )
 
   let chapters_div =
@@ -119,28 +112,27 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
       bootcamp_menu_items,
     )
 
-  let children = case
-    list.is_empty(chapter_menu_items),
-    list.is_empty(bootcamp_menu_items),
-    maybe_spacer
-  {
-    True, True, _ -> []
-    False, True, _ -> [chapters_div]
-    True, False, _ -> [bootcamps_div]
-    False, False, None -> [chapters_div, bootcamps_div]
-    False, False, Some(spacer_tag) -> [
-      chapters_div,
-      V(blame_us("L145"), spacer_tag, [], []),
-      bootcamps_div,
-    ]
-  }
+  let exists_bootcamps = !list.is_empty(bootcamp_menu_items)
+  let exists_chapters = !list.is_empty(chapter_menu_items)
 
-  echo "Hello-O"
-  echo table_of_contents_tag
+  let children = list.flatten([
+    case exists_chapters {
+      True -> [chapters_div]
+      False -> []
+    },
+    case exists_bootcamps, exists_chapters, maybe_spacer {
+      True, True, Some(spacer_tag) -> [V(blame_us("L124"), spacer_tag, [], [])]
+      _, _, _ -> []
+    },
+    case exists_bootcamps {
+      True -> [bootcamps_div]
+      False -> []
+    },
+  ])
 
   Ok(infra.prepend_child(
     root,
-    V(blame_us("L142"), table_of_contents_tag, [], children),
+    V(blame_us("L135"), table_of_contents_tag, [], children),
   ))
 }
 
