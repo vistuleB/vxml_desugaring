@@ -1380,20 +1380,18 @@ pub fn valid_attribute_key(tag: String) -> Bool {
   !string.contains(tag, "\t")
 }
 
+pub fn add_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
+  case list.contains(ze_list, ze_thing) {
+    True -> ze_list
+    False -> [ze_thing, ..ze_list]
+  }
+}
+
 pub fn concatenate_classes(a: String, b: String) -> String {
   let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all = list.flatten([all_a, all_b])
-  list.fold(
-    all,
-    [],
-    fn (so_far, next) {
-      case list.contains(so_far, next) {
-        True -> so_far
-        False -> [next, ..so_far]
-      }
-    }
-  )
+  list.fold(all, [], add_if_not_present)
   |> string.join(" ")
 }
 
