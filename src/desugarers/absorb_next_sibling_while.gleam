@@ -121,3 +121,49 @@ pub fn absorb_next_sibling_while(param: Param) -> Pipe {
     }
   )
 }
+
+pub fn test_group() -> infra.AssertiveTestGroup(Param) {
+  infra.AssertiveTestGroup(
+    name: "absorb_next_sibling_while",
+    pipe: absorb_next_sibling_while,
+    tests: [
+    infra.AssertiveTest(
+      param: [#("Absorber", "Absorbee")],
+      source: "
+<> Root
+    <> Absorber
+        <> 
+            \"text\"
+    <> Absorbee
+    <> last
+      ",
+      expected: "
+<> Root
+    <> Absorber
+        <> 
+            \"text\"
+        <> Absorbee
+    <> last
+      ",
+    ),
+    infra.AssertiveTest(
+      param: [#("Absorber", "Absorbee")],
+      source: "
+<> Root
+    <> Absorber
+        <> 
+            \"text\"
+    <> Absorbee
+    <> last
+      ",
+      expected: "
+<> Root
+    <> Absorber
+        <> 
+            \"text\"
+    <> Absorbee
+    <> last
+      ",
+    )
+  ])
+}

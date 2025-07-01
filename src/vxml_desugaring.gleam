@@ -1,3 +1,4 @@
+import gleam/list
 import argv
 import gleam/io
 import gleam/option.{Some}
@@ -6,6 +7,7 @@ import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import writerly as wp
 import desugarer_names as dn
+import desugarer_tests as dt
 
 fn test_pipeline() -> List(Pipe) {
   [
@@ -13,11 +15,10 @@ fn test_pipeline() -> List(Pipe) {
     dn.insert_bookend_text_if_no_attributes([
       #("i", "_", "_"),
       #("b", "*", "*"),
-      #("strong", "*", "*"),
+      #("strong", "*", "*") ,
     ]),
     dn.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
     dn.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
-
   ]
 }
 
@@ -73,6 +74,22 @@ fn test_renderer() {
   }
 }
 
+fn run_desugarer_tests(desugarer_name: String) {
+  use test_group <- infra.on_error_on_ok(
+    list.find(dt.all_test_groups, fn(test_group){
+      test_group().name == desugarer_name
+    }),
+    fn(_) {
+      io.println("No desugarer found with name " <> desugarer_name)
+    }
+  )
+  infra.run_assertive_tests(test_group())
+  Nil
+}
+
 pub fn main() {
-  test_renderer()
+  case argv.load().arguments {
+    ["--test-desugarer", name] -> run_desugarer_tests(name)
+    _ -> test_renderer()
+  }
 }
