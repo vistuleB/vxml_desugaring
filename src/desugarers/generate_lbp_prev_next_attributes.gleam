@@ -4,11 +4,8 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn try_prepend_link(vxml: VXML, link_value: String, link_key: String) -> VXML {
-  case link_value {
-    "" -> vxml
-    _ -> infra.prepend_attribute(vxml, BlamedAttribute(vxml.blame, link_key, link_value))
-  }
+fn prepend_link(vxml: VXML, link_value: String, link_key: String) -> VXML {
+  infra.prepend_attribute(vxml, BlamedAttribute(vxml.blame, link_key, link_value))
 }
 
 fn add_links_to_chapter(vxml: VXML, number: Int, num_chapters: Int) -> VXML {
@@ -22,8 +19,8 @@ fn add_links_to_chapter(vxml: VXML, number: Int, num_chapters: Int) -> VXML {
     False -> "/article/chapter" <> ins(number + 1)
   }
   vxml
-  |> try_prepend_link(next_link, "next-page")
-  |> try_prepend_link(prev_link, "prev-page")
+  |> prepend_link(next_link, "next-page")
+  |> prepend_link(prev_link, "prev-page")
 }
 
 fn add_links_to_bootcamp(vxml: VXML, number: Int, num_bootcamps: Int) -> VXML {
@@ -37,8 +34,8 @@ fn add_links_to_bootcamp(vxml: VXML, number: Int, num_bootcamps: Int) -> VXML {
     False -> "/article/bootcamp" <> ins(number - 1)
   }
   vxml
-  |> try_prepend_link(next_link, "next-page")
-  |> try_prepend_link(prev_link, "prev-page")
+  |> prepend_link(next_link, "next-page")
+  |> prepend_link(prev_link, "prev-page")
 }
 
 fn add_links_to_toc(vxml: VXML, num_bootcamps: Int, num_chapters: Int) -> VXML {
@@ -51,8 +48,8 @@ fn add_links_to_toc(vxml: VXML, num_bootcamps: Int, num_chapters: Int) -> VXML {
     False -> ""
   }
   vxml
-  |> try_prepend_link(next_link, "next-page")
-  |> try_prepend_link(prev_link, "prev-page")
+  |> prepend_link(next_link, "next-page")
+  |> prepend_link(prev_link, "prev-page")
 }
 
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
@@ -65,7 +62,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let num_bootcamps = list.length(bootcamps)
 
   let chapters = list.index_map(chapters, fn(c, i) {add_links_to_chapter(c, i + 1, num_chapters)})
-  let bootcamps = list.index_map(bootcamps, fn(c, i) {add_links_to_bootcamp(c, i + 1, num_chapters)})
+  let bootcamps = list.index_map(bootcamps, fn(c, i) {add_links_to_bootcamp(c, i + 1, num_bootcamps)})
   let toc = add_links_to_toc(toc, num_bootcamps, num_chapters)
 
   let other_children = list.filter(children, fn(c) { !infra.is_v_and_tag_is_one_of(c, ["TOC", "Chapter", "Bootcamp"]) })
