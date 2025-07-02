@@ -1176,6 +1176,18 @@ pub fn drop_starting_slash(path: String) -> String {
   }
 }
 
+pub fn kabob_case_to_pascal_case(input: String) -> String {
+  input
+  |> string.split("-")
+  |> list.map(fn(word) {
+    case string.to_graphemes(word) {
+      [] -> ""
+      [first, ..rest] -> string.uppercase(first) <> string.join(rest, "")
+    }
+  })
+  |> string.join("")
+}
+
 pub fn prepend_attribute(vxml: VXML, attr: BlamedAttribute) {
   let assert V(blame, tag, attrs, children) = vxml
   V(blame, tag, [attr, ..attrs], children)
