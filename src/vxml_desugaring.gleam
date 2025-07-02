@@ -76,23 +76,29 @@ fn test_renderer() {
 
 fn run_desugarer_tests(names: List(String)) {
   io.println("")
-  case list.is_empty(names) {
-    True -> io.println("run_desugarer_tests: no names provided")
-    False -> Nil
-  }
+  let must_match_name = !list.is_empty(names)
+  let tested = []
+  list.fold(
+    dt.test_group_constructors,
+    tested,
+    fn(acc, constructor) {
+      let name = constructor().desugarer_name
+      case !must_match_name || list.contains(names, name) {
+        False -> acc
+        True -> {
+          infra.run_assertive_tests(constructor())
+          [name, ..acc]
+        }
+      }
+    }
+  )
   list.each(
     names,
-    fn(name) {
-      use test_group <- infra.on_error_on_ok(
-        list.find(
-          dt.all_test_groups,
-          fn(test_group) { test_group().name == name }
-        ),
-        fn(_) {
-          io.println("No test group found for desugarer '" <> name <> "'.")
-        }
-      )
-      infra.run_assertive_tests(test_group())
+    fn (name) {
+      case !list.contains(tested, name) {
+        True -> io.println("could not find a test_group for desugarer '" <> name <> "'")
+        False -> Nil
+      }
     }
   )
   Nil
@@ -100,7 +106,7 @@ fn run_desugarer_tests(names: List(String)) {
 
 pub fn main() {
   case argv.load().arguments {
-    ["--test-desugarer", ..names] -> run_desugarer_tests(names)
+    ["--test-desugarers", ..names] -> run_desugarer_tests(names)
     _ -> test_renderer()
   }
 }

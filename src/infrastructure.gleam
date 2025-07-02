@@ -2271,25 +2271,32 @@ pub type AssertiveTestError {
   VXMLParseError(vxml.VXMLParseError)
   TestDesugaringError(DesugaringError)
   AssertiveTestError(desugarer_name: String, output: String, expected: String)
+  NonMatchingDesugarerName(String)
 }
 
-pub type AssertiveTest(param) {
+pub type AssertiveTest {
   AssertiveTest(
-    param: param,
+    pipe: fn() -> Pipe,
     source: String,   // VXML String
     expected: String, // VXML String
   )
 }
 
-pub type AssertiveTestGroup(param) {
+pub type AssertiveTestGroup {
   AssertiveTestGroup(
-    name: String,
-    pipe: fn (param) -> Pipe,
-    tests: List(AssertiveTest(param)),
+    desugarer_name: String,
+    tests: List(AssertiveTest),
   )
 }
 
-pub fn run_assertive_test(pipe: Pipe, tst: AssertiveTest(a)) -> Result(Nil, AssertiveTestError) {
+pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
+  let pipe = tst.pipe()
+
+  use <- on_true_on_false(
+    desugarer_name != pipe.description.desugarer_name,
+    Error(NonMatchingDesugarerName(pipe.description.desugarer_name)),
+  )
+
   use input <- result.then(
     vxml.unique_root_parse_string(tst.source, "test " <> pipe.description.desugarer_name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
@@ -2318,13 +2325,12 @@ pub fn run_assertive_test(pipe: Pipe, tst: AssertiveTest(a)) -> Result(Nil, Asse
 }
 
 pub fn run_and_announce_results(
-  test_group: AssertiveTestGroup(param),
-  tst: AssertiveTest(param),
+  test_group: AssertiveTestGroup,
+  tst: AssertiveTest,
   number: Int,
   total: Int,
 ) {
-  let pipe = test_group.pipe(tst.param)
-  case run_assertive_test(pipe, tst) {
+  case run_assertive_test(test_group.desugarer_name, tst) {
     Ok(Nil) ->
       io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
     Error(error) -> {
@@ -2342,10 +2348,10 @@ pub fn run_and_announce_results(
   }
 }
 
-pub fn run_assertive_tests(test_group: AssertiveTestGroup(a)) {
+pub fn run_assertive_tests(test_group: AssertiveTestGroup) {
   let total = list.length(test_group.tests)
   let announcer = fn(tst, i) { run_and_announce_results(test_group, tst, i + 1, total) }
-  io.println("running tests for " <> test_group.name <> "...")
+  io.println("running tests for " <> test_group.desugarer_name <> "...")
   test_group.tests
   |> list.index_map(announcer)
   Nil

@@ -60,6 +60,6 @@ import desugarers/unwrap_when_zero_or_one_children
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
 
-pub const all_test_groups : List(fn() -> infra.AssertiveTestGroup(List(#(String, String)))) = [
+pub const test_group_constructors : List(fn() -> infra.AssertiveTestGroup) = [
   absorb_next_sibling_while.test_group,
 ]
