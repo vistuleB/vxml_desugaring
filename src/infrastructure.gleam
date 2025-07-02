@@ -1331,6 +1331,26 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
   }
 }
 
+pub fn descendants_with_key_value(vxml: VXML, attr_key: String, attr_value: String) -> List(VXML) {
+  case vxml {
+    T(_, _) -> []
+    V(_, _, _, children) -> {
+      let current_matches = case v_has_key_value_attribute(vxml, attr_key, attr_value) {
+        True -> [vxml]
+        False -> []
+      }
+
+      let child_matches =
+        list.map(children, descendants_with_key_value(_, attr_key, attr_value))
+        |> list.flatten
+
+      list.flatten([current_matches, child_matches])
+    }
+  }
+}
+
+
+
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
   case node {
     V(b, t, a, _) -> V(b, t, a, children)
