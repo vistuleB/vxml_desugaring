@@ -74,22 +74,33 @@ fn test_renderer() {
   }
 }
 
-fn run_desugarer_tests(desugarer_name: String) {
-  use test_group <- infra.on_error_on_ok(
-    list.find(dt.all_test_groups, fn(test_group){
-      test_group().name == desugarer_name
-    }),
-    fn(_) {
-      io.println("No desugarer found with name " <> desugarer_name)
+fn run_desugarer_tests(names: List(String)) {
+  io.println("")
+  case list.is_empty(names) {
+    True -> io.println("run_desugarer_tests: no names provided")
+    False -> Nil
+  }
+  list.each(
+    names,
+    fn(name) {
+      use test_group <- infra.on_error_on_ok(
+        list.find(
+          dt.all_test_groups,
+          fn(test_group) { test_group().name == name }
+        ),
+        fn(_) {
+          io.println("No test group found for desugarer '" <> name <> "'.")
+        }
+      )
+      infra.run_assertive_tests(test_group())
     }
   )
-  infra.run_assertive_tests(test_group())
   Nil
 }
 
 pub fn main() {
   case argv.load().arguments {
-    ["--test-desugarer", name] -> run_desugarer_tests(name)
+    ["--test-desugarer", ..names] -> run_desugarer_tests(names)
     _ -> test_renderer()
   }
 }

@@ -2267,68 +2267,88 @@ pub fn blame_us(message: String) -> Blame {
 //* assertive tests *
 //*******************
 
-fn try_wrap_in_root(vxmls: List(VXML)) -> VXML {
-  case vxmls {
-    [one] -> one
-    [..more] -> V(blame_us("Custom Root"), "Root", [], more)
-    _ -> panic as "can't be empty"
-  }
+pub type AssertiveTestError {
+  VXMLParseError(vxml.VXMLParseError)
+  TestDesugaringError(DesugaringError)
+  AssertiveTestError(desugarer_name: String, output: String, expected: String)
+}
+
+pub type AssertiveTest(param) {
+  AssertiveTest(
+    param: param,
+    source: String,   // VXML String
+    expected: String, // VXML String
+  )
+}
+
+pub type AssertiveTestGroup(param) {
+  AssertiveTestGroup(
+    name: String,
+    pipe: fn (param) -> Pipe,
+    tests: List(AssertiveTest(param)),
+  )
 }
 
 pub fn run_assertive_test(pipe: Pipe, tst: AssertiveTest(a)) -> Result(Nil, AssertiveTestError) {
-
-  use input <- result.try(
-     vxml.parse_string(tst.source, "test " <> pipe.description.desugarer_name, False)
-     |> result.map_error(fn(e) { VXMLParseError(e) })
+  use input <- result.then(
+    vxml.unique_root_parse_string(tst.source, "test " <> pipe.description.desugarer_name, False)
+    |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
   use expected <- result.try(
-     vxml.parse_string(tst.expected, "test " <> pipe.description.desugarer_name, False)
-     |> result.map_error(fn(e) { VXMLParseError(e) })
+    vxml.unique_root_parse_string(tst.expected, "test " <> pipe.description.desugarer_name, False)
+    |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
-  let input = try_wrap_in_root(input)
-  let expected = try_wrap_in_root(expected)
-
   use output <- result.try(
-     pipe.desugarer(input)
-     |> result.map_error(fn(e) { TestDesugaringError(e) })
+    pipe.desugarer(input)
+    |> result.map_error(fn(e) { TestDesugaringError(e) })
   )
 
   case vxml_to_string(output) == vxml_to_string(expected) {
-    True -> {
-      echo "✅ " <> pipe.description.desugarer_name <> " test passed"
-      Ok(Nil)
-    }
-    False -> Error(AssertiveTestError(
-      pipe.description.desugarer_name, 
-      vxml.debug_vxml_to_string("Output ", output),
-      vxml.debug_vxml_to_string("Expected ", expected),
-    ))
+    True -> Ok(Nil)
+    False -> Error(
+      AssertiveTestError(
+        pipe.description.desugarer_name, 
+        vxml.debug_vxml_to_string("(obtained) ", output),
+        vxml.debug_vxml_to_string("(expected) ", expected),
+      )
+    )
   }
 }
 
-pub fn run_assertive_tests(test_group: AssertiveTestGroup(a)) -> List(Result(Nil, AssertiveTestError) ){
-  test_group.tests |> list.index_map(fn(tst, i){
-    let pipe = test_group.pipe(tst.param)
-    io.println("...Running " <> ins(i + 1) <> " of " <> ins(list.length(test_group.tests)) <> " tests on " <> pipe.description.desugarer_name)
-    case run_assertive_test(pipe, tst) {
-      Ok(Nil) -> Ok(Nil)
-      Error(error) -> {
-        io.println_error("❌ " <> pipe.description.desugarer_name <> " test " <> ins(i + 1) <> " failed: " )
-        case error {
-          AssertiveTestError(_, output, expected) -> {
-            io.println_error("Output result was not as expected")
-            io.print(output)
-            io.print(expected)
-            Nil
-          }
-          _ -> io.println_error(ins(error))
+pub fn run_and_announce_results(
+  test_group: AssertiveTestGroup(param),
+  tst: AssertiveTest(param),
+  number: Int,
+  total: Int,
+) {
+  let pipe = test_group.pipe(tst.param)
+  case run_assertive_test(pipe, tst) {
+    Ok(Nil) ->
+      io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
+    Error(error) -> {
+      io.print("❌ test " <> ins(number) <> " of " <> ins(total) <> " failed: ")
+      case error {
+        AssertiveTestError(_, output, expected) -> {
+          io.println(" obtained != expected:")
+          io.print(output)
+          io.print(expected)
+          Nil
         }
-        Error(error)
+        _ -> io.println(ins(error))
       }
     }
-  })
+  }
+}
+
+pub fn run_assertive_tests(test_group: AssertiveTestGroup(a)) {
+  let total = list.length(test_group.tests)
+  let announcer = fn(tst, i) { run_and_announce_results(test_group, tst, i + 1, total) }
+  io.println("running tests for " <> test_group.name <> "...")
+  test_group.tests
+  |> list.index_map(announcer)
+  Nil
 }
 
 //*********
@@ -2337,14 +2357,6 @@ pub fn run_assertive_tests(test_group: AssertiveTestGroup(a)) -> List(Result(Nil
 
 pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
-}
-
-pub type AssertiveTestError {
-  VXMLParseError(vxml.VXMLParseError)
-  TestDesugaringError(DesugaringError)
-  AssertiveTestErrorString(desugarer_name: String, message: String)
-  AssertiveTestError(desugarer_name: String, output: String, expected: String)
-
 }
 
 pub type DetailedDesugaringError {
@@ -2364,22 +2376,6 @@ pub type DesugarerDescription {
     desugarer_name: String,
     stringified_param: Option(String),
     general_description: String,
-  )
-}
-
-pub type AssertiveTest(param) {
-  AssertiveTest(
-    param: param,
-    source: String, // VXML String
-    expected: String, // VXML String
-  )
-}
-
-pub type AssertiveTestGroup(param) {
-  AssertiveTestGroup(
-    name: String, // name of the desugarer . used for CLI usage to find the desugarer by name
-    pipe: fn (param) -> Pipe,
-    tests: List(AssertiveTest(param)),
   )
 }
 

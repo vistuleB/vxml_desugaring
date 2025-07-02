@@ -75,14 +75,16 @@ type Param =
 
 type InnerParam = Param
 
-/// folds specified tags into the previous text node as text content
+/// folds specified tags into the previous text node
+/// as text content
 pub fn fold_tag_into_prev_text_node(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: "fold_tag_into_prev_text_node",
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// folds specified tags into the previous text node as text content
+/// folds specified tags into the previous text node
+/// as text content
       ",
     ),
     desugarer: case param_to_inner_param(param) {

@@ -154,6 +154,7 @@ pub fn test_group() -> infra.AssertiveTestGroup(Param) {
         <> 
             \"text\"
     <> Absorbee
+    <> Absorbee
     <> last
       ",
       expected: "
@@ -161,7 +162,8 @@ pub fn test_group() -> infra.AssertiveTestGroup(Param) {
     <> Absorber
         <> 
             \"text\"
-    <> Absorbee
+        <> Absorbee
+        <> Absorbee
     <> last
       ",
     )

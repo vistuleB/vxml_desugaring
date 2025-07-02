@@ -1,3 +1,5 @@
+import infrastructure as infra
+
 import desugarers/absorb_next_sibling_while
 import desugarers/add_attributes
 import desugarers/add_attribute_to_second_of_kind
@@ -58,7 +60,6 @@ import desugarers/unwrap_when_zero_or_one_children
 import desugarers/wrap_math_with_no_break
 import desugarers/wrap_children_before_in
 
-pub const all_test_groups = [
+pub const all_test_groups : List(fn() -> infra.AssertiveTestGroup(List(#(String, String)))) = [
   absorb_next_sibling_while.test_group,
-  // add other desugarers test groups after adding them 
 ]
