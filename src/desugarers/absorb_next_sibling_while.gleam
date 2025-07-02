@@ -1,4 +1,3 @@
-import gleam/io
 import gleam/result
 import gleam/dict.{type Dict}
 import gleam/list
@@ -98,6 +97,13 @@ type Param =
 type InnerParam =
   Dict(String, List(String))
 
+pub const desugarer_name = "absorb_next_sibling_while"
+pub const desugarer_pipe =  absorb_next_sibling_while
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// if the arguments are [#("Tag1", "Child1"),
 /// ("Tag1", "Child1")] then will cause Tag1
 /// nodes to absorb all subsequent Child1 & Child2
@@ -106,7 +112,7 @@ type InnerParam =
 pub fn absorb_next_sibling_while(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "absorb_next_sibling_while",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// if the arguments are [#(\"Tag1\", \"Child1\"),
@@ -123,49 +129,75 @@ pub fn absorb_next_sibling_while(param: Param) -> Pipe {
   )
 }
 
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
       param: [#("Absorber", "Absorbee")],
-      source: "
+      source:   "
                   <> Root
                       <> Absorber
                           <> 
                               \"text\"
                       <> Absorbee
-                      <> last",
+                      <> last
+                ",
       expected: "
                   <> Root
                       <> Absorber
                           <> 
                               \"text\"
                           <> Absorbee
-                      <> last",
+                      <> last
+                ",
     ),
     infra.AssertiveTestData(
       param: [#("Absorber", "Absorbee")],
-      source: "
+      source:   "
                   <> Root
                       <> Absorber
                           <> 
                               \"text\"
                       <> Absorbee
-                      <> last",
+                      <> Absorbee
+                      <> last
+                ",
       expected: "
                   <> Root
                       <> Absorber
                           <> 
                               \"text\"
                           <> Absorbee
-                          <> last",
+                          <> Absorbee
+                      <> last
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: [#("Absorber", "Absorbee")],
+      source:   "
+                  <> Root
+                      <> Absorber
+                          <> 
+                              \"text\"
+                      <> Absorbee
+                      <> last
+                      <> Absorbee
+                ",
+      expected: "
+                  <> Root
+                      <> Absorber
+                          <> 
+                              \"text\"
+                          <> Absorbee
+                      <> last
+                      <> Absorbee
+                "
     ),
   ]
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(
-    "absorb_next_sibling_while",
-    assertive_tests_data(),
-    absorb_next_sibling_while
-  )
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

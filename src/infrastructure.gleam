@@ -2265,13 +2265,13 @@ pub fn blame_us(message: String) -> Blame {
 }
 
 fn remove_minimum_indent(s: String) -> String {
-  let lines = s |> string.split("\n") |> list.filter(fn(line) { line != "" })
+  let lines = s |> string.split("\n") |> list.filter(fn(line) { string.trim(line) != "" })
 
-  let minimum_indent = 
-    lines 
-    |> list.map(fn(line) { string.length(line) - string.length(string.trim(line)) }) 
-    |> list.sort(int.compare) 
-    |> list.first 
+  let minimum_indent =
+    lines
+    |> list.map(fn(line) { string.length(line) - string.length(string.trim_start(line)) }) 
+    |> list.sort(int.compare)
+    |> list.first
     |> result.unwrap(0)
 
   lines |> list.map(fn(line) { line |> string.drop_start(minimum_indent) }) |> string.join("\n") 
@@ -2339,6 +2339,10 @@ pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)),
   )
 }
 
+pub fn assertive_tests_from_data_nil_param(name: String, data: List(AssertiveTestData(a)), pipe: fn() -> Pipe) -> AssertiveTests {
+  assertive_tests_from_data(name, data, fn(_) { pipe() })
+}
+
 pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
   let pipe = tst.pipe()
 
@@ -2398,14 +2402,14 @@ pub fn run_and_announce_results(
   }
 }
 
-pub fn run_assertive_tests(test_group: AssertiveTests) {
+pub fn run_assertive_tests(test_group: AssertiveTests) -> List(Nil) {
   let tests = test_group.tests()
   let total = list.length(tests)
   let announcer = fn(tst, i) { run_and_announce_results(test_group, tst, i + 1, total) }
+  io.println("")
   io.println("running tests for " <> test_group.desugarer_name <> "...")
   tests
   |> list.index_map(announcer)
-  Nil
 }
 
 //*********

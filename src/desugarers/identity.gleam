@@ -21,19 +21,25 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// idempotent desugarer that leaves the
-/// VXML unchanged
+pub const desugarer_name = "identity"
+pub const desugarer_pipe =  identity
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// idempotent desugarer that leaves the VXML 
+/// unchanged and that never generates an error
 pub fn identity() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "identity",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
-/// idempotent desugarer that leaves the
-/// VXML unchanged
+/// idempotent desugarer that leaves the VXML 
+/// unchanged and that never generates an error
       ",
     ),
     desugarer: case param_to_inner_param(Nil) {
@@ -41,4 +47,17 @@ pub fn identity() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
+  [
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

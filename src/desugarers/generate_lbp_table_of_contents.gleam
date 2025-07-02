@@ -7,7 +7,7 @@ import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, De
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
-  Blame("generate_lbp_toc:" <> note, -1, -1, [])
+  Blame("generate_lbp_toc" <> note, 0, 0, [])
 }
 
 fn chapter_link(
@@ -38,9 +38,7 @@ fn chapter_link(
     V(
       blame,
       chapter_link_component_name,
-      [
-        BlamedAttribute(blame_us("L44"), "href", tp <> ins(count)),
-      ],
+      [BlamedAttribute(blame_us("L41"), "href", tp <> ins(count))],
       title_element.children,
     ),
   )
@@ -155,12 +153,34 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "generate_lbp_table_of_contents"
+pub const desugarer_pipe =  generate_lbp_table_of_contents
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// generates the LBP table of contents while
+/// admitting custom values for the root tag name
+/// of the table of contents, as well as for the tag
+/// name of the chapter (& bootcamp) links and the
+/// tag name for the Chapter/Bootcamp category 
+/// banners, and an optional spacer tag name for an
+/// element to be placed between the two categories
 pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "generate_lbp_table_of_contents",
-      option.None,
-      "...",
+      desugarer_name: desugarer_name,
+      stringified_param: option.None,
+      general_description: "
+/// generates the LBP table of contents while
+/// admitting custom values for the root tag name
+/// of the table of contents, as well as for the tag
+/// name of the chapter (& bootcamp) links and the
+/// tag name for the Chapter/Bootcamp category 
+/// banners, and an optional spacer tag name for an
+/// element to be placed between the two categories
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
@@ -168,6 +188,10 @@ pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
     }
   )
 }
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
@@ -177,13 +201,13 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
         "TOCItem",
         Some("Spacer"),
       ),
-      source: "
+      source:   "
                   <> Root
                       <> Chapter
                           <> ArticleTitle
                               <>
                                   \"Title\"
-                      ",
+                ",
       expected: "
                   <> Root
                       <> TOC
@@ -199,7 +223,8 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                       <> Chapter
                           <> ArticleTitle
                               <> 
-                                  \"Title\"",
+                                  \"Title\"
+                ",
     ),
     infra.AssertiveTestData(
       param: #(
@@ -208,7 +233,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
         "TOCItem",
         None,
       ),
-      source: "
+      source:   "
                   <> Root
                       <> Bootcamp
                           <> ArticleTitle
@@ -218,7 +243,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                           <> ArticleTitle
                               <>
                                   \"Title 2\"
-                      ",
+                ",
       expected: "
                   <> Root
                       <> TOC
@@ -242,15 +267,12 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                       <> Bootcamp
                           <> ArticleTitle
                               <>
-                                  \"Title 2\"",
+                                  \"Title 2\"
+                ",
     ),
   ]
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(
-    "generate_lbp_table_of_contents",
-    assertive_tests_data(),
-    generate_lbp_table_of_contents
-  )
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

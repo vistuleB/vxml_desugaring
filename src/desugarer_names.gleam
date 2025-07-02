@@ -119,7 +119,7 @@ pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.un
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break
 
-pub const assertive_tests_consutrctors : List(fn() -> infra.AssertiveTests) = [
+pub const assertive_tests_constructor : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
-  generate_lbp_table_of_contents.assertive_tests
+  generate_lbp_table_of_contents.assertive_tests,
 ]

@@ -80,16 +80,23 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
 
-/// adds new elements after specified tags
-/// but not if they are the last child
+pub const desugarer_name = "add_after_tags_but_not_first_child_tags"
+pub const desugarer_pipe =  add_after_tags_but_not_first_child_tags
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// adds new elements after specified tags but not 
+/// if they are the last child
 pub fn add_after_tags_but_not_first_child_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "add_after_tags_but_not_first_child_tags",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// adds new elements after specified tags
-/// but not if they are the last child
+/// adds new elements after specified tags but not 
+/// if they are the last child
       ",
     ),
     desugarer: case param_to_inner_param(param) {
@@ -97,4 +104,16 @@ pub fn add_after_tags_but_not_first_child_tags(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }
