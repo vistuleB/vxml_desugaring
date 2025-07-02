@@ -39,9 +39,6 @@ fn chapter_link(
       blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(blame_us("L41"), "article_type", ins(count)),
-        // BlamedAttribute(label_attr.blame, "label", label_attr.value),
-        // BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
         BlamedAttribute(blame_us("L44"), "href", tp <> ins(count)),
       ],
       title_element.children,
@@ -135,9 +132,6 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
     ]
   }
 
-  echo "Hello-O"
-  echo table_of_contents_tag
-
   Ok(infra.prepend_child(
     root,
     V(blame_us("L142"), table_of_contents_tag, [], children),
@@ -172,5 +166,91 @@ pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)
     }
+  )
+}
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+    infra.AssertiveTestData(
+      param: #(
+        "TOC",
+        "TOCTitle",
+        "TOCItem",
+        Some("Spacer"),
+      ),
+      source: "
+                  <> Root
+                      <> Chapter
+                          <> ArticleTitle
+                              <>
+                                  \"Title\"
+                      ",
+      expected: "
+                  <> Root
+                      <> TOC
+                          <> div
+                              id=chapter
+                              <> TOCTitle
+                                  label=Chapters
+                              <> ul
+                                  <> TOCItem
+                                      href=chapter1
+                                      <>
+                                          \"Title\"
+                      <> Chapter
+                          <> ArticleTitle
+                              <> 
+                                  \"Title\"",
+    ),
+    infra.AssertiveTestData(
+      param: #(
+        "TOC",
+        "TOCTitle",
+        "TOCItem",
+        None,
+      ),
+      source: "
+                  <> Root
+                      <> Bootcamp
+                          <> ArticleTitle
+                              <>
+                                  \"Title 1\"
+                      <> Bootcamp
+                          <> ArticleTitle
+                              <>
+                                  \"Title 2\"
+                      ",
+      expected: "
+                  <> Root
+                      <> TOC
+                          <> div
+                              id=bootcamp
+                              <> TOCTitle
+                                  label=Bootcamps
+                              <> ul
+                                  <> TOCItem
+                                      href=bootcamp1
+                                      <>
+                                          \"Title 1\"
+                                  <> TOCItem
+                                      href=bootcamp2
+                                      <>
+                                          \"Title 2\"
+                      <> Bootcamp
+                          <> ArticleTitle
+                              <>
+                                  \"Title 1\"
+                      <> Bootcamp
+                          <> ArticleTitle
+                              <>
+                                  \"Title 2\"",
+    ),
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(
+    "generate_lbp_table_of_contents",
+    assertive_tests_data(),
+    generate_lbp_table_of_contents
   )
 }

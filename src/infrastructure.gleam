@@ -1,3 +1,4 @@
+import gleam/int
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/io
@@ -2263,6 +2264,19 @@ pub fn blame_us(message: String) -> Blame {
     Blame(message, 0, 0, [])
 }
 
+fn remove_minimum_indent(s: String) -> String {
+  let lines = s |> string.split("\n") |> list.filter(fn(line) { line != "" })
+
+  let minimum_indent = 
+    lines 
+    |> list.map(fn(line) { string.length(line) - string.length(string.trim(line)) }) 
+    |> list.sort(int.compare) 
+    |> list.first 
+    |> result.unwrap(0)
+
+  lines |> list.map(fn(line) { line |> string.drop_start(minimum_indent) }) |> string.join("\n") 
+}
+
 //*******************
 //* assertive tests *
 //*******************
@@ -2274,6 +2288,14 @@ pub type AssertiveTestError {
   NonMatchingDesugarerName(String)
 }
 
+pub type AssertiveTestData(a) {
+  AssertiveTestData(
+    param: a,
+    source: String,
+    expected: String,
+  )
+}
+
 pub type AssertiveTest {
   AssertiveTest(
     pipe: fn() -> Pipe,
@@ -2282,10 +2304,38 @@ pub type AssertiveTest {
   )
 }
 
-pub type AssertiveTestGroup {
-  AssertiveTestGroup(
+pub type AssertiveTests {
+  AssertiveTests(
     desugarer_name: String,
-    tests: List(AssertiveTest),
+    tests: fn() -> List(AssertiveTest),
+  )
+}
+
+pub fn assertive_test_data_2_assertive_test(
+  data: AssertiveTestData(param),
+  pipe_factory: fn(param) -> Pipe,
+) -> AssertiveTest {
+  AssertiveTest(
+    pipe: fn() { pipe_factory(data.param) },
+    source: data.source |> remove_minimum_indent,
+    expected: data.expected |> remove_minimum_indent
+  )
+}
+
+pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)), pipe: fn(a) -> Pipe) -> AssertiveTests {
+  AssertiveTests(
+    desugarer_name: name,
+    tests: fn() -> List(AssertiveTest) {
+      data
+      |> list.map(
+        fn(assertive_test_data) {
+          assertive_test_data_2_assertive_test(
+            assertive_test_data,
+            pipe,
+          )
+        }
+      )
+    }
   )
 }
 
@@ -2325,7 +2375,7 @@ pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(
 }
 
 pub fn run_and_announce_results(
-  test_group: AssertiveTestGroup,
+  test_group: AssertiveTests,
   tst: AssertiveTest,
   number: Int,
   total: Int,
@@ -2348,11 +2398,12 @@ pub fn run_and_announce_results(
   }
 }
 
-pub fn run_assertive_tests(test_group: AssertiveTestGroup) {
-  let total = list.length(test_group.tests)
+pub fn run_assertive_tests(test_group: AssertiveTests) {
+  let tests = test_group.tests()
+  let total = list.length(tests)
   let announcer = fn(tst, i) { run_and_announce_results(test_group, tst, i + 1, total) }
   io.println("running tests for " <> test_group.desugarer_name <> "...")
-  test_group.tests
+  tests
   |> list.index_map(announcer)
   Nil
 }

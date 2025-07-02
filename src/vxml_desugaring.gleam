@@ -7,7 +7,6 @@ import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import writerly as wp
 import desugarer_names as dn
-import desugarer_tests as dt
 
 fn test_pipeline() -> List(Pipe) {
   [
@@ -79,7 +78,7 @@ fn run_desugarer_tests(names: List(String)) {
   let must_match_name = !list.is_empty(names)
   let tested = []
   list.fold(
-    dt.test_group_constructors,
+    dn.assertive_tests_consutrctors,
     tested,
     fn(acc, constructor) {
       let name = constructor().desugarer_name
