@@ -13,26 +13,21 @@ fn is_empty(child: VXML) {
 
 fn transform(
   node: VXML,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
-    T(_, _) -> Ok([node])
     V(_, tag, _, children) -> {
-      case tag == "VerticalChunk" {
-        True -> {
-          case list.all(children, is_empty) {
-            True -> Ok([])
-            False -> Ok([node])
-          }
-        }
-
-        False -> Ok([node])
+      case list.contains(inner, tag), list.all(children, is_empty) {
+        True, True -> Ok([])
+        _, _ -> Ok([node])
       }
     }
+    _ -> Ok([node])
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
-  transform
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> Desugarer {
@@ -43,21 +38,21 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = Nil
+type Param = List(String)
 
-type InnerParam = Nil
+type InnerParam = List(String)
 
-/// removes empty VerticalChunk elements that contain only empty text nodes
-pub fn remove_empty_chunks() -> Pipe {
+/// removes empty elements that contain only empty text nodes
+pub fn remove_empty_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_empty_chunks",
+      desugarer_name: "remove_empty_tags",
       stringified_param: option.None,
       general_description: "
-/// removes empty VerticalChunk elements that contain only empty text nodes
+/// removes empty elements that contain only empty text nodes
       ",
     ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

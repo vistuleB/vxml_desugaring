@@ -13,26 +13,21 @@ fn is_text(child: VXML) {
 
 fn transform(
   node: VXML,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
-    T(_, _) -> Ok([node])
     V(_, tag, _, children) -> {
-      case tag == "VerticalChunk" {
-        True -> {
-          case list.any(children, is_text) {
-            True -> Ok([node])
-            False -> Ok(children)
-          }
-        }
-
-        False -> Ok([node])
+      case list.contains(inner, tag), list.any(children, is_text) {
+        True, False -> Ok(children)
+        _, _ -> Ok([node])
       }
     }
+    _ -> Ok([node])
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
-  transform
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> Desugarer {
@@ -43,18 +38,18 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = Nil
-type InnerParam = Nil
+type Param = List(String)
+type InnerParam = List(String)
 
-/// unwraps VerticalChunk tags that contain no text children
-pub fn unwrap_vertical_chunks_with_no_text_child() -> Pipe {
+/// unwraps tags that contain no text children
+pub fn unwrap_tags_with_no_text_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "unwrap_vertical_chunks_with_no_text_child",
+      desugarer_name: "unwrap_tags_with_no_text_child",
       stringified_param: option.Some(ins(Nil)),
-      general_description: "/// unwraps VerticalChunk tags that contain no text children",
+      general_description: "/// unwraps tags that contain no text children",
     ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
