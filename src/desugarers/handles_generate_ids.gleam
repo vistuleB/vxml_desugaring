@@ -88,8 +88,13 @@ type Param = Nil
 
 type InnerParam = Nil
 
-//------------------------------------------------53
+pub const desugarer_name = "handles_generate_ids"
+pub const desugarer_pipe = handles_generate_ids
 
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Generates a unique ID and filters attributes to
 /// find any that start with "handle" in which their
 /// values are expected to be in the format 
@@ -114,7 +119,7 @@ type InnerParam = Nil
 pub fn handles_generate_ids() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      "handles_generate_ids",
+      desugarer_name,
       option.None,
       "
 /// Generates a unique ID and filters attributes to
@@ -145,4 +150,15 @@ pub fn handles_generate_ids() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

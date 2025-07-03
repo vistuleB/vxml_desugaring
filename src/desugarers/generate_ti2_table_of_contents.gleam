@@ -141,11 +141,18 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "generate_ti2_table_of_contents"
+pub const desugarer_pipe = generate_ti2_table_of_contents
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// generates table of contents for TI2 content with sections
 pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "generate_ti2_table_of_contents",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// generates table of contents for TI2 content with sections
@@ -156,4 +163,15 @@ pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

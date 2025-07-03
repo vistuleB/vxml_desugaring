@@ -39,11 +39,18 @@ type Param = List(String)
 
 type InnerParam = Param
 
+pub const desugarer_name = "remove_attributes"
+pub const desugarer_pipe = remove_attributes
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// removes specified attributes from all elements
 pub fn remove_attributes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_attributes",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// removes specified attributes from all elements
@@ -54,4 +61,15 @@ pub fn remove_attributes(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

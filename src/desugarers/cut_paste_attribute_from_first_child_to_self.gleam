@@ -56,6 +56,13 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "cut_paste_attribute_from_first_child_to_self"
+pub const desugarer_pipe = cut_paste_attribute_from_first_child_to_self
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Moves an attribute with key `key` from the
 /// first child of a node with tag `parent_tag`
 /// to the node itself.
@@ -68,7 +75,7 @@ type InnerParam = Param
 pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "cut_paste_attribute_from_first_child_to_self",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// Moves an attribute with key `key` from the
@@ -87,4 +94,15 @@ pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

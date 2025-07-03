@@ -225,11 +225,19 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
+pub const desugarer_name = "generate_ti3_index_element"
+pub const desugarer_pipe = generate_ti3_index_element
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// Generate ti3 Index element
 pub fn generate_ti3_index_element() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "generate_ti3_index",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// Generate ti3 Index element
@@ -240,4 +248,15 @@ pub fn generate_ti3_index_element() -> Pipe {
       Ok(_) -> desugarer_factory()
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

@@ -607,6 +607,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
+pub const desugarer_name = "counters_substitute_and_assign_handles"
+pub const desugarer_pipe = counters_substitute_and_assign_handles
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Substitutes counters by their numerical
 /// value converted to string form and assigns those
 /// values to prefixed handles.
@@ -652,7 +659,7 @@ type InnerParam = Nil
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "counters_substitute_and_assign_handles",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(string.inspect(Nil)),
       general_description:
       "
@@ -706,4 +713,15 @@ pub fn counters_substitute_and_assign_handles() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

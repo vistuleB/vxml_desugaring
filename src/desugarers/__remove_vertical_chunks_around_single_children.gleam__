@@ -36,12 +36,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "remove_vertical_chunks_around_single_children"
+pub const desugarer_pipe = remove_vertical_chunks_around_single_children
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// removes VerticalChunk tags that have only 
 /// a single child
-pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
+pub fn remove_vertical_chunks_around_single_children() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_vertical_chunks_around_single_children_desugarer",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// removes VerticalChunk tags that have only 
@@ -53,4 +60,15 @@ pub fn remove_vertical_chunks_around_single_children_desugarer() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

@@ -33,12 +33,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "remove_text_nodes_with_singleton_empty_line"
+pub const desugarer_pipe = remove_text_nodes_with_singleton_empty_line
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// removes text nodes containing a single line
 /// consisting of an empty string
 pub fn remove_text_nodes_with_singleton_empty_line() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_text_nodes_with_singleton_empty_line",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// removes text nodes containing a single line
@@ -50,4 +57,15 @@ pub fn remove_text_nodes_with_singleton_empty_line() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

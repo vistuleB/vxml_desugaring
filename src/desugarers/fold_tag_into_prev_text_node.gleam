@@ -75,12 +75,19 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "fold_tag_into_prev_text_node"
+pub const desugarer_pipe = fold_tag_into_prev_text_node
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// folds specified tags into the previous text node
 /// as text content
 pub fn fold_tag_into_prev_text_node(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "fold_tag_into_prev_text_node",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// folds specified tags into the previous text node
@@ -92,4 +99,15 @@ pub fn fold_tag_into_prev_text_node(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

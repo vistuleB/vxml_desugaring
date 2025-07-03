@@ -37,11 +37,18 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node"
+pub const desugarer_pipe = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// reassigns text node blame to the blame of the first nonempty line in the text node
 pub fn reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// reassigns text node blame to the blame of the first nonempty line in the text node
@@ -52,4 +59,15 @@ pub fn reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node() -
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

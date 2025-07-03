@@ -60,6 +60,13 @@ type Param = #(String, String, String)
 
 type InnerParam = Param
 
+pub const desugarer_name = "auto_generate_child_if_missing_from_first_descendant_of_type"
+pub const desugarer_pipe = auto_generate_child_if_missing_from_first_descendant_of_type
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Given arguments
 /// ```
 /// parent_tag, child_tag, descendant_tag
@@ -75,7 +82,7 @@ type InnerParam = Param
 pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "auto_generate_child_if_missing_from_first_descendant_of_type",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// Given arguments
@@ -97,4 +104,15 @@ pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

@@ -81,11 +81,19 @@ type Param =
 type InnerParam =
   Dict(String, Dict(String, String))
 
+pub const desugarer_name = "rename_when_child_of"
+pub const desugarer_pipe = rename_when_child_of
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// renames tags when they are children of specified parent tags
 pub fn rename_when_child_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "rename_when_child_of",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// renames tags when they are children of specified parent tags
@@ -96,4 +104,15 @@ pub fn rename_when_child_of(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

@@ -31,11 +31,18 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "trim_spaces_around_newlines"
+pub const desugarer_pipe = trim_spaces_around_newlines
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// trims spaces around newlines in text nodes
 pub fn trim_spaces_around_newlines() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "trim_spaces_around_newlines",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// trims spaces around newlines in text nodes
@@ -46,4 +53,15 @@ pub fn trim_spaces_around_newlines() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

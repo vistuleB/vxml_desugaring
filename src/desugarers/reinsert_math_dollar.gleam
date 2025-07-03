@@ -97,11 +97,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "reinsert_math_dollar"
+pub const desugarer_pipe = reinsert_math_dollar
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// reinserts dollar delimiters into Math and MathBlock elements
 pub fn reinsert_math_dollar() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "reinsert_math_dollar",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// reinserts dollar delimiters into Math and MathBlock elements
@@ -112,4 +120,15 @@ pub fn reinsert_math_dollar() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

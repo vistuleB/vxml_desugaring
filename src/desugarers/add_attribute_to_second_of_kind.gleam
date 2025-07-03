@@ -39,6 +39,14 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "add_attribute_to_second_of_kind"
+pub const desugarer_pipe = add_attribute_to_second_of_kind
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// Adds the specified attribute-value pair to
 /// nodes with the given tag name
 /// when the previous sibling is also a node with
@@ -46,7 +54,7 @@ type InnerParam = Param
 pub fn add_attribute_to_second_of_kind(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "add_attribute_to_second_of_kind",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// Adds the specified attribute-value pair to
@@ -60,4 +68,15 @@ pub fn add_attribute_to_second_of_kind(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

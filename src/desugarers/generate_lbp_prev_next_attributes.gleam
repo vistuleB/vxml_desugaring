@@ -81,10 +81,17 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
+pub const desugarer_name = "generate_lbp_prev_next_attributes"
+pub const desugarer_pipe = generate_lbp_prev_next_attributes
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 pub fn generate_lbp_prev_next_attributes() -> Pipe {
   infra.Pipe(
     description: DesugarerDescription(
-      "generate_lbp_prev_next_attributes",
+      desugarer_name,
       option.None,
       "..."
     ),
@@ -93,4 +100,15 @@ pub fn generate_lbp_prev_next_attributes() -> Pipe {
       Ok(_) -> desugarer_factory()
     },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

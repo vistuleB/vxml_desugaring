@@ -62,6 +62,14 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String, String)))
 
+pub const desugarer_name = "prepend_text_if_has_ancestor_else"
+pub const desugarer_pipe = prepend_text_if_has_ancestor_else
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// prepend one of two specified
 /// text fragments to nodes of a
 /// certain tag depending on wether
@@ -70,7 +78,7 @@ type InnerParam =
 pub fn prepend_text_if_has_ancestor_else(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "prepend_text_if_has_ancestor_else",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// prepend one of two specified
@@ -85,4 +93,15 @@ pub fn prepend_text_if_has_ancestor_else(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

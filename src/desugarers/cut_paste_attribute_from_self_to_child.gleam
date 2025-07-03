@@ -55,6 +55,13 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "cut_paste_attribute_from_self_to_child"
+pub const desugarer_pipe = cut_paste_attribute_from_self_to_child
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// For all nodes with a given `parent_tag`,
 /// removes all attributes of a given key. If
 /// the list of removed attributes is nonempty,
@@ -70,7 +77,7 @@ type InnerParam = Param
 pub fn cut_paste_attribute_from_self_to_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "cut_paste_attribute_from_self_to_child",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// For all nodes with a given `parent_tag`,
@@ -92,4 +99,15 @@ pub fn cut_paste_attribute_from_self_to_child(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

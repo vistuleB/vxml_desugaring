@@ -63,6 +63,14 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "group_siblings_not_separated_by_blank_lines"
+pub const desugarer_pipe = group_siblings_not_separated_by_blank_lines
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// wrap siblings that are not separated by
 /// WriterlyBlankLine inside a designated tag
 /// and remove WriterlyBlankLine elements;
@@ -71,7 +79,7 @@ type InnerParam = Param
 pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "group_siblings_not_separated_by_blank_lines",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description:
       "
@@ -87,4 +95,15 @@ pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

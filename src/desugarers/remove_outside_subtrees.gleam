@@ -45,12 +45,19 @@ type Param = fn(VXML) -> Bool
 
 type InnerParam = Param
 
+pub const desugarer_name = "remove_outside_subtrees"
+pub const desugarer_pipe = remove_outside_subtrees
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// removes nodes that are outside subtrees matching the predicate function
 pub fn remove_outside_subtrees(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_outside_subtrees",
-      stringified_param: option.Some(ins(param)),
+      desugarer_name: desugarer_name,
+      stringified_param: option.None,
       general_description: "
 /// removes nodes that are outside subtrees matching the predicate function
       ",
@@ -60,4 +67,15 @@ pub fn remove_outside_subtrees(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

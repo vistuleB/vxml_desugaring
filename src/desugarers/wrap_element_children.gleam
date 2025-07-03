@@ -44,11 +44,18 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "wrap_element_children"
+pub const desugarer_pipe = wrap_element_children
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// wraps each child of specified elements with a wrapper tag
-pub fn wrap_element_children_desugarer(param: Param) -> Pipe {
+pub fn wrap_element_children(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "wrap_element_children_desugarer",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// wraps each child of specified elements with a wrapper tag
@@ -59,4 +66,15 @@ pub fn wrap_element_children_desugarer(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

@@ -34,13 +34,20 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "remove_empty_lines"
+pub const desugarer_pipe = remove_empty_lines
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// for each text node, removes each line whose
 /// content is the empty string & destroys
 /// text nodes that end up with 0 lines
 pub fn remove_empty_lines() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_empty_lines",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// for each text node, removes each line whose
@@ -53,4 +60,15 @@ pub fn remove_empty_lines() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

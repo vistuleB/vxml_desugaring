@@ -78,6 +78,13 @@ type Param =
 type InnerParam =
   Dict(String, List(String))
 
+pub const desugarer_name = "associate_counter_by_prepending_incrementing_attribute"
+pub const desugarer_pipe = associate_counter_by_prepending_incrementing_attribute
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// For each #(tag, counter_name) pair in the 
 /// parameter list, this desugarer adds an 
 /// attribute of the form
@@ -100,7 +107,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
 ) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "associate_counter_by_prepending_incrementing_attribute",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// For each #(tag, counter_name) pair in the 
@@ -127,4 +134,15 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
       Ok(inner) -> desugarer_factory(inner)
     },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

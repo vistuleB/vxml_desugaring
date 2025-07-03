@@ -722,6 +722,14 @@ type Param =
 type InnerParam =
   List(#(LinkPattern, LinkPattern))
 
+pub const desugarer_name = "rearrange_links"
+pub const desugarer_pipe = rearrange_links
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// matches appearance of first String
 /// while considering (x) as a variable
 /// and replaces it with the second String
@@ -730,7 +738,7 @@ type InnerParam =
 pub fn rearrange_links(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "rearrange_links",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// matches appearance of first String
@@ -745,4 +753,15 @@ pub fn rearrange_links(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

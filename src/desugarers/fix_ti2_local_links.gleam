@@ -56,11 +56,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "fix_ti2_local_links"
+pub const desugarer_pipe = fix_ti2_local_links
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// fixes local links in TI2 content by converting relative paths to absolute URLs
 pub fn fix_ti2_local_links() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "fix_ti2_local_links",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// fixes local links in TI2 content by converting relative paths to absolute URLs
@@ -71,4 +79,15 @@ pub fn fix_ti2_local_links() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

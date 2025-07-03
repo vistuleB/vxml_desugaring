@@ -88,14 +88,19 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
+pub const desugarer_name = "wrap_math_with_no_break"
+pub const desugarer_pipe = wrap_math_with_no_break
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 /// wraps math elements with no-break containers to prevent line breaks
 pub fn wrap_math_with_no_break() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "wrap_math_with_no_break",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// wraps math elements with no-break containers to prevent line breaks
@@ -106,4 +111,15 @@ pub fn wrap_math_with_no_break() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

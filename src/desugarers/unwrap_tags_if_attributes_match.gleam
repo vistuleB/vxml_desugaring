@@ -54,17 +54,37 @@ type Param = List(#(String, List(#(String, String))))
 
 type InnerParam = Param
 
+pub const desugarer_name = "unwrap_tags_if_attributes_match"
+pub const desugarer_pipe = unwrap_tags_if_attributes_match
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// unwraps tags if all specified attributes match
 pub fn unwrap_tags_if_attributes_match(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "unwrap_tags_if_attributes_match",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
-      general_description: "/// unwraps tags if all specified attributes match",
+      general_description: "
+/// unwraps tags if all specified attributes match
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }
