@@ -1177,6 +1177,18 @@ pub fn drop_starting_slash(path: String) -> String {
   }
 }
 
+pub fn kabob_case_to_pascal_case(input: String) -> String {
+  input
+  |> string.split("-")
+  |> list.map(fn(word) {
+    case string.to_graphemes(word) {
+      [] -> ""
+      [first, ..rest] -> string.uppercase(first) <> string.join(rest, "")
+    }
+  })
+  |> string.join("")
+}
+
 pub fn prepend_attribute(vxml: VXML, attr: BlamedAttribute) {
   let assert V(blame, tag, attrs, children) = vxml
   V(blame, tag, [attr, ..attrs], children)
@@ -1320,6 +1332,26 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
   }
 }
 
+pub fn descendants_with_key_value(vxml: VXML, attr_key: String, attr_value: String) -> List(VXML) {
+  case vxml {
+    T(_, _) -> []
+    V(_, _, _, children) -> {
+      let current_matches = case v_has_key_value_attribute(vxml, attr_key, attr_value) {
+        True -> [vxml]
+        False -> []
+      }
+
+      let child_matches =
+        list.map(children, descendants_with_key_value(_, attr_key, attr_value))
+        |> list.flatten
+
+      list.flatten([current_matches, child_matches])
+    }
+  }
+}
+
+
+
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
   case node {
     V(b, t, a, _) -> V(b, t, a, children)
@@ -1381,20 +1413,18 @@ pub fn valid_attribute_key(tag: String) -> Bool {
   !string.contains(tag, "\t")
 }
 
+pub fn add_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
+  case list.contains(ze_list, ze_thing) {
+    True -> ze_list
+    False -> [ze_thing, ..ze_list]
+  }
+}
+
 pub fn concatenate_classes(a: String, b: String) -> String {
   let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all = list.flatten([all_a, all_b])
-  list.fold(
-    all,
-    [],
-    fn (so_far, next) {
-      case list.contains(so_far, next) {
-        True -> so_far
-        False -> [next, ..so_far]
-      }
-    }
-  )
+  list.fold(all, [], add_if_not_present)
   |> string.join(" ")
 }
 

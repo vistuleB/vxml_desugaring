@@ -178,12 +178,19 @@ fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo
   let blame = infra.blame_us("construct_index")
   V(
     blame,
-    "ol",
-    [BlamedAttribute(blame, "class", "index__list")],
-    list.map(chapters, fn(chapter) {
-      let #(chapter_number, chapter_title, subchapters) = chapter
-      construct_chapter_item(chapter_number, chapter_title, subchapters)
-    })
+    "section",
+    [BlamedAttribute(blame, "class", "main-column-width")],
+    [
+      V(
+        blame,
+        "ol",
+        [BlamedAttribute(blame, "class", "index__list")],
+        list.map(chapters, fn(chapter) {
+          let #(chapter_number, chapter_title, subchapters) = chapter
+          construct_chapter_item(chapter_number, chapter_title, subchapters)
+        })
+      )
+    ]
   )
 }
 
@@ -199,7 +206,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let index_node = V(
     infra.blame_us("construct_index"),
     "Index",
-    [BlamedAttribute(infra.blame_us("construct_index"), "class", "main-column-width")],
+    [],
     [header_node, index_list_node]
   )
 
