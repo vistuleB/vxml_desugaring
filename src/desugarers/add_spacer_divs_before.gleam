@@ -81,11 +81,18 @@ type Param =
 type InnerParam =
   Dict(String, String)
 
+pub const desugarer_name = "add_spacer_divs_before"
+pub const desugarer_pipe = add_spacer_divs_before
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// adds spacer divs before specified tags but not if they are the first child
 pub fn add_spacer_divs_before(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "add_spacer_divs_before",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// adds spacer divs before specified tags but not if they are the first child
@@ -96,4 +103,15 @@ pub fn add_spacer_divs_before(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

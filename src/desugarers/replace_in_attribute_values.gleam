@@ -45,13 +45,20 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "replace_in_attribute_values"
+pub const desugarer_pipe = replace_in_attribute_values
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// performs exact match find-replace in every
 /// attribute value of every node using the
 /// 'string.replace' function
 pub fn replace_in_attribute_values(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "replace_in_attribute_values",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description:
       "
@@ -65,4 +72,15 @@ pub fn replace_in_attribute_values(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

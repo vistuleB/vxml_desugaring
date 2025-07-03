@@ -257,11 +257,18 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
+pub const desugarer_name = "split_content_by_low_level_delimiters_desugarer"
+pub const desugarer_pipe = split_content_by_low_level_delimiters_desugarer
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// splits content by low level delimiters like *, _, and $
 pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "split_content_by_low_level_delimiters_desugarer",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(string.inspect(Nil)),
       general_description: "/// splits content by low level delimiters like *, _, and $",
     ),
@@ -270,4 +277,15 @@ pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

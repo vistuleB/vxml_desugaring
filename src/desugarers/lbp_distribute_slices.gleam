@@ -89,11 +89,18 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "lbp_distribute_slices"
+pub const desugarer_pipe = lbp_distribute_slices
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// distributes slice wrappers around inner elements for LBP content
 pub fn lbp_distribute_slices() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "lbp_distribute_slices",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// distributes slice wrappers around inner elements for LBP content
@@ -104,4 +111,15 @@ pub fn lbp_distribute_slices() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

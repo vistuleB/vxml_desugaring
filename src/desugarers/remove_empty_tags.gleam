@@ -42,11 +42,18 @@ type Param = List(String)
 
 type InnerParam = List(String)
 
+pub const desugarer_name = "remove_empty_tags"
+pub const desugarer_pipe = remove_empty_tags
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// removes empty elements that contain only empty text nodes
 pub fn remove_empty_tags(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_empty_tags",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// removes empty elements that contain only empty text nodes
@@ -57,4 +64,15 @@ pub fn remove_empty_tags(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

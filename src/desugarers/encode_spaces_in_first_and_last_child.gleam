@@ -44,11 +44,18 @@ type Param = List(String)
 
 type InnerParam = Param
 
+pub const desugarer_name = "encode_spaces_in_first_and_last_child"
+pub const desugarer_pipe = encode_spaces_in_first_and_last_child
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// encodes spaces in first and last child of specified tags
 pub fn encode_spaces_in_first_and_last_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "encode_spaces_in_first_and_last_child",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// encodes spaces in first and last child of specified tags
@@ -59,4 +66,15 @@ pub fn encode_spaces_in_first_and_last_child(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

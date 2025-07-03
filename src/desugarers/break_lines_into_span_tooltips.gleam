@@ -77,11 +77,19 @@ type Param = String
 
 type InnerParam = Param
 
+pub const desugarer_name = "break_lines_into_span_tooltips"
+pub const desugarer_pipe = break_lines_into_span_tooltips
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// breaks lines into span tooltips with location information
 pub fn break_lines_into_span_tooltips(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "break_lines_into_span_tooltips",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// breaks lines into span tooltips with location information
@@ -92,4 +100,15 @@ pub fn break_lines_into_span_tooltips(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

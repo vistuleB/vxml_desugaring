@@ -54,6 +54,13 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "change_attribute_value"
+pub const desugarer_pipe = change_attribute_value
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Used for changing the value of an attribute.
 /// Takes an attribute key and a replacement
 /// string in which "()" is used as a stand-in
@@ -64,7 +71,7 @@ type InnerParam = Param
 pub fn change_attribute_value(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "change_attribute_value",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// Used for changing the value of an attribute.
@@ -81,4 +88,15 @@ pub fn change_attribute_value(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

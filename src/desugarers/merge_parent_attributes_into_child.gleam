@@ -125,11 +125,19 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "merge_parent_attributes_into_child"
+pub const desugarer_pipe = merge_parent_attributes_into_child
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// merges parent attributes into child elements for specified parent-child tag pairs
 pub fn merge_parent_attributes_into_child(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "merge_parent_attributes_into_child",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// merges parent attributes into child elements for specified parent-child tag pairs
@@ -140,4 +148,15 @@ pub fn merge_parent_attributes_into_child(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

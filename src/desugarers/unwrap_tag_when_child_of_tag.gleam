@@ -56,17 +56,37 @@ type Param = #(String, String)
 
 type InnerParam = Param
 
+pub const desugarer_name = "unwrap_tag_when_child_of_tag"
+pub const desugarer_pipe = unwrap_tag_when_child_of_tag
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// unwraps specified tag when it is a child of specified parent tag
 pub fn unwrap_tag_when_child_of_tag(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "unwrap_tag_when_child_of_tag",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
-      general_description: "/// unwraps specified tag when it is a child of specified parent tag",
+      general_description: "
+/// unwraps specified tag when it is a child of specified parent tag
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

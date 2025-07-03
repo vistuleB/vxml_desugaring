@@ -69,6 +69,13 @@ type Param =
 type InnerParam =
   Dict(#(String, String), List(#(String, String)))
 
+pub const desugarer_name = "add_attribute_when_child_of"
+pub const desugarer_pipe = add_attribute_when_child_of
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// adds an attribute-pair to a tag
 /// when it is the child of another specified
 /// tag; will not overwrite if attribute with
@@ -76,7 +83,7 @@ type InnerParam =
 pub fn add_attribute_when_child_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "add_attribute_when_child_of",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// adds an attribute-pair to a tag
@@ -90,4 +97,15 @@ pub fn add_attribute_when_child_of(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

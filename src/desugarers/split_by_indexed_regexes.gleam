@@ -26,17 +26,37 @@ type Param = #(List(#(rs.RegexWithIndexedGroup, String)), List(String))
 
 type InnerParam = Param
 
+pub const desugarer_name = "split_by_indexed_regexes"
+pub const desugarer_pipe = split_by_indexed_regexes
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// splits text nodes by indexed regexes
 pub fn split_by_indexed_regexes(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "split_by_indexed_regexes",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
-      general_description: "/// splits text nodes by indexed regexes",
+      general_description: "
+/// splits text nodes by indexed regexes
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

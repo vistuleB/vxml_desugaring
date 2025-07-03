@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option.{type Option, Some, None}
 import gleam/regexp.{type Regexp, type Match, Match}
 import gleam/result
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
   DesugaringError, Pipe,
@@ -250,7 +250,13 @@ type Param =
 
 type InnerParam = Param
 
-//------------------------------------------------53
+pub const desugarer_name = "handles_substitute"
+pub const desugarer_pipe = handles_substitute
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
 /// the form : handle_name | id | filename | value
@@ -283,9 +289,9 @@ pub fn handles_substitute(param: Param) -> Pipe {
 
   Pipe(
     description: DesugarerDescription(
-      "handles_substitute",
-      option.None,
-      "
+      desugarer_name: desugarer_name,
+      stringified_param: option.Some(ins(param)),
+      general_description: "
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
 /// the form : handle_name | id | filename | value
@@ -321,4 +327,15 @@ pub fn handles_substitute(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

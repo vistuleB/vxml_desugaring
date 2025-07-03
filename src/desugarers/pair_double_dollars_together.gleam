@@ -116,11 +116,19 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "pair_double_dollars_together_desugarer"
+pub const desugarer_pipe = pair_double_dollars_together_desugarer
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
 pub fn pair_double_dollars_together_desugarer() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "pair_double_dollars_together_desugarer",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
@@ -131,4 +139,15 @@ pub fn pair_double_dollars_together_desugarer() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

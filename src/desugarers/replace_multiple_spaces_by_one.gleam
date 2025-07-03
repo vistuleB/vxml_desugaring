@@ -47,11 +47,18 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "replace_multiple_spaces_by_one"
+pub const desugarer_pipe = replace_multiple_spaces_by_one
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// replaces multiple consecutive spaces with a single space
 pub fn replace_multiple_spaces_by_one() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "replace_multiple_spaces_by_one",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// replaces multiple consecutive spaces with a single space
@@ -62,4 +69,15 @@ pub fn replace_multiple_spaces_by_one() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

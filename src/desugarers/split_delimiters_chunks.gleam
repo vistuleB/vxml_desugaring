@@ -426,6 +426,14 @@ type Param = #(String, String, String, Bool, List(String))
 
 type InnerParam = Param
 
+pub const desugarer_name = "split_delimiters_chunks_desugarer"
+pub const desugarer_pipe = split_delimiters_chunks_desugarer
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// splits content within VerticalChunk by delimiters
 pub fn split_delimiters_chunks_desugarer(param: Param) -> Pipe {
   Pipe(
@@ -439,4 +447,16 @@ pub fn split_delimiters_chunks_desugarer(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

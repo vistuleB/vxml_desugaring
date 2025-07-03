@@ -163,8 +163,13 @@ type Param =
 
 type InnerParam = Param
 
-// -----------------------------------------------53
+pub const desugarer_name = "handles_generate_dictionary"
+pub const desugarer_pipe = handles_generate_dictionary
 
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// Looks for `handle` attributes in the V nodes
 /// and transforms which are expected to be in form:
 /// `handle | id | value`. (Panics if not in this 
@@ -196,7 +201,7 @@ pub fn handles_generate_dictionary(param: Param) -> Pipe {
   io.println("welcome to handles_generate_dictionary")
   Pipe(
     description: DesugarerDescription(
-      "handles_generate_dictionary",
+      desugarer_name,
       None,
       "
 /// Looks for `handle` attributes in the V nodes
@@ -233,4 +238,15 @@ pub fn handles_generate_dictionary(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

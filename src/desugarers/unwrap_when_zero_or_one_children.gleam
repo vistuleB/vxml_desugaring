@@ -38,12 +38,19 @@ type Param =
 type InnerParam =
   Param
 
+pub const desugarer_name = "unwrap_when_zero_or_one_children"
+pub const desugarer_pipe = unwrap_when_zero_or_one_children
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// unwraps based on tag name if node
 /// has zero or one children
 pub fn unwrap_when_zero_or_one_children(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "unwrap_when_zero_or_one_children",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// unwraps based on tag name if node
@@ -55,4 +62,15 @@ pub fn unwrap_when_zero_or_one_children(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

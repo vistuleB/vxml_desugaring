@@ -43,17 +43,37 @@ type Param =
 
 type InnerParam = Param
 
+pub const desugarer_name = "replace_text_parent_by_text_bookends"
+pub const desugarer_pipe = replace_text_parent_by_text_bookends
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// replaces parent tag with opening and closing bookend tags
 pub fn replace_text_parent_by_text_bookends(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "replace_text_parent_by_text_bookends",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
-      general_description: "/// replaces parent tag with opening and closing bookend tags",
+      general_description: "
+/// replaces parent tag with opening and closing bookend tags
+      ",
     ),
     desugarer: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

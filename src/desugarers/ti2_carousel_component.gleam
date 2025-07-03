@@ -62,11 +62,19 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
+pub const desugarer_name = "ti2_carousel_component"
+pub const desugarer_pipe = ti2_carousel_component
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// converts Bootstrap carousel components to custom Carousel components
 pub fn ti2_carousel_component() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "ti2_carousel_component",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(Nil)),
       general_description: "/// converts Bootstrap carousel components to custom Carousel components",
     ),
@@ -75,4 +83,15 @@ pub fn ti2_carousel_component() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

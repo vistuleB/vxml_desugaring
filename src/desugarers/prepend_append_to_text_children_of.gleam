@@ -109,11 +109,19 @@ type Param =
 type InnerParam =
   Dict(String, #(VXML, VXML))
 
+pub const desugarer_name = "prepend_append_to_text_children_of"
+pub const desugarer_pipe = prepend_append_to_text_children_of
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// prepends and appends text to all text children of specified tags
 pub fn prepend_append_to_text_children_of(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "prepend_append_to_text_children_of",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// prepends and appends text to all text children of specified tags
@@ -124,4 +132,15 @@ pub fn prepend_append_to_text_children_of(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

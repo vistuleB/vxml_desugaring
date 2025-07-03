@@ -48,11 +48,19 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String)))
 
+pub const desugarer_name = "insert_bookend_text"
+pub const desugarer_pipe = insert_bookend_text
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
+
 /// inserts text at the beginning and end of specified tags
 pub fn insert_bookend_text(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "insert_bookend_text",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// inserts text at the beginning and end of specified tags
@@ -63,4 +71,15 @@ pub fn insert_bookend_text(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

@@ -72,6 +72,13 @@ type Param =
 type InnerParam =
   Dict(String, #(String, String))
 
+pub const desugarer_name = "surround_elements_by"
+pub const desugarer_pipe = surround_elements_by
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------
 /// surrounds specified elements with above and below tags
 /// the three tuple elements:
 ///    - list of tag names to surround
@@ -80,7 +87,7 @@ type InnerParam =
 pub fn surround_elements_by(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "surround_elements_by",
+      desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
 /// surrounds specified elements with above and below tags
@@ -95,4 +102,16 @@ pub fn surround_elements_by(param: Param) -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }

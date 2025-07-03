@@ -61,11 +61,18 @@ type Param = Nil
 
 type InnerParam = Nil
 
+pub const desugarer_name = "remove_chapter_number_from_title"
+pub const desugarer_pipe = remove_chapter_number_from_title
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// removes chapter numbers from titles in chapter and subchapter title elements
 pub fn remove_chapter_number_from_title() -> Pipe {
   Pipe(
     description: DesugarerDescription(
-      desugarer_name: "remove_chapter_number_from_title",
+      desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
 /// removes chapter numbers from titles in chapter and subchapter title elements
@@ -76,4 +83,15 @@ pub fn remove_chapter_number_from_title() -> Pipe {
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
 }
