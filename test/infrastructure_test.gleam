@@ -6,44 +6,44 @@ pub fn main() {
   gleeunit.main()
 }
 
-pub fn kabob_case_to_pascal_case_test() {
-  // Test basic kabob case to pascal case conversion
-  infrastructure.kabob_case_to_pascal_case("hello-world")
-  |> should.equal("HelloWorld")
+pub fn kabob_case_to_camel_case_test() {
+  // Test basic kabob case to camel case conversion
+  infrastructure.kabob_case_to_camel_case("hello-world")
+  |> should.equal("helloWorld")
   
   // Test single word
-  infrastructure.kabob_case_to_pascal_case("hello")
-  |> should.equal("Hello")
+  infrastructure.kabob_case_to_camel_case("hello")
+  |> should.equal("hello")
   
   // Test multiple dashes
-  infrastructure.kabob_case_to_pascal_case("my-long-attribute-name")
-  |> should.equal("MyLongAttributeName")
+  infrastructure.kabob_case_to_camel_case("my-long-attribute-name")
+  |> should.equal("myLongAttributeName")
   
   // Test empty string
-  infrastructure.kabob_case_to_pascal_case("")
+  infrastructure.kabob_case_to_camel_case("")
   |> should.equal("")
   
   // Test single dash
-  infrastructure.kabob_case_to_pascal_case("-")
+  infrastructure.kabob_case_to_camel_case("-")
   |> should.equal("")
   
   // Test leading dash
-  infrastructure.kabob_case_to_pascal_case("-hello-world")
-  |> should.equal("HelloWorld")
+  infrastructure.kabob_case_to_camel_case("-hello-world")
+  |> should.equal("helloWorld")
   
   // Test trailing dash
-  infrastructure.kabob_case_to_pascal_case("hello-world-")
-  |> should.equal("HelloWorld")
+  infrastructure.kabob_case_to_camel_case("hello-world-")
+  |> should.equal("helloWorld")
   
   // Test multiple consecutive dashes
-  infrastructure.kabob_case_to_pascal_case("hello--world")
-  |> should.equal("HelloWorld")
+  infrastructure.kabob_case_to_camel_case("hello--world")
+  |> should.equal("helloWorld")
   
   // Test single character words
-  infrastructure.kabob_case_to_pascal_case("a-b-c")
-  |> should.equal("ABC")
+  infrastructure.kabob_case_to_camel_case("a-b-c")
+  |> should.equal("aBC")
   
   // Test numbers
-  infrastructure.kabob_case_to_pascal_case("data-2-test")
-  |> should.equal("Data2Test")
+  infrastructure.kabob_case_to_camel_case("data-2-test")
+  |> should.equal("data2Test")
 }

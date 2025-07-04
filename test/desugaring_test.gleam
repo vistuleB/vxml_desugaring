@@ -23,7 +23,7 @@ pub fn rename_attributes_by_function_test() {
   )
   
   let pipe = rename_attributes_by_function.rename_attributes_by_function(
-    infrastructure.kabob_case_to_pascal_case
+    infrastructure.kabob_case_to_camel_case
   )
   
   let result = case pipe.desugarer(original_node) {
@@ -36,5 +36,5 @@ pub fn rename_attributes_by_function_test() {
   // Check that attribute keys were transformed correctly
   attrs
   |> infrastructure.get_attribute_keys
-  |> should.equal(["DataTest", "MyAttr", "AnotherLongName"])
+  |> should.equal(["dataTest", "myAttr", "anotherLongName"])
 }

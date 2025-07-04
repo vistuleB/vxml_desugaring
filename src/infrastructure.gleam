@@ -1177,13 +1177,17 @@ pub fn drop_starting_slash(path: String) -> String {
   }
 }
 
-pub fn kabob_case_to_pascal_case(input: String) -> String {
+pub fn kabob_case_to_camel_case(input: String) -> String {
   input
   |> string.split("-")
-  |> list.map(fn(word) {
+  |> list.filter(fn(word) { !string.is_empty(word) })
+  |> list.index_map(fn(word, index) {
     case string.to_graphemes(word) {
       [] -> ""
-      [first, ..rest] -> string.uppercase(first) <> string.join(rest, "")
+      [first, ..rest] -> case index {
+        0 -> string.lowercase(first) <> string.join(rest, "")
+        _ -> string.uppercase(first) <> string.join(rest, "")
+      }
     }
   })
   |> string.join("")
