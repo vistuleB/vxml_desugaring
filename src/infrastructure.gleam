@@ -1325,6 +1325,11 @@ pub fn children_with_tags(vxml: VXML, tags: List(String)) -> List(VXML) {
   filter_children(vxml, fn (node){ tags |> list.any(is_v_and_tag_equals(node, _)) })
 }
 
+pub fn children_with_class(vxml: VXML, class: String) -> List(VXML) {
+  let assert V(_, _, _, _) = vxml
+  filter_children(vxml, has_class(_, class))
+}
+
 pub fn index_filter_children(
   vxml: VXML,
   condition: fn(VXML) -> Bool,
@@ -1345,6 +1350,17 @@ pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
 
 pub fn descendants_with_key_value(vxml: VXML, attr_key: String, attr_value: String) -> List(VXML) {
   filter_descendants(vxml, is_v_and_has_key_value(_, attr_key, attr_value))
+}
+
+pub fn descendants_with_class(vxml: VXML, class: String) -> List(VXML) {
+  filter_descendants(vxml, has_class(_, class))
+}
+
+pub fn excise_children(node: VXML, condition: fn(VXML) -> Bool) -> #(VXML, List(VXML)) {
+  let assert V(blame, tag, attributes, children) = node
+  let #(remaining_children, excised_children) = list.partition(children, fn(child) { !condition(child) })
+  let new_node = V(blame, tag, attributes, remaining_children)
+  #(new_node, excised_children)
 }
 
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
@@ -1416,13 +1432,18 @@ pub fn add_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
 }
 
 pub fn has_class(vxml: VXML, class: String) -> Bool {
-  case v_attribute_with_key(vxml, "class") {
-    Some(BlamedAttribute(_, "class", vals)) -> {
-      vals
-      |> string.split(" ")
-      |> list.contains(class)
+  case vxml {
+    T(_, _) -> False
+    _ -> {
+      case v_attribute_with_key(vxml, "class") {
+        Some(BlamedAttribute(_, "class", vals)) -> {
+          vals
+          |> string.split(" ")
+          |> list.contains(class)
+        }
+        _ -> False
+      }
     }
-    _ -> False
   }
 }
 

@@ -363,3 +363,302 @@ pub fn descendants_with_tag_test() {
   let text_results = infrastructure.descendants_with_tag(text_node, "p")
   text_results |> list.length |> should.equal(0)
 }
+
+pub fn children_with_class_test() {
+  let blame = Blame("test", 1, 0, [])
+  
+  // Create a parent with children having different classes
+  // <div class="parent">
+  //   <span class="special">text</span>
+  //   <div class="special nested">content</div>
+  //   <p class="normal">paragraph</p>
+  //   <span class="special highlight">another span</span>
+  //   <div class="normal">normal div</div>
+  // </div>
+  
+  let special_span1 = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "special")],
+    []
+  )
+  
+  let special_div = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "special nested")],
+    []
+  )
+  
+  let normal_p = V(
+    blame,
+    "p",
+    [BlamedAttribute(blame, "class", "normal")],
+    []
+  )
+  
+  let special_span2 = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "special highlight")],
+    []
+  )
+  
+  let normal_div = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "normal")],
+    []
+  )
+  
+  let parent_div = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "parent")],
+    [special_span1, special_div, normal_p, special_span2, normal_div]
+  )
+  
+  // Test finding children with "special" class
+  let special_children = infrastructure.children_with_class(parent_div, "special")
+  special_children |> list.length |> should.equal(3)
+  
+  // Test finding children with "normal" class
+  let normal_children = infrastructure.children_with_class(parent_div, "normal")
+  normal_children |> list.length |> should.equal(2)
+  
+  // Test finding children with "nested" class (appears in multi-class attribute)
+  let nested_children = infrastructure.children_with_class(parent_div, "nested")
+  nested_children |> list.length |> should.equal(1)
+  
+  // Test finding children with "highlight" class
+  let highlight_children = infrastructure.children_with_class(parent_div, "highlight")
+  highlight_children |> list.length |> should.equal(1)
+  
+  // Test finding children with non-existent class
+  let no_matches = infrastructure.children_with_class(parent_div, "nonexistent")
+  no_matches |> list.length |> should.equal(0)
+  
+  // Test finding children with "parent" class (should be 0 since we're looking at children, not the parent itself)
+  let parent_class_children = infrastructure.children_with_class(parent_div, "parent")
+  parent_class_children |> list.length |> should.equal(0)
+  
+  // Test with element that has no children
+  let childless_element = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "childless")],
+    []
+  )
+  let no_children = infrastructure.children_with_class(childless_element, "any")
+  no_children |> list.length |> should.equal(0)
+}
+
+pub fn descendants_with_class_test() {
+  let blame = Blame("test", 1, 0, [])
+  
+  // Create a nested structure for testing
+  // <div class="parent">
+  //   <span class="special">text</span>
+  //   <div class="normal">
+  //     <p class="special">deep content</p>
+  //     <span class="highlight">deeper content</span>
+  //   </div>
+  //   <p class="special normal">sibling content</p>
+  // </div>
+  
+  let deep_p = V(
+    blame,
+    "p",
+    [BlamedAttribute(blame, "class", "special")],
+    []
+  )
+  
+  let deeper_span = V(
+    blame,
+    "span", 
+    [BlamedAttribute(blame, "class", "highlight")],
+    []
+  )
+  
+  let nested_div = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "normal")],
+    [deep_p, deeper_span]
+  )
+  
+  let child_span = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "special")],
+    []
+  )
+  
+  let sibling_p = V(
+    blame,
+    "p",
+    [BlamedAttribute(blame, "class", "special normal")],
+    []
+  )
+  
+  let parent_div = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "parent")],
+    [child_span, nested_div, sibling_p]
+  )
+  
+  // Test finding descendants with "special" class
+  let special_descendants = infrastructure.descendants_with_class(parent_div, "special")
+  special_descendants |> list.length |> should.equal(3)
+  
+  // Test finding descendants with "normal" class
+  let normal_descendants = infrastructure.descendants_with_class(parent_div, "normal")
+  normal_descendants |> list.length |> should.equal(2)
+  
+  // Test finding descendants with "highlight" class (single match)
+  let highlight_descendants = infrastructure.descendants_with_class(parent_div, "highlight")
+  highlight_descendants |> list.length |> should.equal(1)
+  
+  // Test finding descendants with non-existent class
+  let no_matches = infrastructure.descendants_with_class(parent_div, "nonexistent")
+  no_matches |> list.length |> should.equal(0)
+  
+  // Test that root is not included - parent div has "parent" class
+  let parent_class_descendants = infrastructure.descendants_with_class(parent_div, "parent")
+  parent_class_descendants |> list.length |> should.equal(0)
+  
+  // Test with text node - should return empty list
+  let text_node = T(blame, [])
+  let text_results = infrastructure.descendants_with_class(text_node, "special")
+  text_results |> list.length |> should.equal(0)
+  
+  // Test with element that has no descendants
+  let childless_element = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "childless")],
+    []
+  )
+  let no_descendants = infrastructure.descendants_with_class(childless_element, "any")
+  no_descendants |> list.length |> should.equal(0)
+}
+
+pub fn excise_children_test() {
+  let blame = Blame("test", 1, 0, [])
+  
+  // Create a parent with multiple children
+  // <div class="parent">
+  //   <span class="remove">text1</span>
+  //   <div class="keep">content1</div>
+  //   <p class="remove">text2</p>
+  //   <span class="keep">content2</span>
+  //   <div class="remove">content3</div>
+  // </div>
+  
+  let span1 = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "remove")],
+    []
+  )
+  
+  let div1 = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "keep")],
+    []
+  )
+  
+  let p1 = V(
+    blame,
+    "p",
+    [BlamedAttribute(blame, "class", "remove")],
+    []
+  )
+  
+  let span2 = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "keep")],
+    []
+  )
+  
+  let div2 = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "remove")],
+    []
+  )
+  
+  let parent_div = V(
+    blame,
+    "div",
+    [BlamedAttribute(blame, "class", "parent")],
+    [span1, div1, p1, span2, div2]
+  )
+  
+  // Test excising children with "remove" class
+  let #(new_node, excised) = infrastructure.excise_children(parent_div, fn(child) {
+    infrastructure.has_class(child, "remove")
+  })
+  
+  // Check that 3 children were excised
+  excised |> list.length |> should.equal(3)
+  
+  // Check that the new node has only 2 remaining children
+  let remaining_children = infrastructure.get_children(new_node)
+  remaining_children |> list.length |> should.equal(2)
+  
+  // Check that remaining children all have "keep" class
+  let keep_count = remaining_children
+    |> list.filter(infrastructure.has_class(_, "keep"))
+    |> list.length
+  keep_count |> should.equal(2)
+  
+  // Test excising children by tag
+  let #(new_node2, excised2) = infrastructure.excise_children(parent_div, fn(child) {
+    infrastructure.is_v_and_tag_equals(child, "span")
+  })
+  
+  // Check that 2 span children were excised
+  excised2 |> list.length |> should.equal(2)
+  
+  // Check that the new node has 3 remaining children
+  let remaining_children2 = infrastructure.get_children(new_node2)
+  remaining_children2 |> list.length |> should.equal(3)
+  
+  // Test excising all children
+  let #(new_node3, excised3) = infrastructure.excise_children(parent_div, fn(_) { True })
+  
+  // Check that all 5 children were excised
+  excised3 |> list.length |> should.equal(5)
+  
+  // Check that the new node has no children
+  let remaining_children3 = infrastructure.get_children(new_node3)
+  remaining_children3 |> list.length |> should.equal(0)
+  
+  // Test excising no children
+  let #(new_node4, excised4) = infrastructure.excise_children(parent_div, fn(_) { False })
+  
+  // Check that no children were excised
+  excised4 |> list.length |> should.equal(0)
+  
+  // Check that the new node has all original children
+  let remaining_children4 = infrastructure.get_children(new_node4)
+  remaining_children4 |> list.length |> should.equal(5)
+  
+  // Test with element that has no children
+  let childless_element = V(
+    blame,
+    "span",
+    [BlamedAttribute(blame, "class", "childless")],
+    []
+  )
+  let #(new_childless, excised_childless) = infrastructure.excise_children(childless_element, fn(_) { True })
+  
+  // Check that no children were excised and node remains unchanged
+  excised_childless |> list.length |> should.equal(0)
+  let remaining_childless = infrastructure.get_children(new_childless)
+  remaining_childless |> list.length |> should.equal(0)
+}
