@@ -1,64 +1,59 @@
 import gleam/list
 import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, V}
 
 fn transform(
-  vxml: VXML,
-  ancestors: List(VXML),
-  _: List(VXML),
-  _: List(VXML),
-  _: List(VXML),
+  node: VXML,
   inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
-  case vxml {
-    T(_, _) ->
-      case list.any(ancestors, inner) {
-        True -> Ok([vxml])
-        False -> Ok([])
-      }
-    V(_, _, _, children) -> {
-      case
-        !list.is_empty(children) || list.any(ancestors, inner) || inner(vxml)
-      {
-        True -> Ok([vxml])
-        False -> Ok([])
+  case node {
+    V(_, tag, _, children) -> {
+      let #(tags, condition) = inner
+      case list.contains(tags, tag), list.any(children, condition) {
+        True, False -> Ok(children)
+        _, _ -> Ok([node])
       }
     }
+    _ -> Ok([node])
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
-  fn(vxml, a, s1, s2, s3) { transform(vxml, a, s1, s2, s3, inner) }
+fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
+  transform(_, inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
+  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = fn(VXML) -> Bool
-
+type Param = #(List(String), fn(VXML) -> Bool)
 type InnerParam = Param
 
-pub const desugarer_name = "remove_outside_subtrees"
-pub const desugarer_pipe = remove_outside_subtrees
+pub const desugarer_name = "unwrap_tags_when_no_child_meets_condition"
+pub const desugarer_pipe =  unwrap_tags_when_no_child_meets_condition
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes nodes that are outside subtrees matching the predicate function
-pub fn remove_outside_subtrees(param: Param) -> Pipe {
+/// for a specified list of tag strings, unwraps
+/// nodes with tags from the list if the node does
+/// not have any child meeting the boolean condition
+pub fn unwrap_tags_when_no_child_meets_condition(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: desugarer_name,
-      stringified_param: option.None,
+      stringified_param: option.Some(ins(param)),
       general_description: "
-/// removes nodes that are outside subtrees matching the predicate function
+/// for a specified list of tag strings, unwraps
+/// nodes with tags from the list if the node does
+/// not have any child meeting the boolean condition
       ",
     ),
     desugarer: case param_to_inner_param(param) {

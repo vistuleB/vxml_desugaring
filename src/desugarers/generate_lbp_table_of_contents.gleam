@@ -38,7 +38,10 @@ fn chapter_link(
     V(
       blame,
       chapter_link_component_name,
-      [BlamedAttribute(blame_us("L41"), "href", tp <> ins(count))],
+      [
+        BlamedAttribute(blame_us("L42"), "article_type", ins(count)),
+        BlamedAttribute(blame_us("L43"), "href", tp <> ins(count)),
+      ],
       title_element.children,
     ),
   )

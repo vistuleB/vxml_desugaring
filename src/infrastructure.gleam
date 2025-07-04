@@ -1708,6 +1708,13 @@ pub fn is_text_node(node: VXML) -> Bool {
   }
 }
 
+pub fn is_text_or_is_one_of(node: VXML, tags: List(String)) -> Bool {
+  case node {
+    T(_, _) -> True
+    V(_, tag, _, _) -> list.contains(tags, tag)
+  }
+}
+
 pub fn prevent_node_to_node_transform_inside(
   transform: NodeToNodeTransform,
   forbidden_tag: List(String),
