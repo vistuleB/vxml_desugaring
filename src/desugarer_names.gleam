@@ -48,6 +48,7 @@ import desugarers/remove_starting_and_ending_spaces
 import desugarers/remove_text_nodes_with_singleton_empty_line
 import desugarers/rename
 import desugarers/rename_attributes
+import desugarers/rename_attributes_by_function
 import desugarers/rename_when_child_of
 import desugarers/rename_with_attributes
 import desugarers/unwrap
@@ -110,6 +111,7 @@ pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.
 pub const remove_text_nodes_with_singleton_empty_line = remove_text_nodes_with_singleton_empty_line.remove_text_nodes_with_singleton_empty_line
 pub const rename = rename.rename
 pub const rename_attributes = rename_attributes.rename_attributes
+pub const rename_attributes_by_function = rename_attributes_by_function.rename_attributes_by_function
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const unwrap = unwrap.unwrap
@@ -126,4 +128,5 @@ pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_br
 pub const assertive_tests_constructor : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
   generate_lbp_table_of_contents.assertive_tests,
+  rename_attributes_by_function.assertive_tests,
 ]

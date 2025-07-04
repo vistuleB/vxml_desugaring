@@ -64,7 +64,23 @@ pub fn rename_attributes_by_function(param: Param) -> Pipe {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: infra.kabob_case_to_camel_case,
+      source:   "
+              <> div
+                  data-test=value1
+                  my-attr=value2
+                  another-long-name=value3
+                ",
+      expected: "
+              <> div
+                  dataTest=value1
+                  myAttr=value2
+                  anotherLongName=value3
+                "
+    )
+  ]
 }
 
 pub fn assertive_tests() {
