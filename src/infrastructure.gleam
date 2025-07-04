@@ -1247,7 +1247,7 @@ pub fn v_has_attribute_with_key(vxml: VXML, key: String) -> Bool {
   }
 }
 
-pub fn v_has_key_value_attribute(vxml: VXML, key: String, value: String) -> Bool {
+pub fn v_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
   let assert V(_, _, attrs, _) = vxml
   case list.find(attrs, fn(b) { b.key == key && b.value == value }) {
     Error(Nil) -> False
@@ -1279,11 +1279,11 @@ pub fn is_v_and_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
   }
 }
 
-pub fn is_v_and_has_attr(vxml: VXML, key: String, value: String) -> Bool {
+pub fn is_v_and_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
   case vxml {
     T(_, _) -> False
     _ -> {
-      v_has_key_value_attribute(vxml, key, value)
+      v_has_key_value(vxml, key, value)
     }
   }
 }
@@ -1296,6 +1296,23 @@ pub fn get_tag(vxml: VXML) -> String {
 pub fn filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
   let assert V(_, _, _, children) = vxml
   list.filter(children, condition)
+}
+
+pub fn filter_descendants(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
+  case vxml {
+    T(_, _) -> []
+    V(_, _, _, children) -> {
+      let matching_children = list.filter(children, condition)
+      let descendants_from_children =
+        list.map(children, filter_descendants(_, condition))
+        |> list.flatten
+
+      list.flatten([
+        matching_children,
+        descendants_from_children,
+      ])
+    }
+  }
 }
 
 pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
@@ -1323,38 +1340,12 @@ pub fn index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
 }
 
 pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
-  case vxml {
-    T(_, _) -> []
-    V(_, _, _, children) -> {
-      let children_with_tag = children_with_tag(vxml, tag)
-
-      list.flatten([
-        children_with_tag,
-        list.map(children, descendants_with_tag(_, tag)) |> list.flatten,
-      ])
-    }
-  }
+  filter_descendants(vxml, is_v_and_tag_equals(_, tag))
 }
 
 pub fn descendants_with_key_value(vxml: VXML, attr_key: String, attr_value: String) -> List(VXML) {
-  case vxml {
-    T(_, _) -> []
-    V(_, _, _, children) -> {
-      let current_matches = case v_has_key_value_attribute(vxml, attr_key, attr_value) {
-        True -> [vxml]
-        False -> []
-      }
-
-      let child_matches =
-        list.map(children, descendants_with_key_value(_, attr_key, attr_value))
-        |> list.flatten
-
-      list.flatten([current_matches, child_matches])
-    }
-  }
+  filter_descendants(vxml, is_v_and_has_key_value(_, attr_key, attr_value))
 }
-
-
 
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
   case node {

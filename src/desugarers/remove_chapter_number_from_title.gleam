@@ -11,8 +11,8 @@ fn transform(
     V(blame, t, atts, children) -> {
       // remove carousel buttons
       use <- infra.on_false_on_true(
-        over: infra.v_has_key_value_attribute(vxml, "class", "chapterTitle")
-          || infra.v_has_key_value_attribute(vxml, "class", "subChapterTitle"),
+        over: infra.v_has_key_value(vxml, "class", "chapterTitle")
+          || infra.v_has_key_value(vxml, "class", "subChapterTitle"),
         with_on_false: Ok(vxml),
       )
 
