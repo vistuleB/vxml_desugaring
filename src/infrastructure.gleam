@@ -1424,6 +1424,17 @@ pub fn add_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
   }
 }
 
+pub fn has_class(vxml: VXML, class: String) -> Bool {
+  case v_attribute_with_key(vxml, "class") {
+    Some(BlamedAttribute(_, "class", vals)) -> {
+      vals
+      |> string.split(" ")
+      |> list.contains(class)
+    }
+    _ -> False
+  }
+}
+
 pub fn concatenate_classes(a: String, b: String) -> String {
   let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
@@ -2310,12 +2321,12 @@ fn remove_minimum_indent(s: String) -> String {
 
   let minimum_indent =
     lines
-    |> list.map(fn(line) { string.length(line) - string.length(string.trim_start(line)) }) 
+    |> list.map(fn(line) { string.length(line) - string.length(string.trim_start(line)) })
     |> list.sort(int.compare)
     |> list.first
     |> result.unwrap(0)
 
-  lines |> list.map(fn(line) { line |> string.drop_start(minimum_indent) }) |> string.join("\n") 
+  lines |> list.map(fn(line) { line |> string.drop_start(minimum_indent) }) |> string.join("\n")
 }
 
 //*******************
@@ -2411,7 +2422,7 @@ pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(
     True -> Ok(Nil)
     False -> Error(
       AssertiveTestError(
-        pipe.description.desugarer_name, 
+        pipe.description.desugarer_name,
         vxml.debug_vxml_to_string("(obtained) ", output),
         vxml.debug_vxml_to_string("(expected) ", expected),
       )
