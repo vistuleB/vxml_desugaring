@@ -43,14 +43,16 @@ pub const desugarer_pipe = rename_attributes_by_function
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// renames attribute keys using a provided transformation function
+/// renames attribute keys using a provided
+/// transformation function
 pub fn rename_attributes_by_function(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: desugarer_name,
       stringified_param: option.None,
       general_description: "
-/// renames attribute keys using a provided transformation function
+/// renames attribute keys using a provided
+/// transformation function
       ",
     ),
     desugarer: case param_to_inner_param(param) {
