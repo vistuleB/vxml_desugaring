@@ -1180,13 +1180,12 @@ pub fn drop_starting_slash(path: String) -> String {
 pub fn kabob_case_to_camel_case(input: String) -> String {
   input
   |> string.split("-")
-  |> list.filter(fn(word) { !string.is_empty(word) })
   |> list.index_map(fn(word, index) {
-    case string.to_graphemes(word) {
-      [] -> ""
-      [first, ..rest] -> case index {
-        0 -> string.lowercase(first) <> string.join(rest, "")
-        _ -> string.uppercase(first) <> string.join(rest, "")
+    case index {
+      0 -> word
+      _ -> case string.to_graphemes(word) {
+        [] -> ""
+        [first, ..rest] -> string.uppercase(first) <> string.join(rest, "")
       }
     }
   })

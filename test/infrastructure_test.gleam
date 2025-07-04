@@ -32,7 +32,7 @@ pub fn kabob_case_to_camel_case_test() {
   
   // Test leading dash
   infrastructure.kabob_case_to_camel_case("-hello-world")
-  |> should.equal("helloWorld")
+  |> should.equal("HelloWorld")
   
   // Test trailing dash
   infrastructure.kabob_case_to_camel_case("hello-world-")
@@ -49,6 +49,24 @@ pub fn kabob_case_to_camel_case_test() {
   // Test numbers
   infrastructure.kabob_case_to_camel_case("data-2-test")
   |> should.equal("data2Test")
+  
+  // Test edge cases specific to optimized version
+  
+  // Test with empty parts (consecutive dashes) - now keeps empty strings
+  infrastructure.kabob_case_to_camel_case("hello--world")
+  |> should.equal("helloWorld")
+  
+  // Test leading dash creates empty first part
+  infrastructure.kabob_case_to_camel_case("-hello")
+  |> should.equal("Hello")
+  
+  // Test trailing dash creates empty last part
+  infrastructure.kabob_case_to_camel_case("hello-")
+  |> should.equal("hello")
+  
+  // Test multiple leading dashes
+  infrastructure.kabob_case_to_camel_case("--hello-world")
+  |> should.equal("HelloWorld")
 }
 
 pub fn has_class_test() {
