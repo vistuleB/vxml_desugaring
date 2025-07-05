@@ -48,7 +48,6 @@ fn test_renderer() {
       ),
       pipeline: test_pipeline(),
       splitter: vr.empty_splitter(_, ".tsx"),
-      // emitter: vr.stub_html_emitter,
       emitter: vr.stub_jsx_emitter,
       prettifier: vr.guarded_prettier_prettifier(amendments.user_args),
     )
@@ -74,14 +73,15 @@ fn test_renderer() {
 }
 
 fn run_desugarer_tests(names: List(String)) {
-  let must_match_name = !list.is_empty(names)
+  let run_all = list.is_empty(names)
+
   let tested =
     list.fold(
       dn.assertive_tests_constructor,
       [],
       fn(acc, constructor) {
         let name = constructor().desugarer_name
-        case !must_match_name || list.contains(names, name) {
+        case run_all || list.contains(names, name) {
           False -> acc
           True -> {
             infra.run_assertive_tests(constructor())
@@ -90,6 +90,7 @@ fn run_desugarer_tests(names: List(String)) {
         }
       }
     )
+
   io.println("")
   list.each(
     names,
@@ -100,7 +101,6 @@ fn run_desugarer_tests(names: List(String)) {
       }
     }
   )
-  Nil
 }
 
 pub fn main() {

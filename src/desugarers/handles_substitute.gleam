@@ -133,7 +133,7 @@ fn process_blamed_content(
   let BlamedContent(blame, content) = blamed_content
   let matches = regexp.scan(handle_regexp, content)
   let splits = regexp.split(handle_regexp, content)
-  use hyperlinks <- result.then(matches_2_hyperlinks(matches, blame, state, inner))
+  use hyperlinks <- result.try(matches_2_hyperlinks(matches, blame, state, inner))
   let text_nodes = splits_2_text_nodes(splits, blame)
   list.interleave([
     text_nodes,
@@ -205,7 +205,7 @@ fn t_transform(
   handles_regexp: Regexp,
 ) -> Result(#(List(VXML), State), DesugaringError) {
   let assert T(_, contents)  = vxml
-  use updated_contents <- result.then(process_blamed_contents(
+  use updated_contents <- result.try(process_blamed_contents(
     contents,
     state,
     inner,

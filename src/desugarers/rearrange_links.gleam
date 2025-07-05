@@ -482,7 +482,7 @@ fn match_tag_and_children(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
 ) {
-  use tag_content_patterns <- result.then(children |> result.all)
+  use tag_content_patterns <- result.try(children |> result.all)
   let tag_content_patterns = tag_content_patterns |> list.flatten
   use <- infra.on_true_on_false(
     xmlm_tag_name(xmlm_tag) == "root",
@@ -496,7 +496,7 @@ fn match_tag_and_children(
         <> xmlm_tag_name(xmlm_tag),
     )),
   )
-  use href_attribute <- result.then(
+  use href_attribute <- result.try(
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "href"))
     |> result.map_error(fn(_) {
@@ -511,7 +511,7 @@ fn match_tag_and_children(
     |> list.find(xmlm_attribute_equals(_, "class"))
   let xmlm.Attribute(_, value) =
     href_attribute
-  use value <- result.then(
+  use value <- result.try(
     int.parse(value)
     |> result.map_error(fn(_) {
       DesugaringError(
@@ -668,13 +668,13 @@ fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
 fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
   let #(s1, s2) = string_pair
 
-  use pattern1 <- result.then(
+  use pattern1 <- result.try(
     { "<root>" <> s1 <> "</root>" }
     |> make_sure_attributes_are_quoted
     |> extra_string_to_link_pattern,
   )
 
-  use pattern2 <- result.then(
+  use pattern2 <- result.try(
     { "<root>" <> s2 <> "</root>" }
     |> make_sure_attributes_are_quoted
     |> extra_string_to_link_pattern,
@@ -695,24 +695,24 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   param
   |> list.try_map(fn(string_pair) {
     let #(s1, s2) = string_pair
-    use #(pattern1, pattern2) <- result.then(string_pair_to_link_pattern_pair(string_pair))
+    use #(pattern1, pattern2) <- result.try(string_pair_to_link_pattern_pair(string_pair))
 
-    use unique_href_vars <- result.then(
+    use unique_href_vars <- result.try(
       collect_unique_href_vars(pattern1)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of href variable: " <> ins(var) ) })
     )
 
-    use unique_content_vars <- result.then(
+    use unique_content_vars <- result.try(
       collect_unique_content_vars(pattern1)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of content variable: " <> ins(var)) })
     )
 
-    use _ <- result.then(
+    use _ <- result.try(
       check_each_href_var_is_sourced(pattern2, unique_href_vars)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced href variable: " <> ins(var)) })
     )
 
-    use _ <- result.then(
+    use _ <- result.try(
       check_each_content_var_is_sourced(pattern2, unique_content_vars)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced content variable: " <> ins(var)) })
     )

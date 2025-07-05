@@ -37,7 +37,7 @@ type Param =
 type InnerParam = Param
 
 pub const desugarer_name = "rename_attributes_by_function"
-pub const desugarer_pipe = rename_attributes_by_function
+pub const desugarer_pipe =  rename_attributes_by_function
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️

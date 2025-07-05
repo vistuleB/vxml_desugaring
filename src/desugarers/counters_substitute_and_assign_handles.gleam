@@ -115,7 +115,7 @@ fn handle_counter_expressions(
         Ok(info) -> {
           let info = update_info(info, mutation)
           let counters = dict.insert(counters, counter_name, info)
-          use #(rest_handles_value, rest_string_output, counters) <- result.then(
+          use #(rest_handles_value, rest_string_output, counters) <- result.try(
             handle_counter_expressions(rest, counters),
           )
           let split_char = case split_char {
@@ -277,7 +277,7 @@ fn update_blamed_contents(
     init_acc,
     fn(acc, content) {
       let #(old_contents, counters, handles) = acc
-      use #(updated_content, updated_counters, new_handles) <- result.then(
+      use #(updated_content, updated_counters, new_handles) <- result.try(
         update_blamed_content(content, counters, regexes)
       )
       Ok(#(
@@ -376,11 +376,11 @@ fn read_counter_definition(
   )
   case counter_type {
     Unary(_) -> {
-      use #(counter_name, unary_char) <- result.then(handle_unary_att_value(attribute))
+      use #(counter_name, unary_char) <- result.try(handle_unary_att_value(attribute))
       Ok(Some(#(counter_name, CounterInfo(Unary(unary_char), 0, 1))))
     }
     _ -> {
-      use #(counter_name, initial_value, step) <- result.then(handle_non_unary_att_value(attribute))
+      use #(counter_name, initial_value, step) <- result.try(handle_non_unary_att_value(attribute))
       Ok(Some(#(counter_name, CounterInfo(counter_type, initial_value, step))))
     }
   }
@@ -394,7 +394,7 @@ fn fancy_one_attribute_processor(
   #(BlamedAttribute, CounterDict, List(HandleAssignment)),
   DesugaringError,
 ) {
-  use #(key, counters, assignments1) <- result.then(
+  use #(key, counters, assignments1) <- result.try(
     result.map_error(
       substitute_counters_and_generate_handle_assignments(
         to_process.key,
@@ -415,7 +415,7 @@ fn fancy_one_attribute_processor(
     )),
   )
 
-  use #(value, counters, assignments2) <- result.then(
+  use #(value, counters, assignments2) <- result.try(
     result.map_error(
       substitute_counters_and_generate_handle_assignments(
         to_process.value,
@@ -442,7 +442,7 @@ fn fancy_attribute_processor(
   case yet_to_be_processed {
     [] -> Ok(#(already_processed |> list.reverse, counters))
     [next, ..rest] -> {
-      use #(next, counters, assignments) <- result.then(
+      use #(next, counters, assignments) <- result.try(
         fancy_one_attribute_processor(next, counters, regexes),
       )
 
@@ -452,7 +452,7 @@ fn fancy_attribute_processor(
           BlamedAttribute(next.blame, "handle", handle_name <> " " <> handle_value)
         })
 
-      use new_counter <- result.then(read_counter_definition(next))
+      use new_counter <- result.try(read_counter_definition(next))
       let counters = case new_counter {
         None -> counters
         Some(#(key, value)) -> dict.insert(counters, key, value)
@@ -485,7 +485,7 @@ fn v_before_transforming_children(
   let assert V(b, t, attributes, c) = vxml
   let #(counters, handles) = state
 
-  use #(attributes, counters) <- result.then(fancy_attribute_processor(
+  use #(attributes, counters) <- result.try(fancy_attribute_processor(
     [],
     attributes,
     counters,
@@ -503,7 +503,7 @@ fn t_transform(
   let assert T(blame, contents) = vxml
   let #(counters, old_handles) = state
 
-  use #(contents, updated_counters, new_handles) <- result.then(
+  use #(contents, updated_counters, new_handles) <- result.try(
     update_blamed_contents(contents, counters, regexes),
   )
 
@@ -660,7 +660,7 @@ pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: desugarer_name,
-      stringified_param: option.Some(string.inspect(Nil)),
+      stringified_param: option.None,
       general_description:
       "
 /// Substitutes counters by their numerical

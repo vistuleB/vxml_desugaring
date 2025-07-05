@@ -1544,7 +1544,7 @@ fn fancy_node_to_node_children_traversal(
         #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
       )
     [first, ..rest] -> {
-      use first_replacement <- result.then(
+      use first_replacement <- result.try(
         fancy_node_to_node_desugar_one(
           first,
           ancestors,
@@ -1584,7 +1584,7 @@ fn fancy_node_to_node_desugar_one(
       )
 
     V(blame, tag, attrs, children) -> {
-      use #(_, reversed_children, _) <- result.then(
+      use #(_, reversed_children, _) <- result.try(
         fancy_node_to_node_children_traversal(
           [node, ..ancestors],
           [],
@@ -1632,7 +1632,7 @@ fn fancy_node_to_nodes_children_traversal(
         #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
       )
     [first, ..rest] -> {
-      use first_replacement <- result.then(
+      use first_replacement <- result.try(
         fancy_node_to_nodes_desugar_one(
           first,
           ancestors,
@@ -1701,7 +1701,7 @@ pub fn node_to_nodes_fancy_desugarer_factory(
   transform: NodeToNodesFancyTransform,
 ) -> Desugarer {
   fn(root: VXML) {
-    use vxmls <- result.then(fancy_node_to_nodes_desugar_one(
+    use vxmls <- result.try(fancy_node_to_nodes_desugar_one(
       root,
       [],
       [],
@@ -1805,8 +1805,8 @@ fn try_map_fold(
   case ze_list {
     [] -> Ok(#([], state))
     [first, ..rest] -> {
-      use #(vxml, state) <- result.then(f(state, first))
-      use #(vxmls, state) <- result.then(try_map_fold(rest, state, f))
+      use #(vxml, state) <- result.try(f(state, first))
+      use #(vxmls, state) <- result.try(try_map_fold(rest, state, f))
       Ok(#([vxml, ..vxmls], state))
     }
   }
@@ -1820,7 +1820,7 @@ fn stateful_node_to_node_desugar_one(
   case node {
     T(_, _) -> transform(node, state)
     V(blame, tag, attrs, children) -> {
-      use #(transformed_children, new_state) <- result.then(
+      use #(transformed_children, new_state) <- result.try(
         try_map_fold(children, state, fn(x, y) { stateful_node_to_node_desugar_one(x, y, transform) })
       )
       transform(V(blame, tag, attrs, transformed_children), new_state)
@@ -1863,7 +1863,7 @@ fn stateful_fancy_depth_first_node_to_node_children_traversal(
         #(previous_siblings_before_mapping, previous_siblings_after_mapping, [], state),
       )
     [first, ..rest] -> {
-      use #(first_replacement, state) <- result.then(
+      use #(first_replacement, state) <- result.try(
         stateful_fancy_depth_first_node_to_node_desugar_one(
           state,
           first,
@@ -1967,14 +1967,14 @@ fn stateful_down_up_node_to_node_one(
 
   case node {
     V(_, _, _, children) -> {
-      use #(node, state) <- result.then(
+      use #(node, state) <- result.try(
         transform.v_before_transforming_children(
           node,
           original_state,
         ),
       )
 
-      use #(children, state) <- result.then(
+      use #(children, state) <- result.try(
         try_map_fold(
           children,
           state,
@@ -1997,7 +1997,7 @@ pub fn stateful_down_up_node_to_node_desugarer_factory(
   initial_state: a,
 ) -> Desugarer {
   fn(vxml) {
-    use #(vxml, _) <- result.then(stateful_down_up_node_to_node_one(
+    use #(vxml, _) <- result.try(stateful_down_up_node_to_node_one(
       initial_state,
       vxml,
       transform
@@ -2035,7 +2035,7 @@ fn stateful_down_up_fancy_node_to_node_children_traversal(
         #(previous_siblings_before_mapping, previous_siblings_after_mapping, [], state),
       )
     [first, ..rest] -> {
-      use #(first_replacement, state) <- result.then(
+      use #(first_replacement, state) <- result.try(
         stateful_down_up_fancy_node_to_node_one(
           state,
           first,
@@ -2069,7 +2069,7 @@ fn stateful_down_up_fancy_node_to_node_one(
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
     V(_, _, _, children) -> {
-      use #(node, state) <- result.then(
+      use #(node, state) <- result.try(
         transform.v_before_transforming_children(
           node,
           ancestors,
@@ -2082,7 +2082,7 @@ fn stateful_down_up_fancy_node_to_node_one(
 
       let assert V(_, _, _, _) = node
 
-      use #(_, reversed_children, _, state) <- result.then(
+      use #(_, reversed_children, _, state) <- result.try(
         stateful_down_up_fancy_node_to_node_children_traversal(
           state,
           [node, ..ancestors],
@@ -2122,7 +2122,7 @@ pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
   initial_state: a,
 ) -> Desugarer {
   fn(vxml) {
-    use #(vxml, _) <- result.then(
+    use #(vxml, _) <- result.try(
       stateful_down_up_fancy_node_to_node_one(
         initial_state,
         vxml,
@@ -2160,10 +2160,10 @@ fn stateful_down_up_node_to_nodes_many(
   case vxmls {
     [] -> Ok(#([], state))
     [first, ..rest] -> {
-      use #(first_transformed, new_state) <- result.then(
+      use #(first_transformed, new_state) <- result.try(
         stateful_down_up_node_to_nodes_one(state, first, transform),
       )
-      use #(rest_transformed, new_new_state) <- result.then(
+      use #(rest_transformed, new_new_state) <- result.try(
         stateful_down_up_node_to_nodes_many(new_state, rest, transform),
       )
       Ok(#(list.flatten([first_transformed, rest_transformed]), new_new_state))
@@ -2178,14 +2178,14 @@ fn stateful_down_up_node_to_nodes_one(
 ) -> Result(#(List(VXML), a), DesugaringError) {
    case node {
     V(_, _, _, children) -> {
-      use #(node, state) <- result.then(
+      use #(node, state) <- result.try(
         transform.v_before_transforming_children(
           node,
           original_state,
         ),
       )
 
-      use #(children, state) <- result.then(stateful_down_up_node_to_nodes_many(
+      use #(children, state) <- result.try(stateful_down_up_node_to_nodes_many(
         state,
         children,
         transform,
@@ -2253,7 +2253,7 @@ pub fn node_to_nodes_desugarer_factory(
   transform: NodeToNodesTransform,
 ) -> Desugarer {
   fn(root: VXML) {
-    use vxmls <- result.then(depth_first_node_to_nodes_desugar_one(
+    use vxmls <- result.try(depth_first_node_to_nodes_desugar_one(
       root,
       transform,
     ))
@@ -2414,7 +2414,7 @@ pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(
     Error(NonMatchingDesugarerName(pipe.description.desugarer_name)),
   )
 
-  use input <- result.then(
+  use input <- result.try(
     vxml.unique_root_parse_string(tst.source, "test " <> pipe.description.desugarer_name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )

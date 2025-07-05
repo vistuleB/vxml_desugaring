@@ -84,13 +84,13 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
     maybe_spacer,
   ) = param
 
-  use chapter_menu_items <- result.then(
+  use chapter_menu_items <- result.try(
     infra.children_with_tag(root, "Chapter")
     |> list.index_map(fn(chapter: VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) })
     |> result.all
   )
 
-  use bootcamp_menu_items <- result.then(
+  use bootcamp_menu_items <- result.try(
     infra.children_with_tag(root, "Bootcamp")
     |> list.index_map(fn(bootcamp: VXML, index) { chapter_link(chapter_link_component_name, bootcamp, index + 1) })
     |> result.all
