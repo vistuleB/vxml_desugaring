@@ -76,7 +76,7 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
       V(
         blame,
         "a",
-        [BlamedAttribute(blame, "href", "#")],
+        [BlamedAttribute(blame, "href", "./ch" <> ins(chapter_number) <> "-" <> ins(subchapter_number) <> ".html")],
         [T(blame, [BlamedContent(blame, subchapter_title)])]
       )
     ]
@@ -110,7 +110,7 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
         V(
           blame,
           "a",
-          [BlamedAttribute(blame, "href", "#")],
+          [BlamedAttribute(blame, "href", "./ch" <> ins(chapter_number) <> ".html")],
           [T(blame, [BlamedContent(blame, chapter_title)])]
         )
       ],
