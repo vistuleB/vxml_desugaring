@@ -70,13 +70,13 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
     infra.AssertiveTestData(
       param: infra.kabob_case_to_camel_case,
       source:   "
-              <> div
+                <> div
                   data-test=value1
                   my-attr=value2
                   another-long-name=value3
                 ",
       expected: "
-              <> div
+                <> div
                   dataTest=value1
                   myAttr=value2
                   anotherLongName=value3

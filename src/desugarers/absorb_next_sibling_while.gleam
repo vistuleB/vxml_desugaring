@@ -138,61 +138,61 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       param: [#("Absorber", "Absorbee")],
       source:   "
                   <> Root
-                      <> Absorber
-                          <> 
-                              \"text\"
-                      <> Absorbee
-                      <> last
+                    <> Absorber
+                      <> 
+                        \"text\"
+                    <> Absorbee
+                    <> last
                 ",
       expected: "
                   <> Root
-                      <> Absorber
-                          <> 
-                              \"text\"
-                          <> Absorbee
-                      <> last
+                    <> Absorber
+                      <> 
+                        \"text\"
+                      <> Absorbee
+                    <> last
                 ",
     ),
     infra.AssertiveTestData(
       param: [#("Absorber", "Absorbee")],
       source:   "
-                  <> Root
-                      <> Absorber
-                          <> 
-                              \"text\"
-                      <> Absorbee
-                      <> Absorbee
-                      <> last
+                <> Root
+                  <> Absorber
+                    <> 
+                      \"text\"
+                  <> Absorbee
+                  <> Absorbee
+                  <> last
                 ",
       expected: "
-                  <> Root
-                      <> Absorber
-                          <> 
-                              \"text\"
-                          <> Absorbee
-                          <> Absorbee
-                      <> last
+                <> Root
+                  <> Absorber
+                    <> 
+                      \"text\"
+                    <> Absorbee
+                    <> Absorbee
+                  <> last
                 ",
     ),
     infra.AssertiveTestData(
       param: [#("Absorber", "Absorbee")],
       source:   "
-                  <> Root
-                      <> Absorber
-                          <> 
-                              \"text\"
-                      <> Absorbee
-                      <> last
-                      <> Absorbee
+                <> Root
+                  <> Absorber
+                    <> 
+                      \"text\"
+                  <> Absorbee
+                  <> last
+                  <> Absorbee
                 ",
       expected: "
-                  <> Root
-                      <> Absorber
-                          <> 
-                              \"text\"
-                          <> Absorbee
-                      <> last
-                      <> Absorbee
+                <> Root
+                  <> Absorber
+                    <> 
+                      \"text\"
+                    <> Absorbee
+                  <> last
+                  <> Absorbee
                 "
     ),
   ]
