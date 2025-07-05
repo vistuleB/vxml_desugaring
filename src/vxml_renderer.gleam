@@ -516,7 +516,7 @@ pub fn run_renderer(
 
   pipeline_overview(renderer.pipeline)
 
-  io.println("-- assembling blamed lines (" <> parameters.input_dir <> ") --")
+  io.println("-- assembling blamed lines (" <> parameters.input_dir <> ")")
 
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(parameters.input_dir),
@@ -545,7 +545,7 @@ pub fn run_renderer(
     }
   }
 
-  io.println("-- parsing source (" <> parameters.input_dir <> ") --")
+  io.println("-- parsing source (" <> parameters.input_dir <> ")")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -627,7 +627,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting vxml fragments to blamed line fragments --")
+  io.println("-- converting vxml fragments to blamed line fragments")
 
   // vxml fragments -> blamed line fragments
   let fragments =
@@ -638,7 +638,7 @@ pub fn run_renderer(
       |> quick_message("   converted: " <> name <> " to blamed lines")
     })
 
-  io.println("-- blamed lines debug printing --")
+  io.println("-- blamed lines debug printing")
 
   // blamed line fragments debug printing
   fragments
@@ -666,7 +666,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting blamed line fragments to strings --")
+  io.println("-- converting blamed line fragments to strings")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -715,7 +715,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- writing string fragments to files --")
+  io.println("-- writing string fragments to files")
 
   // printing string fragments (list.map to record errors)
   let fragments =
