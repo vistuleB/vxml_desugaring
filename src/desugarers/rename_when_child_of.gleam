@@ -12,25 +12,27 @@ fn transform(
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case dict.get(inner, tag) {
-        Error(Nil) -> Ok(vxml)
-        Ok(inner_dict) -> {
-          let new_children =
-            list.map(children, fn(child) {
-              case child {
-                T(_, _) -> child
-                V(child_blame, child_tag, child_attrs, grandchildren) -> {
-                  case dict.get(inner_dict, child_tag) {
-                    Error(Nil) -> child
-                    Ok(new_name) ->
-                      V(child_blame, new_name, child_attrs, grandchildren)
-                  }
-                }
-              }
-            })
-          Ok(V(blame, tag, attrs, new_children))
-        }
-      }
+
+      use inner_dict <- infra.on_error_on_ok(
+        dict.get(inner, tag),
+        fn(_) {
+          Ok(vxml)
+        },
+      )
+    
+      let new_children =
+        list.map(children, fn(child) {
+          use child_blame, child_tag, child_attrs, grandchildren <- infra.on_t_on_v(child, fn(_, _){
+            child
+          })
+          case dict.get(inner_dict, child_tag) {
+            Error(Nil) -> child
+            Ok(new_name) ->
+              V(child_blame, new_name, child_attrs, grandchildren)
+          }
+        })
+
+      Ok(V(blame, tag, attrs, new_children))
     }
   }
 }
