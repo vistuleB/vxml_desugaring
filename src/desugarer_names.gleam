@@ -128,5 +128,6 @@ pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_br
 pub const assertive_tests_constructor : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
   generate_lbp_table_of_contents.assertive_tests,
+  group_consecutive_children_avoiding.assertive_tests,
   rename_attributes_by_function.assertive_tests,
 ]

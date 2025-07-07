@@ -60,11 +60,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   #(String, List(String), List(String))
-//  ↖       ↖            ↖
-//  name    do not       do not
-//  of      wrap         even
-//  wrapper these        enter
-//  tag                  these
+//  ↖       ↖             ↖
+//  name    do not        do not
+//  of      wrap          even
+//  wrapper these         enter
+//  tag                   these subtrees
 
 type InnerParam = Param
 
@@ -74,23 +74,35 @@ pub const desugarer_pipe = group_consecutive_children_avoiding
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// wrap consecutive children whose tags
-/// are not in the excluded list inside
-/// of a designated parent tag; stay
-/// out of subtrees rooted at tags
-/// in the second argument
+//------------------------------------------------53
+/// when called with params
+/// 
+///   - wrapper_tag: String
+///   - dont_wrap_these: List(String)
+///   - dont_enter_here: List(String)
+/// 
+/// will wrap all groups of consecutive children
+/// where the group does not contain a tag from 
+/// dont_wrap_these with a wrapper_tag node, while 
+/// not processing subtrees rooted at nodes of tag 
+/// dont_enter_here untouched; see tests
 pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
   Pipe(
     description: DesugarerDescription(
       desugarer_name: desugarer_name,
       stringified_param: option.Some(ins(param)),
       general_description: "
-/// wrap consecutive children whose tags
-/// are not in the excluded list inside
-/// of a designated parent tag; stay
-/// out of subtrees rooted at tags
-/// in the second argument
+/// when called with params
+/// 
+///   - wrapper_tag: String
+///   - dont_wrap_these: List(String)
+///   - dont_enter_here: List(String)
+/// 
+/// will wrap all groups of consecutive children
+/// where the group does not contain a tag from 
+/// dont_wrap_these with a wrapper_tag node, while 
+/// not processing subtrees rooted at nodes of tag 
+/// dont_enter_here untouched; see tests
       ",
     ),
     desugarer: case param_to_inner_param(param) {
@@ -104,7 +116,39 @@ pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: #("wrapper", ["A", "B"], ["B", "C"]),
+      source:   "
+                <> root
+                  <> x
+                  <> y
+                  <> A
+                  <> B
+                    <> x
+                    <> y
+                  <> x
+                  <> C
+                    <> x
+                    <> y
+                ",
+      expected: "
+                <> root
+                  <> wrapper
+                    <> x
+                    <> y
+                  <> A
+                  <> B
+                    <> x
+                    <> y
+                  <> wrapper
+                    <> x
+                    <> C
+                      <> x
+                      <> y
+                "
+    )
+  ]
 }
 
 pub fn assertive_tests() {
