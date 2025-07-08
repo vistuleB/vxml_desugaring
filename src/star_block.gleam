@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Pipe} as infra
+import infrastructure.{type Pipe}
 
 // ************************
 // pipeline 'star block' printer
