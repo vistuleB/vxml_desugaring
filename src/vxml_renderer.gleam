@@ -275,7 +275,7 @@ pub fn prettier_prettifier(
 }
 
 pub fn guarded_prettier_prettifier(
-  user_args: Dict(String, List(String)),
+  user_args: Dict(String, _),
 ) -> fn(String, #(String, d)) -> Result(String, #(Int, String)) {
   case dict.get(user_args, "--prettier") {
     Error(Nil) -> fn(_, _) { Ok("") }
@@ -292,32 +292,20 @@ pub fn empty_prettifier(_: String, _: #(String, d)) -> Result(String, Nil) {
 // *************
 
 pub type Renderer(
-  a,
-  c,
-  d,
-  e,
-  f,
-  h,
-  // blamed line assembly error type
-  // source parsing error type
-  // VXML Fragment enum type
-  // splitting error type
-  // fragment emitting error type
-  // prettifying error type
+  a, // blamed line assembly error type
+  c, // source parsing error type
+  d, // VXML Fragment enum type
+  e, // splitting error type
+  f, // fragment emitting error type
+  h, // prettifying error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),
-    // file/directory -> List(BlamedLine)                     Result w/ error type a
-    source_parser: SourceParser(c),
-    // List(BlamedLine) -> VXML                               Result w/ error type c
-    pipeline: List(Pipe),
-    // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
-    splitter: Splitter(d, e),
-    // VXML -> List(#(String, VXML, d))                       Result w/ error type e
-    emitter: Emitter(d, f),
-    // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
-    prettifier: Prettifier(d, h),
-    // String, #(String, d) -> Nil                            Result w/ error type h
+    assembler: BlamedLinesAssembler(a), // file/directory -> List(BlamedLine)                     Result w/ error type a
+    source_parser: SourceParser(c),     // List(BlamedLine) -> VXML                               Result w/ error type c
+    pipeline: List(Pipe),               // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
+    splitter: Splitter(d, e),           // VXML -> List(#(String, VXML, d))                       Result w/ error type e
+    emitter: Emitter(d, f),             // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
+    prettifier: Prettifier(d, h),       // String, #(String, d) -> Nil                            Result w/ error type h
   )
 }
 
@@ -359,6 +347,7 @@ fn pipeline_runner(
 ) -> Result(VXML, DetailedDesugaringError) {
   case pipeline {
     [] -> Ok(vxml)
+
     [pipe, ..rest] -> {
       case pipeline_debug_options.debug_print(step, pipe) {
         False -> Nil
