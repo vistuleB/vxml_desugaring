@@ -34,20 +34,20 @@ fn chapters_number_title(root: VXML) -> List(#(VXML, ChapterNo, ChapterTitle)) {
 }
 
 fn extract_subchapter_title(chapter: VXML) -> List(#(SubChapterNo, SubchapterTitle)) {
-  let default_title_attr = BlamedAttribute(
-    blame: infra.blame_us("generate_ti3_index_element - no title attr of Sub found"),
-    key: "title",
-    value: ""
-  )
   chapter
   |> infra.index_children_with_tag("Sub")
   |> list.map(fn(sub: #(VXML, Int)) {
       let subchapter_title =
-        infra.on_none_on_some(
-          infra.v_attribute_with_key(sub.0, "title"),
-          default_title_attr,
-          function.identity
-        ).value
+        sub.0
+        |> infra.unique_child_with_tag("SubTitle")
+        |> result.map(fn(subtitle) {
+          let assert V(_, _, _, children) = subtitle
+          let assert [T(_, contents), ..] = children
+          contents
+          |> list.map(fn(blamed_content: BlamedContent) { blamed_content.content })
+          |> string.join("")
+        })
+        |> result.unwrap("No subchapter title")
 
       // increment index by 1 so it starts from 1 instead of 0
       #(sub.1 + 1, subchapter_title)
