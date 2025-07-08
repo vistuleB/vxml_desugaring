@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn correct_tag(tag: String) {
@@ -40,18 +40,18 @@ pub const desugarer_pipe = correct_parsed_html_tags
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// corrects parsed HTML tags by removing surrounding angle brackets
+//------------------------------------------------53
+/// corrects parsed HTML tags by removing 
+/// surrounding angle brackets
 pub fn correct_parsed_html_tags() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
-/// corrects parsed HTML tags by removing surrounding angle brackets
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "
+/// corrects parsed HTML tags by removing
+/// surrounding angle brackets
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

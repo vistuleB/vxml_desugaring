@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -54,19 +54,18 @@ pub const desugarer_pipe = insert_bookend_text
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// inserts text at the beginning and end of specified tags
+//------------------------------------------------53
+/// inserts text at the beginning and end of
+/// specified tags
 pub fn insert_bookend_text(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// inserts text at the beginning and end of specified tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// inserts text at the beginning and end of
+/// specified tags
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

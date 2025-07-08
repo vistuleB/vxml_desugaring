@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, T, V}
 
 fn matches_all_key_value_pairs(
@@ -64,14 +64,12 @@ pub const desugarer_pipe = unwrap_tags_if_attributes_match
 /// unwraps tags if all specified attributes match
 pub fn unwrap_tags_if_attributes_match(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// unwraps tags if all specified attributes match
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

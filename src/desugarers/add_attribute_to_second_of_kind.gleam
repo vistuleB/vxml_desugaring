@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn transform(
@@ -45,25 +45,21 @@ pub const desugarer_pipe = add_attribute_to_second_of_kind
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 
-/// Adds the specified attribute-value pair to
-/// nodes with the given tag name
-/// when the previous sibling is also a node with
-/// the same tag name
+/// Adds the specified attribute-value pair to nodes
+/// with the given tag name when the previous
+/// sibling is also a node with the same tag name
 pub fn add_attribute_to_second_of_kind(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// Adds the specified attribute-value pair to
-/// nodes with the given tag name
-/// when the previous sibling is also a node with
-/// the same tag name
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// Adds the specified attribute-value pair to nodes
+/// with the given tag name when the previous
+/// sibling is also a node with the same tag name
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

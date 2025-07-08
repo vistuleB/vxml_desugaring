@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -54,14 +54,12 @@ pub const desugarer_pipe = wrap_element_children
 /// wraps each child of specified elements with a wrapper tag
 pub fn wrap_element_children(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// wraps each child of specified elements with a wrapper tag
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

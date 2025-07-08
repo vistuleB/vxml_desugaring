@@ -6,7 +6,7 @@ import gleam/regexp.{type Regexp, type Match, Match}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
 import vxml.{
@@ -256,7 +256,7 @@ pub const desugarer_pipe = handles_substitute
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
 /// the form : handle_name | id | filename | value
@@ -286,12 +286,10 @@ pub const desugarer_pipe = handles_substitute
 /// >>handle_name doesn't exist in the GrandWrapper 
 /// attributes.
 pub fn handles_substitute(param: Param) -> Pipe {
-
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
 /// the form : handle_name | id | filename | value
@@ -320,9 +318,8 @@ pub fn handles_substitute(param: Param) -> Pipe {
 /// Throws a DesugaringError if handle_name in
 /// >>handle_name doesn't exist in the GrandWrapper 
 /// attributes.
-      "
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

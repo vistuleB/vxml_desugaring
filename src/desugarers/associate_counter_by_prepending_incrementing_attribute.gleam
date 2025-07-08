@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn transform(
@@ -84,7 +84,7 @@ pub const desugarer_pipe = associate_counter_by_prepending_incrementing_attribut
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// For each #(tag, counter_name) pair in the 
 /// parameter list, this desugarer adds an 
 /// attribute of the form
@@ -106,10 +106,9 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
   param: Param,
 ) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// For each #(tag, counter_name) pair in the 
 /// parameter list, this desugarer adds an 
 /// attribute of the form
@@ -127,9 +126,8 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
 /// handles of the attribute list of node 'tag'
 /// to the first counter being incremented in
 /// this fashion, by this desugarer.
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     },

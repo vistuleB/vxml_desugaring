@@ -2,7 +2,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn ensure_has_id_attribute(
@@ -94,7 +94,7 @@ pub const desugarer_pipe = handles_generate_ids
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// Generates a unique ID and filters attributes to
 /// find any that start with "handle" in which their
 /// values are expected to be in the format 
@@ -115,13 +115,13 @@ pub const desugarer_pipe = handles_generate_ids
 /// 2- Add id attribute to the node
 ///    ( usefull for html href link ?id=x )
 /// 
-/// Returns a new V node with the transformed attributes
+/// Returns a new V node with the transformed
+/// attributes
 pub fn handles_generate_ids() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name,
-      option.None,
-      "
+    desugarer_name,
+    option.None,
+    "
 /// Generates a unique ID and filters attributes to
 /// find any that start with \"handle\" in which their
 /// values are expected to be in the format 
@@ -142,10 +142,10 @@ pub fn handles_generate_ids() -> Pipe {
 /// 2- Add id attribute to the node
 ///    ( usefull for html href link ?id=x )
 /// 
-/// Returns a new V node with the transformed attributes
-",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+/// Returns a new V node with the transformed
+/// attributes
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

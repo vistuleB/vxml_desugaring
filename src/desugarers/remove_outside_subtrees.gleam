@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -54,14 +54,12 @@ pub const desugarer_pipe = remove_outside_subtrees
 /// removes nodes that are outside subtrees matching the predicate function
 pub fn remove_outside_subtrees(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// removes nodes that are outside subtrees matching the predicate function
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1,7 +1,7 @@
 import gleam/option
 import gleam/string.{inspect as ins}
 import gleam/list
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, V}
 
 fn transform(
@@ -81,10 +81,9 @@ pub const desugarer_pipe = auto_generate_child_if_missing_from_first_descendant_
 /// to the node of tag `parent_tag`.
 pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// Given arguments
 /// ```
 /// parent_tag, child_tag, descendant_tag
@@ -97,9 +96,8 @@ pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param
 /// of `parent_tag` that has tag `descendant_tag`.
 /// If no such descendant exists, does nothing
 /// to the node of tag `parent_tag`.
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

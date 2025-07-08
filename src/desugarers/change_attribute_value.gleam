@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn replace_value(value: String, replacement: String) -> String {
@@ -60,30 +60,28 @@ pub const desugarer_pipe = change_attribute_value
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// Used for changing the value of an attribute.
-/// Takes an attribute key and a replacement
-/// string in which "()" is used as a stand-in
-/// for the current value. For example, replacing
-/// attribute value "images/img.png" with the
-/// replacement string "/()" will result in the
-/// new attribute value "/images/img.png"
+/// Takes an attribute key and a replacement string 
+/// in which "()" is used as a stand-in for the 
+/// current value. For example, replacing attribute 
+/// value "images/img.png" with the replacement 
+/// string "/()" will result in the new attribute 
+/// value "/images/img.png"
 pub fn change_attribute_value(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// Used for changing the value of an attribute.
-/// Takes an attribute key and a replacement
-/// string in which \"()\" is used as a stand-in
-/// for the current value. For example, replacing
-/// attribute value \"images/img.png\" with the
-/// replacement string \"/()\" will result in the
-/// new attribute value \"/images/img.png\"
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+/// Takes an attribute key and a replacement string 
+/// in which \"()\" is used as a stand-in for the 
+/// current value. For example, replacing attribute 
+/// value \"images/img.png\" with the replacement 
+/// string \"/()\" will result in the new attribute 
+/// value \"/images/img.png\"
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

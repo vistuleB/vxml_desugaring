@@ -2,7 +2,7 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn lists_of_non_blank_line_chunks(
@@ -69,28 +69,24 @@ pub const desugarer_pipe = group_siblings_not_separated_by_blank_lines
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
+//------------------------------------------------53
 /// wrap siblings that are not separated by
-/// WriterlyBlankLine inside a designated tag
-/// and remove WriterlyBlankLine elements;
-/// stays out of subtrees designated by
-/// tags in the second 'List(String)' argument
+/// WriterlyBlankLine inside a designated tag and
+/// remove WriterlyBlankLine elements; stays out of
+/// subtrees designated by tags in the second 
+/// 'List(String)' argument
 pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description:
-      "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// wrap siblings that are not separated by
-/// WriterlyBlankLine inside a designated tag
-/// and remove WriterlyBlankLine elements;
-/// stays out of subtrees designated by
-/// tags in the second 'List(String)' argument
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+/// WriterlyBlankLine inside a designated tag and
+/// remove WriterlyBlankLine elements; stays out of
+/// subtrees designated by tags in the second 
+/// 'List(String)' argument
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error)}
       Ok(inner) -> desugarer_factory(inner)
     }

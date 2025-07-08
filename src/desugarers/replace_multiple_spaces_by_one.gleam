@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T}
 
 fn transform(
@@ -57,14 +57,12 @@ pub const desugarer_pipe = replace_multiple_spaces_by_one
 /// replaces multiple consecutive spaces with a single space
 pub fn replace_multiple_spaces_by_one() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// replaces multiple consecutive spaces with a single space
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

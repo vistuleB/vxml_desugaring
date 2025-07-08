@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
@@ -73,18 +73,18 @@ pub const desugarer_pipe = add_between_tag_and_text_node
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// adds new elements between specified tags and following text nodes
+//------------------------------------------------53
+/// adds new elements between specified tags and 
+/// following text nodes
 pub fn add_between_tag_and_text_node(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// adds new elements between specified tags and following text nodes
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// adds new elements between specified tags and 
+/// following text nodes
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

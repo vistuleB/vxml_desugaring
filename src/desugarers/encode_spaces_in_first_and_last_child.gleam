@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -41,7 +41,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
-
 type InnerParam = Param
 
 pub const desugarer_name = "encode_spaces_in_first_and_last_child"
@@ -50,18 +49,18 @@ pub const desugarer_pipe = encode_spaces_in_first_and_last_child
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// encodes spaces in first and last child of specified tags
+//------------------------------------------------53
+/// encodes spaces in first and last child of 
+/// specified tags
 pub fn encode_spaces_in_first_and_last_child(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// encodes spaces in first and last child of specified tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// encodes spaces in first and last child of
+/// specified tags
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -46,11 +46,10 @@ pub fn insert_indent_v1_desugarer() -> Pipe {
     description: DesugarerDescription(
       desugarer_name: "insert_indent_v1_desugarer",
       stringified_param: option.None,
-      general_description: "
+    "
 /// wraps text nodes that follow other text nodes with Indent tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

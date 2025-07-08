@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V, type BlamedAttribute, BlamedAttribute}
 
 fn rename_attribute_key(attr: BlamedAttribute, transform_fn: fn(String) -> String) -> BlamedAttribute {
@@ -47,15 +47,13 @@ pub const desugarer_pipe =  rename_attributes_by_function
 /// transformation function
 pub fn rename_attributes_by_function(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// renames attribute keys using a provided
 /// transformation function
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

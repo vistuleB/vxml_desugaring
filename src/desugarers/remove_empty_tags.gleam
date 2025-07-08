@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn is_empty(child: VXML) {
@@ -52,14 +52,12 @@ pub const desugarer_pipe = remove_empty_tags
 /// removes empty elements that contain only empty text nodes
 pub fn remove_empty_tags(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// removes empty elements that contain only empty text nodes
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type Pipe, Pipe} as infra
 import indexed_regex_splitting as irs
 
 fn transform_factory() -> infra.NodeToNodesTransform {

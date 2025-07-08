@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML}
 
 fn transform(
@@ -34,15 +34,13 @@ pub const desugarer_pipe =  identity
 /// unchanged and that never generates an error
 pub fn identity() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// idempotent desugarer that leaves the VXML 
 /// unchanged and that never generates an error
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

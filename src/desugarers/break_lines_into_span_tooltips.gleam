@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe } as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe } as infra
 import vxml.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
 
 fn line_to_tooltip_span(bc: BlamedContent, inner: InnerParam) -> VXML {
@@ -83,19 +83,19 @@ pub const desugarer_pipe = break_lines_into_span_tooltips
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 
-/// breaks lines into span tooltips with location information
+/// breaks lines into span tooltips with location
+/// information
 pub fn break_lines_into_span_tooltips(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// breaks lines into span tooltips with location information
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// breaks lines into span tooltips with location
+/// information
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
@@ -71,18 +71,18 @@ pub const desugarer_pipe = add_before_tags_but_not_first_child_tags
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// adds new elements before specified tags but not if they are the first child
+//------------------------------------------------53
+/// adds new elements before specified tags but not 
+/// if they are the first child
 pub fn add_before_tags_but_not_first_child_tags(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// adds new elements before specified tags but not if they are the first child
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// adds new elements before specified tags but not 
+/// if they are the first child
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

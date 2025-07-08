@@ -2,7 +2,7 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
@@ -122,19 +122,18 @@ pub const desugarer_pipe = pair_double_dollars_together_desugarer
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
+//------------------------------------------------53
+/// pairs DoubleDollar tags together and wraps
+/// content between them in MathBlock tags
 pub fn pair_double_dollars_together_desugarer() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
-/// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "
+/// pairs DoubleDollar tags together and wraps
+/// content between them in MathBlock tags
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

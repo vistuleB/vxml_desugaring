@@ -3,7 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn get_absorbing_tags(
@@ -98,11 +98,8 @@ type InnerParam =
   Dict(String, List(String))
 
 pub const desugarer_name = "absorb_next_sibling_while"
-pub const desugarer_pipe =  absorb_next_sibling_while
+pub const desugarer_pipe = absorb_next_sibling_while
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// if the arguments are [#("Tag1", "Child1"),
 /// ("Tag1", "Child1")] then will cause Tag1
@@ -111,18 +108,16 @@ pub const desugarer_pipe =  absorb_next_sibling_while
 /// Tag1 (in any order)
 pub fn absorb_next_sibling_while(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// if the arguments are [#(\"Tag1\", \"Child1\"),
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// if the arguments are [#(\"Tag1\", \"Child1\"), 
 /// (\"Tag1\", \"Child1\")] then will cause Tag1
 /// nodes to absorb all subsequent Child1 & Child2
 /// nodes, as long as they come immediately after
 /// Tag1 (in any order)
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

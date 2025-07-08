@@ -2,7 +2,7 @@ import gleam/int
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn update_attributes(
@@ -82,22 +82,20 @@ pub const desugarer_pipe = convert_int_attributes_to_float
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// converts int to float for all attributes
-/// keys that match one of the entries in 'param', per
+//------------------------------------------------53
+/// converts int to float for all attributes keys
+/// that match one of the entries in 'param', per
 /// the matching rules above
 pub fn convert_int_attributes_to_float(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// converts int to float for all attributes
-/// keys that match one of the entries in 'param', per
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// converts int to float for all attributes keys
+/// that match one of the entries in 'param', per
 /// the matching rules above
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

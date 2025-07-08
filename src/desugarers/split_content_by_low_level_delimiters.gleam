@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type IgnoreWhen {
@@ -263,16 +263,18 @@ pub const desugarer_pipe = split_content_by_low_level_delimiters_desugarer
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// splits content by low level delimiters like *, _, and $
+//------------------------------------------------53
+/// splits content by low level delimiters like *,
+/// _, and $
 pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(string.inspect(Nil)),
-      general_description: "/// splits content by low level delimiters like *, _, and $",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.Some(string.inspect(Nil)),
+    "
+  /// splits content by low level delimiters like *,
+  /// _, and $
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

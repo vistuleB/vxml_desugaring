@@ -5,7 +5,7 @@ import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
 import vxml.{type VXML, BlamedAttribute, V}
@@ -88,17 +88,17 @@ pub const desugarer_pipe = add_spacer_divs_before
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds spacer divs before specified tags but not if they are the first child
+/// adds spacer divs before specified tags but not 
+/// if they are the first child
 pub fn add_spacer_divs_before(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// adds spacer divs before specified tags but not if they are the first child
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// adds spacer divs before specified tags but not
+/// if they are the first child
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

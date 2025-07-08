@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option.{Some, None}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandlesDict =
@@ -168,7 +168,7 @@ pub const desugarer_pipe = handles_generate_dictionary
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// Looks for `handle` attributes in the V nodes
 /// and transforms which are expected to be in form:
 /// `handle | id | value`. (Panics if not in this 
@@ -198,10 +198,9 @@ pub const desugarer_pipe = handles_generate_dictionary
 ///    attribute_key
 pub fn handles_generate_dictionary(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name,
-      None,
-      "
+    desugarer_name,
+    option.None,
+    "
 /// Looks for `handle` attributes in the V nodes
 /// and transforms which are expected to be in form:
 /// `handle | id | value`. (Panics if not in this 
@@ -229,9 +228,8 @@ pub fn handles_generate_dictionary(param: Param) -> Pipe {
 ///    handle_name
 /// 2. no node found with Param.0 tag Param.1 
 ///    attribute_key
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     },

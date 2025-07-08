@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -147,18 +147,18 @@ pub const desugarer_pipe = generate_ti2_table_of_contents
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// generates table of contents for TI2 content with sections
+//------------------------------------------------53
+/// generates table of contents for TI2 content with
+/// sections
 pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// generates table of contents for TI2 content with sections
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// generates table of contents for TI2 content with
+/// sections
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1488,6 +1488,20 @@ pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classe
 //* desugaring efforts #1 deliverable: 'pub' function(s) below *
 //**************************************************************
 
+pub type OneToOneNodeMap =
+  fn(VXML) -> Result(VXML, DesugaringError)
+
+pub type OneToManyNodeMap =
+  fn(VXML) -> Result(List(VXML), DesugaringError)
+
+pub type FancyOneToManyNodeMap =
+  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) -> Result(List(VXML), DesugaringError)
+
+pub type OneToOneStatefulNodeMap(state) =
+  fn(VXML, state) -> Result(#(VXML, state), DesugaringError)
+
+// [EarlyReturn][Fancy]OneTo[One|Many][Stateful|DownAndUpStateful]NodeMap
+
 pub type NodeToNodeTransform =
   fn(VXML) -> Result(VXML, DesugaringError)
 
@@ -1520,6 +1534,32 @@ pub fn node_to_node_desugarer_factory(
   transform: NodeToNodeTransform,
 ) -> Desugarer {
   node_to_node_desugar_one(_, transform)
+}
+
+fn one_to_one_nodemap_recursive_application(
+  node: VXML,
+  nodemap: OneToOneNodeMap,
+) -> Result(VXML, DesugaringError) {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, _, _, children) -> {
+      use children <- result.try(
+        children
+        |> list.map(one_to_one_nodemap_recursive_application(_, nodemap))
+        |> result.all
+      )
+      nodemap(V(..node, children: children))
+    }
+  }
+}
+
+pub type DesugarerTransform =
+  fn(VXML) -> Result(VXML, DesugaringError)
+
+pub fn one_to_one_nodemap_2_transform(
+  nodemap: OneToOneNodeMap,
+) -> DesugarerTransform {
+  one_to_one_nodemap_recursive_application(_, nodemap)
 }
 
 //**********************************************************************
@@ -2410,17 +2450,17 @@ pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(
   let pipe = tst.pipe()
 
   use <- on_true_on_false(
-    desugarer_name != pipe.description.desugarer_name,
-    Error(NonMatchingDesugarerName(pipe.description.desugarer_name)),
+    desugarer_name != pipe.desugarer_name,
+    Error(NonMatchingDesugarerName(pipe.desugarer_name)),
   )
 
   use input <- result.try(
-    vxml.unique_root_parse_string(tst.source, "test " <> pipe.description.desugarer_name, False)
+    vxml.unique_root_parse_string(tst.source, "test " <> pipe.desugarer_name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
   use expected <- result.try(
-    vxml.unique_root_parse_string(tst.expected, "test " <> pipe.description.desugarer_name, False)
+    vxml.unique_root_parse_string(tst.expected, "test " <> pipe.desugarer_name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
@@ -2433,7 +2473,7 @@ pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(
     True -> Ok(Nil)
     False -> Error(
       AssertiveTestError(
-        pipe.description.desugarer_name,
+        pipe.desugarer_name,
         vxml.debug_vxml_to_string("(obtained) ", output),
         vxml.debug_vxml_to_string("(expected) ", expected),
       )
@@ -2503,6 +2543,15 @@ pub type DesugarerDescription {
   )
 }
 
+// pub type Pipe {
+//   Pipe(description: DesugarerDescription, desugarer: Desugarer)
+// }
+
 pub type Pipe {
-  Pipe(description: DesugarerDescription, desugarer: Desugarer)
+  Pipe(
+    desugarer_name: String,
+    stringified_param: Option(String),
+    docs: String,
+    desugarer: Desugarer,
+  )
 }

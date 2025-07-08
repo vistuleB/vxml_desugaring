@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, V}
 
 fn transform(
@@ -48,18 +48,16 @@ pub const desugarer_pipe = unwrap
 /// list of names of tags to unwrap
 pub fn unwrap(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// to 'unwrap' a tag means to replace the
 /// tag by its children (replace a V- VXML node by
 /// its children in the tree); this function unwraps
 /// tags based solely on their name, as given by a
 /// list of names of tags to unwrap
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, V, type BlamedAttribute}
 
 fn update_child(child: VXML, child_tag: String, attribute: BlamedAttribute)
@@ -76,10 +76,9 @@ pub const desugarer_pipe = cut_paste_attribute_from_self_to_child
 /// ```
 pub fn cut_paste_attribute_from_self_to_child(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// For all nodes with a given `parent_tag`,
 /// removes all attributes of a given key. If
 /// the list of removed attributes is nonempty,
@@ -92,9 +91,8 @@ pub fn cut_paste_attribute_from_self_to_child(param: Param) -> Pipe {
 /// - child_tag
 /// - attribute_key
 /// ```
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
