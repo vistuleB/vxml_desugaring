@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription} as infra
+import infrastructure.{type DesugaringError, type Pipe,} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn prepend_link(vxml: VXML, link_value: String, link_key: String) -> VXML {
@@ -87,15 +87,13 @@ pub const desugarer_pipe = generate_lbp_prev_next_attributes
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 pub fn generate_lbp_prev_next_attributes() -> Pipe {
   infra.Pipe(
-    description: DesugarerDescription(
-      desugarer_name,
-      option.None,
-      "..."
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "...",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> desugarer_factory()
     },

@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn child_must_escape(child: VXML, parent_tag: String, inner: InnerParam) -> Bool {
@@ -58,7 +58,7 @@ pub const desugarer_pipe = free_children
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// given a parent-child structure of the form
 ///
 ///     A[parent]
@@ -105,10 +105,9 @@ pub const desugarer_pipe = free_children
 /// A
 pub fn free_children(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// given a parent-child structure of the form
 ///
 ///     A[parent]
@@ -153,9 +152,8 @@ pub fn free_children(param: Param) -> Pipe {
 /// with the original attribute values of A
 /// copied over to the newly created 'copies' of
 /// A
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

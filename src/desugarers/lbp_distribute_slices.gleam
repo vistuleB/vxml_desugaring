@@ -1,7 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer,type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn is_known_outer_element(vxml: VXML) -> Bool {
@@ -96,17 +96,17 @@ pub const desugarer_pipe = lbp_distribute_slices
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// distributes slice wrappers around inner elements for LBP content
+/// distributes slice wrappers around inner elements
+/// for LBP content
 pub fn lbp_distribute_slices() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
-/// distributes slice wrappers around inner elements for LBP content
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "
+/// distributes slice wrappers around inner elements
+/// for LBP content
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn replacer(mister: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
@@ -57,17 +57,14 @@ pub const desugarer_pipe = replace_in_attribute_values
 /// 'string.replace' function
 pub fn replace_in_attribute_values(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description:
-      "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// performs exact match find-replace in every
 /// attribute value of every node using the
 /// 'string.replace' function
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

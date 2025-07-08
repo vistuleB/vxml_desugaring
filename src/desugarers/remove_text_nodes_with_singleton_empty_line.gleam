@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe } as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe } as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -44,15 +44,13 @@ pub const desugarer_pipe = remove_text_nodes_with_singleton_empty_line
 /// consisting of an empty string
 pub fn remove_text_nodes_with_singleton_empty_line() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// removes text nodes containing a single line
 /// consisting of an empty string
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

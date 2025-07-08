@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe } as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe } as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -46,16 +46,14 @@ pub const desugarer_pipe = remove_empty_lines
 /// text nodes that end up with 0 lines
 pub fn remove_empty_lines() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// for each text node, removes each line whose
 /// content is the empty string & destroys
 /// text nodes that end up with 0 lines
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

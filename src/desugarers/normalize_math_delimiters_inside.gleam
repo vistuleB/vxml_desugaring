@@ -4,7 +4,7 @@ import gleam/result
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe, type LatexDelimiterPair} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugaringError, Pipe, type LatexDelimiterPair} as infra
 import vxml.{type VXML, T, V}
 
 fn strip_delimiter_pair_if_there(
@@ -112,7 +112,7 @@ pub const desugarer_pipe = normalize_math_delimiters_inside
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
+//------------------------------------------------53
 /// adds flexiblilty to user's custom
 /// mathblock element
 /// ```
@@ -126,10 +126,9 @@ pub const desugarer_pipe = normalize_math_delimiters_inside
 /// ```
 pub fn normalize_math_delimiters_inside(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// adds flexiblilty to user's custom
 /// mathblock element
 /// ```
@@ -141,9 +140,8 @@ pub fn normalize_math_delimiters_inside(param: Param) -> Pipe {
 /// |> Mathblock
 ///     $$math$$
 /// ```
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

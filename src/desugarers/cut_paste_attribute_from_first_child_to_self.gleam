@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{type Option, Some, None}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, V, type BlamedAttribute}
 
 /// return option of
@@ -74,10 +74,9 @@ pub const desugarer_pipe = cut_paste_attribute_from_first_child_to_self
 /// ```
 pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// Moves an attribute with key `key` from the
 /// first child of a node with tag `parent_tag`
 /// to the node itself.
@@ -87,9 +86,8 @@ pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Pipe {
 /// - child tag
 /// - attribute key
 /// ```
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

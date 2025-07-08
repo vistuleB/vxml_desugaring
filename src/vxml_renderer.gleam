@@ -353,7 +353,7 @@ fn pipeline_runner(
         False -> Nil
         True ->
           star_block.desugarer_description_star_block(
-            pipe.description,
+            pipe,
             step,
           )
           |> io.print
@@ -370,7 +370,7 @@ fn pipeline_runner(
         Error(error) -> Error(DetailedDesugaringError(
           blame: error.blame, 
           message: error.message,
-          desugarer: pipe.description.desugarer_name,
+          desugarer: pipe.desugarer_name,
           step: step,
         ))
       }
@@ -458,11 +458,11 @@ fn pipeline_overview(pipes: List(Pipe)) {
   list.index_map(
     pipes,
     fn (pipe, i) {
-      let param = case pipe.description.stringified_param {
+      let param = case pipe.stringified_param {
         None -> none_param
         Some(thing) -> thing
       }
-      let name = pipe.description.desugarer_name
+      let name = pipe.desugarer_name
       let num = ins(i + 1) <> "."
       let num_spaces = number_columns - string.length(num)
       let name_spaces = name_columns - {1 + string.length(name)}
@@ -1221,7 +1221,7 @@ pub fn db_amend_pipeline_debug_options(
       || { start == -2 && end == -2 && step == list.length(pipeline) }
       || {
         list.is_empty(names) == False
-        && list.any(names, fn (name) { string.contains(pipe.description.desugarer_name, name) })
+        && list.any(names, fn (name) { string.contains(pipe.desugarer_name, name) })
       }
     },
     artifact_print,

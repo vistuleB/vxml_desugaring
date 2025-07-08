@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import indexed_regex_splitting as rs
 
 fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
@@ -36,14 +36,12 @@ pub const desugarer_pipe = split_by_indexed_regexes
 /// splits text nodes by indexed regexes
 pub fn split_by_indexed_regexes(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// splits text nodes by indexed regexes
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -5,7 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
 import roman
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
@@ -658,11 +658,9 @@ pub const desugarer_pipe = counters_substitute_and_assign_handles
 /// 'handles_generate_dictionary' desugarer
 pub fn counters_substitute_and_assign_handles() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description:
-      "
+    desugarer_name,
+    option.None,
+    "
 /// Substitutes counters by their numerical
 /// value converted to string form and assigns those
 /// values to prefixed handles.
@@ -706,9 +704,8 @@ pub fn counters_substitute_and_assign_handles() -> Pipe {
 ///
 /// on the parent tag to be later used by the
 /// 'handles_generate_dictionary' desugarer
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

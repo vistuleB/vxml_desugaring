@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}

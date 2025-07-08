@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/regexp
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 fn transform(
@@ -68,17 +68,17 @@ pub const desugarer_pipe = remove_chapter_number_from_title
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes chapter numbers from titles in chapter and subchapter title elements
+/// removes chapter numbers from titles in chapter 
+/// and subchapter title elements
 pub fn remove_chapter_number_from_title() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
-/// removes chapter numbers from titles in chapter and subchapter title elements
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "
+/// removes chapter numbers from titles in chapter
+/// and subchapter title elements
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

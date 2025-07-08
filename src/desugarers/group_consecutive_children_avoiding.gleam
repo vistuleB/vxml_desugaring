@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer,type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 
@@ -88,10 +88,9 @@ pub const desugarer_pipe = group_consecutive_children_avoiding
 /// dont_enter_here untouched; see tests
 pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// when called with params
 /// 
 ///   - wrapper_tag: String
@@ -103,9 +102,8 @@ pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
 /// dont_wrap_these with a wrapper_tag node, while 
 /// not processing subtrees rooted at nodes of tag 
 /// dont_enter_here untouched; see tests
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

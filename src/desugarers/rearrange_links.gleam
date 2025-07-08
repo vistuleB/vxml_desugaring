@@ -6,7 +6,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
+import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugaringError, Pipe } as infra
 import vxml.{ type VXML, BlamedAttribute, BlamedContent, T, V }
 import xmlm
 
@@ -736,27 +736,22 @@ pub const desugarer_pipe = rearrange_links
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// matches appearance of first String
-/// while considering (x) as a variable
-/// and replaces it with the second String
-/// (x) can be used in second String to use
-/// the variable from first String
+//------------------------------------------------53
+/// matches appearance of first String while 
+/// considering (x) as a variable and replaces it 
+/// with the second String (x) can be used in second
+/// String to use the variable from first String
 pub fn rearrange_links(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// matches appearance of first String
-/// while considering (x) as a variable
-/// and replaces it with the second String
-/// (x) can be used in second String to use
-/// the variable from first String
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// matches appearance of first String while 
+/// considering (x) as a variable and replaces it 
+/// with the second String (x) can be used in second
+/// String to use the variable from first String
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

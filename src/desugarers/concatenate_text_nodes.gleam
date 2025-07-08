@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, V}
 
 fn transform(
@@ -36,17 +36,17 @@ pub const desugarer_pipe = concatenate_text_nodes
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// concatenates adjacent text nodes into single text nodes
+/// concatenates adjacent text nodes into single
+/// text nodes
 pub fn concatenate_text_nodes() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
-/// concatenates adjacent text nodes into single text nodes
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "
+/// concatenates adjacent text nodes into single
+/// text nodes
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -68,17 +68,18 @@ pub const desugarer_pipe = ti2_carousel_component
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// converts Bootstrap carousel components to custom Carousel components
+//------------------------------------------------53
+/// converts Bootstrap carousel components to custom
+/// Carousel components
 pub fn ti2_carousel_component() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(Nil)),
-      general_description: "/// converts Bootstrap carousel components to custom Carousel components",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.Some(ins(Nil)),
+    "
+/// converts Bootstrap carousel components to custom
+/// Carousel components
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe,
+  type Desugarer, type DesugaringError, type Pipe, Pipe,
 } as infra
 import vxml.{type VXML, V}
 
@@ -49,15 +49,13 @@ pub const desugarer_pipe = unwrap_when_zero_or_one_children
 /// has zero or one children
 pub fn unwrap_when_zero_or_one_children(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// unwraps based on tag name if node
 /// has zero or one children
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     },

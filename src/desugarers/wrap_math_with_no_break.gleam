@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T, V}
 
 fn wrap_second_element_if_its_math_and_recurse(
@@ -99,14 +99,12 @@ pub const desugarer_pipe = wrap_math_with_no_break
 /// wraps math elements with no-break containers to prevent line breaks
 pub fn wrap_math_with_no_break() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// wraps math elements with no-break containers to prevent line breaks
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

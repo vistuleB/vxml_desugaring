@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
@@ -384,31 +384,24 @@ pub const desugarer_pipe = fold_tags_into_text
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// seemingly replaces specified tags by
-/// specified strings that are glued to
-/// surrounding text nodes (in end-of-last-line
-/// glued to beginning-of-first-line fashion),
-/// without regards for the tag's contents
-/// or attributes, that are destroyed in the
-/// process
+//------------------------------------------------53
+/// seemingly replaces specified tags by specified
+/// strings that are glued to surrounding text nodes
+/// (in end-of-last-line glued to beginning-of-first-line
+/// fashion), without regards for the tag's contents
+/// or attributes, that are destroyed in the process
 pub fn fold_tags_into_text(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// seemingly replaces specified tags by
-/// specified strings that are glued to
-/// surrounding text nodes (in end-of-last-line
-/// glued to beginning-of-first-line fashion),
-/// without regards for the tag's contents
-/// or attributes, that are destroyed in the
-/// process
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// seemingly replaces specified tags by specified
+/// strings that are glued to surrounding text nodes
+/// (in end-of-last-line glued to beginning-of-first-line
+/// fashion), without regards for the tag's contents
+/// or attributes, that are destroyed in the process
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

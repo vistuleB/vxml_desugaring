@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
 import gleam/function
 
@@ -231,19 +231,16 @@ pub const desugarer_pipe = generate_ti3_index_element
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
+//------------------------------------------------53
 /// Generate ti3 Index element
 pub fn generate_ti3_index_element() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// Generate ti3 Index element
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> desugarer_factory()
     }

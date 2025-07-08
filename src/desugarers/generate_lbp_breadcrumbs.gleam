@@ -2,7 +2,7 @@
 import gleam/string.{inspect as ins}
 import gleam/result
 import gleam/list
-import infrastructure.{type Pipe, Pipe, DesugarerDescription, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Pipe, Pipe, type DesugaringError, DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 
@@ -161,16 +161,13 @@ pub const desugarer_pipe = generate_lbp_breadcrumbs
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
+//------------------------------------------------53
 pub fn generate_lbp_breadcrumbs() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name,
-      option.None,
-      "...",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "...",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> desugarer_factory()
     },

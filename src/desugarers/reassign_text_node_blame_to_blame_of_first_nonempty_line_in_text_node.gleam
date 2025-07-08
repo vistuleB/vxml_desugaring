@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, T}
 
 fn transform(
@@ -44,17 +44,17 @@ pub const desugarer_pipe = reassign_text_node_blame_to_blame_of_first_nonempty_l
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// reassigns text node blame to the blame of the first nonempty line in the text node
+/// reassigns text node blame to the blame of the
+/// first nonempty line in the text node
 pub fn reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node() -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
-/// reassigns text node blame to the blame of the first nonempty line in the text node
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    desugarer_name,
+    option.None,
+    "
+/// reassigns text node blame to the blame of the
+/// first nonempty line in the text node
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

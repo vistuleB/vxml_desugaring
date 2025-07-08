@@ -5,7 +5,7 @@ import gleam/list
 import gleam/option
 import gleam/string
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}

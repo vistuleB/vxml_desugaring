@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -169,10 +169,9 @@ pub const desugarer_pipe =  generate_lbp_table_of_contents
 /// element to be placed between the two categories
 pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.None,
-      general_description: "
+    desugarer_name,
+    option.None,
+    "
 /// generates the LBP table of contents while
 /// admitting custom values for the root tag name
 /// of the table of contents, as well as for the tag
@@ -180,9 +179,8 @@ pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
 /// tag name for the Chapter/Bootcamp category 
 /// banners, and an optional spacer tag name for an
 /// element to be placed between the two categories
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)
     }

@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 
 fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
   let #(string_pairs, forbidden_parents) = inner
@@ -33,14 +33,12 @@ pub const desugarer_pipe = find_replace
 /// find and replace strings with other strings
 pub fn find_replace(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// find and replace strings with other strings
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

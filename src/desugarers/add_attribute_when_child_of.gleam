@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn transform(
@@ -76,23 +76,21 @@ pub const desugarer_pipe = add_attribute_when_child_of
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds an attribute-pair to a tag
-/// when it is the child of another specified
-/// tag; will not overwrite if attribute with
-/// that key already exists
+/// adds an attribute-pair to a tag when it is the 
+/// child of another specified tag; will not 
+/// overwrite if attribute with that key already
+/// exists
 pub fn add_attribute_when_child_of(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// adds an attribute-pair to a tag
-/// when it is the child of another specified
-/// tag; will not overwrite if attribute with
-/// that key already exists
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// adds an attribute-pair to a tag when it is the
+/// child of another specified tag; will not 
+/// overwrite if attribute with that key already
+/// exists
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

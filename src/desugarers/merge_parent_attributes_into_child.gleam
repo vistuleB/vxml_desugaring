@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn lookup_attributes_by_key(
@@ -131,19 +131,18 @@ pub const desugarer_pipe = merge_parent_attributes_into_child
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// merges parent attributes into child elements for specified parent-child tag pairs
+//------------------------------------------------53
+/// merges parent attributes into child elements for
+/// specified parent-child tag pairs
 pub fn merge_parent_attributes_into_child(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// merges parent attributes into child elements for specified parent-child tag pairs
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    desugarer_name,
+    option.Some(ins(param)),
+    "
+/// merges parent attributes into child elements for
+/// specified parent-child tag pairs
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

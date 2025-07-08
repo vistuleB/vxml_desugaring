@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
 import vxml.{
@@ -247,7 +247,7 @@ postfix string, and a fallback string in case
 the tag is encountered without the counter-
 defining ancestor",
     ),
-    desugarer: case check_uniqueness_extra(extra) {
+    case check_uniqueness_extra(extra) {
       Some(pair) -> {
         fn(vxml) {
           Error(DesugaringError(

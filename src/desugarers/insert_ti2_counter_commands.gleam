@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn updated_node(
@@ -132,29 +132,29 @@ pub const desugarer_pipe = insert_ti2_counter_commands
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-
-/// inserts TI2 counter commands into text nodes of specified elements
+//------------------------------------------------53
+/// inserts TI2 counter commands into text nodes of
+/// specified elements
 /// # Param:
 ///  - Counter command to insert . ex: "::++Counter"
-///  - key-value pair of node to insert counter command
+///  - key-value pair of node to insert counter
+///    command
 ///  - list of strings before counter command
-///  - A wrapper tag to wrap the counter command string
+///  - A wrapper tag to wrap the counter command
+///    string
 pub fn insert_ti2_counter_commands(param: Param) -> Pipe {
   Pipe(
-    description: DesugarerDescription(
-      desugarer_name: desugarer_name,
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+    desugarer_name,
+    option.Some(ins(param)),
+    "
 /// inserts TI2 counter commands into text nodes of specified elements
 /// # Param:
 ///  - Counter command to insert . ex: \"::++Counter\"
 ///  - key-value pair of node to insert counter command
 ///  - list of strings before counter command
 ///  - A wrapper tag to wrap the counter command string
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
