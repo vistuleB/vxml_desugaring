@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe } as infra
+import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -22,7 +22,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -36,16 +36,16 @@ type InnerParam = Nil
 
 /// removes text nodes that contain only empty
 /// strings, leaves other text nodes untouched
-pub fn remove_text_nodes_where_all_lines_are_empty_strings() -> Pipe {
-  Pipe(
+pub fn remove_text_nodes_where_all_lines_are_empty_strings(param: Param) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
-      desugarer_name: "remove_text_nodes_where_all_lines_are_empty_strings",
+      name: "remove_text_nodes_where_all_lines_are_empty_strings",
       stringified_param: option.None,
     "
 /// removes text nodes that contain only empty
 /// strings, leaves other text nodes untouched
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

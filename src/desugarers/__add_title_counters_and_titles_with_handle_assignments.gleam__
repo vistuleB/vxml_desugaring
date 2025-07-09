@@ -229,8 +229,8 @@ type Extra =
 /// defining ancestor
 pub fn add_title_counters_and_titles_with_handle_assignments(
   extra: Extra,
-) -> Pipe {
-  Pipe(
+) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
       "add_title_counters_and_titles_with_handle_assignments",
       Some(ins(extra)),

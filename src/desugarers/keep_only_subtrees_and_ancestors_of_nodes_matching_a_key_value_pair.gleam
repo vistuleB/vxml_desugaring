@@ -2,7 +2,7 @@ import desugarers/remove_outside_subtrees.{remove_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type DesugaringError, type Desugarer, Desugarer} as infra
 import vxml.{type VXML, V}
 
 fn matches_a_key_value_pair(vxml: VXML, inner: InnerParam) -> Bool {
@@ -24,8 +24,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair"
-pub const desugarer_pipe = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
+const name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair"
+const constructor = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -38,9 +38,9 @@ pub const desugarer_pipe = keep_only_subtrees_and_ancestors_of_nodes_matching_a_
 /// nodes
 pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
   param: Param,
-) -> Pipe {
-  Pipe(
-    desugarer_name,
+) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// filters by identifying nodes whose attributes
@@ -53,7 +53,7 @@ pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> fn(vxml) { Ok(vxml) }
-        _ -> remove_outside_subtrees(matches_a_key_value_pair(_, inner)).desugarer
+        _ -> remove_outside_subtrees(matches_a_key_value_pair(_, inner)).transform
       }
     }
   )
@@ -67,5 +67,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T}
 
 fn transform(
@@ -19,7 +19,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -31,22 +31,22 @@ type Param = Nil
 
 type InnerParam = Nil
 
-pub const desugarer_name = "trim_spaces_around_newlines"
-pub const desugarer_pipe = trim_spaces_around_newlines
+const name = "trim_spaces_around_newlines"
+const constructor = trim_spaces_around_newlines
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// trims spaces around newlines in text nodes
-pub fn trim_spaces_around_newlines() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// trims spaces around newlines in text nodes
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
@@ -61,5 +61,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

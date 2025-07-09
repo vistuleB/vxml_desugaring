@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, V}
 
 fn transform(
@@ -22,7 +22,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -36,17 +36,17 @@ type Param = List(String)
 
 type InnerParam = Param
 
-pub const desugarer_name = "unwrap_tags_if_no_attributes"
-pub const desugarer_pipe = unwrap_tags_if_no_attributes
+const name = "unwrap_tags_if_no_attributes"
+const constructor = unwrap_tags_if_no_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// unwraps specified tags if they have no attributes
-pub fn unwrap_tags_if_no_attributes(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn unwrap_tags_if_no_attributes(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// unwraps specified tags if they have no attributes
@@ -66,5 +66,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

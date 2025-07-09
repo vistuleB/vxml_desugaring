@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn transform(
@@ -34,7 +34,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -47,15 +47,15 @@ type Param = Nil
 type InnerParam = Nil
 
 /// adds labels attribute to Exercises tags with indexed children
-pub fn add_exercise_labels() -> Pipe {
-  Pipe(
+pub fn add_exercise_labels(param: Param) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
-      desugarer_name: "add_exercise_labels",
+      name: "add_exercise_labels",
       stringified_param: option.None,
     "
 /// adds labels attribute to Exercises tags with indexed children
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

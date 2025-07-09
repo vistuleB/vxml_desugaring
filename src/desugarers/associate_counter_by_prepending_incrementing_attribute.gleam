@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn transform(
@@ -62,7 +62,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -78,8 +78,8 @@ type Param =
 type InnerParam =
   Dict(String, List(String))
 
-pub const desugarer_name = "associate_counter_by_prepending_incrementing_attribute"
-pub const desugarer_pipe = associate_counter_by_prepending_incrementing_attribute
+const name = "associate_counter_by_prepending_incrementing_attribute"
+const constructor = associate_counter_by_prepending_incrementing_attribute
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -104,9 +104,9 @@ pub const desugarer_pipe = associate_counter_by_prepending_incrementing_attribut
 /// this fashion, by this desugarer.
 pub fn associate_counter_by_prepending_incrementing_attribute(
   param: Param,
-) -> Pipe {
-  Pipe(
-    desugarer_name,
+) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// For each #(tag, counter_name) pair in the 
@@ -142,5 +142,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

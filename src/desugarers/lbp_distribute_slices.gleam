@@ -1,7 +1,7 @@
 import gleam/io
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer,type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn is_known_outer_element(vxml: VXML) -> Bool {
@@ -11,8 +11,8 @@ fn is_known_outer_element(vxml: VXML) -> Bool {
         list.contains(
           [
             "Book", "Chapter", "Bootcamp", "Section", "TOCAuthorSuppliedContent",
-            "HamburgerPanelAuthorSuppliedContents", "Example", "Exercises", "Exercise",
-            "Solution",
+            "HamburgerPanelAuthorSuppliedContents", "Example", "Exercises",
+            "Exercise", "Solution",
           ],
           tag,
         )
@@ -77,7 +77,7 @@ fn transform_factory(_: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -89,8 +89,8 @@ type Param = Nil
 
 type InnerParam = Nil
 
-pub const desugarer_name = "lbp_distribute_slices"
-pub const desugarer_pipe = lbp_distribute_slices
+const name = "lbp_distribute_slices"
+const constructor = lbp_distribute_slices
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -98,15 +98,15 @@ pub const desugarer_pipe = lbp_distribute_slices
 //------------------------------------------------53
 /// distributes slice wrappers around inner elements
 /// for LBP content
-pub fn lbp_distribute_slices() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn lbp_distribute_slices(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// distributes slice wrappers around inner elements
 /// for LBP content
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
@@ -121,5 +121,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

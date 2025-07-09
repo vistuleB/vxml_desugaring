@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -27,7 +27,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -38,14 +38,14 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-pub const desugarer_name = "extract_starting_and_ending_spaces"
-pub const desugarer_pipe = extract_starting_and_ending_spaces
+const name = "extract_starting_and_ending_spaces"
+const constructor = extract_starting_and_ending_spaces
 //------------------------------------------------53
 /// extracts starting and ending spaces from 
 /// specified tags into separate text nodes
-pub fn extract_starting_and_ending_spaces(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn extract_starting_and_ending_spaces(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// extracts starting and ending spaces from
@@ -66,5 +66,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, V}
 
 fn transform(
@@ -24,7 +24,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -35,8 +35,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = #(List(String), fn(VXML) -> Bool)
 type InnerParam = Param
 
-pub const desugarer_name = "unwrap_tags_when_no_child_meets_condition"
-pub const desugarer_pipe =  unwrap_tags_when_no_child_meets_condition
+const name = "unwrap_tags_when_no_child_meets_condition"
+const constructor =  unwrap_tags_when_no_child_meets_condition
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -45,9 +45,9 @@ pub const desugarer_pipe =  unwrap_tags_when_no_child_meets_condition
 /// for a specified list of tag strings, unwraps
 /// nodes with tags from the list if the node does
 /// not have any child meeting the boolean condition
-pub fn unwrap_tags_when_no_child_meets_condition(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn unwrap_tags_when_no_child_meets_condition(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// for a specified list of tag strings, unwraps
@@ -69,5 +69,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

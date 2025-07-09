@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe } as infra
+import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import vxml.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
 
 fn line_to_tooltip_span(bc: BlamedContent, inner: InnerParam) -> VXML {
@@ -65,7 +65,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
   |> infra.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -77,8 +77,8 @@ type Param = String
 
 type InnerParam = Param
 
-pub const desugarer_name = "break_lines_into_span_tooltips"
-pub const desugarer_pipe = break_lines_into_span_tooltips
+const name = "break_lines_into_span_tooltips"
+const constructor = break_lines_into_span_tooltips
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -87,9 +87,9 @@ pub const desugarer_pipe = break_lines_into_span_tooltips
 
 /// breaks lines into span tooltips with location
 /// information
-pub fn break_lines_into_span_tooltips(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn break_lines_into_span_tooltips(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// breaks lines into span tooltips with location
@@ -110,5 +110,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

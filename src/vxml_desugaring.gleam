@@ -3,12 +3,12 @@ import argv
 import gleam/io
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Pipe} as infra
+import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
 import writerly as wp
 import desugarer_names as dn
 
-fn test_pipeline() -> List(Pipe) {
+fn test_pipeline() -> List(Desugarer) {
   [
     dn.extract_starting_and_ending_spaces(["i", "b", "strong"]),
     dn.insert_bookend_text_if_no_attributes([
@@ -80,7 +80,7 @@ fn run_desugarer_tests(names: List(String)) {
       dn.assertive_tests_constructor,
       [],
       fn(acc, constructor) {
-        let name = constructor().desugarer_name
+        let name = constructor().name
         case run_all || list.contains(names, name) {
           False -> acc
           True -> {

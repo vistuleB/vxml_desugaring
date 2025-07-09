@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, type Desugarer, Desugarer} as infra
 import indexed_regex_splitting as irs
 
 fn transform_factory() -> infra.NodeToNodesTransform {
@@ -10,12 +10,12 @@ fn transform_factory() -> infra.NodeToNodesTransform {
   )
 }
 
-fn desugarer_factory() -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory())
 }
 
-pub fn replace_double_dollars_by_tags() -> Pipe {
-  Pipe(
+pub fn replace_double_dollars_by_tags(param: Param) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription("replace_dd_by_tags", option.None, "..."),
     desugarer: desugarer_factory(),
   )

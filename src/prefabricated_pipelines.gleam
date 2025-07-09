@@ -1,7 +1,7 @@
 import gleam/list
 import indexed_regex_splitting.{type RegexWithIndexedGroup} as irs
 import infrastructure.{
-  type Pipe,
+  type Desugarer,
   type LatexDelimiterPair,
   type LatexDelimiterSingleton,
   DoubleDollar, 
@@ -74,7 +74,7 @@ fn split_pair_fold_for_delimiter_pair(
   pair: LatexDelimiterPair,
   wrapper: String,
   forbidden: List(String),
-) -> List(Pipe) {
+) -> List(Desugarer) {
   let #(d1, d2) = opening_and_closing_singletons_for_pair(pair)
   case closing_equals_opening(pair) {
     True -> {
@@ -101,7 +101,7 @@ fn split_pair_fold_for_delimiter_pair(
 pub fn create_mathblock_and_math_elements(
   display_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
   single_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
-) -> List(Pipe) {
+) -> List(Desugarer) {
   let #(display_math_delimiters, display_math_default_delimeters) = display_math_delimiters
   let #(single_math_delimiters, inline_math_default_delimeters) = single_math_delimiters
 
@@ -156,7 +156,7 @@ pub fn create_mathblock_and_math_elements(
 
 pub fn normalize_begin_end_align(
   with: LatexDelimiterPair,
-) -> List(Pipe) {
+) -> List(Desugarer) {
   let #(s1, s2) = opening_and_closing_string_for_pair(with)
 
   let opening = irs.unescaped_suffix_indexed_regex("\\\\begin\\{align\\*\\}")
@@ -190,7 +190,7 @@ pub fn symmetric_delim_splitting(
   delim_ordinary_form: String,
   tag: String,
   forbidden: List(String),
-) -> List(Pipe) {
+) -> List(Desugarer) {
   let opening_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[\\s]", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
   let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
   let closing_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[\\s)\\]}]")
@@ -224,7 +224,7 @@ pub fn asymmetric_delim_splitting(
   closing_ordinary_form: String,
   tag: String,
   forbidden: List(String),
-) -> List(Pipe) {
+) -> List(Desugarer) {
   let opening_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[\\s]|^", opening_regex_form, "[^\\s]|$")
   let closing_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", closing_regex_form, "[\\s]|$")
   [

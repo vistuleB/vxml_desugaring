@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer,type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 
@@ -50,7 +50,7 @@ fn transform_factory(inner: InnerParam) -> infra.EarlyReturnNodeToNodeTransform 
   fn(vxml, ancestors) { transform(vxml, ancestors, inner) }
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -68,8 +68,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "group_consecutive_children_avoiding"
-pub const desugarer_pipe = group_consecutive_children_avoiding
+const name = "group_consecutive_children_avoiding"
+const constructor = group_consecutive_children_avoiding
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -86,9 +86,9 @@ pub const desugarer_pipe = group_consecutive_children_avoiding
 /// dont_wrap_these with a wrapper_tag node, while 
 /// not processing subtrees rooted at nodes of tag 
 /// dont_enter_here untouched; see tests
-pub fn group_consecutive_children_avoiding(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn group_consecutive_children_avoiding(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// when called with params
@@ -150,5 +150,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

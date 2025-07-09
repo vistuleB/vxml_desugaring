@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn correct_tag(tag: String) {
@@ -22,7 +22,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -34,8 +34,8 @@ type Param = Nil
 
 type InnerParam = Nil
 
-pub const desugarer_name = "correct_parsed_html_tags"
-pub const desugarer_pipe = correct_parsed_html_tags
+const name = "correct_parsed_html_tags"
+const constructor = correct_parsed_html_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -43,15 +43,15 @@ pub const desugarer_pipe = correct_parsed_html_tags
 //------------------------------------------------53
 /// corrects parsed HTML tags by removing 
 /// surrounding angle brackets
-pub fn correct_parsed_html_tags() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn correct_parsed_html_tags(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// corrects parsed HTML tags by removing
 /// surrounding angle brackets
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
@@ -66,5 +66,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

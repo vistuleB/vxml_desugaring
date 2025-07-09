@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn transform(
@@ -51,7 +51,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   }
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -69,8 +69,8 @@ type Param =
 type InnerParam =
   Dict(#(String, String), List(#(String, String)))
 
-pub const desugarer_name = "add_attribute_when_child_of"
-pub const desugarer_pipe = add_attribute_when_child_of
+const name = "add_attribute_when_child_of"
+const constructor = add_attribute_when_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -80,9 +80,9 @@ pub const desugarer_pipe = add_attribute_when_child_of
 /// child of another specified tag; will not 
 /// overwrite if attribute with that key already
 /// exists
-pub fn add_attribute_when_child_of(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn add_attribute_when_child_of(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// adds an attribute-pair to a tag when it is the
@@ -105,5 +105,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

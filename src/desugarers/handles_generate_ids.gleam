@@ -2,7 +2,7 @@ import gleam/int
 import gleam/list
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn ensure_has_id_attribute(
@@ -76,7 +76,7 @@ fn transform_factory(_: InnerParam) -> infra.StatefulNodeToNodeTransform(Int) {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.stateful_node_to_node_desugarer_factory(transform_factory(inner), 0)
 }
 
@@ -88,8 +88,8 @@ type Param = Nil
 
 type InnerParam = Nil
 
-pub const desugarer_name = "handles_generate_ids"
-pub const desugarer_pipe = handles_generate_ids
+const name = "handles_generate_ids"
+const constructor = handles_generate_ids
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -117,9 +117,9 @@ pub const desugarer_pipe = handles_generate_ids
 /// 
 /// Returns a new V node with the transformed
 /// attributes
-pub fn handles_generate_ids() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn handles_generate_ids() -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// Generates a unique ID and filters attributes to
@@ -160,5 +160,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

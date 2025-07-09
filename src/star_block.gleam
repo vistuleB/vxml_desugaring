@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Pipe}
+import infrastructure.{type Desugarer}
 
 // ************************
 // pipeline 'star block' printer
@@ -47,12 +47,12 @@ fn star_block(
 }
 
 pub fn desugarer_description_star_block(
-  pipe: Pipe,
+  desugarer: Desugarer,
   step: Int,
 ) -> String {
-  let desugarer_name_and_param =
-    pipe.desugarer_name
-    <> case pipe.stringified_param {
+  let name_and_param =
+    desugarer.name
+    <> case desugarer.stringified_param {
       Some(desc) ->
         " "
         <> ins(desc)
@@ -62,10 +62,10 @@ pub fn desugarer_description_star_block(
       None -> ""
     }
 
-  let desugarer_description_lines = case string.is_empty(pipe.docs) {
+  let desugarer_description_lines = case string.is_empty(desugarer.docs) {
     True -> []
     False -> 
-      pipe.docs
+      desugarer.docs
       |> string.trim
       |> string.split("\n")
       |> list.map(fn(line) {
@@ -82,7 +82,7 @@ pub fn desugarer_description_star_block(
       [
         "DESUGARER " <> ins(step),
         "",
-        desugarer_name_and_param,
+        name_and_param,
         "",
       ],
       desugarer_description_lines,

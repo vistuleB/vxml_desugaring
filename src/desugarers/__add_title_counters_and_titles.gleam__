@@ -87,8 +87,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 type Extra =
   List(#(String, String, String, String, String))
 
-pub fn add_title_counters_and_titles(extra: Extra) -> Pipe {
-  Pipe(
+pub fn add_title_counters_and_titles(extra: Extra) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
       "add_title_counters_and_titles",
       Some(ins(extra)),

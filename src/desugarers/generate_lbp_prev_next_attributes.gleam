@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe,} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn prepend_link(vxml: VXML, link_value: String, link_key: String) -> VXML {
@@ -70,7 +70,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(V(..root, children: list.flatten([other_children, [toc], chapters, bootcamps])))
 }
 
-fn desugarer_factory() -> infra.Desugarer {
+fn desugarer_factory(_: InnerParam) -> infra.DesugarerTransform {
   at_root
 }
 
@@ -81,21 +81,21 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub const desugarer_name = "generate_lbp_prev_next_attributes"
-pub const desugarer_pipe = generate_lbp_prev_next_attributes
+const name = "generate_lbp_prev_next_attributes"
+const constructor = generate_lbp_prev_next_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-pub fn generate_lbp_prev_next_attributes() -> Pipe {
-  infra.Pipe(
-    desugarer_name,
+pub fn generate_lbp_prev_next_attributes() -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "...",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(_) -> desugarer_factory()
+      Ok(inner) -> desugarer_factory(inner)
     },
   )
 }
@@ -108,5 +108,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

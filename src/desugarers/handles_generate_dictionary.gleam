@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option.{Some, None}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandlesDict =
@@ -142,7 +142,7 @@ fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodeFanc
   )
 }
 
-fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
+fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
   infra.stateful_down_up_fancy_node_to_node_desugarer_factory(
     transform_factory(inner),
     #(dict.new(), "")
@@ -162,8 +162,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "handles_generate_dictionary"
-pub const desugarer_pipe = handles_generate_dictionary
+const name = "handles_generate_dictionary"
+const constructor = handles_generate_dictionary
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -196,9 +196,9 @@ pub const desugarer_pipe = handles_generate_dictionary
 ///    handle_name
 /// 2. no node found with Param.0 tag Param.1 
 ///    attribute_key
-pub fn handles_generate_dictionary(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn handles_generate_dictionary(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// Looks for `handle` attributes in the V nodes
@@ -244,5 +244,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

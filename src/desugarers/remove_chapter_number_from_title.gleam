@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/regexp
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 fn transform(
@@ -49,7 +49,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -61,8 +61,8 @@ type Param = Nil
 
 type InnerParam = Nil
 
-pub const desugarer_name = "remove_chapter_number_from_title"
-pub const desugarer_pipe = remove_chapter_number_from_title
+const name = "remove_chapter_number_from_title"
+const constructor = remove_chapter_number_from_title
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -70,15 +70,15 @@ pub const desugarer_pipe = remove_chapter_number_from_title
 //------------------------------------------------53
 /// removes chapter numbers from titles in chapter 
 /// and subchapter title elements
-pub fn remove_chapter_number_from_title() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn remove_chapter_number_from_title(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// removes chapter numbers from titles in chapter
 /// and subchapter title elements
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
@@ -93,5 +93,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

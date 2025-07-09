@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import indexed_regex_splitting as rs
 
 fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
@@ -12,7 +12,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
   |> infra.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -26,17 +26,17 @@ type Param = #(List(#(rs.RegexWithIndexedGroup, String)), List(String))
 
 type InnerParam = Param
 
-pub const desugarer_name = "split_by_indexed_regexes"
-pub const desugarer_pipe = split_by_indexed_regexes
+const name = "split_by_indexed_regexes"
+const constructor = split_by_indexed_regexes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// splits text nodes by indexed regexes
-pub fn split_by_indexed_regexes(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn split_by_indexed_regexes(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// splits text nodes by indexed regexes
@@ -56,5 +56,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

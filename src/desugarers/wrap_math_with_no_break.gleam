@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn wrap_second_element_if_its_math_and_recurse(
@@ -79,7 +79,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -90,19 +90,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub const desugarer_name = "wrap_math_with_no_break"
-pub const desugarer_pipe = wrap_math_with_no_break
+const name = "wrap_math_with_no_break"
+const constructor = wrap_math_with_no_break
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-/// wraps math elements with no-break containers to prevent line breaks
-pub fn wrap_math_with_no_break() -> Pipe {
-  Pipe(
-    desugarer_name,
+//------------------------------------------------53
+/// wraps math elements with no-break containers to 
+/// prevent line breaks
+pub fn wrap_math_with_no_break() -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
-/// wraps math elements with no-break containers to prevent line breaks
+/// wraps math elements with no-break containers to
+/// prevent line breaks
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
@@ -119,5 +122,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

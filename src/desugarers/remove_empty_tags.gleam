@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn is_empty(child: VXML) {
@@ -30,7 +30,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -42,17 +42,17 @@ type Param = List(String)
 
 type InnerParam = List(String)
 
-pub const desugarer_name = "remove_empty_tags"
-pub const desugarer_pipe = remove_empty_tags
+const name = "remove_empty_tags"
+const constructor = remove_empty_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// removes empty elements that contain only empty text nodes
-pub fn remove_empty_tags(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn remove_empty_tags(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// removes empty elements that contain only empty text nodes
@@ -72,5 +72,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

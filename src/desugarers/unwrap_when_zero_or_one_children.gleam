@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, Pipe,
+  type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError,
 } as infra
 import vxml.{type VXML, V}
 
@@ -24,7 +24,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -38,8 +38,8 @@ type Param =
 type InnerParam =
   Param
 
-pub const desugarer_name = "unwrap_when_zero_or_one_children"
-pub const desugarer_pipe = unwrap_when_zero_or_one_children
+const name = "unwrap_when_zero_or_one_children"
+const constructor = unwrap_when_zero_or_one_children
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -47,9 +47,9 @@ pub const desugarer_pipe = unwrap_when_zero_or_one_children
 //------------------------------------------------53
 /// unwraps based on tag name if node
 /// has zero or one children
-pub fn unwrap_when_zero_or_one_children(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn unwrap_when_zero_or_one_children(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// unwraps based on tag name if node
@@ -70,5 +70,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

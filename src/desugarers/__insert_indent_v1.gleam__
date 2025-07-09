@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -28,7 +28,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeFancyTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -41,15 +41,15 @@ type Param = Nil
 type InnerParam = Nil
 
 /// wraps text nodes that follow other text nodes with Indent tags
-pub fn insert_indent_v1_desugarer() -> Pipe {
-  Pipe(
+pub fn insert_indent_v1_desugarer(param: Param) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
-      desugarer_name: "insert_indent_v1_desugarer",
+      name: "insert_indent_v1_desugarer",
       stringified_param: option.None,
     "
 /// wraps text nodes that follow other text nodes with Indent tags
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

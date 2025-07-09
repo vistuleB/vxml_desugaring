@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn transform(
@@ -40,7 +40,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeFancyTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -55,17 +55,17 @@ type InnerParam = Nil
 /// Adds an 'indent true' attribute-value pair
 /// to VerticalChunk nodes that directly follow
 /// VerticalChunk nodes
-pub fn insert_indent() -> Pipe {
-  Pipe(
+pub fn insert_indent(param: Param) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
-      desugarer_name: "insert_indent",
+      name: "insert_indent",
       stringified_param: option.None,
     "
 /// Adds an 'indent true' attribute-value pair
 /// to VerticalChunk nodes that whose previous
 /// sibling is also a VerticalChunk node
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

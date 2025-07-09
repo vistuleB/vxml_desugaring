@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{ type VXML, BlamedContent, T, V }
 
 fn transform(
@@ -44,7 +44,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   }
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -62,8 +62,8 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String, String)))
 
-pub const desugarer_name = "prepend_text_if_has_ancestor_else"
-pub const desugarer_pipe = prepend_text_if_has_ancestor_else
+const name = "prepend_text_if_has_ancestor_else"
+const constructor = prepend_text_if_has_ancestor_else
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -72,9 +72,9 @@ pub const desugarer_pipe = prepend_text_if_has_ancestor_else
 /// prepend one of two specified text fragments to
 /// nodes of a certain tag depending on wether the 
 /// node has an ancestor of specified type or not
-pub fn prepend_text_if_has_ancestor_else(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn prepend_text_if_has_ancestor_else(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// prepend one of two specified text fragments to
@@ -96,5 +96,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

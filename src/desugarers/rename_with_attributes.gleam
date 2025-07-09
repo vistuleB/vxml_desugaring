@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, V, T}
 
 fn transform(
@@ -28,7 +28,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -38,7 +38,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       let #(old_tag, new_tag, attrs) = renaming
       let attrs_converted = list.map(attrs, fn(attr) {
         let #(key, value) = attr
-        vxml.BlamedAttribute(infra.blame_us(desugarer_name), key, value)
+        vxml.BlamedAttribute(infra.blame_us(name), key, value)
       })
       #(old_tag, #(new_tag, attrs_converted))
     })
@@ -54,17 +54,17 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(vxml.BlamedAttribute)))
 
-pub const desugarer_name = "rename_with_attributes"
-pub const desugarer_pipe = rename_with_attributes
+const name = "rename_with_attributes"
+const constructor = rename_with_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------
 /// renames tags and adds attributes to them
-pub fn rename_with_attributes(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn rename_with_attributes(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// renames tags and adds attributes to them
@@ -84,5 +84,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

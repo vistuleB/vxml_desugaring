@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -41,7 +41,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -83,8 +83,8 @@ type Param =
 type InnerParam =
   Dict(String, Dict(String, String))
 
-pub const desugarer_name = "rename_when_child_of"
-pub const desugarer_pipe = rename_when_child_of
+const name = "rename_when_child_of"
+const constructor = rename_when_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -92,9 +92,9 @@ pub const desugarer_pipe = rename_when_child_of
 //------------------------------------------------
 
 /// renames tags when they are children of specified parent tags
-pub fn rename_when_child_of(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn rename_when_child_of(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// renames tags when they are children of specified parent tags
@@ -114,5 +114,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

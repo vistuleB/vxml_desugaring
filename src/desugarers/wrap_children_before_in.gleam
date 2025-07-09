@@ -1,6 +1,6 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, V}
 
 fn children_before(children: List(VXML), before_tag: String, acc: List(VXML)) -> #(List(VXML), List(VXML)) {
@@ -40,7 +40,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -55,8 +55,8 @@ type Param = #(String, String, String)
 
 type InnerParam = Param
 
-pub const desugarer_name = "wrap_children_before_in"
-pub const desugarer_pipe = wrap_children_before_in
+const name = "wrap_children_before_in"
+const constructor = wrap_children_before_in
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -64,9 +64,9 @@ pub const desugarer_pipe = wrap_children_before_in
 //------------------------------------------------53
 /// Wraps children of a node that appear 
 /// before a certain child
-pub fn wrap_children_before_in(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn wrap_children_before_in(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// Wraps children of a node that appear 
@@ -87,5 +87,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }
