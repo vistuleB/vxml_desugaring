@@ -6,7 +6,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
 import writerly as wp
-import desugarer_names as dn
+import desugarers as dn
 
 fn test_pipeline() -> List(Desugarer) {
   [

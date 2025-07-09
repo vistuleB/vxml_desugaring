@@ -1,5 +1,3 @@
-import desugarers/remove_outside_subtrees
-import desugarers/find_replace_in_descendants_of
 import infrastructure as infra
 import desugarers/absorb_next_sibling_while
 import desugarers/add_attributes
@@ -21,6 +19,7 @@ import desugarers/cut_paste_attribute_from_first_child_to_self
 import desugarers/cut_paste_attribute_from_self_to_child
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/find_replace
+import desugarers/find_replace_in_descendants_of
 import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
 import desugarers/free_children
@@ -45,6 +44,7 @@ import desugarers/rearrange_links
 import desugarers/remove_attributes
 import desugarers/remove_empty_tags
 import desugarers/remove_empty_lines
+import desugarers/remove_outside_subtrees
 import desugarers/remove_starting_and_ending_empty_lines
 import desugarers/remove_starting_and_ending_spaces
 import desugarers/remove_text_nodes_with_singleton_empty_line
@@ -53,6 +53,7 @@ import desugarers/rename_attributes
 import desugarers/rename_attributes_by_function
 import desugarers/rename_when_child_of
 import desugarers/rename_with_attributes
+import desugarers/split_by_indexed_regexes
 import desugarers/unwrap
 import desugarers/unwrap_tags_if_no_attributes
 import desugarers/unwrap_tags_when_no_child_meets_condition
@@ -116,6 +117,7 @@ pub const rename_attributes = rename_attributes.rename_attributes
 pub const rename_attributes_by_function = rename_attributes_by_function.rename_attributes_by_function
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
+pub const split_by_indexed_regexes = split_by_indexed_regexes.split_by_indexed_regexes
 pub const unwrap = unwrap.unwrap
 pub const unwrap_tags_if_no_attributes = unwrap_tags_if_no_attributes.unwrap_tags_if_no_attributes
 pub const unwrap_tags_with_no_text_child = unwrap_tags_with_no_text_child.unwrap_tags_with_no_text_child
