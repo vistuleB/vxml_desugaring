@@ -158,7 +158,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(V(root_b, root_t, root_a, children))
 }
 
-fn desugarer_factory() -> infra.Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   at_root
 }
 
@@ -169,14 +169,14 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub fn generate_lbp_prev_next_a_tags() -> Pipe {
-  infra.Pipe(
+pub fn generate_lbp_prev_next_a_tags(param: Param) -> Desugarer {
+  infra.Desugarer(
     description: DesugarerDescription(
       "generate_lbp_prev_next_a_tags",
       option.None,
       "..."
     ),
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> desugarer_factory()
     }

@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn replace_value(value: String, replacement: String) -> String {
@@ -34,7 +34,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -54,8 +54,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "change_attribute_value"
-pub const desugarer_pipe = change_attribute_value
+const name = "change_attribute_value"
+const constructor = change_attribute_value
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -68,9 +68,9 @@ pub const desugarer_pipe = change_attribute_value
 /// value "images/img.png" with the replacement 
 /// string "/()" will result in the new attribute 
 /// value "/images/img.png"
-pub fn change_attribute_value(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn change_attribute_value(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// Used for changing the value of an attribute.
@@ -96,5 +96,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

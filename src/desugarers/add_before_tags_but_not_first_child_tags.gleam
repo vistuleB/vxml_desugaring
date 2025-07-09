@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
@@ -46,7 +46,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -65,8 +65,8 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
 
-pub const desugarer_name = "add_before_tags_but_not_first_child_tags"
-pub const desugarer_pipe = add_before_tags_but_not_first_child_tags
+const name = "add_before_tags_but_not_first_child_tags"
+const constructor = add_before_tags_but_not_first_child_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -74,9 +74,9 @@ pub const desugarer_pipe = add_before_tags_but_not_first_child_tags
 //------------------------------------------------53
 /// adds new elements before specified tags but not 
 /// if they are the first child
-pub fn add_before_tags_but_not_first_child_tags(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn add_before_tags_but_not_first_child_tags(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// adds new elements before specified tags but not 
@@ -97,5 +97,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

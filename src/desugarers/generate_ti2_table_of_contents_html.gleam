@@ -5,7 +5,7 @@ import gleam/option
 import gleam/pair
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn blame_us(note: String) -> Blame {
@@ -169,7 +169,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
+fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -189,8 +189,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "generate_ti2_table_of_contents_html"
-pub const desugarer_pipe = generate_ti2_table_of_contents_html
+const name = "generate_ti2_table_of_contents_html"
+const constructor = generate_ti2_table_of_contents_html
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -198,9 +198,9 @@ pub const desugarer_pipe = generate_ti2_table_of_contents_html
 //------------------------------------------------53
 /// generates HTML table of contents for TI2 content
 /// with sections
-pub fn generate_ti2_table_of_contents_html(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn generate_ti2_table_of_contents_html(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// generates HTML table of contents for TI2 content
@@ -221,5 +221,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

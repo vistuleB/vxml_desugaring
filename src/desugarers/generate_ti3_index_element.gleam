@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
 import gleam/function
 
@@ -214,7 +214,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   |> Ok
 }
 
-fn desugarer_factory() -> infra.Desugarer {
+fn desugarer_factory(_: InnerParam) -> infra.DesugarerTransform {
   at_root
 }
 
@@ -225,24 +225,24 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub const desugarer_name = "generate_ti3_index_element"
-pub const desugarer_pipe = generate_ti3_index_element
+const name = "generate_ti3_index_element"
+const constructor = generate_ti3_index_element
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// Generate ti3 Index element
-pub fn generate_ti3_index_element() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn generate_ti3_index_element(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// Generate ti3 Index element
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(_) -> desugarer_factory()
+      Ok(inner) -> desugarer_factory(inner)
     }
   )
 }
@@ -255,5 +255,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

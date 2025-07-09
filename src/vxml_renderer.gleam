@@ -9,7 +9,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DetailedDesugaringError, DetailedDesugaringError, type Pipe} as infra
+import infrastructure.{type InSituDesugaringError, InSituDesugaringError, type Desugarer} as infra
 import star_block
 import shellout
 import simplifile
@@ -69,7 +69,7 @@ pub fn default_writerly_source_parser(
   )
 
   use filtered_vxml <- result.try(
-    filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+    filter_nodes_by_attributes(spotlight_args).transform(vxml)
     |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
   )
 
@@ -93,7 +93,7 @@ pub fn default_html_source_parser(
     }),
   )
 
-  filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+  filter_nodes_by_attributes(spotlight_args).transform(vxml)
   |> result.map_error(fn(e: infra.DesugaringError) { SourceParserError(e.message) })
 }
 
@@ -103,12 +103,12 @@ pub fn default_html_source_parser(
 // *************
 
 pub type Pipeline =
-  List(Pipe)
+  List(Desugarer)
 
 pub type PipelineDebugOptions {
   PipelineDebugOptions(
-    debug_print: fn(Int, Pipe) -> Bool,
-    artifact_print: fn(Int, Pipe) -> Bool,
+    debug_print: fn(Int, Desugarer) -> Bool,
+    artifact_print: fn(Int, Desugarer) -> Bool,
     artifact_directory: String,
   )
 }
@@ -302,7 +302,7 @@ pub type Renderer(
   Renderer(
     assembler: BlamedLinesAssembler(a), // file/directory -> List(BlamedLine)                     Result w/ error type a
     source_parser: SourceParser(c),     // List(BlamedLine) -> VXML                               Result w/ error type c
-    pipeline: List(Pipe),               // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
+    pipeline: List(Desugarer),               // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
     splitter: Splitter(d, e),           // VXML -> List(#(String, VXML, d))                       Result w/ error type e
     emitter: Emitter(d, f),             // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
     prettifier: Prettifier(d, h),       // String, #(String, d) -> Nil                            Result w/ error type h
@@ -341,10 +341,10 @@ pub type RendererParameters {
 
 fn pipeline_runner(
   vxml: VXML,
-  pipeline: List(Pipe),
+  pipeline: List(Desugarer),
   pipeline_debug_options: PipelineDebugOptions,
   step: Int,
-) -> Result(VXML, DetailedDesugaringError) {
+) -> Result(VXML, InSituDesugaringError) {
   case pipeline {
     [] -> Ok(vxml)
 
@@ -359,7 +359,7 @@ fn pipeline_runner(
           |> io.print
       }
   
-      case pipe.desugarer(vxml) {
+      case pipe.transform(vxml) {
         Ok(vxml) -> {
           case pipeline_debug_options.debug_print(step, pipe) {
             False -> Nil
@@ -367,11 +367,12 @@ fn pipeline_runner(
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
-        Error(error) -> Error(DetailedDesugaringError(
+
+        Error(error) -> Error(InSituDesugaringError(
+          desugarer: pipe,
+          pipeline_step: step,
           blame: error.blame, 
           message: error.message,
-          desugarer: pipe.desugarer_name,
-          step: step,
         ))
       }
     }
@@ -415,7 +416,7 @@ pub fn possible_error_message(
 pub type RendererError(a, c, e, f, h) {
   AssemblyError(a)
   SourceParserError(c)
-  PipelineError(DetailedDesugaringError)
+  PipelineError(InSituDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
   ArtifactPrintingError(String)
@@ -432,7 +433,7 @@ fn quick_message(thing: a, msg: String) -> a {
   thing
 }
 
-fn pipeline_overview(pipes: List(Pipe)) {
+fn pipeline_overview(pipes: List(Desugarer)) {
   let number_columns = 4
   let name_columns = 70
   let max_param_cols = 40
@@ -462,7 +463,7 @@ fn pipeline_overview(pipes: List(Pipe)) {
         None -> none_param
         Some(thing) -> thing
       }
-      let name = pipe.desugarer_name
+      let name = pipe.name
       let num = ins(i + 1) <> "."
       let num_spaces = number_columns - string.length(num)
       let name_spaces = name_columns - {1 + string.length(name)}
@@ -557,12 +558,12 @@ pub fn run_renderer(
       debug_options.pipeline_debug_options,
       1,
     ),
-    with_on_error: fn(e: DetailedDesugaringError) {
+    with_on_error: fn(e: InSituDesugaringError) {
       case debug_options.error_messages {
         True -> {
           {
-            "\nError thrown by " <> e.desugarer <> ".gleam desugarer" <>
-            "\nPipeline position: " <> ins(e.step) <>
+            "\nError thrown by " <> e.desugarer.name <> ".gleam desugarer" <>
+            "\nPipeline position: " <> ins(e.pipeline_step) <>
             "\nBlame: " <> ins(e.blame) <>
             "\nMessage: " <> e.message <>
             "\n"
@@ -847,7 +848,7 @@ pub type CommandLineAmendments {
     output_dir: Option(String),
     debug_assembled_input: Bool,
     debug_pipeline_range: #(Int, Int),
-    debug_pipeline_desugarer_names: List(String),
+    debug_pipeline_names: List(String),
     basic_messages: Bool,
     debug_vxml_fragments_local_paths: List(String),
     debug_blamed_lines_fragments_local_paths: List(String),
@@ -869,7 +870,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     output_dir: None,
     debug_assembled_input: False,
     debug_pipeline_range: #(-1, -1),
-    debug_pipeline_desugarer_names: [],
+    debug_pipeline_names: [],
     basic_messages: True,
     debug_vxml_fragments_local_paths: [],
     debug_blamed_lines_fragments_local_paths: [],
@@ -896,14 +897,14 @@ fn amend_debug_pipeline_range(
   CommandLineAmendments(..amendments, debug_pipeline_range: #(start, end))
 }
 
-fn amend_debug_pipeline_desugarer_names(
+fn amend_debug_pipeline_names(
   amendments: CommandLineAmendments,
   names: List(String),
 ) -> CommandLineAmendments {
   CommandLineAmendments(
     ..amendments,
-    debug_pipeline_desugarer_names: list.append(
-      amendments.debug_pipeline_desugarer_names,
+    debug_pipeline_names: list.append(
+      amendments.debug_pipeline_names,
       names,
     ),
   )
@@ -1097,7 +1098,7 @@ pub fn process_command_line_arguments(
         case list.is_empty(values) {
           True -> Ok(amendments |> amend_debug_pipeline_range(0, 0))
           False ->
-            Ok(amendments |> amend_debug_pipeline_desugarer_names(values))
+            Ok(amendments |> amend_debug_pipeline_names(values))
         }
       }
 
@@ -1105,7 +1106,7 @@ pub fn process_command_line_arguments(
         case list.is_empty(values) {
           True -> Ok(amendments |> amend_debug_pipeline_range(-2, -2))
           False ->
-            Ok(amendments |> amend_debug_pipeline_desugarer_names(values))
+            Ok(amendments |> amend_debug_pipeline_names(values))
         }
       }
 
@@ -1207,12 +1208,12 @@ pub fn db_amend_assembler_debug_options(
 pub fn db_amend_pipeline_debug_options(
   options: PipelineDebugOptions,
   amendments: CommandLineAmendments,
-  pipeline: List(Pipe),
+  pipeline: List(Desugarer),
 ) -> PipelineDebugOptions {
   let PipelineDebugOptions(_, artifact_print, artifact_directory) = options
 
   let #(start, end) = amendments.debug_pipeline_range
-  let names = amendments.debug_pipeline_desugarer_names
+  let names = amendments.debug_pipeline_names
 
   PipelineDebugOptions(
     fn(step, pipe) {
@@ -1221,7 +1222,7 @@ pub fn db_amend_pipeline_debug_options(
       || { start == -2 && end == -2 && step == list.length(pipeline) }
       || {
         list.is_empty(names) == False
-        && list.any(names, fn (name) { string.contains(pipe.desugarer_name, name) })
+        && list.any(names, fn (name) { string.contains(pipe.name, name) })
       }
     },
     artifact_print,
@@ -1312,7 +1313,7 @@ pub fn db_amend_prettifier_debug_options(
 pub fn amend_renderer_debug_options_by_command_line_amendment(
   debug_options: RendererDebugOptions(d),
   amendments: CommandLineAmendments,
-  pipeline: List(Pipe),
+  pipeline: List(Desugarer),
 ) -> RendererDebugOptions(d) {
   RendererDebugOptions(
     debug_options.basic_messages,

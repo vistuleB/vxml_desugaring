@@ -2,7 +2,7 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn lists_of_non_blank_line_chunks(
@@ -46,7 +46,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
   )
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -63,8 +63,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "group_siblings_not_separated_by_blank_lines"
-pub const desugarer_pipe = group_siblings_not_separated_by_blank_lines
+const name = "group_siblings_not_separated_by_blank_lines"
+const constructor = group_siblings_not_separated_by_blank_lines
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -75,9 +75,9 @@ pub const desugarer_pipe = group_siblings_not_separated_by_blank_lines
 /// remove WriterlyBlankLine elements; stays out of
 /// subtrees designated by tags in the second 
 /// 'List(String)' argument
-pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn group_siblings_not_separated_by_blank_lines(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// wrap siblings that are not separated by
@@ -101,5 +101,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -136,7 +136,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
   ))
 }
 
-fn desugarer_factory(param: InnerParam) -> infra.Desugarer {
+fn desugarer_factory(param: InnerParam) -> infra.DesugarerTransform {
   at_root(_, param)
 }
 
@@ -153,8 +153,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "generate_lbp_table_of_contents"
-pub const desugarer_pipe =  generate_lbp_table_of_contents
+const name = "generate_lbp_table_of_contents"
+const constructor =  generate_lbp_table_of_contents
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -167,9 +167,9 @@ pub const desugarer_pipe =  generate_lbp_table_of_contents
 /// tag name for the Chapter/Bootcamp category 
 /// banners, and an optional spacer tag name for an
 /// element to be placed between the two categories
-pub fn generate_lbp_table_of_contents(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn generate_lbp_table_of_contents(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// generates the LBP table of contents while
@@ -195,5 +195,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

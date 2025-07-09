@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -36,7 +36,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -55,8 +55,8 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String)))
 
-pub const desugarer_name = "insert_bookend_tags"
-pub const desugarer_pipe = insert_bookend_tags
+const name = "insert_bookend_tags"
+const constructor = insert_bookend_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -64,9 +64,9 @@ pub const desugarer_pipe = insert_bookend_tags
 //------------------------------------------------53
 /// inserts bookend tags at the beginning and end of
 /// specified tags
-pub fn insert_bookend_tags(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn insert_bookend_tags(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// inserts bookend tags at the beginning and end of
@@ -87,5 +87,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

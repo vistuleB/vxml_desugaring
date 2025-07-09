@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
@@ -49,7 +49,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -67,8 +67,8 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
 
-pub const desugarer_name = "add_between_tag_and_text_node"
-pub const desugarer_pipe = add_between_tag_and_text_node
+const name = "add_between_tag_and_text_node"
+const constructor = add_between_tag_and_text_node
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -76,9 +76,9 @@ pub const desugarer_pipe = add_between_tag_and_text_node
 //------------------------------------------------53
 /// adds new elements between specified tags and 
 /// following text nodes
-pub fn add_between_tag_and_text_node(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn add_between_tag_and_text_node(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// adds new elements between specified tags and 
@@ -99,5 +99,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

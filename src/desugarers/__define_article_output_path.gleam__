@@ -49,8 +49,8 @@ type Extra =
 //    Tag     File     attribute key       
 //            Path     
 
-pub fn define_article_output_path(extra: Extra) -> Pipe {
-  Pipe(
+pub fn define_article_output_path(extra: Extra) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription("define_article_output_path", None, "..."),
     desugarer: desugarer_factory(extra),
   )

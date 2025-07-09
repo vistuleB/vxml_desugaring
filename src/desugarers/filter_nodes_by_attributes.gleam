@@ -2,7 +2,7 @@ import desugarers/remove_outside_subtrees.{remove_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type DesugaringError, type Desugarer, Desugarer} as infra
 import vxml.{type VXML, V}
 
 fn matches_a_selector(vxml: VXML, inner: InnerParam) -> Bool {
@@ -32,8 +32,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "filter_nodes_by_attributes"
-pub const desugarer_pipe = filter_nodes_by_attributes
+const name = "filter_nodes_by_attributes"
+const constructor = filter_nodes_by_attributes
 
 //------------------------------------------------53
 /// filters by identifying nodes whose
@@ -43,9 +43,9 @@ pub const desugarer_pipe = filter_nodes_by_attributes
 /// match counting as true if key == ""; keeps only
 /// nodes that are descendants of such nodes, or
 /// ancestors of such nodes
-pub fn filter_nodes_by_attributes(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// filters by identifying nodes whose
@@ -60,7 +60,7 @@ pub fn filter_nodes_by_attributes(param: Param) -> Pipe {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> fn(vxml) { Ok(vxml) }
-        _ -> remove_outside_subtrees(matches_a_selector(_, inner)).desugarer
+        _ -> remove_outside_subtrees(matches_a_selector(_, inner)).transform
       }
     }
   )
@@ -74,5 +74,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

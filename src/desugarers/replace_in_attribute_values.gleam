@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
 
 fn replacer(mister: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
@@ -30,7 +30,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -45,8 +45,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "replace_in_attribute_values"
-pub const desugarer_pipe = replace_in_attribute_values
+const name = "replace_in_attribute_values"
+const constructor = replace_in_attribute_values
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -55,9 +55,9 @@ pub const desugarer_pipe = replace_in_attribute_values
 /// performs exact match find-replace in every
 /// attribute value of every node using the
 /// 'string.replace' function
-pub fn replace_in_attribute_values(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn replace_in_attribute_values(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// performs exact match find-replace in every
@@ -79,5 +79,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

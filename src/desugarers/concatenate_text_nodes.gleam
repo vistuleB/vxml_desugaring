@@ -1,5 +1,5 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, V}
 
 fn transform(
@@ -17,7 +17,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -26,11 +26,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-pub const desugarer_name = "concatenate_text_nodes"
-pub const desugarer_pipe = concatenate_text_nodes
+const name = "concatenate_text_nodes"
+const constructor = concatenate_text_nodes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -38,9 +37,9 @@ pub const desugarer_pipe = concatenate_text_nodes
 //------------------------------------------------53
 /// concatenates adjacent text nodes into single
 /// text nodes
-pub fn concatenate_text_nodes() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn concatenate_text_nodes() -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// concatenates adjacent text nodes into single
@@ -61,5 +60,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

@@ -3,7 +3,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, BlamedContent, T, V}
 
 fn substitute_blames_in(node: VXML, new_blame: Blame) -> VXML {
@@ -69,7 +69,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -109,8 +109,8 @@ type Param =
 type InnerParam =
   Dict(String, #(VXML, VXML))
 
-pub const desugarer_name = "prepend_append_to_text_children_of"
-pub const desugarer_pipe = prepend_append_to_text_children_of
+const name = "prepend_append_to_text_children_of"
+const constructor = prepend_append_to_text_children_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -118,9 +118,9 @@ pub const desugarer_pipe = prepend_append_to_text_children_of
 //------------------------------------------------53
 /// prepends and appends text to all text children
 /// of specified tags
-pub fn prepend_append_to_text_children_of(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn prepend_append_to_text_children_of(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// prepends and appends text to all text children
@@ -141,5 +141,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

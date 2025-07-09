@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn transform(
@@ -32,7 +32,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
   fn(vxml, a, s1, s2, s3) { transform(vxml, a, s1, s2, s3, inner) }
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
@@ -44,17 +44,17 @@ type Param = fn(VXML) -> Bool
 
 type InnerParam = Param
 
-pub const desugarer_name = "remove_outside_subtrees"
-pub const desugarer_pipe = remove_outside_subtrees
+const name = "remove_outside_subtrees"
+const constructor = remove_outside_subtrees
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// removes nodes that are outside subtrees matching the predicate function
-pub fn remove_outside_subtrees(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn remove_outside_subtrees(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// removes nodes that are outside subtrees matching the predicate function
@@ -74,5 +74,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

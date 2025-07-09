@@ -1,6 +1,6 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V, type BlamedAttribute, BlamedAttribute}
 
 fn rename_attribute_key(attr: BlamedAttribute, transform_fn: fn(String) -> String) -> BlamedAttribute {
@@ -23,7 +23,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -36,8 +36,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "rename_attributes_by_function"
-pub const desugarer_pipe =  rename_attributes_by_function
+const name = "rename_attributes_by_function"
+const constructor =  rename_attributes_by_function
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -45,9 +45,9 @@ pub const desugarer_pipe =  rename_attributes_by_function
 //------------------------------------------------53
 /// renames attribute keys using a provided
 /// transformation function
-pub fn rename_attributes_by_function(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn rename_attributes_by_function(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "
 /// renames attribute keys using a provided
@@ -84,5 +84,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

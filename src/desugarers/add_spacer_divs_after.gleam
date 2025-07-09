@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn intersperse_children_with_spacers(
@@ -52,7 +52,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
@@ -68,7 +68,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String,           String))
+  List(#(String,         String))
 //       ↖               ↖
 //       insert divs     class attribute
 //       after tags      of inserted div
@@ -78,8 +78,8 @@ type Param =
 type InnerParam =
   Dict(String, String)
 
-pub const desugarer_name = "add_spacer_divs_after"
-pub const desugarer_pipe = add_spacer_divs_after
+const name = "add_spacer_divs_after"
+const constructor = add_spacer_divs_after
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -87,9 +87,9 @@ pub const desugarer_pipe = add_spacer_divs_after
 //------------------------------------------------53
 /// adds spacer divs after specified tags but not 
 /// if they are the last child
-pub fn add_spacer_divs_after(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn add_spacer_divs_after(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// adds spacer divs after specified tags but not 
@@ -110,5 +110,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -4,7 +4,7 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type IgnoreWhen {
@@ -246,7 +246,7 @@ fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
   transform
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -257,8 +257,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub const desugarer_name = "split_content_by_low_level_delimiters_desugarer"
-pub const desugarer_pipe = split_content_by_low_level_delimiters_desugarer
+const name = "split_content_by_low_level_delimiters_desugarer"
+const constructor = split_content_by_low_level_delimiters_desugarer
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -266,15 +266,15 @@ pub const desugarer_pipe = split_content_by_low_level_delimiters_desugarer
 //------------------------------------------------53
 /// splits content by low level delimiters like *,
 /// _, and $
-pub fn split_content_by_low_level_delimiters_desugarer() -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn split_content_by_low_level_delimiters_desugarer(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(string.inspect(Nil)),
     "
   /// splits content by low level delimiters like *,
   /// _, and $
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
@@ -289,5 +289,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type VXML, T, V}
 
 fn child_must_escape(child: VXML, parent_tag: String, inner: InnerParam) -> Bool {
@@ -34,7 +34,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -52,8 +52,8 @@ type Param =
 
 type InnerParam = Param
 
-pub const desugarer_name = "free_children"
-pub const desugarer_pipe = free_children
+const name = "free_children"
+const constructor = free_children
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
@@ -103,9 +103,9 @@ pub const desugarer_pipe = free_children
 /// with the original attribute values of A
 /// copied over to the newly created 'copies' of
 /// A
-pub fn free_children(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn free_children(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// given a parent-child structure of the form
@@ -168,5 +168,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

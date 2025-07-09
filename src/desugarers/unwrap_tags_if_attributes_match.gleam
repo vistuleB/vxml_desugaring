@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import vxml.{type BlamedAttribute, type VXML, T, V}
 
 fn matches_all_key_value_pairs(
@@ -40,7 +40,7 @@ fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
   transform(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
   infra.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
@@ -54,17 +54,17 @@ type Param = List(#(String, List(#(String, String))))
 
 type InnerParam = Param
 
-pub const desugarer_name = "unwrap_tags_if_attributes_match"
-pub const desugarer_pipe = unwrap_tags_if_attributes_match
+const name = "unwrap_tags_if_attributes_match"
+const constructor = unwrap_tags_if_attributes_match
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// unwraps tags if all specified attributes match
-pub fn unwrap_tags_if_attributes_match(param: Param) -> Pipe {
-  Pipe(
-    desugarer_name,
+pub fn unwrap_tags_if_attributes_match(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.Some(ins(param)),
     "
 /// unwraps tags if all specified attributes match
@@ -84,5 +84,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

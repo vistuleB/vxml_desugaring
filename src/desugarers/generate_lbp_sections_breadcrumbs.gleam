@@ -1,7 +1,7 @@
 import gleam/string.{inspect as ins}
 import gleam/result
 import gleam/list
-import infrastructure.{type Pipe, Pipe, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 
@@ -160,7 +160,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(infra.replace_children_with(root, updated_children))
 }
 
-fn desugarer_factory() -> infra.Desugarer {
+fn desugarer_factory(_: InnerParam) -> DesugarerTransform {
   at_root
 }
 
@@ -171,21 +171,21 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub const desugarer_name = "generate_lbp_sections_breadcrumbs"
-pub const desugarer_pipe = generate_lbp_sections_breadcrumbs
+const name = "generate_lbp_sections_breadcrumbs"
+const constructor = generate_lbp_sections_breadcrumbs
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-pub fn generate_lbp_sections_breadcrumbs() -> Pipe {
-  Pipe(
-    desugarer_name,
+//------------------------------------------------53
+pub fn generate_lbp_sections_breadcrumbs(param: Param) -> Desugarer {
+  Desugarer(
+    name,
     option.None,
     "...",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(_) -> desugarer_factory()
+      Ok(inner) -> desugarer_factory(inner)
     },
   )
 }
@@ -198,5 +198,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(desugarer_name, assertive_tests_data(), desugarer_pipe)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

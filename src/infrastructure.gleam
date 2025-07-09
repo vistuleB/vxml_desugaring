@@ -1488,19 +1488,19 @@ pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classe
 //* desugaring efforts #1 deliverable: 'pub' function(s) below *
 //**************************************************************
 
-pub type OneToOneNodeMap =
-  fn(VXML) -> Result(VXML, DesugaringError)
+// pub type OneToOneNodeMap =
+//   fn(VXML) -> Result(VXML, DesugaringError)
 
-pub type OneToManyNodeMap =
-  fn(VXML) -> Result(List(VXML), DesugaringError)
+// pub type OneToManyNodeMap =
+//   fn(VXML) -> Result(List(VXML), DesugaringError)
 
-pub type FancyOneToManyNodeMap =
-  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) -> Result(List(VXML), DesugaringError)
+// pub type FancyOneToManyNodeMap =
+//   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) -> Result(List(VXML), DesugaringError)
 
-pub type OneToOneStatefulNodeMap(state) =
-  fn(VXML, state) -> Result(#(VXML, state), DesugaringError)
+// pub type OneToOneStatefulNodeMap(state) =
+//   fn(VXML, state) -> Result(#(VXML, state), DesugaringError)
 
-// [EarlyReturn][Fancy]OneTo[One|Many][Stateful|DownAndUpStateful]NodeMap
+// // [EarlyReturn][Fancy]OneTo[One|Many][Stateful|DownAndUpStateful]NodeMap
 
 pub type NodeToNodeTransform =
   fn(VXML) -> Result(VXML, DesugaringError)
@@ -1532,35 +1532,35 @@ fn node_to_node_desugar_one(
 
 pub fn node_to_node_desugarer_factory(
   transform: NodeToNodeTransform,
-) -> Desugarer {
+) -> DesugarerTransform {
   node_to_node_desugar_one(_, transform)
 }
 
-fn one_to_one_nodemap_recursive_application(
-  node: VXML,
-  nodemap: OneToOneNodeMap,
-) -> Result(VXML, DesugaringError) {
-  case node {
-    T(_, _) -> nodemap(node)
-    V(_, _, _, children) -> {
-      use children <- result.try(
-        children
-        |> list.map(one_to_one_nodemap_recursive_application(_, nodemap))
-        |> result.all
-      )
-      nodemap(V(..node, children: children))
-    }
-  }
-}
+// fn one_to_one_nodemap_recursive_application(
+//   node: VXML,
+//   nodemap: OneToOneNodeMap,
+// ) -> Result(VXML, DesugaringError) {
+//   case node {
+//     T(_, _) -> nodemap(node)
+//     V(_, _, _, children) -> {
+//       use children <- result.try(
+//         children
+//         |> list.map(one_to_one_nodemap_recursive_application(_, nodemap))
+//         |> result.all
+//       )
+//       nodemap(V(..node, children: children))
+//     }
+//   }
+// }
 
-pub type DesugarerTransform =
-  fn(VXML) -> Result(VXML, DesugaringError)
+// pub type DesugarerTransform =
+//   fn(VXML) -> Result(VXML, DesugaringError)
 
-pub fn one_to_one_nodemap_2_transform(
-  nodemap: OneToOneNodeMap,
-) -> DesugarerTransform {
-  one_to_one_nodemap_recursive_application(_, nodemap)
-}
+// pub fn one_to_one_nodemap_2_transform(
+//   nodemap: OneToOneNodeMap,
+// ) -> DesugarerTransform {
+//   one_to_one_nodemap_recursive_application(_, nodemap)
+// }
 
 //**********************************************************************
 //* desugaring efforts #1.5: depth-first-search, node-to-node          *
@@ -1583,6 +1583,7 @@ fn fancy_node_to_node_children_traversal(
       Ok(
         #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
       )
+
     [first, ..rest] -> {
       use first_replacement <- result.try(
         fancy_node_to_node_desugar_one(
@@ -1646,7 +1647,7 @@ fn fancy_node_to_node_desugar_one(
 
 pub fn node_to_node_fancy_desugarer_factory(
   transform: NodeToNodeFancyTransform,
-) -> Desugarer {
+) -> DesugarerTransform {
   fancy_node_to_node_desugar_one(_, [], [], [], [], transform)
 }
 
@@ -1739,7 +1740,7 @@ fn fancy_node_to_nodes_desugar_one(
 
 pub fn node_to_nodes_fancy_desugarer_factory(
   transform: NodeToNodesFancyTransform,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(root: VXML) {
     use vxmls <- result.try(fancy_node_to_nodes_desugar_one(
       root,
@@ -1871,7 +1872,7 @@ fn stateful_node_to_node_desugar_one(
 pub fn stateful_node_to_node_desugarer_factory(
   transform: StatefulNodeToNodeTransform(a),
   initial_state: a,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(vxml) {
     case stateful_node_to_node_desugar_one(initial_state, vxml, transform) {
       Error(err) -> Error(err)
@@ -1975,7 +1976,7 @@ fn stateful_fancy_depth_first_node_to_node_desugar_one(
 pub fn stateful_node_to_node_fancy_desugarer_factory(
   transform: StatefulNodeToNodeFancyTransform(a),
   initial_state: a,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(vxml) {
     case stateful_fancy_depth_first_node_to_node_desugar_one(initial_state, vxml, [], [], [], [], transform) {
       Error(err) -> Error(err)
@@ -2035,7 +2036,7 @@ fn stateful_down_up_node_to_node_one(
 pub fn stateful_down_up_node_to_node_desugarer_factory(
   transform: StatefulDownAndUpNodeToNodeTransform(a),
   initial_state: a,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(vxml) {
     use #(vxml, _) <- result.try(stateful_down_up_node_to_node_one(
       initial_state,
@@ -2160,7 +2161,7 @@ fn stateful_down_up_fancy_node_to_node_one(
 pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
   transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
   initial_state: a,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(vxml) {
     use #(vxml, _) <- result.try(
       stateful_down_up_fancy_node_to_node_one(
@@ -2244,7 +2245,7 @@ fn stateful_down_up_node_to_nodes_one(
 pub fn stateful_down_up_node_to_nodes_desugarer_factory(
   transform: StatefulDownAndUpNodeToNodesTransform(a),
   initial_state: a,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(vxml) {
     case stateful_down_up_node_to_nodes_one(initial_state, vxml, transform) {
       Error(err) -> Error(err)
@@ -2291,7 +2292,7 @@ fn depth_first_node_to_nodes_desugar_one(
 
 pub fn node_to_nodes_desugarer_factory(
   transform: NodeToNodesTransform,
-) -> Desugarer {
+) -> DesugarerTransform {
   fn(root: VXML) {
     use vxmls <- result.try(depth_first_node_to_nodes_desugar_one(
       root,
@@ -2359,7 +2360,7 @@ fn early_return_node_to_node_desugar_one(
 
 pub fn early_return_node_to_node_desugarer_factory(
   transform: EarlyReturnNodeToNodeTransform,
-) -> Desugarer {
+) -> DesugarerTransform {
   early_return_node_to_node_desugar_one(_, [], transform)
 }
 
@@ -2387,7 +2388,7 @@ fn remove_minimum_indent(s: String) -> String {
 pub type AssertiveTestError {
   VXMLParseError(vxml.VXMLParseError)
   TestDesugaringError(DesugaringError)
-  AssertiveTestError(desugarer_name: String, output: String, expected: String)
+  AssertiveTestError(name: String, output: String, expected: String)
   NonMatchingDesugarerName(String)
 }
 
@@ -2401,7 +2402,7 @@ pub type AssertiveTestData(a) {
 
 pub type AssertiveTest {
   AssertiveTest(
-    pipe: fn() -> Pipe,
+    pipe: fn() -> Desugarer,
     source: String,   // VXML String
     expected: String, // VXML String
   )
@@ -2409,14 +2410,14 @@ pub type AssertiveTest {
 
 pub type AssertiveTests {
   AssertiveTests(
-    desugarer_name: String,
+    name: String,
     tests: fn() -> List(AssertiveTest),
   )
 }
 
 pub fn assertive_test_data_2_assertive_test(
   data: AssertiveTestData(param),
-  pipe_factory: fn(param) -> Pipe,
+  pipe_factory: fn(param) -> Desugarer,
 ) -> AssertiveTest {
   AssertiveTest(
     pipe: fn() { pipe_factory(data.param) },
@@ -2425,9 +2426,9 @@ pub fn assertive_test_data_2_assertive_test(
   )
 }
 
-pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)), pipe: fn(a) -> Pipe) -> AssertiveTests {
+pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)), pipe: fn(a) -> Desugarer) -> AssertiveTests {
   AssertiveTests(
-    desugarer_name: name,
+    name: name,
     tests: fn() -> List(AssertiveTest) {
       data
       |> list.map(
@@ -2442,30 +2443,30 @@ pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)),
   )
 }
 
-pub fn assertive_tests_from_data_nil_param(name: String, data: List(AssertiveTestData(a)), pipe: fn() -> Pipe) -> AssertiveTests {
+pub fn assertive_tests_from_data_nil_param(name: String, data: List(AssertiveTestData(a)), pipe: fn() -> Desugarer) -> AssertiveTests {
   assertive_tests_from_data(name, data, fn(_) { pipe() })
 }
 
-pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
+pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
   let pipe = tst.pipe()
 
   use <- on_true_on_false(
-    desugarer_name != pipe.desugarer_name,
-    Error(NonMatchingDesugarerName(pipe.desugarer_name)),
+    name != pipe.name,
+    Error(NonMatchingDesugarerName(pipe.name)),
   )
 
   use input <- result.try(
-    vxml.unique_root_parse_string(tst.source, "test " <> pipe.desugarer_name, False)
+    vxml.unique_root_parse_string(tst.source, "test " <> pipe.name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
   use expected <- result.try(
-    vxml.unique_root_parse_string(tst.expected, "test " <> pipe.desugarer_name, False)
+    vxml.unique_root_parse_string(tst.expected, "test " <> pipe.name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
   use output <- result.try(
-    pipe.desugarer(input)
+    pipe.transform(input)
     |> result.map_error(fn(e) { TestDesugaringError(e) })
   )
 
@@ -2473,7 +2474,7 @@ pub fn run_assertive_test(desugarer_name: String, tst: AssertiveTest) -> Result(
     True -> Ok(Nil)
     False -> Error(
       AssertiveTestError(
-        pipe.desugarer_name,
+        pipe.name,
         vxml.debug_vxml_to_string("(obtained) ", output),
         vxml.debug_vxml_to_string("(expected) ", expected),
       )
@@ -2487,7 +2488,7 @@ pub fn run_and_announce_results(
   number: Int,
   total: Int,
 ) {
-  case run_assertive_test(test_group.desugarer_name, tst) {
+  case run_assertive_test(test_group.name, tst) {
     Ok(Nil) ->
       io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
     Error(error) -> {
@@ -2510,7 +2511,7 @@ pub fn run_assertive_tests(test_group: AssertiveTests) -> List(Nil) {
   let total = list.length(tests)
   let announcer = fn(tst, i) { run_and_announce_results(test_group, tst, i + 1, total) }
   io.println("")
-  io.println("running tests for " <> test_group.desugarer_name <> "...")
+  io.println("running tests for " <> test_group.name <> "...")
   tests
   |> list.index_map(announcer)
 }
@@ -2523,35 +2524,23 @@ pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
 }
 
-pub type DetailedDesugaringError {
-  DetailedDesugaringError(
-    blame: Blame,
+pub type InSituDesugaringError {
+  InSituDesugaringError(
+    desugarer: Desugarer,
+    pipeline_step: Int,
     message: String,
-    desugarer: String,
-    step: Int,
+    blame: Blame,
   )
 }
 
-pub type Desugarer =
+pub type DesugarerTransform =
   fn(VXML) -> Result(VXML, DesugaringError)
 
-pub type DesugarerDescription {
-  DesugarerDescription(
-    desugarer_name: String,
-    stringified_param: Option(String),
-    general_description: String,
-  )
-}
-
-// pub type Pipe {
-//   Pipe(description: DesugarerDescription, desugarer: Desugarer)
-// }
-
-pub type Pipe {
-  Pipe(
-    desugarer_name: String,
+pub type Desugarer {
+  Desugarer(
+    name: String,
     stringified_param: Option(String),
     docs: String,
-    desugarer: Desugarer,
+    transform: DesugarerTransform,
   )
 }

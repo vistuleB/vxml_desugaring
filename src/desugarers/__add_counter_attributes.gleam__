@@ -289,8 +289,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
   )
 }
 
-pub fn add_counter_attributes(extra: Extra) -> Pipe {
-  Pipe(
+pub fn add_counter_attributes(extra: Extra) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
       "add_counter_attributes",
       option.Some(string.inspect(extra)),
