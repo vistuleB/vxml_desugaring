@@ -7,10 +7,10 @@ fn nodemap(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    V(_, _, _, children) -> {
+    V(_, _, _, children) ->
       Ok(V(..node, children: infra.plain_concatenation_in_list(children)))
-    }
-    _ -> Ok(node)
+    _ ->
+      Ok(node)
   }
 }
 

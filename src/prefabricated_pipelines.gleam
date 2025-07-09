@@ -16,10 +16,6 @@ import infrastructure.{
   BackslashClosingSquareBracket 
 }
 import desugarers as ds
-// import desugarers/split_by_indexed_regexes.{split_by_indexed_regexes}
-// import desugarers/pair_bookends.{pair_bookends}
-// import desugarers/fold_tags_into_text.{fold_tags_into_text}
-// import desugarers/insert_bookend_tags.{insert_bookend_tags}
 
 //******************
 // math delimiter stuff

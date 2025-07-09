@@ -63,10 +63,10 @@ const constructor = cut_paste_attribute_from_first_child_to_self
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------
-/// Moves an attribute with key `key` from the
-/// first child of a node with tag `parent_tag`
-/// to the node itself.
+//------------------------------------------------53
+/// Moves an attribute with key `key` from the first
+/// child of a node with tag `parent_tag` to the 
+/// node itself.
 /// ```
 /// #Param:
 /// - parent tag
@@ -78,9 +78,9 @@ pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     "
-/// Moves an attribute with key `key` from the
-/// first child of a node with tag `parent_tag`
-/// to the node itself.
+/// Moves an attribute with key `key` from the first
+/// child of a node with tag `parent_tag` to the 
+/// node itself.
 /// ```
 /// #Param:
 /// - parent tag
