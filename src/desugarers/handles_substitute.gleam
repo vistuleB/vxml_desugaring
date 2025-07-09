@@ -6,10 +6,8 @@ import gleam/regexp.{type Regexp, type Match, Match}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
-import vxml.{
-  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
-  BlamedContent, T, V,
-}
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 type HandleInstances =
   Dict(String, #(String,     String,     String))
@@ -211,25 +209,25 @@ fn t_transform(
   Ok(#(updated_contents, state))
 }
 
-fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
+fn counter_handle_transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpNodeToNodesTransform(
   State,
 ) {
   let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
-  infra.StatefulDownAndUpNodeToNodesTransform(
+  n2t.StatefulDownAndUpNodeToNodesTransform(
     v_before_transforming_children: v_before_transform,
     v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
     t_transform: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
   )
 }
 
-fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
+fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpNodeToNodesTransform(
   State,
 ) {
   counter_handle_transform_factory(inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.stateful_down_up_node_to_nodes_desugarer_factory(
+  n2t.stateful_down_up_node_to_nodes_desugarer_factory(
     transform_factory(inner),
     State(handles: dict.new(), local_path: None)
   )

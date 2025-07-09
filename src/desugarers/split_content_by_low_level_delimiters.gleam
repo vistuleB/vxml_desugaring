@@ -5,6 +5,7 @@ import gleam/option
 import gleam/result
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 type IgnoreWhen {
@@ -242,12 +243,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodesTransform {
+fn transform_factory(_: InnerParam) -> n2t.NodeToNodesTransform {
   transform
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
+  n2t.node_to_nodes_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

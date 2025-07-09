@@ -8,7 +8,8 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
-import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
 
 fn produce_attributes_and_increase_counters_for_tag(
   blame: Blame,
@@ -265,9 +266,9 @@ type TransformExtra =
 
 fn transform_factory(
   extra: Extra,
-) -> infra.StatefulDownAndUpNodeToNodeTransform(CountingState) {
+) -> n2t.StatefulDownAndUpNodeToNodeTransform(CountingState) {
   let transform_extra = transform_extra_dictionary(extra)
-  infra.StatefulDownAndUpNodeToNodeTransform(
+  n2t.StatefulDownAndUpNodeToNodeTransform(
     v_before_transforming_children: fn(node, state) {
       param_transform_first_half(node, state, transform_extra)
     },
@@ -283,7 +284,7 @@ fn transform_factory(
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
   let initial_state: CountingState = dict.from_list([])
-  infra.stateful_down_up_node_to_node_desugarer_factory(
+  n2t.stateful_down_up_node_to_node_desugarer_factory(
     transform_factory(extra),
     initial_state,
   )

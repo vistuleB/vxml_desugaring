@@ -11,7 +11,7 @@ fn transform_factory() -> infra.NodeToNodesTransform {
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_nodes_desugarer_factory(transform_factory())
+  n2t.node_to_nodes_desugarer_factory(transform_factory())
 }
 
 pub fn replace_double_dollars_by_tags(param: Param) -> Desugarer {

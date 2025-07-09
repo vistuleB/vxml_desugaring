@@ -5,6 +5,7 @@ import gleam/option.{Some, None}
 import gleam/result
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandlesDict =
@@ -128,8 +129,8 @@ fn v_after_transforming_children(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodeFancyTransform(State) {
-   infra.StatefulDownAndUpNodeToNodeFancyTransform(
+fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpNodeToNodeFancyTransform(State) {
+   n2t.StatefulDownAndUpNodeToNodeFancyTransform(
     v_before_transforming_children: fn(vxml, _, _, _, _, state) {
       v_before_transforming_children(vxml, state, inner)
     },
@@ -143,7 +144,7 @@ fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodeFanc
 }
 
 fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  infra.stateful_down_up_fancy_node_to_node_desugarer_factory(
+  n2t.stateful_down_up_fancy_node_to_node_desugarer_factory(
     transform_factory(inner),
     #(dict.new(), "")
   )

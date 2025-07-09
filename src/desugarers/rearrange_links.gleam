@@ -6,8 +6,9 @@ import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError } as infra
-import vxml.{ type VXML, BlamedAttribute, BlamedContent, T, V }
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 import xmlm
 
 type LinkPatternToken {
@@ -683,12 +684,12 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   Ok(#(pattern1, pattern2))
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
+fn transform_factory(inner: InnerParam) -> n2t.NodeToNodeTransform {
   transform(_, inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+  n2t.node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

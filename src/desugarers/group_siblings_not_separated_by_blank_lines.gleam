@@ -3,6 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
 fn lists_of_non_blank_line_chunks(
@@ -39,15 +40,15 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
-  infra.prevent_node_to_node_transform_inside(
+fn transform_factory(inner: InnerParam) -> n2t.NodeToNodeFancyTransform {
+  n2t.prevent_node_to_node_transform_inside(
     transform(_, inner),
     inner.1,
   )
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
+  n2t.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

@@ -2,6 +2,7 @@ import gleam/io
 import gleam/list
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn is_known_outer_element(vxml: VXML) -> Bool {
@@ -50,35 +51,35 @@ fn is_known_other_element(vxml: VXML) -> Bool {
   list.contains(["Table", "table", "Pause", "p"], tag)
 }
 
-fn transform(vxml: VXML, _: List(VXML)) -> infra.EarlyReturn(VXML) {
+fn transform(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
   use <- infra.on_true_on_false(
     is_known_outer_element(vxml),
-    infra.Continue(vxml),
+    n2t.Continue(vxml),
   )
 
   use <- infra.on_lazy_true_on_false(is_known_inner_element(vxml), fn() {
     let blame = vxml |> infra.get_blame
-    infra.GoBack(
+    n2t.GoBack(
       V(blame, "div", [BlamedAttribute(blame, "class", "slice")], [vxml]),
     )
   })
 
   use <- infra.on_true_on_false(
     is_known_other_element(vxml),
-    infra.GoBack(vxml),
+    n2t.GoBack(vxml),
   )
 
   io.println("unclassified element: " <> { vxml |> infra.digest })
 
-  infra.GoBack(vxml)
+  n2t.GoBack(vxml)
 }
 
-fn transform_factory(_: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
+fn transform_factory(_: InnerParam) -> n2t.EarlyReturnNodeToNodeTransform {
   transform
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
+  n2t.early_return_node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

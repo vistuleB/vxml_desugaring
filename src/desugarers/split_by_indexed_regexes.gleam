@@ -1,19 +1,20 @@
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import indexed_regex_splitting as rs
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(inner: InnerParam) -> n2t.NodeToNodesFancyTransform {
   let #(regexes_and_tags, forbidden_parents) = inner
   rs.split_by_regexes_with_indexed_group_node_to_nodes_transform(
     _,
     regexes_and_tags,
   )
-  |> infra.prevent_node_to_nodes_transform_inside(forbidden_parents)
+  |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
+  n2t.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
