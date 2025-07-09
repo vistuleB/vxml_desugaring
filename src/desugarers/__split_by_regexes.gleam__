@@ -6,14 +6,14 @@ import infrastructure.{type Desugarer, type Desugarer, Desugarer} as infra
 type Extras =
   #(List(#(Regexp, String)), List(String))
 
-fn transform_factory(extras: Extras) -> infra.FancyOneToManyNodeMap {
+fn nodemap_factory(extras: Extras) -> infra.FancyOneToManyNodeMap {
   let #(regexes_and_tags, forbidden_parents) = extras
   infra.replace_regexes_by_tags_param_transform(_, regexes_and_tags)
   |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
 fn desugarer_factory(extras: Extras) -> Desugarer {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(extras))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(extras))
 }
 
 pub fn split_by_regexes(extras: Extras) -> Desugarer {

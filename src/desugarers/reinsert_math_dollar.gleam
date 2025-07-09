@@ -64,7 +64,7 @@ fn update_children(nodes: List(VXML), dollar: String) -> List(VXML) {
   }
 }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   let math_map = dict.from_list([#("Math", "$"), #("MathBlock", "$$")])
@@ -82,12 +82,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

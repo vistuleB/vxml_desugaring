@@ -5,7 +5,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn transform(
+fn nodemap(
   node: VXML,
   previous_unmapped_siblings: List(VXML),
   inner: InnerParam,
@@ -19,14 +19,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   fn(node, _, prev_siblings, _, _) {
-    transform(node, prev_siblings, inner)
+    nodemap(node, prev_siblings, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -71,7 +71,47 @@ pub fn add_attribute_to_second_of_kind(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: #("A", "key1", "val1"),
+      source:   "
+                <> root
+                  <> A
+                  <> A
+                  <> B
+                  <> A
+                ",
+      expected: "
+                <> root
+                  <> A
+                  <> A
+                    key1=val1
+                  <> B
+                  <> A
+                "
+    ),
+    infra.AssertiveTestData(
+      param: #("A", "key1", "val1"),
+      source:   "
+                <> root
+                  <> B
+                  <> B
+                  <> A
+                  <> A
+                  <> A
+                ",
+      expected: "
+                <> root
+                  <> B
+                  <> B
+                  <> A
+                  <> A
+                    key1=val1
+                  <> A
+                    key1=val1
+                "
+    ),
+  ]
 }
 
 pub fn assertive_tests() {

@@ -5,7 +5,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{ type VXML, BlamedContent, T, V }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
   inner: InnerParam,
@@ -39,14 +39,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   fn(vxml, ancestors, _, _, _) {
-    transform(vxml, ancestors, inner)
+    nodemap(vxml, ancestors, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -93,7 +93,45 @@ pub fn prepend_text_if_has_ancestor_else(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: [#("ze_tag", "ze_ancestor", "_if_text_", "_else_text_")],
+      source:   "
+                <> root
+                  <> ze_tag
+                    <>
+                      \"some text V1\"
+                  <> ze_ancestor
+                    <> distraction
+                      <> ze_tag
+                        <>
+                          \"some text V2\"
+                  <> ze_tag
+                    <> AnotherNode
+                      a=b
+                ",
+      expected: "
+                <> root
+                  <> ze_tag
+                    <>
+                      \"_else_text_\"
+                    <>
+                      \"some text V1\"
+                  <> ze_ancestor
+                    <> distraction
+                      <> ze_tag
+                        <>
+                          \"_if_text_\"
+                        <>
+                          \"some text V2\"
+                  <> ze_tag
+                    <>
+                      \"_else_text_\"
+                    <> AnotherNode
+                      a=b
+                ",
+    ),
+  ]
 }
 
 pub fn assertive_tests() {

@@ -186,7 +186,7 @@ fn v_after_transform(
   let assert V(_, tag, _, children)  = vxml
   case tag == "GrandWrapper" {
     True -> {
-      let assert [V(_, "Book", _, _) as root] = children
+      let assert [V(_, _, _, _) as root] = children
       Ok(#([root], state))
     }
     False -> Ok(#([vxml], state))
@@ -209,26 +209,26 @@ fn t_transform(
   Ok(#(updated_contents, state))
 }
 
-fn counter_handle_transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpOneToManyNodeMap(
+fn counter_handle_nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(
   State,
 ) {
   let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
-  n2t.StatefulDownAndUpOneToManyNodeMap(
+  n2t.OneToManyBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: v_before_transform,
     v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
-    t_transform: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
+    t_nodemap: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
   )
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpOneToManyNodeMap(
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(
   State,
 ) {
-  counter_handle_transform_factory(inner)
+  counter_handle_nodemap_factory(inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.stateful_down_up_node_to_nodes_desugarer_factory(
-    transform_factory(inner),
+  n2t.one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
+    nodemap_factory(inner),
     State(handles: dict.new(), local_path: None)
   )
 }
@@ -252,6 +252,10 @@ const constructor = handles_substitute
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
+/// !!! THIS CRAPPY DESUGARER MAKES HARDWIRED !!!!!!
+/// ASSUMPTIONS ABOUT 'path' ATTRIBUTE AS WELL AS !!
+/// 'Chapter' and 'Bootcamp' TAG NAMES !!!!!!!!!!!!!
+/// 
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
 /// the form : handle_name | id | filename | value
@@ -325,7 +329,40 @@ pub fn handles_substitute(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: [],
+      source:   "
+                <> GrandWrapper
+                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  <> root
+                    <> Chapter
+                      path=./ch1.html
+                      <>
+                        \"some text with >>fluescence in it\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                ",
+      expected: "
+                <> root
+                  <> Chapter
+                    path=./ch1.html
+                    <>
+                      \"some text with \"
+                    <> InChapterLink
+                      href=./ch1.html?id=_23-super-id
+                      class=handle-in-chapter-link
+                      <>
+                        \"AA\"
+                    <>
+                      \" in it\"
+                    <> Math
+                      <>
+                        \"$x^2 + b^2$\"
+                ",
+    )
+  ]
 }
 
 pub fn assertive_tests() {

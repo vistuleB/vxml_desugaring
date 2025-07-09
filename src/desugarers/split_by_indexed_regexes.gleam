@@ -4,7 +4,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import indexed_regex_splitting as rs
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   let #(regexes_and_tags, forbidden_parents) = inner
   rs.split_by_regexes_with_indexed_group_node_to_nodes_transform(
     _,
@@ -14,7 +14,7 @@ fn transform_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

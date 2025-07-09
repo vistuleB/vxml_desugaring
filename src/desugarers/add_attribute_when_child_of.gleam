@@ -6,7 +6,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
@@ -46,14 +46,14 @@ fn transform(
   Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   fn(vxml, ancestors, s1, s2, s3) {
-    transform(vxml, ancestors, s1, s2, s3, inner)
+    nodemap(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -102,7 +102,32 @@ pub fn add_attribute_when_child_of(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: [#("B", "parent", "key1", "val1")],
+      source:   "
+                <> root
+                  <> B
+                    <> parent
+                  <> parent
+                    <> B
+                  <> parent
+                    <> B
+                      key1=val2
+                ",
+      expected: "
+                <> root
+                  <> B
+                    <> parent
+                  <> parent
+                    <> B
+                      key1=val1
+                  <> parent
+                    <> B
+                      key1=val2
+                "
+    )
+  ]
 }
 
 pub fn assertive_tests() {

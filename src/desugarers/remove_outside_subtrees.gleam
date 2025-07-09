@@ -4,7 +4,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
@@ -29,12 +29,12 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
-  fn(vxml, a, s1, s2, s3) { transform(vxml, a, s1, s2, s3, inner) }
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
+  fn(vxml, a, s1, s2, s3) { nodemap(vxml, a, s1, s2, s3, inner) }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -42,7 +42,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = fn(VXML) -> Bool
-
 type InnerParam = Param
 
 const name = "remove_outside_subtrees"
@@ -52,13 +51,15 @@ const constructor = remove_outside_subtrees
 // 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes nodes that are outside subtrees matching the predicate function
+/// removes nodes that are outside subtrees matching
+/// the predicate function
 pub fn remove_outside_subtrees(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
-/// removes nodes that are outside subtrees matching the predicate function
+/// removes nodes that are outside subtrees matching
+/// the predicate function
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
@@ -71,7 +72,26 @@ pub fn remove_outside_subtrees(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: infra.is_v_and_tag_equals(_, "keep_this"),
+      source:   "
+                <> R
+                  <>
+                    \"hello world\"
+                  <> blabla
+                  <> keep_this
+                    <>
+                      \"hello world\"
+                ",
+      expected: "
+                <> R
+                  <> keep_this
+                    <>
+                      \"hello world\"
+                ",
+    ),
+  ]
 }
 
 pub fn assertive_tests() {

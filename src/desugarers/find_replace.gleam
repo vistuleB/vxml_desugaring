@@ -3,14 +3,14 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   let #(string_pairs, forbidden_parents) = inner
   infra.find_replace_in_node_transform_version(_, string_pairs)
   |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -50,7 +50,45 @@ pub fn find_replace(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: #([#("from", "to")], ["keep_out"]),
+      source:   "
+                <> root
+                  <> A
+                    <> B
+                      <>
+                        \"from a thing\"
+                        \"to a thing\"
+                      <> keep_out
+                        <>
+                          \"from a thing\"
+                          \"to a thing\"
+                    <> keep_out
+                      <> B
+                        <>
+                          \"from a thing\"
+                          \"to a thing\"
+                ",
+      expected: "
+                <> root
+                  <> A
+                    <> B
+                      <>
+                        \"to a thing\"
+                        \"to a thing\"
+                      <> keep_out
+                        <>
+                          \"from a thing\"
+                          \"to a thing\"
+                    <> keep_out
+                      <> B
+                        <>
+                          \"from a thing\"
+                          \"to a thing\"
+                ",
+    )
+  ]
 }
 
 pub fn assertive_tests() {

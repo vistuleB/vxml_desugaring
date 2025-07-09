@@ -264,18 +264,18 @@ type CountingState =
 type TransformExtra =
   Dict(String, List(TagInfoForParent))
 
-fn transform_factory(
+fn nodemap_factory(
   extra: Extra,
-) -> n2t.StatefulDownAndUpOneToOneNodeMap(CountingState) {
+) -> n2t.OneToOneBeforeAndAfterStatefulNodeMap(CountingState) {
   let transform_extra = transform_extra_dictionary(extra)
-  n2t.StatefulDownAndUpOneToOneNodeMap(
+  n2t.OneToOneBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(node, state) {
       param_transform_first_half(node, state, transform_extra)
     },
     v_after_transforming_children: fn(node, old_state, new_state) {
       param_transform_second_half(node, old_state, new_state, transform_extra)
     },
-    t_transform: fn(node, state) {
+    t_nodemap: fn(node, state) {
       let assert T(_, _) = node
       Ok(#(node, state))
     },
@@ -284,8 +284,8 @@ fn transform_factory(
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
   let initial_state: CountingState = dict.from_list([])
-  n2t.stateful_down_up_node_to_node_desugarer_factory(
-    transform_factory(extra),
+  n2t.one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
+    nodemap_factory(extra),
     initial_state,
   )
 }

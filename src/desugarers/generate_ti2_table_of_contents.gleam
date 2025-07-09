@@ -94,7 +94,7 @@ fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML 
   ])
 }
 
-fn transform(
+fn nodemap(
   root: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
@@ -120,12 +120,12 @@ fn transform(
   ))
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

@@ -49,8 +49,7 @@ fn one_to_many_nodemap_recursive_application(
     V(_, _, _, children) -> {
       use children <- result.try(
         children
-        |> list.map(one_to_many_nodemap_recursive_application(_, nodemap))
-        |> result.all
+        |> list.try_map(one_to_many_nodemap_recursive_application(_, nodemap))
         |> result.map(list.flatten)
       )
       nodemap(V(..node, children: children))
@@ -75,40 +74,6 @@ pub type FancyOneToOneNodeMap =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(VXML, DesugaringError)
 
-fn fancy_one_to_one_nodemap_children_traversal(
-  ancestors: List(VXML),
-  previous_siblings_before_mapping: List(VXML),
-  previous_siblings_after_mapping: List(VXML),
-  following_siblings_before_mapping: List(VXML),
-  nodemap: FancyOneToOneNodeMap,
-) -> Result(#(List(VXML), List(VXML), List(VXML)), DesugaringError) {
-  case following_siblings_before_mapping {
-    [] ->
-      Ok(
-        #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
-      )
-    [first, ..rest] -> {
-      use first_replacement <- result.try(
-        fancy_one_to_one_nodemap_recursive_application(
-          first,
-          ancestors,
-          previous_siblings_before_mapping,
-          previous_siblings_after_mapping,
-          rest,
-          nodemap,
-        ),
-      )
-      fancy_one_to_one_nodemap_children_traversal(
-        ancestors,
-        [first, ..previous_siblings_before_mapping],
-        [first_replacement, ..previous_siblings_after_mapping],
-        rest,
-        nodemap,
-      )
-    }
-  }
-}
-
 fn fancy_one_to_one_nodemap_recursive_application(
   node: VXML,
   ancestors: List(VXML),
@@ -126,19 +91,29 @@ fn fancy_one_to_one_nodemap_recursive_application(
         previous_siblings_after_mapping,
         following_siblings_before_mapping,
       )
-
     V(blame, tag, attrs, children) -> {
-      use #(_, reversed_children, _) <- result.try(
-        fancy_one_to_one_nodemap_children_traversal(
-          [node, ..ancestors],
-          [],
-          [],
+      let children_ancestors = [node, ..ancestors]
+      use children <- result.try(
+        list.try_fold(
           children,
-          nodemap,
-      ))
-
+          #([], [], list.drop(children, 1)),
+          fn(acc, child) {
+            case fancy_one_to_one_nodemap_recursive_application(child, children_ancestors, acc.0, acc.1, acc.2, nodemap) {
+              Error(e) -> Error(e)
+              Ok(mapped_child) -> {
+                Ok(#(
+                  [child, ..acc.0],
+                  [mapped_child, ..acc.1],
+                  list.drop(acc.2, 1),
+                ))
+              }
+            }
+          }
+        )
+        |> result.map(fn(acc) {acc.1 |> list.reverse})
+      )
       nodemap(
-        V(blame, tag, attrs, reversed_children |> list.reverse),
+        V(blame, tag, attrs, children),
         ancestors,
         previous_siblings_before_mapping,
         previous_siblings_after_mapping,
@@ -162,129 +137,113 @@ pub type FancyOneToManyNodeMap =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(List(VXML), DesugaringError)
 
-fn fancy_one_to_many_children_traversal(
-  ancestors: List(VXML),
-  previous_siblings_before_mapping: List(VXML),
-  previous_siblings_after_mapping: List(VXML),
-  following_siblings_before_mapping: List(VXML),
-  transform: FancyOneToManyNodeMap,
-) -> Result(#(List(VXML), List(VXML), List(VXML)), DesugaringError) {
-  case following_siblings_before_mapping {
-    [] ->
-      Ok(
-        #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
-      )
-    [first, ..rest] -> {
-      use first_replacement <- result.try(
-        fancy_one_to_many_recursive_application(
-          first,
-          ancestors,
-          previous_siblings_before_mapping,
-          previous_siblings_after_mapping,
-          rest,
-          transform,
-        ),
-      )
-      fancy_one_to_many_children_traversal(
-        ancestors,
-        [first, ..previous_siblings_before_mapping],
-        list.flatten([
-          first_replacement |> list.reverse,
-          previous_siblings_after_mapping,
-        ]),
-        rest,
-        transform,
-      )
-    }
-  }
-}
-
-fn fancy_one_to_many_recursive_application(
+fn fancy_one_to_many_nodemap_recursive_application(
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: FancyOneToManyNodeMap,
+  nodemap: FancyOneToManyNodeMap,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) ->
-      transform(
+      nodemap(
         node,
         ancestors,
         previous_siblings_before_mapping,
         previous_siblings_after_mapping,
         following_siblings_before_mapping,
       )
-    V(blame, tag, attrs, children) -> {
-      case
-        fancy_one_to_many_children_traversal(
-          [node, ..ancestors],
-          [],
-          [],
+    V(_, _, _, children) -> {
+      let children_ancestors = [node, ..ancestors]
+      use children <- result.try(
+        list.try_fold(
           children,
-          transform,
+          #([], [], list.drop(children, 1)),
+          fn(acc, child) {
+            case fancy_one_to_many_nodemap_recursive_application(
+              child,
+              children_ancestors,
+              acc.0,
+              acc.1,
+              acc.2,
+              nodemap
+            ) {
+              Error(e) -> Error(e)
+              Ok(shat_children) -> {
+                Ok(#(
+                  [child, ..acc.0],
+                  infra.pour(shat_children, acc.1),
+                  list.drop(acc.2, 1),
+                ))
+              }
+            }
+          }
         )
-      {
-        Ok(#(_, mapped_children, _)) ->
-          transform(
-            V(blame, tag, attrs, mapped_children |> list.reverse),
-            ancestors,
-            previous_siblings_before_mapping,
-            previous_siblings_after_mapping,
-            following_siblings_before_mapping,
-          )
-        Error(err) -> Error(err)
-      }
+        |> result.map(fn(acc) {acc.1 |> list.reverse})
+      )
+      nodemap(
+        V(..node, children: children),
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+      )
     }
   }
 }
 
 pub fn fancy_one_to_many_nodemap_2_desugarer_transform(
-  transform: FancyOneToManyNodeMap,
+  nodemap: FancyOneToManyNodeMap,
 ) -> DesugarerTransform {
   fn(root: VXML) {
-    fancy_one_to_many_recursive_application(
+    fancy_one_to_many_nodemap_recursive_application(
       root,
       [],
       [],
       [],
       [],
-      transform,
+      nodemap
     )
     |> result.try(infra.get_root_with_desugaring_error)
   }
 }
 
 //**************************************************************
-//* desugaring efforts #1.8: stateful node-to-node
+//* OneToOneStatefulNodeMap
 //**************************************************************
 
-pub type StatefulOneToOneNodeMap(a) =
+pub type OneToOneStatefulNodeMap(a) =
   fn(VXML, a) -> Result(#(VXML, a), DesugaringError)
 
-fn stateful_node_to_node_desugar_one(
+fn one_to_one_stateful_nodemap_recursive_application(
   state: a,
   node: VXML,
-  transform: StatefulOneToOneNodeMap(a),
+  nodemap: OneToOneStatefulNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
-    T(_, _) -> transform(node, state)
-    V(blame, tag, attrs, children) -> {
-      use #(transformed_children, new_state) <- result.try(
-        infra.try_map_fold(children, state, fn(x, y) { stateful_node_to_node_desugar_one(x, y, transform) })
+    T(_, _) -> nodemap(node, state)
+    V(_, _, _, children) -> {
+      use #(children, state) <- result.try(
+        children
+        |> infra.try_map_fold(
+          state,
+          fn(acc, child) {
+            one_to_one_stateful_nodemap_recursive_application(acc, child, nodemap)
+          }
+        )
       )
-      transform(V(blame, tag, attrs, transformed_children), new_state)
+      nodemap(V(..node, children: children), state)
     }
   }
 }
 
-pub fn stateful_node_to_node_desugarer_factory(
-  transform: StatefulOneToOneNodeMap(a),
+pub fn one_to_one_stateful_nodemap_2_desugarer_transform(
+  nodemap: OneToOneStatefulNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
-    case stateful_node_to_node_desugar_one(initial_state, vxml, transform) {
+    case one_to_one_stateful_nodemap_recursive_application(initial_state, vxml, nodemap) {
       Error(err) -> Error(err)
       Ok(#(new_vxml, _)) -> Ok(new_vxml)
     }
@@ -292,63 +251,25 @@ pub fn stateful_node_to_node_desugarer_factory(
 }
 
 //**********************************************************************
-//* desugaring efforts #1.85: stateful node-to-node with fancy
-//* transform (NOT CURRENTLY USED == NOT CURRENTLY TESTED)
+//* FancyOneToOneStatefulNodeMap
 //**********************************************************************
 
-pub type StatefulFancyOneToOneNodeMap(a) =
+pub type FancyOneToOneStatefulNodeMap(a) =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
     Result(#(VXML, a), DesugaringError)
 
-fn stateful_fancy_depth_first_node_to_node_children_traversal(
-  state: a,
-  ancestors: List(VXML),
-  previous_siblings_before_mapping: List(VXML),
-  previous_siblings_after_mapping: List(VXML),
-  following_siblings_before_mapping: List(VXML),
-  transform: StatefulFancyOneToOneNodeMap(a),
-) -> Result(#(List(VXML), List(VXML), List(VXML), a), DesugaringError) {
-  case following_siblings_before_mapping {
-    [] ->
-      Ok(
-        #(previous_siblings_before_mapping, previous_siblings_after_mapping, [], state),
-      )
-    [first, ..rest] -> {
-      use #(first_replacement, state) <- result.try(
-        stateful_fancy_depth_first_node_to_node_desugar_one(
-          state,
-          first,
-          ancestors,
-          previous_siblings_before_mapping,
-          previous_siblings_after_mapping,
-          rest,
-          transform,
-        ),
-      )
-      stateful_fancy_depth_first_node_to_node_children_traversal(
-        state,
-        ancestors,
-        [first, ..previous_siblings_before_mapping],
-        [first_replacement, ..previous_siblings_after_mapping],
-        rest,
-        transform,
-      )
-    }
-  }
-}
-
-fn stateful_fancy_depth_first_node_to_node_desugar_one(
+fn fancy_one_to_one_stateful_nodemap_recursive_application(
   state: a,
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: StatefulFancyOneToOneNodeMap(a),
+  nodemap: FancyOneToOneStatefulNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
     T(_, _) ->
-      transform(
+      nodemap(
         node,
         ancestors,
         previous_siblings_before_mapping,
@@ -356,39 +277,62 @@ fn stateful_fancy_depth_first_node_to_node_desugar_one(
         following_siblings_before_mapping,
         state,
       )
-    V(blame, tag, attrs, children) -> {
-      case
-        stateful_fancy_depth_first_node_to_node_children_traversal(
-          state,
-          [node, ..ancestors],
-          [],
-          [],
+    V(_, _, _, children) -> {
+      let children_ancestors = [node, ..ancestors]
+      use #(children, state) <- result.try(
+        list.try_fold(
           children,
-          transform,
+          #([], [], list.drop(children, 1), state),
+          fn(acc, child) {
+            case fancy_one_to_one_stateful_nodemap_recursive_application(
+              acc.3,
+              child,
+              children_ancestors,
+              acc.0,
+              acc.1,
+              acc.2,
+              nodemap,
+            ) {
+              Error(e) -> Error(e)
+              Ok(#(mapped_child, state)) -> {
+                Ok(#(
+                  [child, ..acc.0],
+                  [mapped_child],
+                  list.drop(acc.2, 1),
+                  state,
+                ))
+              }
+            }
+          }
         )
-      {
-        Ok(#(_, mapped_children, _, state)) ->
-          transform(
-            V(blame, tag, attrs, mapped_children |> list.reverse),
-            ancestors,
-            previous_siblings_before_mapping,
-            previous_siblings_after_mapping,
-            following_siblings_before_mapping,
-            state,
-          )
-
-        Error(err) -> Error(err)
-      }
+        |> result.map(fn(acc) {#(acc.1 |> list.reverse, acc.3)})
+      )
+      nodemap(
+        V(..node, children: children),
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+        state,
+      )
     }
   }
 }
 
-pub fn stateful_node_to_node_fancy_desugarer_factory(
-  transform: StatefulFancyOneToOneNodeMap(a),
+pub fn fancy_one_to_one_stateful_nodemap_2_desugarer_transform(
+  nodemap: FancyOneToOneStatefulNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
-    case stateful_fancy_depth_first_node_to_node_desugar_one(initial_state, vxml, [], [], [], [], transform) {
+    case fancy_one_to_one_stateful_nodemap_recursive_application(
+      initial_state,
+      vxml,
+      [],
+      [],
+      [],
+      [],
+      nodemap,
+    ) {
       Error(err) -> Error(err)
       Ok(#(vxml, _)) -> Ok(vxml)
     }
@@ -396,132 +340,102 @@ pub fn stateful_node_to_node_fancy_desugarer_factory(
 }
 
 //**********************************************************************
-//* desugaring efforts #1.9: stateful down-up node-to-node
+//* OneToOneBeforeAndAfterStatefulNodeMap
 //**********************************************************************
 
-pub type StatefulDownAndUpOneToOneNodeMap(a) {
-  StatefulDownAndUpOneToOneNodeMap(
+pub type OneToOneBeforeAndAfterStatefulNodeMap(a) {
+  OneToOneBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(VXML, a) ->
       Result(#(VXML, a), DesugaringError),
     v_after_transforming_children: fn(VXML, a, a) ->
       Result(#(VXML, a), DesugaringError),
-    t_transform: fn(VXML, a) ->
+    t_nodemap: fn(VXML, a) ->
       Result(#(VXML, a), DesugaringError),
   )
 }
 
-fn stateful_down_up_node_to_node_one(
+fn one_to_one_before_and_after_stateful_nodemap_recursive_application(
   original_state: a,
   node: VXML,
-  transform: StatefulDownAndUpOneToOneNodeMap(a),
+  nodemap: OneToOneBeforeAndAfterStatefulNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
-
   case node {
+    T(_, _) -> nodemap.t_nodemap(node, original_state)
     V(_, _, _, children) -> {
-      use #(node, state) <- result.try(
-        transform.v_before_transforming_children(
+      use #(node, latest_state) <- result.try(
+        nodemap.v_before_transforming_children(
           node,
           original_state,
         ),
       )
-
-      use #(children, state) <- result.try(
+      use #(children, latest_state) <- result.try(
         infra.try_map_fold(
           children,
-          state,
-          fn (x, y) { stateful_down_up_node_to_node_one(x, y, transform) }
+          latest_state,
+          fn (acc, child) { one_to_one_before_and_after_stateful_nodemap_recursive_application(acc, child, nodemap) }
         )
       )
-
-      transform.v_after_transforming_children(
+      nodemap.v_after_transforming_children(
         node |> infra.replace_children_with(children),
         original_state,
-        state,
+        latest_state,
       )
     }
-    T(_, _) -> transform.t_transform(node, original_state)
   }
 }
 
-pub fn stateful_down_up_node_to_node_desugarer_factory(
-  transform: StatefulDownAndUpOneToOneNodeMap(a),
+pub fn one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
+  nodemap: OneToOneBeforeAndAfterStatefulNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
-    use #(vxml, _) <- result.try(stateful_down_up_node_to_node_one(
-      initial_state,
-      vxml,
-      transform
-    ))
+    use #(vxml, _) <- result.try(
+      one_to_one_before_and_after_stateful_nodemap_recursive_application(
+        initial_state,
+        vxml,
+        nodemap
+      )
+    )
     Ok(vxml)
   }
 }
 
 //**********************************************************************
-//* desugaring efforts #1.91: stateful down-up node-to-node
+//* FancyOneToOneBeforeAndAfterStatefulNodeMap(a)
 //**********************************************************************
 
-pub type StatefulDownAndUpFancyOneToOneNodeMap(a) {
-  StatefulDownAndUpFancyOneToOneNodeMap(
+pub type FancyOneToOneBeforeAndAfterStatefulNodeMap(a) {
+  FancyOneToOneBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
       Result(#(VXML, a), DesugaringError),
     v_after_transforming_children: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a, a) ->
       Result(#(VXML, a), DesugaringError),
-    t_transform: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
+    t_nodemap: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
       Result(#(VXML, a), DesugaringError),
   )
 }
 
-fn stateful_down_up_fancy_node_to_node_children_traversal(
-  state: a,
-  ancestors: List(VXML),
-  previous_siblings_before_mapping: List(VXML),
-  previous_siblings_after_mapping: List(VXML),
-  following_siblings_before_mapping: List(VXML),
-  transform: StatefulDownAndUpFancyOneToOneNodeMap(a),
-) -> Result(#(List(VXML), List(VXML), List(VXML), a), DesugaringError) {
-  case following_siblings_before_mapping {
-    [] ->
-      Ok(
-        #(previous_siblings_before_mapping, previous_siblings_after_mapping, [], state),
-      )
-    [first, ..rest] -> {
-      use #(first_replacement, state) <- result.try(
-        stateful_down_up_fancy_node_to_node_one(
-          state,
-          first,
-          ancestors,
-          previous_siblings_before_mapping,
-          previous_siblings_after_mapping,
-          rest,
-          transform,
-        ),
-      )
-      stateful_down_up_fancy_node_to_node_children_traversal(
-        state,
-        ancestors,
-        [first, ..previous_siblings_before_mapping],
-        [first_replacement, ..previous_siblings_after_mapping],
-        rest,
-        transform,
-      )
-    }
-  }
-}
-
-fn stateful_down_up_fancy_node_to_node_one(
+fn fancy_one_to_one_before_and_after_stateful_nodemap_recursive_application(
   original_state: a,
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: StatefulDownAndUpFancyOneToOneNodeMap(a),
+  nodemap: FancyOneToOneBeforeAndAfterStatefulNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
-    V(_, _, _, children) -> {
-      use #(node, state) <- result.try(
-        transform.v_before_transforming_children(
+    T(_, _) -> nodemap.t_nodemap(
+      node,
+      ancestors,
+      previous_siblings_before_mapping,
+      previous_siblings_after_mapping,
+      following_siblings_before_mapping,
+      original_state,
+    )
+    V(_, _, _, _) -> {
+      use #(node, latest_state) <- result.try(
+        nodemap.v_before_transforming_children(
           node,
           ancestors,
           previous_siblings_before_mapping,
@@ -530,58 +444,60 @@ fn stateful_down_up_fancy_node_to_node_one(
           original_state,
         ),
       )
-
-      let assert V(_, _, _, _) = node
-
-      use #(_, reversed_children, _, state) <- result.try(
-        stateful_down_up_fancy_node_to_node_children_traversal(
-          state,
-          [node, ..ancestors],
-          [],
-          [],
+      let assert V(_, _, _, children) = node
+      let children_ancestors = [node, ..ancestors]
+      use #(children, latest_state) <- result.try(
+        list.try_fold(
           children,
-          transform,
+          #([], [], list.drop(children, 1), latest_state),
+          fn (acc, child) {
+            use #(mapped_child, state) <- result.try(fancy_one_to_one_before_and_after_stateful_nodemap_recursive_application(
+              acc.3,
+              child,
+              children_ancestors,
+              acc.0,
+              acc.1,
+              acc.2,
+              nodemap,
+            ))
+            Ok(#(
+              [child, ..acc.0],
+              [mapped_child, ..acc.1],
+              list.drop(acc.2, 1),
+              state,
+            ))
+          }
         )
+        |> result.map(fn(acc){#(acc.1 |> list.reverse, acc.3)})
       )
-
-      let node = V(..node, children: reversed_children |> list.reverse)
-
-      transform.v_after_transforming_children(
+      let node = V(..node, children: children)
+      nodemap.v_after_transforming_children(
         node,
         ancestors,
         previous_siblings_before_mapping,
         previous_siblings_after_mapping,
         following_siblings_before_mapping,
         original_state,
-        state,
+        latest_state,
       )
     }
-
-    T(_, _) -> transform.t_transform(
-      node,
-      ancestors,
-      previous_siblings_before_mapping,
-      previous_siblings_after_mapping,
-      following_siblings_before_mapping,
-      original_state,
-    )
   }
 }
 
-pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
-  transform: StatefulDownAndUpFancyOneToOneNodeMap(a),
+pub fn fancy_one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
+  nodemap: FancyOneToOneBeforeAndAfterStatefulNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
     use #(vxml, _) <- result.try(
-      stateful_down_up_fancy_node_to_node_one(
+      fancy_one_to_one_before_and_after_stateful_nodemap_recursive_application(
         initial_state,
         vxml,
         [],
         [],
         [],
         [],
-        transform,
+        nodemap,
       )
     )
     Ok(vxml)
@@ -589,87 +505,75 @@ pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
 }
 
 //**************************************************************
-//* desugaring efforts #1.99: stateful down-up node-to-nodes
+//* OneToManyBeforeAndAfterStatefulNodeMap
 //**************************************************************
 
-pub type StatefulDownAndUpOneToManyNodeMap(a) {
-  StatefulDownAndUpOneToManyNodeMap(
+pub type OneToManyBeforeAndAfterStatefulNodeMap(a) {
+  OneToManyBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(VXML, a) ->
       Result(#(VXML, a), DesugaringError),
     v_after_transforming_children: fn(VXML, a, a) ->
       Result(#(List(VXML), a), DesugaringError),
-    t_transform: fn(VXML, a) ->
+    t_nodemap: fn(VXML, a) ->
       Result(#(List(VXML), a), DesugaringError),
   )
 }
 
-fn stateful_down_up_node_to_nodes_many(
-  state: a,
-  vxmls: List(VXML),
-  transform: StatefulDownAndUpOneToManyNodeMap(a),
-) -> Result(#(List(VXML), a), DesugaringError) {
-  case vxmls {
-    [] -> Ok(#([], state))
-    [first, ..rest] -> {
-      use #(first_transformed, new_state) <- result.try(
-        stateful_down_up_node_to_nodes_one(state, first, transform),
-      )
-      use #(rest_transformed, new_new_state) <- result.try(
-        stateful_down_up_node_to_nodes_many(new_state, rest, transform),
-      )
-      Ok(#(list.flatten([first_transformed, rest_transformed]), new_new_state))
-    }
-  }
-}
-
-fn stateful_down_up_node_to_nodes_one(
+fn one_to_many_before_and_after_stateful_nodemap_recursive_application(
   original_state: a,
   node: VXML,
-  transform: StatefulDownAndUpOneToManyNodeMap(a),
+  nodemap: OneToManyBeforeAndAfterStatefulNodeMap(a),
 ) -> Result(#(List(VXML), a), DesugaringError) {
    case node {
-    V(_, _, _, children) -> {
-      use #(node, state) <- result.try(
-        transform.v_before_transforming_children(
+    V(_, _, _, _) -> {
+      use #(node, latest_state) <- result.try(
+        nodemap.v_before_transforming_children(
           node,
           original_state,
         ),
       )
-
-      use #(children, state) <- result.try(stateful_down_up_node_to_nodes_many(
-        state,
-        children,
-        transform,
-      ))
-
-      transform.v_after_transforming_children(
+      let assert V(_, _, _, children) = node
+      use #(children, latest_state) <- result.try(
+        children
+        |> list.try_fold(
+          #([], latest_state),
+          fn (acc, child) {
+            use #(shat_children, latest_state) <- result.try(one_to_many_before_and_after_stateful_nodemap_recursive_application(
+              acc.1,
+              child,
+              nodemap,
+            ))
+            Ok(#(
+              infra.pour(shat_children, acc.0),
+              latest_state,
+            ))
+          }
+        )
+        |> result.map(fn(acc) {#(acc.0 |> list.reverse, acc.1)})
+      )
+      nodemap.v_after_transforming_children(
         node |> infra.replace_children_with(children),
         original_state,
-        state,
+        latest_state,
       )
     }
-    T(_, _) -> transform.t_transform(node, original_state)
+    T(_, _) -> nodemap.t_nodemap(node, original_state)
   }
 }
 
-pub fn stateful_down_up_node_to_nodes_desugarer_factory(
-  transform: StatefulDownAndUpOneToManyNodeMap(a),
+pub fn one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
+  nodemap: OneToManyBeforeAndAfterStatefulNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
-    case stateful_down_up_node_to_nodes_one(initial_state, vxml, transform) {
-      Error(err) -> Error(err)
-      Ok(#(new_vxml, _)) -> {
-        let assert [new_vxml] = new_vxml
-        Ok(new_vxml)
-      }
-    }
+    one_to_many_before_and_after_stateful_nodemap_recursive_application(initial_state, vxml, nodemap)
+    |> result.map(fn(pair){pair.0})
+    |> result.try(infra.get_root_with_desugaring_error)
   }
 }
 
 //**************************************************************
-//* desugaring efforts #3: breadth-first-search, node-to-node2 *
-//* ; see 'pub' function below                                 *
+//* EarlyReturn land... renaming not yet done...
 //**************************************************************
 
 pub type EarlyReturn(a) {
@@ -724,7 +628,6 @@ pub fn early_return_node_to_node_desugarer_factory(
 ) -> DesugarerTransform {
   early_return_node_to_node_desugar_one(_, [], transform)
 }
-
 
 //**********************************************************************
 //* desugaring efforts #1.7: turn ordinary node-to-node(s) transform   *

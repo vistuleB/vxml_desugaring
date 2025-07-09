@@ -13,7 +13,7 @@ fn is_forbidden(elem: VXML, forbidden: List(String)) {
   }
 }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   _: List(VXML),
   inner: InnerParam,
@@ -47,12 +47,12 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
-  fn(vxml, ancestors) { transform(vxml, ancestors, inner) }
+fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
+  fn(vxml, ancestors) { nodemap(vxml, ancestors, inner) }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_node_to_node_desugarer_factory(transform_factory(inner))
+  n2t.early_return_node_to_node_desugarer_factory(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

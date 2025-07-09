@@ -35,12 +35,12 @@ fn define_article_output_path_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> n2t.StatefulOneToOneNodeMap(Int) {
+fn nodemap_factory(extra: Extra) -> n2t.OneToOneStatefulNodeMap(Int) {
   fn(vxml, s) { define_article_output_path_transform(vxml, extra, s) }
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  n2t.stateful_node_to_node_desugarer_factory(transform_factory(extra), 1)
+  n2t.one_to_one_stateful_nodemap_2_desugarer_transform(nodemap_factory(extra), 1)
 }
 
 type Extra =

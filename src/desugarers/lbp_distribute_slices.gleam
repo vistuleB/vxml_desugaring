@@ -51,7 +51,7 @@ fn is_known_other_element(vxml: VXML) -> Bool {
   list.contains(["Table", "table", "Pause", "p"], tag)
 }
 
-fn transform(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
+fn nodemap(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
   use <- infra.on_true_on_false(
     is_known_outer_element(vxml),
     n2t.Continue(vxml),
@@ -74,12 +74,12 @@ fn transform(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
   n2t.GoBack(vxml)
 }
 
-fn transform_factory(_: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
+  nodemap
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_node_to_node_desugarer_factory(transform_factory(inner))
+  n2t.early_return_node_to_node_desugarer_factory(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

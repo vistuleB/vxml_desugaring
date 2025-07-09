@@ -1,3 +1,5 @@
+import desugarers/remove_outside_subtrees
+import desugarers/find_replace_in_descendants_of
 import infrastructure as infra
 import desugarers/absorb_next_sibling_while
 import desugarers/add_attributes
@@ -127,7 +129,17 @@ pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_br
 
 pub const assertive_tests_constructor : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
+  add_attribute_to_second_of_kind.assertive_tests,
+  add_attribute_when_child_of.assertive_tests,
+  counters_substitute_and_assign_handles.assertive_tests,
+  break_lines_into_span_tooltips.assertive_tests,
+  find_replace_in_descendants_of.assertive_tests,
+  find_replace.assertive_tests,
   generate_lbp_table_of_contents.assertive_tests,
   group_consecutive_children_avoiding.assertive_tests,
+  handles_generate_dictionary.assertive_tests,
+  handles_substitute.assertive_tests,
+  prepend_text_if_has_ancestor_else.assertive_tests,
+  remove_outside_subtrees.assertive_tests,
   rename_attributes_by_function.assertive_tests,
 ]

@@ -89,7 +89,7 @@ fn pair_double_dollars_even(
   }
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -101,12 +101,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

@@ -129,23 +129,23 @@ fn v_after_transforming_children(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpFancyOneToOneNodeMap(State) {
-   n2t.StatefulDownAndUpFancyOneToOneNodeMap(
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneBeforeAndAfterStatefulNodeMap(State) {
+   n2t.FancyOneToOneBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(vxml, _, _, _, _, state) {
       v_before_transforming_children(vxml, state, inner)
     },
     v_after_transforming_children: fn(vxml, ancestors, _, _, _, _, state) {
       v_after_transforming_children(vxml, ancestors, state)
     },
-    t_transform: fn(vxml, _, _, _, _, state) {
+    t_nodemap: fn(vxml, _, _, _, _, state) {
       t_transform(vxml, state)
     },
   )
 }
 
 fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  n2t.stateful_down_up_fancy_node_to_node_desugarer_factory(
-    transform_factory(inner),
+  n2t.fancy_one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
+    nodemap_factory(inner),
     #(dict.new(), "")
   )
 }
@@ -171,9 +171,11 @@ const constructor = handles_generate_dictionary
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// Looks for `handle` attributes in the V nodes
-/// and transforms which are expected to be in form:
-/// `handle | id | value`. (Panics if not in this 
-/// form.)
+/// that are expected to be in form
+/// 
+/// `handle=handle_name | id | value`
+/// 
+/// (Panics if not in this form.)
 /// 
 /// Transform the values into a dict where the key 
 /// is the handle name and the values are tuples 
@@ -203,9 +205,11 @@ pub fn handles_generate_dictionary(param: Param) -> Desugarer {
     option.None,
     "
 /// Looks for `handle` attributes in the V nodes
-/// and transforms which are expected to be in form:
-/// `handle | id | value`. (Panics if not in this 
-/// form.)
+/// that are expected to be in form
+/// 
+/// `handle=handle_name | id | value`
+/// 
+/// (Panics if not in this form.)
 /// 
 /// Transform the values into a dict where the key 
 /// is the handle name and the values are tuples 
@@ -241,7 +245,34 @@ pub fn handles_generate_dictionary(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: [#("ChapterChapter", "local_path")],
+      source:   "
+                <> root
+                  <> ChapterChapter
+                    local_path=./ch1.html
+                    <>
+                      \"some text\"
+                    <> Math
+                      handle=fluescence | _23-super-id | AA
+                      <>
+                        \"$x^2 + b^2$\"
+                ",
+      expected: "
+                <> GrandWrapper
+                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  <> root
+                    <> ChapterChapter
+                      local_path=./ch1.html
+                      <>
+                        \"some text\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                "
+    ),
+  ]
 }
 
 pub fn assertive_tests() {

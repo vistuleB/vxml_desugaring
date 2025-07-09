@@ -6,7 +6,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn transform(
+fn nodemap(
   node: VXML,
   ancestors: List(VXML),
   inner: InnerParam,
@@ -44,14 +44,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   fn(node, ancestors, _, _, _) {
-    transform(node, ancestors, inner)
+    nodemap(node, ancestors, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

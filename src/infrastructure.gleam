@@ -604,6 +604,13 @@ pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
   }
 }
 
+pub fn pour(from: List(a), into: List(a)) -> List(a) {
+  case from {
+    [first, ..rest] -> pour(rest, [first, ..into])
+    [] -> into
+  }
+}
+
 pub fn try_map_fold(
   over ze_list: List(q),
   from state: a,
@@ -612,9 +619,9 @@ pub fn try_map_fold(
   case ze_list {
     [] -> Ok(#([], state))
     [first, ..rest] -> {
-      use #(vxml, state) <- result.try(f(state, first))
-      use #(vxmls, state) <- result.try(try_map_fold(rest, state, f))
-      Ok(#([vxml, ..vxmls], state))
+      use #(mapped_first, state) <- result.try(f(state, first))
+      use #(mapped_rest, state) <- result.try(try_map_fold(rest, state, f))
+      Ok(#([mapped_first, ..mapped_rest], state))
     }
   }
 }

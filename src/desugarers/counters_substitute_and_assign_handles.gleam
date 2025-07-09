@@ -496,7 +496,7 @@ fn v_before_transforming_children(
   Ok(#(V(b, t, attributes, c), #(counters, handles)))
 }
 
-fn t_transform(
+fn t_nodemap(
   vxml: VXML,
   state: State,
   regexes: #(Regexp, Regexp),
@@ -585,18 +585,18 @@ fn our_two_regexes() -> #(Regexp, Regexp) {
   #(small, big)
 }
 
-fn transform_factory(_: InnerParam) -> n2t.StatefulDownAndUpOneToOneNodeMap(State) {
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneBeforeAndAfterStatefulNodeMap(State) {
   let regexes = our_two_regexes()
-  n2t.StatefulDownAndUpOneToOneNodeMap(
+  n2t.OneToOneBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(vxml, state) { v_before_transforming_children(vxml, state, regexes) },
     v_after_transforming_children: v_after_transforming_children,
-    t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },
+    t_nodemap: fn(vxml, state) { t_nodemap(vxml, state, regexes) },
   )
 }
 
 fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  n2t.stateful_down_up_node_to_node_desugarer_factory(
-    transform_factory(inner),
+  n2t.one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
+    nodemap_factory(inner),
     #(dict.from_list([]), []),
   )
 }
@@ -717,7 +717,30 @@ pub fn counters_substitute_and_assign_handles() -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: Nil,
+      source:   "
+                <> root
+                  counter=QCounter -3
+                  <>
+                    \"z<<::++QCounter\"
+                    \"w<<::--QCounter\"
+                    \"a<<::++QCounter.::++QCounter\"
+                ",
+      expected: "
+                <> root
+                  counter=QCounter -3
+                  handle=z -2
+                  handle=w -3
+                  handle=a -2.-1
+                  <>
+                    \"-2\"
+                    \"-3\"
+                    \"-2.-1\"
+                ",
+    )
+  ]
 }
 
 pub fn assertive_tests() {

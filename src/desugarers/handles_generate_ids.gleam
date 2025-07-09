@@ -24,7 +24,7 @@ fn ensure_has_id_attribute(
   }
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
   counter: Int,
 ) -> Result(#(VXML, Int), DesugaringError) {
@@ -73,12 +73,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> n2t.StatefulOneToOneNodeMap(Int) {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneStatefulNodeMap(Int) {
+  nodemap
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.stateful_node_to_node_desugarer_factory(transform_factory(inner), 0)
+  n2t.one_to_one_stateful_nodemap_2_desugarer_transform(nodemap_factory(inner), 0)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

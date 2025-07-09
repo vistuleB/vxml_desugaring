@@ -5,7 +5,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
@@ -28,14 +28,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   fn(vxml, ancestors, s1, s2, s3) {
-    transform(vxml, ancestors, s1, s2, s3, inner)
+    nodemap(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -43,9 +43,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, List(#(String, String))))
-//       ↖      ↖
-//       ancestor from/to pairs
+  List(#(String,   List(#(String, String))))
+//       ↖         ↖
+//       ancestor  from/to pairs
 
 type InnerParam = Param
 
@@ -77,7 +77,35 @@ pub fn find_replace_in_descendants_of(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: [#("ancestor", [#("_FROM_", "_TO_")])],
+      source:   "
+                <> root
+                  <> B
+                    <>
+                      \"hello _FROM_\"
+                      \"_FROM__FROM_\"
+                  <> ancestor
+                    <> B
+                      <>
+                        \"hello _FROM_\"
+                        \"_FROM__FROM_\"
+                ",
+      expected: "
+                <> root
+                  <> B
+                    <>
+                      \"hello _FROM_\"
+                      \"_FROM__FROM_\"
+                  <> ancestor
+                    <> B
+                      <>
+                        \"hello _TO_\"
+                        \"_TO__TO_\"
+                ",
+    )
+  ]
 }
 
 pub fn assertive_tests() {
