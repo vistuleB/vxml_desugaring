@@ -1,11 +1,10 @@
 import gleam/result
 import gleam/list
 import vxml.{type VXML, V, T}
-import infrastructure.{type DesugarerTransform, type DesugaringError, DesugaringError} as infra
-import blamedlines
+import infrastructure.{type DesugarerTransform, type DesugaringError} as infra
 
 //**************************************************************
-//* pub type OneToOneNodeMap & pub fn one_to_one_nodemap_2_desugarer_transform
+//* OneToOneNodeMap
 //**************************************************************
 
 pub type OneToOneNodeMap =
@@ -35,7 +34,7 @@ pub fn one_to_one_nodemap_2_desugarer_transform(
 }
 
 //**************************************************************
-//* pub type OneToManyNodeMap & pub fn one_to_many_nodemap_2_desugarer_transform
+//* OneToManyNodeMap
 //**************************************************************
 
 pub type OneToManyNodeMap =
@@ -69,7 +68,7 @@ pub fn one_to_many_nodemap_2_desugarer_transform(
 }
 
 //**************************************************************
-//* pub type FancyOneToManyNodeMap & pub fn fancy_one_to_many_nodemap_2_desugarer_transform
+//* FancyOneToManyNodeMap
 //**************************************************************
 
 pub type FancyOneToOneNodeMap =
@@ -156,19 +155,19 @@ pub fn fancy_one_to_one_nodemap_2_desugarer_transform(
 }
 
 //**********************************************************************
-//* NodeToNodesFancyTransform
+//* FancyOneToManyNodeMap
 //**********************************************************************
 
-pub type NodeToNodesFancyTransform =
+pub type FancyOneToManyNodeMap =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(List(VXML), DesugaringError)
 
-fn fancy_node_to_nodes_children_traversal(
+fn fancy_one_to_many_children_traversal(
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: NodeToNodesFancyTransform,
+  transform: FancyOneToManyNodeMap,
 ) -> Result(#(List(VXML), List(VXML), List(VXML)), DesugaringError) {
   case following_siblings_before_mapping {
     [] ->
@@ -177,7 +176,7 @@ fn fancy_node_to_nodes_children_traversal(
       )
     [first, ..rest] -> {
       use first_replacement <- result.try(
-        fancy_node_to_nodes_desugar_one(
+        fancy_one_to_many_recursive_application(
           first,
           ancestors,
           previous_siblings_before_mapping,
@@ -186,7 +185,7 @@ fn fancy_node_to_nodes_children_traversal(
           transform,
         ),
       )
-      fancy_node_to_nodes_children_traversal(
+      fancy_one_to_many_children_traversal(
         ancestors,
         [first, ..previous_siblings_before_mapping],
         list.flatten([
@@ -200,13 +199,13 @@ fn fancy_node_to_nodes_children_traversal(
   }
 }
 
-fn fancy_node_to_nodes_desugar_one(
+fn fancy_one_to_many_recursive_application(
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: NodeToNodesFancyTransform,
+  transform: FancyOneToManyNodeMap,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
     T(_, _) ->
@@ -219,7 +218,7 @@ fn fancy_node_to_nodes_desugar_one(
       )
     V(blame, tag, attrs, children) -> {
       case
-        fancy_node_to_nodes_children_traversal(
+        fancy_one_to_many_children_traversal(
           [node, ..ancestors],
           [],
           [],
@@ -241,23 +240,19 @@ fn fancy_node_to_nodes_desugar_one(
   }
 }
 
-pub fn node_to_nodes_fancy_desugarer_factory(
-  transform: NodeToNodesFancyTransform,
+pub fn fancy_one_to_many_nodemap_2_desugarer_transform(
+  transform: FancyOneToManyNodeMap,
 ) -> DesugarerTransform {
   fn(root: VXML) {
-    use vxmls <- result.try(fancy_node_to_nodes_desugar_one(
+    fancy_one_to_many_recursive_application(
       root,
       [],
       [],
       [],
       [],
       transform,
-    ))
-
-    case infra.get_root(vxmls) {
-      Ok(r) -> Ok(r)
-      Error(message) -> Error(DesugaringError(blamedlines.empty_blame(), message))
-    }
+    )
+    |> result.try(infra.get_root_with_desugaring_error)
   }
 }
 
@@ -766,7 +761,7 @@ pub fn prevent_node_to_node_transform_inside(
 pub fn prevent_node_to_nodes_transform_inside(
   transform: OneToManyNodeMap,
   neutralize_here: List(String),
-) -> NodeToNodesFancyTransform {
+) -> FancyOneToManyNodeMap {
   fn(
     node: VXML,
     ancestors: List(VXML),

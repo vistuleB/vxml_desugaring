@@ -44,14 +44,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.NodeToNodesFancyTransform {
+fn transform_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   fn(node, ancestors, _, _, _) {
     transform(node, ancestors, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

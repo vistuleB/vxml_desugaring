@@ -6,14 +6,14 @@ import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type
 type Extras =
   #(List(#(DelimiterPattern, String)), List(String))
 
-fn transform_factory(extras: Extras) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(extras: Extras) -> infra.FancyOneToManyNodeMap {
   let #(patterns_and_tags, forbidden_parents) = extras
   infra.replace_delimiter_patterns_by_tags_param_transform(_, patterns_and_tags)
   |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
 fn desugarer_factory(extras: Extras) -> Desugarer {
-  n2t.node_to_nodes_fancy_desugarer_factory(transform_factory(extras))
+  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(transform_factory(extras))
 }
 
 pub fn split_by_delimiter_pattern(extras: Extras) -> Desugarer {

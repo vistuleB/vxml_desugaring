@@ -233,14 +233,14 @@ const constructor = generate_ti3_index_element
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// Generate ti3 Index element
-pub fn generate_ti3_index_element(param: Param) -> Desugarer {
+pub fn generate_ti3_index_element() -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
 /// Generate ti3 Index element
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
@@ -255,5 +255,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }
