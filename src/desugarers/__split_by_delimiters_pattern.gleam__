@@ -9,11 +9,11 @@ type Extras =
 fn transform_factory(extras: Extras) -> infra.NodeToNodesFancyTransform {
   let #(patterns_and_tags, forbidden_parents) = extras
   infra.replace_delimiter_patterns_by_tags_param_transform(_, patterns_and_tags)
-  |> infra.prevent_node_to_nodes_transform_inside(forbidden_parents)
+  |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
 fn desugarer_factory(extras: Extras) -> Desugarer {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(extras))
+  n2t.node_to_nodes_fancy_desugarer_factory(transform_factory(extras))
 }
 
 pub fn split_by_delimiter_pattern(extras: Extras) -> Desugarer {

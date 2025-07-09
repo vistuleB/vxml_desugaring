@@ -5,6 +5,8 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
+import nodemaps_2_desugarer_transforms as n2t
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn param_transform(
@@ -72,7 +74,7 @@ fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
+  n2t.node_to_node_fancy_desugarer_factory(transform_factory(extra))
 }
 
 //**********************************

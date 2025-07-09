@@ -2,6 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
 
@@ -16,17 +17,17 @@ fn transform(
   vxml: VXML,
   _: List(VXML),
   inner: InnerParam,
-) -> infra.EarlyReturn(VXML) {
+) -> n2t.EarlyReturn(VXML) {
   let #(wrapper_tag, forbidden_to_include, forbidden_to_enter) = inner
   case vxml {
-    T(_, _) -> infra.GoBack(vxml)
+    T(_, _) -> n2t.GoBack(vxml)
     V(blame, tag, attrs, children) -> {
       use <- infra.on_true_on_false(
         list.contains(forbidden_to_enter, tag),
-        infra.GoBack(vxml),
+        n2t.GoBack(vxml),
       )
 
-      use <- infra.on_true_on_false(tag == wrapper_tag, infra.Continue(vxml))
+      use <- infra.on_true_on_false(tag == wrapper_tag, n2t.Continue(vxml))
 
       let children =
         children
@@ -41,17 +42,17 @@ fn transform(
           )
         })
 
-      infra.Continue(V(blame, tag, attrs, children))
+      n2t.Continue(V(blame, tag, attrs, children))
     }
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
+fn transform_factory(inner: InnerParam) -> n2t.EarlyReturnNodeToNodeTransform {
   fn(vxml, ancestors) { transform(vxml, ancestors, inner) }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
+  n2t.early_return_node_to_node_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

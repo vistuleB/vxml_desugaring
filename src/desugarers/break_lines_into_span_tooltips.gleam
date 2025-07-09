@@ -2,6 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
 
 fn line_to_tooltip_span(bc: BlamedContent, inner: InnerParam) -> VXML {
@@ -60,13 +61,13 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(inner: InnerParam) -> n2t.NodeToNodesFancyTransform {
   transform(_, inner)
-  |> infra.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
+  |> n2t.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
+  n2t.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

@@ -3,6 +3,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn transform(
@@ -45,14 +46,14 @@ fn transform(
   Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
+fn transform_factory(inner: InnerParam) -> n2t.NodeToNodeFancyTransform {
   fn(vxml, ancestors, s1, s2, s3) {
     transform(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
+  n2t.node_to_node_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

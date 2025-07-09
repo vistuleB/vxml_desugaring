@@ -5,6 +5,7 @@ import infrastructure.{
   type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn define_article_output_path_transform(
@@ -34,12 +35,12 @@ fn define_article_output_path_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.StatefulNodeToNodeTransform(Int) {
+fn transform_factory(extra: Extra) -> n2t.StatefulNodeToNodeTransform(Int) {
   fn(vxml, s) { define_article_output_path_transform(vxml, extra, s) }
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.stateful_node_to_node_desugarer_factory(transform_factory(extra), 1)
+  n2t.stateful_node_to_node_desugarer_factory(transform_factory(extra), 1)
 }
 
 type Extra =

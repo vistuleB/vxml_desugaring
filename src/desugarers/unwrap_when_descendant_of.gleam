@@ -2,6 +2,7 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V}
 
 fn transform(
@@ -28,14 +29,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodesFancyTransform {
+fn transform_factory(inner: InnerParam) -> n2t.NodeToNodesFancyTransform {
   fn(vxml: VXML, s1: List(VXML), s2: List(VXML), s3: List(VXML), s4: List(VXML)) {
     transform(vxml, s1, s2, s3, s4, inner)
   }
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  infra.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
+  n2t.node_to_nodes_fancy_desugarer_factory(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

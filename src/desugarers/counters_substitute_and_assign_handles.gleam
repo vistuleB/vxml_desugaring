@@ -7,6 +7,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import roman
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 type CounterType {
@@ -584,9 +585,9 @@ fn our_two_regexes() -> #(Regexp, Regexp) {
   #(small, big)
 }
 
-fn transform_factory(_: InnerParam) -> infra.StatefulDownAndUpNodeToNodeTransform(State) {
+fn transform_factory(_: InnerParam) -> n2t.StatefulDownAndUpNodeToNodeTransform(State) {
   let regexes = our_two_regexes()
-  infra.StatefulDownAndUpNodeToNodeTransform(
+  n2t.StatefulDownAndUpNodeToNodeTransform(
     v_before_transforming_children: fn(vxml, state) { v_before_transforming_children(vxml, state, regexes) },
     v_after_transforming_children: v_after_transforming_children,
     t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },
@@ -594,7 +595,7 @@ fn transform_factory(_: InnerParam) -> infra.StatefulDownAndUpNodeToNodeTransfor
 }
 
 fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  infra.stateful_down_up_node_to_node_desugarer_factory(
+  n2t.stateful_down_up_node_to_node_desugarer_factory(
     transform_factory(inner),
     #(dict.from_list([]), []),
   )
