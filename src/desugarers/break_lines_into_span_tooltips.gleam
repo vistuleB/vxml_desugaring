@@ -69,7 +69,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   |> n2t.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
 }
 
-fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
@@ -87,7 +87,7 @@ type InnerParam = Param
 const name = "break_lines_into_span_tooltips"
 const constructor = break_lines_into_span_tooltips
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
@@ -104,13 +104,13 @@ pub fn break_lines_into_span_tooltips(param: Param) -> Desugarer {
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [

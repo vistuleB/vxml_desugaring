@@ -5,7 +5,6 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-
 fn is_forbidden(elem: VXML, forbidden: List(String)) {
   case elem {
     T(_, _) -> False
@@ -48,7 +47,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
   fn(vxml, ancestors) { nodemap(vxml, ancestors, inner) }
 }
 
-fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   n2t.early_return_node_to_node_desugarer_factory(nodemap_factory(inner))
 }
 
@@ -103,13 +102,13 @@ pub fn group_consecutive_children_avoiding(param: Param) -> Desugarer {
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [

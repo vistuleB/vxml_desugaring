@@ -22,7 +22,7 @@ fn nodemap_factory(_: InnerParam) -> n2t.OneToManyNodeMap {
   nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
@@ -52,13 +52,13 @@ pub fn remove_text_nodes_with_singleton_empty_line() -> Desugarer {
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   []

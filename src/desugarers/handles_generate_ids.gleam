@@ -77,7 +77,7 @@ fn nodemap_factory(_: InnerParam) -> n2t.OneToOneStatefulNodeMap(Int) {
   nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   n2t.one_to_one_stateful_nodemap_2_desugarer_transform(nodemap_factory(inner), 0)
 }
 
@@ -148,13 +148,13 @@ pub fn handles_generate_ids() -> Desugarer {
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   []

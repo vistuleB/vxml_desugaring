@@ -594,7 +594,7 @@ fn nodemap_factory(_: InnerParam) -> n2t.OneToOneBeforeAndAfterStatefulNodeMap(S
   )
 }
 
-fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
+fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
   n2t.one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
     nodemap_factory(inner),
     #(dict.from_list([]), []),
@@ -708,13 +708,13 @@ pub fn counters_substitute_and_assign_handles() -> Desugarer {
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
   [

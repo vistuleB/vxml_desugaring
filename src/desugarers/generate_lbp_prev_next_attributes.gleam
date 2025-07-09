@@ -70,7 +70,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(V(..root, children: list.flatten([other_children, [toc], chapters, bootcamps])))
 }
 
-fn desugarer_factory(_: InnerParam) -> infra.DesugarerTransform {
+fn transform_factory(_: InnerParam) -> infra.DesugarerTransform {
   at_root
 }
 
@@ -95,13 +95,13 @@ pub fn generate_lbp_prev_next_attributes() -> Desugarer {
     "...",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     },
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   []

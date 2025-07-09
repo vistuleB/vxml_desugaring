@@ -1,4 +1,3 @@
-
 import gleam/string.{inspect as ins}
 import gleam/result
 import gleam/list
@@ -144,7 +143,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   Ok(infra.replace_children_with(root, updated_children))
 }
 
-fn desugarer_factory(_: InnerParam) -> infra.DesugarerTransform {
+fn transform_factory(_: InnerParam) -> infra.DesugarerTransform {
   at_root
 }
 
@@ -169,13 +168,13 @@ pub fn generate_lbp_breadcrumbs() -> Desugarer {
     "...",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     },
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   []

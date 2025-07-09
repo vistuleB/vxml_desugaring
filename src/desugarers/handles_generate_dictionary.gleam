@@ -10,6 +10,7 @@ import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandlesDict =
   Dict(String, #(String,     String,     String))
+//     ↖         ↖           ↖           ↖
 //     handle    local path  element id  string value
 //     name      of page     on page     of handle
 
@@ -143,7 +144,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneBeforeAndAfterStateful
   )
 }
 
-fn desugarer_factory(inner: InnerParam) -> infra.DesugarerTransform {
+fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
   n2t.fancy_one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
     nodemap_factory(inner),
     #(dict.new(), "")
@@ -236,13 +237,13 @@ pub fn handles_generate_dictionary(param: Param) -> Desugarer {
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     },
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [

@@ -149,18 +149,16 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
 }
 
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
-  let children = infra.get_children(root)
-
-  use updated_children <- result.try(
+  let assert V(_, _, _, children) = root
+  use children <- result.try(
     children
     |> list.map(map_chapter)
     |> result.all
   )
-
-  Ok(infra.replace_children_with(root, updated_children))
+  Ok(infra.replace_children_with(root, children))
 }
 
-fn desugarer_factory(_: InnerParam) -> DesugarerTransform {
+fn transform_factory(_: InnerParam) -> DesugarerTransform {
   at_root
 }
 
@@ -185,13 +183,13 @@ pub fn generate_lbp_sections_breadcrumbs(param: Param) -> Desugarer {
     "...",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     },
   )
 }
 
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   []
