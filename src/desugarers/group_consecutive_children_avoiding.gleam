@@ -47,7 +47,7 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.EarlyReturnNodeToNodeTransform {
+fn transform_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
   fn(vxml, ancestors) { transform(vxml, ancestors, inner) }
 }
 

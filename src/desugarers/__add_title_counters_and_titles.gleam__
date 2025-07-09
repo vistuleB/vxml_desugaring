@@ -67,14 +67,14 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
+fn transform_factory(extra: Extra) -> infra.FancyOneToOneNodeMap {
   fn(node, ancestors, s1, s2, s3) {
     param_transform(node, ancestors, s1, s2, s3, extra)
   }
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  n2t.node_to_node_fancy_desugarer_factory(transform_factory(extra))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(transform_factory(extra))
 }
 
 //**********************************

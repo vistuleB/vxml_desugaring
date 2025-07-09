@@ -585,9 +585,9 @@ fn our_two_regexes() -> #(Regexp, Regexp) {
   #(small, big)
 }
 
-fn transform_factory(_: InnerParam) -> n2t.StatefulDownAndUpNodeToNodeTransform(State) {
+fn transform_factory(_: InnerParam) -> n2t.StatefulDownAndUpOneToOneNodeMap(State) {
   let regexes = our_two_regexes()
-  n2t.StatefulDownAndUpNodeToNodeTransform(
+  n2t.StatefulDownAndUpOneToOneNodeMap(
     v_before_transforming_children: fn(vxml, state) { v_before_transforming_children(vxml, state, regexes) },
     v_after_transforming_children: v_after_transforming_children,
     t_transform: fn(vxml, state) { t_transform(vxml, state, regexes) },

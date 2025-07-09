@@ -209,18 +209,18 @@ fn t_transform(
   Ok(#(updated_contents, state))
 }
 
-fn counter_handle_transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpNodeToNodesTransform(
+fn counter_handle_transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpOneToManyNodeMap(
   State,
 ) {
   let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
-  n2t.StatefulDownAndUpNodeToNodesTransform(
+  n2t.StatefulDownAndUpOneToManyNodeMap(
     v_before_transforming_children: v_before_transform,
     v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
     t_transform: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
   )
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpNodeToNodesTransform(
+fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpOneToManyNodeMap(
   State,
 ) {
   counter_handle_transform_factory(inner)

@@ -19,12 +19,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> n2t.NodeToNodesTransform {
+fn transform_factory(_: InnerParam) -> n2t.OneToManyNodeMap {
   transform
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.node_to_nodes_desugarer_factory(transform_factory(inner))
+  n2t.one_to_many_nodemap_2_desugarer_transform(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

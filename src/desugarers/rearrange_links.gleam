@@ -684,12 +684,12 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   Ok(#(pattern1, pattern2))
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.NodeToNodeTransform {
+fn transform_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
   transform(_, inner)
 }
 
 fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.node_to_node_desugarer_factory(transform_factory(inner))
+  n2t.one_to_one_nodemap_2_desugarer_transform(transform_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

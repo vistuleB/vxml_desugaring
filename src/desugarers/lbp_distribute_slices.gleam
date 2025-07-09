@@ -74,7 +74,7 @@ fn transform(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
   n2t.GoBack(vxml)
 }
 
-fn transform_factory(_: InnerParam) -> n2t.EarlyReturnNodeToNodeTransform {
+fn transform_factory(_: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
   transform
 }
 

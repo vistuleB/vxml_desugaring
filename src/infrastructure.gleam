@@ -301,6 +301,11 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
   }
 }
 
+pub fn get_root_with_desugaring_error(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
+  get_root(vxmls)
+  |> result.map_error(fn(msg) { DesugaringError(blamedlines.empty_blame(), msg)})
+}
+
 pub fn get_duplicate(list: List(a)) -> Option(a) {
   case list {
     [] -> None

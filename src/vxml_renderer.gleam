@@ -438,7 +438,7 @@ fn pipeline_overview(pipes: List(Desugarer)) {
   let name_columns = 70
   let max_param_cols = 40
   let separator = ""
-  let none_param = "n/a"
+  let none_param = ""
 
   io.println("ur pipeline is:\n")
 

@@ -35,7 +35,7 @@ fn define_article_output_path_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> n2t.StatefulNodeToNodeTransform(Int) {
+fn transform_factory(extra: Extra) -> n2t.StatefulOneToOneNodeMap(Int) {
   fn(vxml, s) { define_article_output_path_transform(vxml, extra, s) }
 }
 

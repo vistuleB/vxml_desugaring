@@ -5,124 +5,122 @@ import infrastructure.{type DesugarerTransform, type DesugaringError, Desugaring
 import blamedlines
 
 //**************************************************************
-//* desugaring efforts #1 deliverable: 'pub' function(s) below *
+//* pub type OneToOneNodeMap & pub fn one_to_one_nodemap_2_desugarer_transform
 //**************************************************************
 
-pub type NodeToNodeTransform =
+pub type OneToOneNodeMap =
   fn(VXML) -> Result(VXML, DesugaringError)
 
-fn node_to_node_desugar_many(
-  vxmls: List(VXML),
-  transform: NodeToNodeTransform,
-) -> Result(List(VXML), DesugaringError) {
-  vxmls
-  |> list.map(node_to_node_desugar_one(_, transform))
-  |> result.all
-}
-
-fn node_to_node_desugar_one(
+fn one_to_one_nodemap_recursive_application(
   node: VXML,
-  transform: NodeToNodeTransform,
+  nodemap: OneToOneNodeMap,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    T(_, _) -> transform(node)
-    V(blame, tag, attrs, children) -> {
-      case node_to_node_desugar_many(children, transform) {
-        Ok(transformed_children) ->
-          transform(V(blame, tag, attrs, transformed_children))
-        Error(err) -> Error(err)
-      }
+    T(_, _) -> nodemap(node)
+    V(_, _, _, children) -> {
+      use children <- result.try(
+        children
+        |> list.map(one_to_one_nodemap_recursive_application(_, nodemap))
+        |> result.all
+      )
+      nodemap(V(..node, children: children))
     }
   }
 }
 
-pub fn node_to_node_desugarer_factory(
-  transform: NodeToNodeTransform,
+pub fn one_to_one_nodemap_2_desugarer_transform(
+  nodemap: OneToOneNodeMap,
 ) -> DesugarerTransform {
-  node_to_node_desugar_one(_, transform)
+  one_to_one_nodemap_recursive_application(_, nodemap)
 }
 
-// fn one_to_one_nodemap_recursive_application(
-//   node: VXML,
-//   nodemap: OneToOneNodeMap,
-// ) -> Result(VXML, DesugaringError) {
-//   case node {
-//     T(_, _) -> nodemap(node)
-//     V(_, _, _, children) -> {
-//       use children <- result.try(
-//         children
-//         |> list.map(one_to_one_nodemap_recursive_application(_, nodemap))
-//         |> result.all
-//       )
-//       nodemap(V(..node, children: children))
-//     }
-//   }
-// }
+//**************************************************************
+//* pub type OneToManyNodeMap & pub fn one_to_many_nodemap_2_desugarer_transform
+//**************************************************************
 
-// pub type DesugarerTransform =
-//   fn(VXML) -> Result(VXML, DesugaringError)
+pub type OneToManyNodeMap =
+  fn(VXML) -> Result(List(VXML), DesugaringError)
 
-// pub fn one_to_one_nodemap_2_transform(
-//   nodemap: OneToOneNodeMap,
-// ) -> DesugarerTransform {
-//   one_to_one_nodemap_recursive_application(_, nodemap)
-// }
+fn one_to_many_nodemap_recursive_application(
+  node: VXML,
+  nodemap: OneToManyNodeMap,
+) -> Result(List(VXML), DesugaringError) {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, _, _, children) -> {
+      use children <- result.try(
+        children
+        |> list.map(one_to_many_nodemap_recursive_application(_, nodemap))
+        |> result.all
+        |> result.map(list.flatten)
+      )
+      nodemap(V(..node, children: children))
+    }
+  }
+}
 
-//**********************************************************************
-//* desugaring efforts #1.5: depth-first-search, node-to-node          *
-//* transform with lots of side info (not only ancestors)              *
-//**********************************************************************
+pub fn one_to_many_nodemap_2_desugarer_transform(
+  nodemap: OneToManyNodeMap,
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_many_nodemap_recursive_application(vxml, nodemap)
+    |> result.try(infra.get_root_with_desugaring_error)
+  }
+}
 
-pub type NodeToNodeFancyTransform =
+//**************************************************************
+//* pub type FancyOneToManyNodeMap & pub fn fancy_one_to_many_nodemap_2_desugarer_transform
+//**************************************************************
+
+pub type FancyOneToOneNodeMap =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
     Result(VXML, DesugaringError)
 
-fn fancy_node_to_node_children_traversal(
+fn fancy_one_to_one_nodemap_children_traversal(
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: NodeToNodeFancyTransform,
+  nodemap: FancyOneToOneNodeMap,
 ) -> Result(#(List(VXML), List(VXML), List(VXML)), DesugaringError) {
   case following_siblings_before_mapping {
     [] ->
       Ok(
         #(previous_siblings_before_mapping, previous_siblings_after_mapping, []),
       )
-
     [first, ..rest] -> {
       use first_replacement <- result.try(
-        fancy_node_to_node_desugar_one(
+        fancy_one_to_one_nodemap_recursive_application(
           first,
           ancestors,
           previous_siblings_before_mapping,
           previous_siblings_after_mapping,
           rest,
-          transform,
+          nodemap,
         ),
       )
-      fancy_node_to_node_children_traversal(
+      fancy_one_to_one_nodemap_children_traversal(
         ancestors,
         [first, ..previous_siblings_before_mapping],
         [first_replacement, ..previous_siblings_after_mapping],
         rest,
-        transform,
+        nodemap,
       )
     }
   }
 }
 
-fn fancy_node_to_node_desugar_one(
+fn fancy_one_to_one_nodemap_recursive_application(
   node: VXML,
   ancestors: List(VXML),
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: NodeToNodeFancyTransform,
+  nodemap: FancyOneToOneNodeMap,
 ) -> Result(VXML, DesugaringError) {
   case node {
     T(_, _) ->
-      transform(
+      nodemap(
         node,
         ancestors,
         previous_siblings_before_mapping,
@@ -132,15 +130,15 @@ fn fancy_node_to_node_desugar_one(
 
     V(blame, tag, attrs, children) -> {
       use #(_, reversed_children, _) <- result.try(
-        fancy_node_to_node_children_traversal(
+        fancy_one_to_one_nodemap_children_traversal(
           [node, ..ancestors],
           [],
           [],
           children,
-          transform,
+          nodemap,
       ))
 
-      transform(
+      nodemap(
         V(blame, tag, attrs, reversed_children |> list.reverse),
         ancestors,
         previous_siblings_before_mapping,
@@ -151,15 +149,14 @@ fn fancy_node_to_node_desugar_one(
   }
 }
 
-pub fn node_to_node_fancy_desugarer_factory(
-  transform: NodeToNodeFancyTransform,
+pub fn fancy_one_to_one_nodemap_2_desugarer_transform(
+  nodemap: FancyOneToOneNodeMap,
 ) -> DesugarerTransform {
-  fancy_node_to_node_desugar_one(_, [], [], [], [], transform)
+  fancy_one_to_one_nodemap_recursive_application(_, [], [], [], [], nodemap)
 }
 
 //**********************************************************************
-//* desugaring efforts #1.6: depth-first-search, node-to-nodes         *
-//* transform with lots of side info (not only ancestors)              *
+//* NodeToNodesFancyTransform
 //**********************************************************************
 
 pub type NodeToNodesFancyTransform =
@@ -264,71 +261,17 @@ pub fn node_to_nodes_fancy_desugarer_factory(
   }
 }
 
-//**********************************************************************
-//* desugaring efforts #1.7: turn ordinary node-to-node(s) transform   *
-//* into parent-avoiding fancy transform                               *
-//**********************************************************************
-
-pub fn prevent_node_to_node_transform_inside(
-  transform: NodeToNodeTransform,
-  forbidden_tag: List(String),
-) -> NodeToNodeFancyTransform {
-  fn(
-    node: VXML,
-    ancestors: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-  ) -> Result(VXML, DesugaringError) {
-    let node_is_forbidden_tag = case node {
-      T(_, _) -> False
-      V(_, tag, _, _) -> list.contains(forbidden_tag, tag)
-    }
-    case
-      node_is_forbidden_tag
-      || list.any(ancestors, fn(ancestor) {
-        list.contains(forbidden_tag, infra.get_tag(ancestor))
-      })
-    {
-      False -> transform(node)
-      True -> Ok(node)
-    }
-  }
-}
-
-pub fn prevent_node_to_nodes_transform_inside(
-  transform: NodeToNodesTransform,
-  neutralize_here: List(String),
-) -> NodeToNodesFancyTransform {
-  fn(
-    node: VXML,
-    ancestors: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-  ) -> Result(List(VXML), DesugaringError) {
-    case
-      list.any(ancestors, fn(ancestor) {
-        list.contains(neutralize_here, infra.get_tag(ancestor))
-      })
-    {
-      False -> transform(node)
-      True -> Ok([node])
-    }
-  }
-}
-
 //**************************************************************
 //* desugaring efforts #1.8: stateful node-to-node
 //**************************************************************
 
-pub type StatefulNodeToNodeTransform(a) =
+pub type StatefulOneToOneNodeMap(a) =
   fn(VXML, a) -> Result(#(VXML, a), DesugaringError)
 
 fn stateful_node_to_node_desugar_one(
   state: a,
   node: VXML,
-  transform: StatefulNodeToNodeTransform(a),
+  transform: StatefulOneToOneNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
     T(_, _) -> transform(node, state)
@@ -342,7 +285,7 @@ fn stateful_node_to_node_desugar_one(
 }
 
 pub fn stateful_node_to_node_desugarer_factory(
-  transform: StatefulNodeToNodeTransform(a),
+  transform: StatefulOneToOneNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
@@ -358,7 +301,7 @@ pub fn stateful_node_to_node_desugarer_factory(
 //* transform (NOT CURRENTLY USED == NOT CURRENTLY TESTED)
 //**********************************************************************
 
-pub type StatefulNodeToNodeFancyTransform(a) =
+pub type StatefulFancyOneToOneNodeMap(a) =
   fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
     Result(#(VXML, a), DesugaringError)
 
@@ -368,7 +311,7 @@ fn stateful_fancy_depth_first_node_to_node_children_traversal(
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: StatefulNodeToNodeFancyTransform(a),
+  transform: StatefulFancyOneToOneNodeMap(a),
 ) -> Result(#(List(VXML), List(VXML), List(VXML), a), DesugaringError) {
   case following_siblings_before_mapping {
     [] ->
@@ -406,7 +349,7 @@ fn stateful_fancy_depth_first_node_to_node_desugar_one(
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: StatefulNodeToNodeFancyTransform(a),
+  transform: StatefulFancyOneToOneNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
     T(_, _) ->
@@ -446,7 +389,7 @@ fn stateful_fancy_depth_first_node_to_node_desugar_one(
 }
 
 pub fn stateful_node_to_node_fancy_desugarer_factory(
-  transform: StatefulNodeToNodeFancyTransform(a),
+  transform: StatefulFancyOneToOneNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
@@ -461,8 +404,8 @@ pub fn stateful_node_to_node_fancy_desugarer_factory(
 //* desugaring efforts #1.9: stateful down-up node-to-node
 //**********************************************************************
 
-pub type StatefulDownAndUpNodeToNodeTransform(a) {
-  StatefulDownAndUpNodeToNodeTransform(
+pub type StatefulDownAndUpOneToOneNodeMap(a) {
+  StatefulDownAndUpOneToOneNodeMap(
     v_before_transforming_children: fn(VXML, a) ->
       Result(#(VXML, a), DesugaringError),
     v_after_transforming_children: fn(VXML, a, a) ->
@@ -475,7 +418,7 @@ pub type StatefulDownAndUpNodeToNodeTransform(a) {
 fn stateful_down_up_node_to_node_one(
   original_state: a,
   node: VXML,
-  transform: StatefulDownAndUpNodeToNodeTransform(a),
+  transform: StatefulDownAndUpOneToOneNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
 
   case node {
@@ -506,7 +449,7 @@ fn stateful_down_up_node_to_node_one(
 }
 
 pub fn stateful_down_up_node_to_node_desugarer_factory(
-  transform: StatefulDownAndUpNodeToNodeTransform(a),
+  transform: StatefulDownAndUpOneToOneNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
@@ -523,8 +466,8 @@ pub fn stateful_down_up_node_to_node_desugarer_factory(
 //* desugaring efforts #1.91: stateful down-up node-to-node
 //**********************************************************************
 
-pub type StatefulDownAndUpNodeToNodeFancyTransform(a) {
-  StatefulDownAndUpNodeToNodeFancyTransform(
+pub type StatefulDownAndUpFancyOneToOneNodeMap(a) {
+  StatefulDownAndUpFancyOneToOneNodeMap(
     v_before_transforming_children: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a) ->
       Result(#(VXML, a), DesugaringError),
     v_after_transforming_children: fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML), a, a) ->
@@ -540,7 +483,7 @@ fn stateful_down_up_fancy_node_to_node_children_traversal(
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
+  transform: StatefulDownAndUpFancyOneToOneNodeMap(a),
 ) -> Result(#(List(VXML), List(VXML), List(VXML), a), DesugaringError) {
   case following_siblings_before_mapping {
     [] ->
@@ -578,7 +521,7 @@ fn stateful_down_up_fancy_node_to_node_one(
   previous_siblings_before_mapping: List(VXML),
   previous_siblings_after_mapping: List(VXML),
   following_siblings_before_mapping: List(VXML),
-  transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
+  transform: StatefulDownAndUpFancyOneToOneNodeMap(a),
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
     V(_, _, _, children) -> {
@@ -631,7 +574,7 @@ fn stateful_down_up_fancy_node_to_node_one(
 }
 
 pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
-  transform: StatefulDownAndUpNodeToNodeFancyTransform(a),
+  transform: StatefulDownAndUpFancyOneToOneNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
@@ -654,8 +597,8 @@ pub fn stateful_down_up_fancy_node_to_node_desugarer_factory(
 //* desugaring efforts #1.99: stateful down-up node-to-nodes
 //**************************************************************
 
-pub type StatefulDownAndUpNodeToNodesTransform(a) {
-  StatefulDownAndUpNodeToNodesTransform(
+pub type StatefulDownAndUpOneToManyNodeMap(a) {
+  StatefulDownAndUpOneToManyNodeMap(
     v_before_transforming_children: fn(VXML, a) ->
       Result(#(VXML, a), DesugaringError),
     v_after_transforming_children: fn(VXML, a, a) ->
@@ -668,7 +611,7 @@ pub type StatefulDownAndUpNodeToNodesTransform(a) {
 fn stateful_down_up_node_to_nodes_many(
   state: a,
   vxmls: List(VXML),
-  transform: StatefulDownAndUpNodeToNodesTransform(a),
+  transform: StatefulDownAndUpOneToManyNodeMap(a),
 ) -> Result(#(List(VXML), a), DesugaringError) {
   case vxmls {
     [] -> Ok(#([], state))
@@ -687,7 +630,7 @@ fn stateful_down_up_node_to_nodes_many(
 fn stateful_down_up_node_to_nodes_one(
   original_state: a,
   node: VXML,
-  transform: StatefulDownAndUpNodeToNodesTransform(a),
+  transform: StatefulDownAndUpOneToManyNodeMap(a),
 ) -> Result(#(List(VXML), a), DesugaringError) {
    case node {
     V(_, _, _, children) -> {
@@ -715,7 +658,7 @@ fn stateful_down_up_node_to_nodes_one(
 }
 
 pub fn stateful_down_up_node_to_nodes_desugarer_factory(
-  transform: StatefulDownAndUpNodeToNodesTransform(a),
+  transform: StatefulDownAndUpOneToManyNodeMap(a),
   initial_state: a,
 ) -> DesugarerTransform {
   fn(vxml) {
@@ -725,55 +668,6 @@ pub fn stateful_down_up_node_to_nodes_desugarer_factory(
         let assert [new_vxml] = new_vxml
         Ok(new_vxml)
       }
-    }
-  }
-}
-
-//**********************************************************************
-//* desugaring efforts #2: depth-first-search, node-to-nodes transform *
-//* ; see 'pub' function(s) below                                      *
-//**********************************************************************
-
-pub type NodeToNodesTransform =
-  fn(VXML) -> Result(List(VXML), DesugaringError)
-
-fn depth_first_node_to_nodes_desugar_many(
-  vxmls: List(VXML),
-  transform: NodeToNodesTransform,
-) -> Result(List(VXML), DesugaringError) {
-  vxmls
-  |> list.map(depth_first_node_to_nodes_desugar_one(_, transform))
-  |> result.all
-  |> result.map(list.flatten)
-}
-
-fn depth_first_node_to_nodes_desugar_one(
-  node: VXML,
-  transform: NodeToNodesTransform,
-) -> Result(List(VXML), DesugaringError) {
-  case node {
-    T(_, _) -> transform(node)
-    V(blame, tag, attrs, children) -> {
-      case depth_first_node_to_nodes_desugar_many(children, transform) {
-        Ok(new_children) -> transform(V(blame, tag, attrs, new_children))
-        Error(err) -> Error(err)
-      }
-    }
-  }
-}
-
-pub fn node_to_nodes_desugarer_factory(
-  transform: NodeToNodesTransform,
-) -> DesugarerTransform {
-  fn(root: VXML) {
-    use vxmls <- result.try(depth_first_node_to_nodes_desugar_one(
-      root,
-      transform,
-    ))
-
-    case infra.get_root(vxmls) {
-      Ok(r) -> Ok(r)
-      Error(message) -> Error(DesugaringError(blamedlines.empty_blame(), message))
     }
   }
 }
@@ -789,13 +683,13 @@ pub type EarlyReturn(a) {
   Err(DesugaringError)
 }
 
-pub type EarlyReturnNodeToNodeTransform =
+pub type EarlyReturnOneToOneNodeMap =
   fn(VXML, List(VXML)) -> EarlyReturn(VXML)
 
 fn early_return_node_to_node_desugar_many(
   vxmls: List(VXML),
   ancestors: List(VXML),
-  transform: EarlyReturnNodeToNodeTransform,
+  transform: EarlyReturnOneToOneNodeMap,
 ) -> Result(List(VXML), DesugaringError) {
   vxmls
   |> list.map(early_return_node_to_node_desugar_one(_, ancestors, transform))
@@ -805,7 +699,7 @@ fn early_return_node_to_node_desugar_many(
 fn early_return_node_to_node_desugar_one(
   node: VXML,
   ancestors: List(VXML),
-  transform: EarlyReturnNodeToNodeTransform,
+  transform: EarlyReturnOneToOneNodeMap,
 ) -> Result(VXML, DesugaringError) {
   case transform(node, ancestors) {
     GoBack(new_node) -> Ok(new_node)
@@ -831,7 +725,62 @@ fn early_return_node_to_node_desugar_one(
 }
 
 pub fn early_return_node_to_node_desugarer_factory(
-  transform: EarlyReturnNodeToNodeTransform,
+  transform: EarlyReturnOneToOneNodeMap,
 ) -> DesugarerTransform {
   early_return_node_to_node_desugar_one(_, [], transform)
+}
+
+
+//**********************************************************************
+//* desugaring efforts #1.7: turn ordinary node-to-node(s) transform   *
+//* into parent-avoiding fancy transform                               *
+//**********************************************************************
+
+pub fn prevent_node_to_node_transform_inside(
+  transform: OneToOneNodeMap,
+  forbidden_tag: List(String),
+) -> FancyOneToOneNodeMap {
+  fn(
+    node: VXML,
+    ancestors: List(VXML),
+    _: List(VXML),
+    _: List(VXML),
+    _: List(VXML),
+  ) -> Result(VXML, DesugaringError) {
+    let node_is_forbidden_tag = case node {
+      T(_, _) -> False
+      V(_, tag, _, _) -> list.contains(forbidden_tag, tag)
+    }
+    case
+      node_is_forbidden_tag
+      || list.any(ancestors, fn(ancestor) {
+        list.contains(forbidden_tag, infra.get_tag(ancestor))
+      })
+    {
+      False -> transform(node)
+      True -> Ok(node)
+    }
+  }
+}
+
+pub fn prevent_node_to_nodes_transform_inside(
+  transform: OneToManyNodeMap,
+  neutralize_here: List(String),
+) -> NodeToNodesFancyTransform {
+  fn(
+    node: VXML,
+    ancestors: List(VXML),
+    _: List(VXML),
+    _: List(VXML),
+    _: List(VXML),
+  ) -> Result(List(VXML), DesugaringError) {
+    case
+      list.any(ancestors, fn(ancestor) {
+        list.contains(neutralize_here, infra.get_tag(ancestor))
+      })
+    {
+      False -> transform(node)
+      True -> Ok([node])
+    }
+  }
 }

@@ -129,8 +129,8 @@ fn v_after_transforming_children(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpNodeToNodeFancyTransform(State) {
-   n2t.StatefulDownAndUpNodeToNodeFancyTransform(
+fn transform_factory(inner: InnerParam) -> n2t.StatefulDownAndUpFancyOneToOneNodeMap(State) {
+   n2t.StatefulDownAndUpFancyOneToOneNodeMap(
     v_before_transforming_children: fn(vxml, _, _, _, _, state) {
       v_before_transforming_children(vxml, state, inner)
     },

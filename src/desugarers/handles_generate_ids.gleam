@@ -73,7 +73,7 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> n2t.StatefulNodeToNodeTransform(Int) {
+fn transform_factory(_: InnerParam) -> n2t.StatefulOneToOneNodeMap(Int) {
   transform
 }
 

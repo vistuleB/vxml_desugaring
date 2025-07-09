@@ -266,9 +266,9 @@ type TransformExtra =
 
 fn transform_factory(
   extra: Extra,
-) -> n2t.StatefulDownAndUpNodeToNodeTransform(CountingState) {
+) -> n2t.StatefulDownAndUpOneToOneNodeMap(CountingState) {
   let transform_extra = transform_extra_dictionary(extra)
-  n2t.StatefulDownAndUpNodeToNodeTransform(
+  n2t.StatefulDownAndUpOneToOneNodeMap(
     v_before_transforming_children: fn(node, state) {
       param_transform_first_half(node, state, transform_extra)
     },
