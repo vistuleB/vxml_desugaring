@@ -17,18 +17,16 @@ fn nodemap(
   vxml: VXML,
   _: List(VXML),
   inner: InnerParam,
-) -> n2t.EarlyReturn(VXML) {
+) -> Result(#(VXML, n2t.TrafficLight), DesugaringError) {
   let #(wrapper_tag, forbidden_to_include, forbidden_to_enter) = inner
   case vxml {
-    T(_, _) -> n2t.GoBack(vxml)
+    T(_, _) -> Ok(#(vxml, n2t.Red))
     V(blame, tag, attrs, children) -> {
       use <- infra.on_true_on_false(
         list.contains(forbidden_to_enter, tag),
-        n2t.GoBack(vxml),
+        Ok(#(vxml, n2t.Red))
       )
-
-      use <- infra.on_true_on_false(tag == wrapper_tag, n2t.Continue(vxml))
-
+      use <- infra.on_true_on_false(tag == wrapper_tag, Ok(#(vxml, n2t.Green)))
       let children =
         children
         |> infra.either_or_misceginator(is_forbidden(_, forbidden_to_include))
@@ -41,8 +39,7 @@ fn nodemap(
             consecutive_siblings,
           )
         })
-
-      n2t.Continue(V(blame, tag, attrs, children))
+      Ok(#(V(blame, tag, attrs, children), n2t.Green))
     }
   }
 }
@@ -72,8 +69,8 @@ type InnerParam = Param
 const name = "group_consecutive_children_avoiding"
 const constructor = group_consecutive_children_avoiding
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// when called with params

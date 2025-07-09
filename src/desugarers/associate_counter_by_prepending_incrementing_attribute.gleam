@@ -82,8 +82,8 @@ type InnerParam =
 const name = "associate_counter_by_prepending_incrementing_attribute"
 const constructor = associate_counter_by_prepending_incrementing_attribute
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// For each #(tag, counter_name) pair in the 

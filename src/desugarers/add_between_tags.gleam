@@ -57,10 +57,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(#(String,           String), String,             List(#(String, String))))
-//         ↖                ↖        ↖                    ↖
-//         insert divs      ↗        tag name             attributes for
-//         between adjacent          for new element      new element
+  List(#(#(String,          String), String,             List(#(String, String))))
+//         ↖                ↗        ↖                   ↖
+//         insert divs               tag name for        attributes for
+//         between adjacent          new element         new element
 //         siblings of these
 //         two names
 
@@ -70,8 +70,8 @@ type InnerParam =
 const name = "add_between_tags"
 const constructor = add_between_tags
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 

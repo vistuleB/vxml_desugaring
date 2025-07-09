@@ -41,8 +41,8 @@ type InnerParam = Nil
 const name = "reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node"
 const constructor = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// reassigns text node blame to the blame of the

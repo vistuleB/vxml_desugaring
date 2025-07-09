@@ -576,67 +576,51 @@ pub fn one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
 //* EarlyReturn land... renaming not yet done...
 //**************************************************************
 
-pub type EarlyReturn(a) {
-  GoBack(a)
-  Continue(a)
-  Err(DesugaringError)
+pub type TrafficLight {
+  Green
+  Red
 }
 
 pub type EarlyReturnOneToOneNodeMap =
-  fn(VXML, List(VXML)) -> EarlyReturn(VXML)
+  fn(VXML, List(VXML)) -> Result(#(VXML, TrafficLight), DesugaringError)
 
-fn early_return_node_to_node_desugar_many(
-  vxmls: List(VXML),
-  ancestors: List(VXML),
-  transform: EarlyReturnOneToOneNodeMap,
-) -> Result(List(VXML), DesugaringError) {
-  vxmls
-  |> list.map(early_return_node_to_node_desugar_one(_, ancestors, transform))
-  |> result.all
-}
-
-fn early_return_node_to_node_desugar_one(
+fn early_return_one_to_one_nodemap_recursive_application(
   node: VXML,
   ancestors: List(VXML),
-  transform: EarlyReturnOneToOneNodeMap,
+  nodemap: EarlyReturnOneToOneNodeMap,
 ) -> Result(VXML, DesugaringError) {
-  case transform(node, ancestors) {
-    GoBack(new_node) -> Ok(new_node)
-    Continue(new_node) -> {
-      case new_node {
-        T(_, _) -> Ok(new_node)
-        V(blame, tag, attrs, children) -> {
-          case
-            early_return_node_to_node_desugar_many(
-              children,
-              [new_node, ..ancestors],
-              transform,
-            )
-          {
-            Ok(new_children) -> Ok(V(blame, tag, attrs, new_children))
-            Error(err) -> Error(err)
-          }
-        }
-      }
+  use #(node, color) <- result.try(nodemap(node, ancestors))
+  case node, color {
+    _, Red -> Ok(node)
+    T(_, _), _ -> Ok(node)
+    V(_, _, _, children), Green -> {
+      let children_ancestors = [node, ..ancestors]
+      use children <- result.try(
+        children
+        |> list.try_map(early_return_one_to_one_nodemap_recursive_application(_, children_ancestors, nodemap))
+      )
+      Ok(V(..node, children: children))
     }
-    Err(error) -> Error(error)
   }
 }
 
 pub fn early_return_node_to_node_desugarer_factory(
-  transform: EarlyReturnOneToOneNodeMap,
+  nodemap: EarlyReturnOneToOneNodeMap,
 ) -> DesugarerTransform {
-  early_return_node_to_node_desugar_one(_, [], transform)
+  early_return_one_to_one_nodemap_recursive_application(_, [], nodemap)
 }
 
 //**********************************************************************
-//* desugaring efforts #1.7: turn ordinary node-to-node(s) transform   *
-//* into parent-avoiding fancy transform                               *
+//* misc: turn OneToOneNodeMap into parent-avoiding fancy transform                               *
 //**********************************************************************
 
+pub fn list_intersection(l1: List(a), l2: List(a)) -> Bool {
+  list.any(l1, list.contains(l2, _))
+}
+
 pub fn prevent_node_to_node_transform_inside(
-  transform: OneToOneNodeMap,
-  forbidden_tag: List(String),
+  nodemap: OneToOneNodeMap,
+  forbidden_tags: List(String),
 ) -> FancyOneToOneNodeMap {
   fn(
     node: VXML,
@@ -647,23 +631,19 @@ pub fn prevent_node_to_node_transform_inside(
   ) -> Result(VXML, DesugaringError) {
     let node_is_forbidden_tag = case node {
       T(_, _) -> False
-      V(_, tag, _, _) -> list.contains(forbidden_tag, tag)
+      V(_, tag, _, _) -> list.contains(forbidden_tags, tag)
     }
-    case
-      node_is_forbidden_tag
-      || list.any(ancestors, fn(ancestor) {
-        list.contains(forbidden_tag, infra.get_tag(ancestor))
-      })
+    case node_is_forbidden_tag  || list_intersection(ancestors|> list.map(infra.get_tag), forbidden_tags)
     {
-      False -> transform(node)
+      False -> nodemap(node)
       True -> Ok(node)
     }
   }
 }
 
 pub fn prevent_node_to_nodes_transform_inside(
-  transform: OneToManyNodeMap,
-  neutralize_here: List(String),
+  nodemap: OneToManyNodeMap,
+  forbidden_tags: List(String),
 ) -> FancyOneToManyNodeMap {
   fn(
     node: VXML,
@@ -672,12 +652,9 @@ pub fn prevent_node_to_nodes_transform_inside(
     _: List(VXML),
     _: List(VXML),
   ) -> Result(List(VXML), DesugaringError) {
-    case
-      list.any(ancestors, fn(ancestor) {
-        list.contains(neutralize_here, infra.get_tag(ancestor))
-      })
+    case list_intersection(ancestors|> list.map(infra.get_tag), forbidden_tags)
     {
-      False -> transform(node)
+      False -> nodemap(node)
       True -> Ok([node])
     }
   }

@@ -84,8 +84,8 @@ type InnerParam = Nil
 const name = "generate_lbp_prev_next_attributes"
 const constructor = generate_lbp_prev_next_attributes
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 pub fn generate_lbp_prev_next_attributes() -> Desugarer {

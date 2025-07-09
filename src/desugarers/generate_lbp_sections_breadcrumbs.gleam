@@ -174,8 +174,8 @@ type InnerParam = Nil
 const name = "generate_lbp_sections_breadcrumbs"
 const constructor = generate_lbp_sections_breadcrumbs
 
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️🏖️ pipe 🏖️🏖️🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 pub fn generate_lbp_sections_breadcrumbs(param: Param) -> Desugarer {
