@@ -1655,11 +1655,12 @@ pub fn run_and_announce_results(
 ) -> Int {
   case run_assertive_test(test_group.name, tst) {
     Ok(Nil) -> {
-      io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
+      // io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
+      io.print("✅")
       0
     }
     Error(error) -> {
-      io.print("❌ test " <> ins(number) <> " of " <> ins(total) <> " failed: ")
+      io.print("\n❌ test " <> ins(number) <> " of " <> ins(total) <> " failed: ")
       case error {
         AssertiveTestError(_, output, expected) -> {
           io.println(" obtained != expected:")
@@ -1681,9 +1682,8 @@ pub fn run_assertive_tests(test_group: AssertiveTests) -> #(Int, Int) {
     total > 0,
     #(0, 0),
   )
-  io.println("")
-  io.println("running tests for " <> test_group.name <> "...")
-  list.fold(
+  io.print(test_group.name <> " ")
+  let #(num_success, num_failures) = list.fold(
     tests,
     #(0, 0),
     fn (acc, tst) {
@@ -1691,6 +1691,11 @@ pub fn run_assertive_tests(test_group: AssertiveTests) -> #(Int, Int) {
       #(acc.0 + 1 - failure, acc.1 + failure)
     }
   )
+  case list.length(tests) == 1 {
+    True -> io.println(" (1 assertive test)")
+    False -> io.println(" (" <> ins(num_success) <> " assertive tests)")
+  }
+  #(num_success, num_failures)
 }
 
 //*********
