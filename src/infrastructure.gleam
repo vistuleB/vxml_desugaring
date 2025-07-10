@@ -1652,10 +1652,12 @@ pub fn run_and_announce_results(
   tst: AssertiveTest,
   number: Int,
   total: Int,
-) {
+) -> Int {
   case run_assertive_test(test_group.name, tst) {
-    Ok(Nil) ->
+    Ok(Nil) -> {
       io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
+      0
+    }
     Error(error) -> {
       io.print("❌ test " <> ins(number) <> " of " <> ins(total) <> " failed: ")
       case error {
@@ -1667,18 +1669,28 @@ pub fn run_and_announce_results(
         }
         _ -> io.println(ins(error))
       }
+      1
     }
   }
 }
 
-pub fn run_assertive_tests(test_group: AssertiveTests) -> List(Nil) {
+pub fn run_assertive_tests(test_group: AssertiveTests) -> #(Int, Int) {
   let tests = test_group.tests()
   let total = list.length(tests)
-  let announcer = fn(tst, i) { run_and_announce_results(test_group, tst, i + 1, total) }
+  use <- on_false_on_true(
+    total > 0,
+    #(0, 0),
+  )
   io.println("")
   io.println("running tests for " <> test_group.name <> "...")
-  tests
-  |> list.index_map(announcer)
+  list.fold(
+    tests,
+    #(0, 0),
+    fn (acc, tst) {
+      let failure = run_and_announce_results(test_group, tst, acc.0 + acc.1 + 1, total)
+      #(acc.0 + 1 - failure, acc.1 + failure)
+    }
+  )
 }
 
 //*********

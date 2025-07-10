@@ -87,6 +87,7 @@ pub const extract_starting_and_ending_spaces = extract_starting_and_ending_space
 pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
 pub const find_replace = find_replace.find_replace
+pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_replace_in_descendants_of
 pub const free_children = free_children.free_children
 pub const generate_lbp_breadcrumbs = generate_lbp_breadcrumbs.generate_lbp_breadcrumbs
 pub const generate_lbp_prev_next_attributes = generate_lbp_prev_next_attributes.generate_lbp_prev_next_attributes
@@ -109,6 +110,7 @@ pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node 
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_empty_tags = remove_empty_tags.remove_empty_tags
 pub const remove_empty_lines = remove_empty_lines.remove_empty_lines
+pub const remove_outside_subtrees = remove_outside_subtrees.remove_outside_subtrees
 pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_empty_lines.remove_starting_and_ending_empty_lines
 pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
 pub const remove_text_nodes_with_singleton_empty_line = remove_text_nodes_with_singleton_empty_line.remove_text_nodes_with_singleton_empty_line
@@ -129,19 +131,68 @@ pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.un
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break
 
-pub const assertive_tests_constructor : List(fn() -> infra.AssertiveTests) = [
+pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
+  add_attributes.assertive_tests,
+  auto_generate_child_if_missing_from_first_descendant_of_type.assertive_tests,
+  auto_generate_child_if_missing_from_attribute.assertive_tests,
   add_attribute_to_second_of_kind.assertive_tests,
+  add_before_tags_but_not_before_first_of_kind.assertive_tests,
+  add_before_tags_but_not_first_child_tags.assertive_tests,
+  add_between_tag_and_text_node.assertive_tests,
+  add_between_tags.assertive_tests,
   add_attribute_when_child_of.assertive_tests,
-  counters_substitute_and_assign_handles.assertive_tests,
+  associate_counter_by_prepending_incrementing_attribute.assertive_tests,
   break_lines_into_span_tooltips.assertive_tests,
-  find_replace_in_descendants_of.assertive_tests,
+  change_attribute_value.assertive_tests,
+  concatenate_text_nodes.assertive_tests,
+  convert_int_attributes_to_float.assertive_tests,
+  counters_substitute_and_assign_handles.assertive_tests,
+  cut_paste_attribute_from_first_child_to_self.assertive_tests,
+  cut_paste_attribute_from_self_to_child.assertive_tests,
+  extract_starting_and_ending_spaces.assertive_tests,
+  fold_tag_contents_into_text.assertive_tests,
+  fold_tags_into_text.assertive_tests,
   find_replace.assertive_tests,
+  free_children.assertive_tests,
+  generate_lbp_breadcrumbs.assertive_tests,
+  generate_lbp_prev_next_attributes.assertive_tests,
   generate_lbp_table_of_contents.assertive_tests,
+  generate_ti2_table_of_contents_html.assertive_tests,
+  generate_ti3_index_element.assertive_tests,
   group_consecutive_children_avoiding.assertive_tests,
   handles_generate_dictionary.assertive_tests,
+  handles_generate_ids.assertive_tests,
   handles_substitute.assertive_tests,
+  identity.assertive_tests,
+  insert_bookend_tags.assertive_tests,
+  insert_bookend_text_if_no_attributes.assertive_tests,
+  normalize_math_delimiters_inside.assertive_tests,
+  pair_bookends.assertive_tests,
+  prepend_text.assertive_tests,
   prepend_text_if_has_ancestor_else.assertive_tests,
-  remove_outside_subtrees.assertive_tests,
+  rearrange_links.assertive_tests,
+  reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.assertive_tests,
+  remove_attributes.assertive_tests,
+  remove_empty_tags.assertive_tests,
+  remove_empty_lines.assertive_tests,
+  remove_starting_and_ending_empty_lines.assertive_tests,
+  remove_starting_and_ending_spaces.assertive_tests,
+  remove_text_nodes_with_singleton_empty_line.assertive_tests,
+  rename.assertive_tests,
+  rename_attributes.assertive_tests,
   rename_attributes_by_function.assertive_tests,
+  rename_when_child_of.assertive_tests,
+  rename_with_attributes.assertive_tests,
+  split_by_indexed_regexes.assertive_tests,
+  unwrap.assertive_tests,
+  unwrap_tags_if_no_attributes.assertive_tests,
+  unwrap_tags_with_no_text_child.assertive_tests,
+  unwrap_tags_when_no_child_meets_condition.assertive_tests,
+  unwrap_tags_with_no_text_descendant.assertive_tests,
+  unwrap_when_child_of.assertive_tests,
+  unwrap_when_descendant_of.assertive_tests,
+  unwrap_when_zero_or_one_children.assertive_tests,
+  wrap_children_before_in.assertive_tests,
+  wrap_math_with_no_break.assertive_tests,
 ]

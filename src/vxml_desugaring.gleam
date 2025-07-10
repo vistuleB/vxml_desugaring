@@ -6,18 +6,18 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
 import writerly as wp
-import desugarers as dn
+import desugarer_library as dl
 
 fn test_pipeline() -> List(Desugarer) {
   [
-    dn.extract_starting_and_ending_spaces(["i", "b", "strong"]),
-    dn.insert_bookend_text_if_no_attributes([
+    dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
+    dl.insert_bookend_text_if_no_attributes([
       #("i", "_", "_"),
       #("b", "*", "*"),
       #("strong", "*", "*") ,
     ]),
-    dn.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
-    dn.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
+    dl.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
+    dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]
 }
 
@@ -75,32 +75,59 @@ fn test_renderer() {
 fn run_desugarer_tests(names: List(String)) {
   let run_all = list.is_empty(names)
 
-  let tested =
+  let #(found, tested) =
     list.fold(
-      dn.assertive_tests_constructor,
-      [],
+      dl.assertive_tests,
+      #([], []),
       fn(acc, constructor) {
         let name = constructor().name
         case run_all || list.contains(names, name) {
           False -> acc
           True -> {
-            infra.run_assertive_tests(constructor())
-            [name, ..acc]
+            let #(num_passed, num_failed) = infra.run_assertive_tests(constructor())
+            case num_passed + num_failed > 0 {
+              True -> #([name, ..acc.0], [name, ..acc.1])
+              False -> {
+                // io.println("trying to signal that desugarer '" <> name <> "' has empty test group")
+                #([name, ..acc.0], acc.1)
+              }
+            }
           }
         }
       }
     )
 
-  io.println("")
-  list.each(
-    names,
-    fn (name) {
-      case !list.contains(tested, name) {
-        True -> io.println("could not find a test_group for desugarer '" <> name <> "'")
-        False -> Nil
-      }
+  let report_on = case list.is_empty(names) {
+    True -> found
+    False -> names
+  }
+
+  let desugarers_with_no_test_group = list.filter(report_on, fn(name) { !list.contains(found, name)})
+  let desugarers_with_no_empty_test_group = list.filter(report_on, fn(name) { !list.contains(tested, name)})
+
+  case list.is_empty(desugarers_with_no_empty_test_group) {
+    True -> Nil
+    False -> {
+      io.println("")
+      io.println("the following desugarers have empty test groups:")
+      list.each(
+        desugarers_with_no_empty_test_group,
+        fn(name) { io.println(" - " <> name)}
+      )
     }
-  )
+  }
+
+  case list.is_empty(desugarers_with_no_test_group) {
+    True -> Nil
+    False -> {
+      io.println("")
+      io.println("could not find test groups for the following desugarers:")
+      list.each(
+        desugarers_with_no_test_group,
+        fn(name) { io.println(" - " <> name)}
+      )
+    }
+  }
 }
 
 pub fn main() {
