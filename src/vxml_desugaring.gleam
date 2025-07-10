@@ -38,14 +38,8 @@ fn test_renderer() {
 
   let renderer =
     vr.Renderer(
-      assembler: wp.assemble_blamed_lines_advanced_mode(
-        _,
-        amendments.spotlight_args_files,
-      ),
-      source_parser: vr.default_writerly_source_parser(
-        _,
-        amendments.spotlight_args,
-      ),
+      assembler: wp.assemble_blamed_lines_advanced_mode(_, amendments.spotlight_args_files),
+      source_parser: vr.default_writerly_source_parser(_, amendments.spotlight_args),
       pipeline: test_pipeline(),
       splitter: vr.empty_splitter(_, ".tsx"),
       emitter: vr.stub_jsx_emitter,
@@ -126,15 +120,18 @@ fn run_desugarer_tests(names: List(String)) {
     )
 
   io.println("")
-  let s1 = case num_performed == 1 {
-    True -> " desugarer tested, "
-    False -> " desugarers tested, "
-  }
-  let s2 = case num_failed == 1 {
-    True -> " failed"
-    False -> " failures"
-  }
-  io.println(ins(num_performed) <> s1 <> ins(num_failed) <> s2)
+  io.println(
+    ins(num_performed)
+    <> case num_performed == 1 {
+      True -> " desugarer tested, "
+      False -> " desugarers tested, "
+    }
+    <> ins(num_failed)
+    <> case num_failed == 1 {
+      True -> " failed"
+      False -> " failures"
+    }
+  )
 
   let desugarers_with_no_test_group = list.filter(names, fn(name) { !list.contains(all, name)})
   case list.is_empty(desugarers_with_no_test_group) {

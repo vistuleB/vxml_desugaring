@@ -561,14 +561,17 @@ pub fn run_renderer(
     with_on_error: fn(e: InSituDesugaringError) {
       case debug_options.error_messages {
         True -> {
-          {
-            "\nError thrown by " <> e.desugarer.name <> ".gleam desugarer" <>
-            "\nPipeline position: " <> ins(e.pipeline_step) <>
-            "\nBlame: " <> ins(e.blame) <>
-            "\nMessage: " <> e.message <>
-            "\n"
-          }
-          |> io.print
+          io.println("")
+          io.println("")
+          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
+          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
+          io.println("🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer")
+          io.println("🏯🏯pipeline step:   " <> ins(e.pipeline_step))
+          io.println("🏯🏯blame:           " <> e.blame.filename <> ":" <> ins(e.blame.line_no) <> ":" <> ins(e.blame.char_no) <> " " <> ins(e.blame.comments))
+          io.println("🏯🏯message:         " <> e.message)
+          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
+          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
+          io.println("")
         }
         False -> Nil
       }
@@ -1034,7 +1037,12 @@ fn parse_attribute_value_args_in_filename(
 ) -> List(#(String, String, String)) {
   let assert [path, ..args] = string.split(path, "&")
   case args {
-    [] -> [#(path, "", "")]
+    [] -> {
+      case string.split_once(path, "=") {
+        Ok(#(key, value)) -> [#("", key, value)]
+        Error(Nil) -> [#(path, "", "")]
+      }
+    }
     _ ->
       list.map(args, fn(arg) {
         let assert [key, value] = string.split(arg, "=")
