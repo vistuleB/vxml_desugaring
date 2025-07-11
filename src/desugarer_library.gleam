@@ -24,6 +24,7 @@ import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
 import desugarers/free_children
 import desugarers/generate_lbp_breadcrumbs
+import desugarers/generate_lbp_random_section_dividers
 import desugarers/generate_lbp_prev_next_attributes
 import desugarers/generate_lbp_table_of_contents
 import desugarers/generate_ti2_table_of_contents_html
@@ -90,6 +91,7 @@ pub const find_replace = find_replace.find_replace
 pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_replace_in_descendants_of
 pub const free_children = free_children.free_children
 pub const generate_lbp_breadcrumbs = generate_lbp_breadcrumbs.generate_lbp_breadcrumbs
+pub const generate_lbp_random_section_dividers = generate_lbp_random_section_dividers.generate_lbp_random_section_dividers
 pub const generate_lbp_prev_next_attributes = generate_lbp_prev_next_attributes.generate_lbp_prev_next_attributes
 pub const generate_lbp_table_of_contents = generate_lbp_table_of_contents.generate_lbp_table_of_contents
 pub const generate_ti2_table_of_contents_html = generate_ti2_table_of_contents_html.generate_ti2_table_of_contents_html
