@@ -117,8 +117,8 @@ type Param = Nil
 
 type InnerParam = Nil
 
-const name = "pair_double_dollars_together_desugarer"
-const constructor = pair_double_dollars_together_desugarer
+const name = "pair_double_dollars_together"
+const constructor = pair_double_dollars_together
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -126,7 +126,7 @@ const constructor = pair_double_dollars_together_desugarer
 //------------------------------------------------53
 /// pairs DoubleDollar tags together and wraps
 /// content between them in MathBlock tags
-pub fn pair_double_dollars_together_desugarer(param: Param) -> Desugarer {
+pub fn pair_double_dollars_together(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

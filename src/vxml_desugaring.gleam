@@ -7,6 +7,7 @@ import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
 import writerly as wp
 import desugarer_library as dl
+import simplifile
 
 fn test_pipeline() -> List(Desugarer) {
   [
@@ -147,9 +148,54 @@ fn run_desugarer_tests(names: List(String)) {
   }
 }
 
+//*********************
+//* library generator *
+//*********************
+
+pub fn desugarer_library_generator() -> Nil {
+  let assert Ok(desugarers) = simplifile.read_directory("src/desugarers")
+  let desugarers = 
+  desugarers
+  |> list.filter(fn(name) { ! string.starts_with(name, "__")})
+  |> list.map(fn(name) { string.drop_end(name, 6) })
+  |> list.sort(string.compare)
+
+  let imports = [
+    [
+      "import infrastructure as infra"
+    ],
+    list.map(desugarers, fn(name) {
+      "import desugarers/" <> name
+    })
+  ] |> list.flatten
+
+  let consts = list.map(desugarers, fn(name) {
+    "pub const " <> name <> " = " <> name <> "." <> name 
+  })
+
+  let assertive_tests = [
+    ["pub const assertive_tests : List(fn() -> infra.AssertiveTests) = ["],
+    list.map(desugarers, fn(name) {
+        name <> ".assertive_tests,"
+    }),
+    ["]"]
+  ] |> list.flatten
+
+  let source = [
+    imports,
+    consts,
+    assertive_tests,
+  ] |> list.flatten |> string.join("\n")
+
+  let _ = simplifile.write("src/desugarer_library.gleam", source)
+  Nil
+}
+
+
 pub fn main() {
   case argv.load().arguments {
     ["--test-desugarers", ..names] -> run_desugarer_tests(names)
+    ["--generate-library"] -> desugarer_library_generator()
     _ -> test_renderer()
   }
 }

@@ -258,8 +258,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "split_content_by_low_level_delimiters_desugarer"
-const constructor = split_content_by_low_level_delimiters_desugarer
+const name = "split_content_by_low_level_delimiters"
+const constructor = split_content_by_low_level_delimiters
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -267,7 +267,7 @@ const constructor = split_content_by_low_level_delimiters_desugarer
 //------------------------------------------------53
 /// splits content by low level delimiters like *,
 /// _, and $
-pub fn split_content_by_low_level_delimiters_desugarer(param: Param) -> Desugarer {
+pub fn split_content_by_low_level_delimiters(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(string.inspect(Nil)),

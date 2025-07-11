@@ -81,8 +81,8 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(#(String, String))))
 
-const name = "add_after_tags_but_not_first_child_tags"
-const constructor =  add_after_tags_but_not_first_child_tags
+const name = "add_after_tags_but_not_last_child_tags"
+const constructor =  add_after_tags_but_not_last_child_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -90,7 +90,7 @@ const constructor =  add_after_tags_but_not_first_child_tags
 //------------------------------------------------53
 /// adds new elements after specified tags but not 
 /// if they are the last child
-pub fn add_after_tags_but_not_first_child_tags(param: Param) -> Desugarer {
+pub fn add_after_tags_but_not_last_child_tags(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
