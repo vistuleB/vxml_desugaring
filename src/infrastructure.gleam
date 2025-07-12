@@ -611,6 +611,19 @@ pub fn pour(from: List(a), into: List(a)) -> List(a) {
   }
 }
 
+pub fn index_map_fold(
+  list: List(a),
+  initial_acc: b,
+  f: fn(b, a, Int) -> #(b, c),
+) -> #(b, List(c)) {
+  list.index_fold(list, #(initial_acc, []), fn(acc, item, index) {
+    let #(current_acc, results) = acc
+    let #(new_acc, result) = f(current_acc, item, index)
+    #(new_acc, [result, ..results])
+  })
+  |> pair.map_second(list.reverse)
+}
+
 pub fn try_map_fold(
   over ze_list: List(q),
   from state: a,
