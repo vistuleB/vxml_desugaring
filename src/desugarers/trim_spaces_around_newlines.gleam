@@ -29,7 +29,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 const name = "trim_spaces_around_newlines"
@@ -40,14 +39,14 @@ const constructor = trim_spaces_around_newlines
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// trims spaces around newlines in text nodes
-pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
+pub fn trim_spaces_around_newlines() -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
 /// trims spaces around newlines in text nodes
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -62,5 +61,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

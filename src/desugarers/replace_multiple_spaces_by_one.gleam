@@ -45,7 +45,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 const name = "replace_multiple_spaces_by_one"
@@ -56,14 +55,14 @@ const constructor = replace_multiple_spaces_by_one
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// replaces multiple consecutive spaces with a single space
-pub fn replace_multiple_spaces_by_one(param: Param) -> Desugarer {
+pub fn replace_multiple_spaces_by_one() -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
 /// replaces multiple consecutive spaces with a single space
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -78,5 +77,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

@@ -33,7 +33,7 @@ const constructor =  identity
 //------------------------------------------------53
 /// idempotent desugarer that leaves the VXML 
 /// unchanged and that never generates an error
-pub fn identity(param: Param) -> Desugarer {
+pub fn identity() -> Desugarer {
   Desugarer(
     name,
     option.None,
@@ -41,7 +41,7 @@ pub fn identity(param: Param) -> Desugarer {
 /// idempotent desugarer that leaves the VXML 
 /// unchanged and that never generates an error
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -58,5 +58,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

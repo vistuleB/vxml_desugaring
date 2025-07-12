@@ -33,11 +33,7 @@ fn nodemap(
       )
 
       let new_line = regexp.replace(re, first_text_node_line, "")
-      let contents =
-        T(t_blame, [
-          BlamedContent(l_blame, new_line),
-          ..list.drop(rest_contents, 1)
-        ])
+      let contents = T(t_blame, [BlamedContent(l_blame, new_line), ..list.drop(rest_contents, 1)])
       let children = [contents, ..list.drop(rest_children, 1)]
 
       Ok(V(blame, t, atts, children))
@@ -59,7 +55,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 const name = "remove_chapter_number_from_title"
@@ -71,7 +66,7 @@ const constructor = remove_chapter_number_from_title
 //------------------------------------------------53
 /// removes chapter numbers from titles in chapter 
 /// and subchapter title elements
-pub fn remove_chapter_number_from_title(param: Param) -> Desugarer {
+pub fn remove_chapter_number_from_title() -> Desugarer {
   Desugarer(
     name,
     option.None,
@@ -79,7 +74,7 @@ pub fn remove_chapter_number_from_title(param: Param) -> Desugarer {
 /// removes chapter numbers from titles in chapter
 /// and subchapter title elements
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -94,5 +89,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

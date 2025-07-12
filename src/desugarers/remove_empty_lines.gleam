@@ -32,7 +32,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 const name = "remove_empty_lines"
@@ -45,7 +44,7 @@ const constructor = remove_empty_lines
 /// for each text node, removes each line whose
 /// content is the empty string & destroys
 /// text nodes that end up with 0 lines
-pub fn remove_empty_lines(param: Param) -> Desugarer {
+pub fn remove_empty_lines() -> Desugarer {
   Desugarer(
     name,
     option.None,
@@ -54,7 +53,7 @@ pub fn remove_empty_lines(param: Param) -> Desugarer {
 /// content is the empty string & destroys
 /// text nodes that end up with 0 lines
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -69,5 +68,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

@@ -35,7 +35,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 const name = "reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node"
