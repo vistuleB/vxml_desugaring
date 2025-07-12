@@ -81,9 +81,17 @@ pub fn default_html_source_parser(
   spotlight_args: List(#(String, String, String)),
 ) -> Result(VXML, RendererError(a, String, b, c, d)) {
   let path = bl.first_blame_filename(lines) |> result.unwrap("")
+  let s = string.trim(bl.blamed_lines_to_string(lines))
+
+  use nonempty_string <- result.try(
+    case s {
+      "" -> Error(SourceParserError("empty content"))
+      _ -> Ok(s)
+    }
+  )
 
   use vxml <- result.try(
-    bl.blamed_lines_to_string(lines)
+    nonempty_string
     |> vp.xmlm_based_html_parser(path)
     |> result.map_error(fn(e) {
       case e {
@@ -581,7 +589,10 @@ pub fn run_renderer(
 
   let t1 = timestamp.system_time()
   let s = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
+
   io.println(" ...ended pipeline (" <> ins(s) <> "s)")
+
+  io.print("-- splitting the vxml...")
 
   // vxml fragments generation
   use fragments <- infra.on_error_on_ok(
@@ -592,7 +603,53 @@ pub fn run_renderer(
     },
   )
 
-  // blamed line fragments .emu debug printing
+  let output_dir_square_brackets = case parameters.output_dir {
+    None -> ""
+    Some(output_dir) -> "[" <> output_dir <> "/]"
+  }
+  
+  let fragments_types_and_paths_4_table = list.map(
+    fragments,
+    fn(triple) {#(ins(triple.2), output_dir_square_brackets <> triple.0)}
+  )
+
+  let #(max_length_fragment_type, max_length_local_path) = 
+    list.fold(
+      fragments_types_and_paths_4_table,
+      #(0, 0),
+      fn(acc, pair) {
+        #(
+          int.max(acc.0, string.length(pair.0)),
+          int.max(acc.1, string.length(pair.1))
+        )
+      }
+    )
+
+  let dashes = fn(num: Int) -> String { string.repeat("-", num) }
+  let spaces = fn(num: Int) -> String { string.repeat(" ", num) }
+
+  io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments")
+  io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  io.println("   | type" <> spaces(max_length_fragment_type + 2 - 4) <> "| path" <> spaces(max_length_local_path + 2 - 4) <> "|")
+  io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  // list the fragments
+  fragments_types_and_paths_4_table
+  |> list.each(
+    fn(pair) {
+      io.println(
+        "   | "
+        <> pair.0
+        <> spaces(max_length_fragment_type - string.length(pair.0) + 2)
+        <> "| "
+        <> pair.1
+        <> spaces(max_length_local_path - string.length(pair.1) + 2)
+        <> "|"
+      )
+    }
+  )
+  io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+
+  // fragments debug printing
   fragments
   |> list.each(fn(triple) {
     let #(local_path, vxml, fragment_type) = triple
@@ -620,18 +677,16 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting vxml fragments to blamed line fragments")
+  io.println("-- converting fragments to blamed line fragments")
 
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
     |> list.map(fn(tuple) {
-      let #(name, _, _) = tuple
+      let #(_name, _, _) = tuple
       renderer.emitter(tuple)
-      |> quick_message("   converted: " <> name <> " to blamed lines")
+      // |> quick_message("   converted: " <> name <> " to blamed lines")
     })
-
-  io.println("-- blamed lines debug printing")
 
   // blamed line fragments debug printing
   fragments
@@ -659,7 +714,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting blamed line fragments to strings")
+  io.println("-- converting blamed line fragments to string fragments")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -675,6 +730,7 @@ pub fn run_renderer(
         }
         Ok(#(local_path, lines, fragment_type)) -> {
           Ok(#(local_path, bl.blamed_lines_to_string(lines), fragment_type))
+          // |> quick_message("   converted: " <> local_path <> " to string")
         }
       }
     })
@@ -700,7 +756,7 @@ pub fn run_renderer(
               <> " -----------------"
             io.println(header)
             io.println(content)
-            io.println(string.repeat("-", string.length(header)))
+            io.println(dashes(string.length(header)))
             io.println("")
           }
         }
@@ -788,7 +844,7 @@ pub fn run_renderer(
           <> " -----------------"
         io.println(header)
         io.println(file_contents)
-        io.println(string.repeat("-", string.length(header)))
+        io.println(dashes(string.length(header)))
         io.println("")
       }
     }

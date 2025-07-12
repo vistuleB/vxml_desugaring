@@ -169,9 +169,11 @@ fn v_before_transform(
   let assert V(_, tag, attributes, _) = vxml
   case tag {
     _ if tag == "GrandWrapper" -> Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
-    _ if tag == "Chapter" || tag == "Bootcamp" -> {
+    _ if tag == "Chapter" || tag == "Bootcamp" || tag == "section" -> {
       case infra.v_attribute_with_key(vxml, "path") {
-        None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing 'path' attribute"))
+        // recently changed the 'None' case to accommdate ti2_html repo:
+        // None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing 'path' attribute"))
+        None -> Ok(#(vxml, state))
         Some(blamed_attribute) -> Ok(#(vxml, State(..state, local_path: Some(blamed_attribute.value))))
       }
     }

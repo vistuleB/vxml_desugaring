@@ -1,4 +1,4 @@
-import blamedlines.{type Blame, Blame}
+import blamedlines.{type Blame}
 import gleam/int
 import gleam/list
 import gleam/option
@@ -10,10 +10,10 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn blame_us(note: String) -> Blame {
-  Blame("generate_ti2_toc:" <> note, -1, -1, [])
+  infra.blame_us("(generate_ti2_table_of_contents_html.gleam:" <> note <> ")")
 }
 
-fn prepand_0(number: String) {
+fn prepend_0(number: String) {
   case string.length(number) {
     1 -> "0" <> number
     _ -> number
@@ -63,7 +63,7 @@ fn chapter_link(
     "lecture-notes/"
     <> number_attribute.value
     |> string.split(".")
-    |> list.map(prepand_0)
+    |> list.map(prepend_0)
     |> string.join("-")
     <> "-"
     <> href_attr.value |> string.replace(" ", "-")
@@ -142,7 +142,6 @@ fn nodemap(
     over: {
       sections
       |> list.map_fold(0, fn(acc, chapter: VXML) {
-        // get section index
         case get_section_index(chapter, acc) {
           Ok(section_index) -> #(
             section_index,
@@ -162,7 +161,7 @@ fn nodemap(
 
   Ok(infra.prepend_child(
     root,
-    V(blame_us("L169"), table_of_contents_tag, [], [chapters_div]),
+    V(blame_us("L164"), table_of_contents_tag, [], [chapters_div]),
   ))
 }
 
@@ -171,7 +170,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
 }
 
 fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
