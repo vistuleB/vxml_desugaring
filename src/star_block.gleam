@@ -1,7 +1,53 @@
+import gleam/io
+import gleam/int
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer}
+
+pub fn dashes(num: Int) -> String { string.repeat("-", num) }
+pub fn spaces(num: Int) -> String { string.repeat(" ", num) }
+
+// ************************
+// 2-column table printer
+// ************************
+
+pub fn two_column_table(
+  lines: List(#(String, String)),
+  col1: String,
+  col2: String,
+  indentation: Int,
+) -> Nil {
+  let #(max_col1, max_col2) = 
+    list.fold(
+      lines,
+      #(0, 0),
+      fn(acc, pair) {
+        #(
+          int.max(acc.0, string.length(pair.0)),
+          int.max(acc.1, string.length(pair.1))
+        )
+      }
+    )
+  let header_left = spaces(indentation) <> "|-"
+  let left = spaces(indentation) <> "| "
+  let one_line = fn(s1: String, s2: String) {
+    io.println(
+        left
+        <> s1
+        <> spaces(max_col1 - string.length(s1) + 2)
+        <> "| "
+        <> s2
+        <> spaces(max_col2 - string.length(s2) + 2)
+        <> "|"
+    )
+  }
+  io.println(header_left <> dashes(max_col1 + 2) <> "|-" <> dashes(max_col2 + 2) <> "|")
+  one_line(col1, col2)
+  io.println(header_left <> dashes(max_col1 + 2) <> "|-" <> dashes(max_col2 + 2) <> "|")
+  list.each(lines, fn(pair) { one_line(pair.0, pair.1) })
+  io.println(header_left <> dashes(max_col1 + 2) <> "|-" <> dashes(max_col2 + 2) <> "|")
+}
 
 // ************************
 // pipeline 'star block' printer

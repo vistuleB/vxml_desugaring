@@ -613,41 +613,42 @@ pub fn run_renderer(
     fn(triple) {#(ins(triple.2), output_dir_square_brackets <> triple.0)}
   )
 
-  let #(max_length_fragment_type, max_length_local_path) = 
-    list.fold(
-      fragments_types_and_paths_4_table,
-      #(0, 0),
-      fn(acc, pair) {
-        #(
-          int.max(acc.0, string.length(pair.0)),
-          int.max(acc.1, string.length(pair.1))
-        )
-      }
-    )
+  io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments:")
+  star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 3)
+  // let #(max_length_fragment_type, max_length_local_path) = 
+  //   list.fold(
+  //     fragments_types_and_paths_4_table,
+  //     #(0, 0),
+  //     fn(acc, pair) {
+  //       #(
+  //         int.max(acc.0, string.length(pair.0)),
+  //         int.max(acc.1, string.length(pair.1))
+  //       )
+  //     }
+  //   )
 
-  let dashes = fn(num: Int) -> String { string.repeat("-", num) }
-  let spaces = fn(num: Int) -> String { string.repeat(" ", num) }
+  // let dashes = fn(num: Int) -> String { string.repeat("-", num) }
+  // let spaces = fn(num: Int) -> String { string.repeat(" ", num) }
 
-  io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments")
-  io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
-  io.println("   | type" <> spaces(max_length_fragment_type + 2 - 4) <> "| path" <> spaces(max_length_local_path + 2 - 4) <> "|")
-  io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
-  // list the fragments
-  fragments_types_and_paths_4_table
-  |> list.each(
-    fn(pair) {
-      io.println(
-        "   | "
-        <> pair.0
-        <> spaces(max_length_fragment_type - string.length(pair.0) + 2)
-        <> "| "
-        <> pair.1
-        <> spaces(max_length_local_path - string.length(pair.1) + 2)
-        <> "|"
-      )
-    }
-  )
-  io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  // io.println("   | type" <> spaces(max_length_fragment_type + 2 - 4) <> "| path" <> spaces(max_length_local_path + 2 - 4) <> "|")
+  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  // // list the fragments
+  // fragments_types_and_paths_4_table
+  // |> list.each(
+  //   fn(pair) {
+  //     io.println(
+  //       "   | "
+  //       <> pair.0
+  //       <> spaces(max_length_fragment_type - string.length(pair.0) + 2)
+  //       <> "| "
+  //       <> pair.1
+  //       <> spaces(max_length_local_path - string.length(pair.1) + 2)
+  //       <> "|"
+  //     )
+  //   }
+  // )
+  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
 
   // fragments debug printing
   fragments
@@ -756,7 +757,7 @@ pub fn run_renderer(
               <> " -----------------"
             io.println(header)
             io.println(content)
-            io.println(dashes(string.length(header)))
+            io.println(star_block.dashes(string.length(header)))
             io.println("")
           }
         }
@@ -844,7 +845,7 @@ pub fn run_renderer(
           <> " -----------------"
         io.println(header)
         io.println(file_contents)
-        io.println(dashes(string.length(header)))
+        io.println(star_block.dashes(string.length(header)))
         io.println("")
       }
     }
