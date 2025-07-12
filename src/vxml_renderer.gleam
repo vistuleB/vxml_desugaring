@@ -569,16 +569,24 @@ pub fn run_renderer(
     with_on_error: fn(e: InSituDesugaringError) {
       case debug_options.error_messages {
         True -> {
+          let z = [
+            "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
+            "🏯🏯pipeline step:   " <> ins(e.pipeline_step),
+            "🏯🏯blame:           " <> e.blame.filename <> ":" <> ins(e.blame.line_no) <> ":" <> ins(e.blame.char_no) <> " " <> ins(e.blame.comments),
+            "🏯🏯message:         " <> e.message,
+          ]
+          let lengths = list.map(z, string.length)
+          let width = list.fold(lengths, 0, fn (acc, n) { int.max(acc, n) }) + 2
           io.println("")
           io.println("")
-          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
-          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
-          io.println("🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer")
-          io.println("🏯🏯pipeline step:   " <> ins(e.pipeline_step))
-          io.println("🏯🏯blame:           " <> e.blame.filename <> ":" <> ins(e.blame.line_no) <> ":" <> ins(e.blame.char_no) <> " " <> ins(e.blame.comments))
-          io.println("🏯🏯message:         " <> e.message)
-          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
-          io.println("🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯🏯")
+          io.println(string.repeat("🏯", width * 6 / 11))
+          io.println(string.repeat("🏯", width * 6 / 11))
+          list.each(
+            list.zip(z, lengths),
+            fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "") }
+          )
+          io.println(string.repeat("🏯", width * 6 / 11))
+          io.println(string.repeat("🏯", width * 6 / 11))
           io.println("")
         }
         False -> Nil
