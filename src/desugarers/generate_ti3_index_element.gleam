@@ -21,7 +21,7 @@ fn extract_chapter_title(chapter: VXML) -> ChapterTitle {
     |> list.map(fn(blamed_content: BlamedContent) { blamed_content.content })
     |> string.join("")
   })
-  |> result.unwrap("")
+  |> result.unwrap("no chapter title")
 }
 
 fn chapters_number_title(root: VXML) -> List(#(VXML, ChapterNo, ChapterTitle)) {
@@ -76,7 +76,7 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
       V(
         blame,
         "a",
-        [BlamedAttribute(blame, "href", "./ch" <> ins(chapter_number) <> "-" <> ins(subchapter_number) <> ".html")],
+        [BlamedAttribute(blame, "href", "./" <> ins(chapter_number) <> "-" <> ins(subchapter_number) <> ".html")],
         [T(blame, [BlamedContent(blame, subchapter_title)])]
       )
     ]
@@ -110,7 +110,7 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
         V(
           blame,
           "a",
-          [BlamedAttribute(blame, "href", "./ch" <> ins(chapter_number) <> ".html")],
+          [BlamedAttribute(blame, "href", "./" <> ins(chapter_number) <> "-0" <> ".html")],
           [T(blame, [BlamedContent(blame, chapter_title)])]
         )
       ],
