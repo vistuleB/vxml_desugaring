@@ -57,7 +57,7 @@ fn map_children(children: List(VXML), generator: RNG, inner: InnerParam) -> List
                 BlamedAttribute(
                   infra.blame_us("generate_lbp_random_section_dividers"),
                   "src",
-                  "images/section_divider_" <> ins(generated_number) <> ".svg",
+                  "images/section-dividers/section_divider_" <> ins(generated_number) <> ".svg",
                 ),
               ],
             []),
@@ -69,6 +69,7 @@ fn map_children(children: List(VXML), generator: RNG, inner: InnerParam) -> List
   })
   |> pair.second
   |> list.flatten
+  |> infra.remove_last_child_of_tag("SectionDivider")
 }
 
 fn map_chapter(child: VXML, index: Int, inner: InnerParam) -> Result(VXML, DesugaringError) {

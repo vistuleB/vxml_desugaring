@@ -41,6 +41,15 @@ pub fn opening_and_closing_string_for_pair(
   }
 }
 
+pub fn remove_last_child_of_tag(nodes: List(VXML), tag: String) -> List(VXML) {
+  case list.reverse(nodes) {
+    [] -> []
+    [V(_, t, _, _), ..rest] if tag == t -> rest |> list.reverse
+    [last, ..rest] -> [last, ..remove_last_child_of_tag(rest, tag)] |> list.reverse
+  }
+}
+
+
 pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
   case node {
     T(_, _) -> False
