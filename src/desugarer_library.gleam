@@ -96,7 +96,6 @@ import desugarers/unwrap_when_zero_or_one_children
 import desugarers/wrap_adjacent_non_whitespace_text_with
 import desugarers/wrap_children_before_in
 import desugarers/wrap_element_children
-import desugarers/wrap_math_with_no_break
 
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
 pub const add_after_tags_but_not_last_child_tags = add_after_tags_but_not_last_child_tags.add_after_tags_but_not_last_child_tags
@@ -195,7 +194,6 @@ pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.un
 pub const wrap_adjacent_non_whitespace_text_with = wrap_adjacent_non_whitespace_text_with.wrap_adjacent_non_whitespace_text_with
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_element_children = wrap_element_children.wrap_element_children
-pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break
 
 pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
@@ -295,5 +293,4 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   wrap_adjacent_non_whitespace_text_with.assertive_tests,
   wrap_children_before_in.assertive_tests,
   wrap_element_children.assertive_tests,
-  wrap_math_with_no_break.assertive_tests,
 ]
