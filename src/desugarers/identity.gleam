@@ -52,7 +52,7 @@ pub fn identity() -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
   ]
 }

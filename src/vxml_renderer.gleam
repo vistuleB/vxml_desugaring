@@ -436,11 +436,6 @@ pub type ThreePossibilities(f, g, h) {
   C3(h)
 }
 
-fn quick_message(thing: a, msg: String) -> a {
-  io.println(msg)
-  thing
-}
-
 fn pipeline_overview(pipes: List(Desugarer)) {
   let number_columns = 4
   let name_columns = 70
@@ -583,7 +578,7 @@ pub fn run_renderer(
           io.println(string.repeat("🏯", width * 6 / 11))
           list.each(
             list.zip(z, lengths),
-            fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "") }
+            fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯") }
           )
           io.println(string.repeat("🏯", width * 6 / 11))
           io.println(string.repeat("🏯", width * 6 / 11))

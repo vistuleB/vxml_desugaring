@@ -93,6 +93,7 @@ import desugarers/unwrap_tags_with_no_text_descendant
 import desugarers/unwrap_when_child_of
 import desugarers/unwrap_when_descendant_of
 import desugarers/unwrap_when_zero_or_one_children
+import desugarers/wrap_adjacent_non_whitespace_text_with
 import desugarers/wrap_children_before_in
 import desugarers/wrap_element_children
 import desugarers/wrap_math_with_no_break
@@ -191,6 +192,7 @@ pub const unwrap_tags_with_no_text_descendant = unwrap_tags_with_no_text_descend
 pub const unwrap_when_child_of = unwrap_when_child_of.unwrap_when_child_of
 pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
 pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.unwrap_when_zero_or_one_children
+pub const wrap_adjacent_non_whitespace_text_with = wrap_adjacent_non_whitespace_text_with.wrap_adjacent_non_whitespace_text_with
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_element_children = wrap_element_children.wrap_element_children
 pub const wrap_math_with_no_break = wrap_math_with_no_break.wrap_math_with_no_break
@@ -290,6 +292,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   unwrap_when_child_of.assertive_tests,
   unwrap_when_descendant_of.assertive_tests,
   unwrap_when_zero_or_one_children.assertive_tests,
+  wrap_adjacent_non_whitespace_text_with.assertive_tests,
   wrap_children_before_in.assertive_tests,
   wrap_element_children.assertive_tests,
   wrap_math_with_no_break.assertive_tests,
