@@ -1,6 +1,6 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
-import gleam/option.{None, Some}
+import gleam/option.{None, Some, is_some}
 import gleam/regexp.{type Regexp}
 import gleam/string
 import infrastructure.{type DesugaringError} as infra
@@ -69,12 +69,7 @@ pub fn split_content_with_replacement(
   )
 
   results
-  |> list.filter(fn(opt) {
-    case opt {
-      Some(_) -> True
-      None -> False
-    }
-  })
+  |> list.filter(option.is_some)
   |> list.map(fn(opt) {
     let assert Some(node) = opt
     node
