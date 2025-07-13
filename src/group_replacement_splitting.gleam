@@ -1,10 +1,9 @@
-import blamedlines.{Blame}
+import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp.{type Regexp}
-import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms as n2t
+import gleam/string
+import infrastructure.{type DesugaringError} as infra
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 pub type RegexpMatchedGroupReplacementInstructions {
@@ -22,11 +21,16 @@ pub type RegexpWithGroupReplacementInstructions {
   )
 }
 
-fn process_blamed_line(
-  line: BlamedContent,
+pub fn split_content_with_replacement(
+  blame: Blame,
+  content: String,
   w: RegexpWithGroupReplacementInstructions,
 ) -> List(VXML) {
-  let BlamedContent(blame, content) = line
+  use <- infra.on_true_on_false(
+    content == "",
+    [T(blame, [BlamedContent(blame, content)])]
+  )
+
   let splits = regexp.split(w.re, content)
   let num_groups = list.length(w.instructions)
   let num_matches: Int = { list.length(splits) - 1 } / { num_groups + 1 }
@@ -37,12 +41,9 @@ fn process_blamed_line(
     0, // <-- the 'acc' is the char_offset from start of content for next split
     fn(acc, split, index) {
       let mod_index = index % { num_groups + 1 } - 1
-      let instruction = case mod_index != -1 {
-        True -> case infra.get_at(w.instructions, mod_index) {
-          Ok(instr) -> instr
-          Error(_) -> Keep
-        }
-        False -> Keep
+      let assert Ok(instruction) = case mod_index != -1 {
+        True -> infra.get_at(w.instructions, mod_index)
+        False -> Ok(Keep)
       }
       let updated_blame = Blame(..blame, char_no: blame.char_no + acc)
       let node_replacement = case instruction {
@@ -80,7 +81,14 @@ fn process_blamed_line(
   })
 }
 
-fn nodemap(
+pub fn split_blamed_line_with_replacement(
+  line: BlamedContent,
+  w: RegexpWithGroupReplacementInstructions,
+) -> List(VXML) {
+  split_content_with_replacement(line.blame, line.content, w)
+}
+
+pub fn split_if_t_with_replacement(
   vxml: VXML,
   inner: RegexpWithGroupReplacementInstructions,
 ) -> Result(List(VXML), DesugaringError) {
@@ -88,61 +96,10 @@ fn nodemap(
     V(_, _, _, _) -> Ok([vxml])
     T(_, lines) -> {
       lines
-      |> list.map(process_blamed_line(_, inner))
+      |> list.map(split_blamed_line_with_replacement(_, inner))
       |> list.flatten
       |> infra.plain_concatenation_in_list
       |> Ok
     }
   }
-}
-
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNodeMap {
-  nodemap(_, inner)
-}
-
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
-}
-
-fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
-}
-
-type Param = RegexpWithGroupReplacementInstructions
-
-type InnerParam = RegexpWithGroupReplacementInstructions
-
-const name = "split_with_group_by_group_replacement_instructions"
-const constructor = split_with_group_by_group_replacement_instructions
-
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-// 🏖️🏖️ Desugarer 🏖️🏖️
-// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------53
-/// splits text nodes by regexp with group-by-group
-/// replacement instructions
-pub fn split_with_group_by_group_replacement_instructions(param: Param) -> Desugarer {
-  Desugarer(
-    name,
-    option.Some(ins(param)),
-    "
-/// splits text nodes by regexp with group-by-group
-/// replacement instructions
-    ",
-    case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
-    }
-  )
-}
-
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
-// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
-}
-
-pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }
