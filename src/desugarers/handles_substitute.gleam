@@ -272,37 +272,40 @@ const constructor = handles_substitute
 //------------------------------------------------53
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
-/// the form : handle_name | id | path | value
+/// the form handle=handle_name | id | path | value
 /// and with a unique child being the root of the 
 /// original document.
 /// 
 /// Replaces >>handle_name occurrences by links,
 /// using two different kinds of tags for links
-/// that point to elements in the same page and 
+/// that point to elements in the same page versus 
 /// links that point element in a different page.
 ///
-/// Given a certain occurrence >>handle_name where
-/// handle_name points to an element of path 'path'
-/// as given by the key-value in GrandWrapper,
-/// determines if 'path' is in another page of the
-/// final set of pages by looking up the current of
-/// of the element where >>handle_name occurs. This
-/// current page is found on the latest (closest)
-/// ancestor of the element whose tag is an element
-/// of the first list in the Param argument, with
-/// the path itself being looked up in the attribute
-/// whose key is the second argument of Param. The 
-/// third and fourth arguments of Param specify 
-/// which tags and classes to use for the in- and 
-/// out- page links respectively. If the class list 
-/// is empty no 'class' attribute will be added at all to the link element.
+/// More specifically, given an occurrence 
+/// >>handle_name where handle_name points to an 
+/// element of path 'path' as given by one of the 
+/// key-value pairs in GrandWrapper, determines if 
+/// 'path' is in another page of the final set of 
+/// pages with respect to the current page of the
+/// document by trying to look up the latter on the
+/// latest (closest) ancestor of the element whose
+/// tag is an element of the first list in the 
+/// desugarer's Param argument, looking at the
+/// attribute value of the attribute whose key is
+/// the second argument of Param. The third and 
+/// fourth arguments of Param specify which tags 
+/// and classes to use for the in- and out- page 
+/// links respectively. If the class list is empty 
+/// no 'class' attribute will be added at all to 
+/// that type of link element.
 /// 
-/// Destroys the GrandWrapper on exit, returning its
-/// unique child. 
+/// Destroys the GrandWrapper root note on exit,
+/// returning its unique child. 
 /// 
-/// Throws a DesugaringError if handle_name in
-/// >>handle_name doesn't exist in the GrandWrapper 
-/// attributes.
+/// Throws a DesugaringError if a given handle name
+/// is not found in the list of GrandWrapper 
+/// 'handle' attributes values, or if unable to
+/// locate a local page path for a given handle.
 pub fn handles_substitute(param: Param) -> Desugarer {
   Desugarer(
     name,
@@ -310,37 +313,40 @@ pub fn handles_substitute(param: Param) -> Desugarer {
     "
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
-/// the form : handle_name | id | path | value
+/// the form handle=handle_name | id | path | value
 /// and with a unique child being the root of the 
 /// original document.
 /// 
 /// Replaces >>handle_name occurrences by links,
 /// using two different kinds of tags for links
-/// that point to elements in the same page and 
+/// that point to elements in the same page versus 
 /// links that point element in a different page.
 ///
-/// Given a certain occurrence >>handle_name where
-/// handle_name points to an element of path 'path'
-/// as given by the key-value in GrandWrapper,
-/// determines if 'path' is in another page of the
-/// final set of pages by looking up the current of
-/// of the element where >>handle_name occurs. This
-/// current page is found on the latest (closest)
-/// ancestor of the element whose tag is an element
-/// of the first list in the Param argument, with
-/// the path itself being looked up in the attribute
-/// whose key is the second argument of Param. The 
-/// third and fourth arguments of Param specify 
-/// which tags and classes to use for the in- and 
-/// out- page links respectively. If the class list 
-/// is empty no 'class' attribute will be added at all to the link element.
+/// More specifically, given an occurrence 
+/// >>handle_name where handle_name points to an 
+/// element of path 'path' as given by one of the 
+/// key-value pairs in GrandWrapper, determines if 
+/// 'path' is in another page of the final set of 
+/// pages with respect to the current page of the
+/// document by trying to look up the latter on the
+/// latest (closest) ancestor of the element whose
+/// tag is an element of the first list in the 
+/// desugarer's Param argument, looking at the
+/// attribute value of the attribute whose key is
+/// the second argument of Param. The third and 
+/// fourth arguments of Param specify which tags 
+/// and classes to use for the in- and out- page 
+/// links respectively. If the class list is empty 
+/// no 'class' attribute will be added at all to 
+/// that type of link element.
 /// 
-/// Destroys the GrandWrapper on exit, returning its
-/// unique child. 
+/// Destroys the GrandWrapper root note on exit,
+/// returning its unique child. 
 /// 
-/// Throws a DesugaringError if handle_name in
-/// >>handle_name doesn't exist in the GrandWrapper 
-/// attributes.
+/// Throws a DesugaringError if a given handle name
+/// is not found in the list of GrandWrapper 
+/// 'handle' attributes values, or if unable to
+/// locate a local page path for a given handle.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
