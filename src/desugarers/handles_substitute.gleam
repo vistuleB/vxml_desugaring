@@ -35,17 +35,21 @@ fn hyperlink_constructor(
 ) {
   let #(id, target_path, value) = handle
   let assert Some(local_path) = state.local_path
+  let #(
+    _, _, 
+    #(in_page_link_tag, in_page_link_classes),
+    #(out_of_page_link_tag, out_of_page_link_classes)
+  ) = inner
+
   let #(tag, classes) = case target_path == local_path {
-    True -> #("InChapterLink", "handle-in-chapter-link")
-    False -> #("a", "handle-out-of-chapter-link")
+    True -> #(in_page_link_tag, in_page_link_classes |> string.join(" "))
+    False -> #(out_of_page_link_tag, out_of_page_link_classes |> string.join(" "))
   }
-  V(blame, tag, list.flatten([
-      list.map(inner, fn(x) { BlamedAttribute(blame, x.0, x.1) }),
-      [
-        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
-        BlamedAttribute(blame, "class", classes),
-      ]
-    ]),
+  V(blame, tag, 
+    [
+      BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+      BlamedAttribute(blame, "class", classes),
+    ],
     [T(blame, [BlamedContent(blame, value)])],
   )
 }
@@ -165,20 +169,29 @@ fn get_handles_instances_from_grand_wrapper(
 fn v_before_transform(
   vxml: VXML,
   state: State,
+  inner: InnerParam
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(_, tag, attributes, _) = vxml
-  case tag {
-    _ if tag == "GrandWrapper" -> Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
-    _ if tag == "Chapter" || tag == "Bootcamp" || tag == "section" -> {
-      case infra.v_attribute_with_key(vxml, "path") {
-        // recently changed the 'None' case to accommdate ti2_html repo:
-        // None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing 'path' attribute"))
-        None -> Ok(#(vxml, state))
+  let #(path_tags, path_key, _, _) = inner
+
+  use <- infra.on_true_on_false(
+    tag == "GrandWrapper",
+    Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
+  )
+
+  use <- infra.on_lazy_true_on_false(
+    list.contains(path_tags, tag),
+    fn() {
+      case infra.v_attribute_with_key(vxml, path_key) {
+        // recently changed the 'None' case to accommdate new dynamic path key:
+        // None -> Ok(#(vxml, state))
+        None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing '" <> path_key <> "' attribute"))
         Some(blamed_attribute) -> Ok(#(vxml, State(..state, local_path: Some(blamed_attribute.value))))
       }
     }
-    _ -> Ok(#(vxml, state))
-  }
+  )
+
+  Ok(#(vxml, state))
 }
 
 fn v_after_transform(
@@ -216,7 +229,7 @@ fn counter_handle_nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAf
 ) {
   let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
   n2t.OneToManyBeforeAndAfterStatefulNodeMap(
-    v_before_transforming_children: v_before_transform,
+    v_before_transforming_children: fn(vxml, state) {v_before_transform(vxml, state, inner)},
     v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
     t_nodemap: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
   )
@@ -240,10 +253,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-//       ↖       ↖
-//       additional key-value pairs
-//       to attach to anchor tag
+   #(
+    List(String), // tags that can have handle path value
+    String, // handle path attribute key
+    #(String, List(String)), // in-page link element tag / classes
+    #(String, List(String)), // outer-page link element tag / classes
+   )
+
 
 type InnerParam = Param
 
@@ -333,7 +349,7 @@ pub fn handles_substitute(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [],
+      param: #(["Chapter", "Bootcamp"], "path", #("InChapterLink", ["handle-in-chapter-link"]), #("a", ["handle-out-chapter-link"])),
       source:   "
                 <> GrandWrapper
                   handle=fluescence | _23-super-id | ./ch1.html | AA
