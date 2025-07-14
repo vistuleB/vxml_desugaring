@@ -1533,6 +1533,50 @@ pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classe
   }
 }
 
+/// folds over attribute mappings and conditionally appends classes
+/// when the condition function returns true for the mapping value
+pub fn fold_class_attributes_with_condition(
+  attributes: List(BlamedAttribute),
+  blame: Blame,
+  mappings: List(#(a, String)),
+  condition_fn: fn(a) -> Bool,
+) -> List(BlamedAttribute) {
+  list.fold(
+    mappings,
+    attributes,
+    fn(current_attributes, mapping) {
+      let #(condition_value, class_to_append) = mapping
+      case condition_fn(condition_value) {
+        True -> add_to_class_attribute(current_attributes, blame, class_to_append)
+        False -> current_attributes
+      }
+    }
+  )
+}
+
+/// maps over children and conditionally appends classes based on a condition function
+/// only processes V nodes, leaves T nodes unchanged
+pub fn map_children_with_conditional_class_append(
+  children: List(VXML),
+  mappings: List(#(a, String)),
+  condition_fn: fn(VXML, a) -> Bool,
+) -> List(VXML) {
+  list.map(children, fn(child) {
+    case child {
+      T(_, _) -> child
+      V(blame, tag, attributes, grandchildren) -> {
+        let updated_attributes = fold_class_attributes_with_condition(
+          attributes,
+          blame,
+          mappings,
+          fn(condition_value) { condition_fn(child, condition_value) }
+        )
+        V(blame, tag, updated_attributes, grandchildren)
+      }
+    }
+  })
+}
+
 //*******************
 //* assertive tests *
 //*******************
