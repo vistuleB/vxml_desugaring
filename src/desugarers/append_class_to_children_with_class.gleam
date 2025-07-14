@@ -1,3 +1,4 @@
+import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -37,15 +38,9 @@ fn nodemap(
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attributes, children) -> {
-      let class_mappings = list.filter_map(inner, fn(triple) {
-        case triple.0 == tag {
-          True -> Ok(#(triple.1, triple.2))
-          False -> Error(Nil)
-        }
-      })
-      case class_mappings {
-        [] -> Ok(vxml)
-        _ -> {
+      case dict.get(inner, tag) {
+        Error(Nil) -> Ok(vxml)
+        Ok(class_mappings) -> {
           let updated_children = update_children_with_multiple_classes(
             children,
             class_mappings,
@@ -66,16 +61,16 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
+  Ok(dict.from_list(param))
 }
 
 type Param =
-  List(#(String, String, String))
-//       ↖       ↖       ↖
-//       parent  target  class to
-//       tag     class   append
+  List(#(String, List(#(String, String))))
+//       ↖       ↖
+//       parent  list of (target_class, class_to_append) pairs
+//       tag
 
-type InnerParam = Param
+type InnerParam = Dict(String, List(#(String, String)))
 
 const name = "append_class_to_children_with_class"
 const constructor = append_class_to_children_with_class
@@ -87,7 +82,7 @@ const constructor = append_class_to_children_with_class
 /// checks all children of a given parent tag for
 /// existence of a specific class value and if found,
 /// appends a new class value to the class attribute.
-/// takes tuples of (parent_tag, target_class, class_to_append).
+/// takes tuples of (parent_tag, list_of_class_mappings).
 pub fn append_class_to_children_with_class(param: Param) -> Desugarer {
   Desugarer(
     name,
@@ -96,7 +91,7 @@ pub fn append_class_to_children_with_class(param: Param) -> Desugarer {
 /// checks all children of a given parent tag for
 /// existence of a specific class value and if found,
 /// appends a new class value to the class attribute.
-/// takes tuples of (parent_tag, target_class, class_to_append).
+/// takes tuples of (parent_tag, list_of_class_mappings).
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
@@ -111,7 +106,7 @@ pub fn append_class_to_children_with_class(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [#("Chapter", "well", "out")],
+      param: [#("Chapter", [#("well", "out")])],
       source:   "
                 <> root
                   <> Chapter
@@ -140,7 +135,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: [#("container", "highlight", "active")],
+      param: [#("container", [#("highlight", "active")])],
       source:   "
                 <> root
                   <> container
@@ -163,7 +158,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: [#("parent", "target", "new"), #("other", "different", "added")],
+      param: [#("parent", [#("target", "new")]), #("other", [#("different", "added")])],
       source:   "
                 <> root
                   <> parent
@@ -181,6 +176,29 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                   <> other
                     <> child
                       class=different added
+                "
+    ),
+    infra.AssertiveTestData(
+      param: [#("Chapter", [#("well", "out"), #("highlight", "active")])],
+      source:   "
+                <> root
+                  <> Chapter
+                    <> div
+                      class=well highlight
+                    <> div
+                      class=important
+                    <> div
+                      class=other
+                ",
+      expected: "
+                <> root
+                  <> Chapter
+                    <> div
+                      class=well highlight out active
+                    <> div
+                      class=important
+                    <> div
+                      class=other
                 "
     )
   ]
