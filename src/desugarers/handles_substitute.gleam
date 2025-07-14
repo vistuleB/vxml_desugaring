@@ -270,31 +270,32 @@ const constructor = handles_substitute
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// !!! THIS CRAPPY DESUGARER MAKES HARDWIRED !!!!!!
-/// ASSUMPTIONS ABOUT 'path' ATTRIBUTE AS WELL AS !!
-/// 'Chapter' and 'Bootcamp' TAG NAMES !!!!!!!!!!!!!
-/// 
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
-/// the form : handle_name | id | filename | value
-/// and with a unique child being the  root of the 
+/// the form : handle_name | id | path | value
+/// and with a unique child being the root of the 
 /// original document.
 /// 
-/// Traverses the document and replaces each 
-/// >>handle_name occurrence by...
-/// ```
-/// <InChapterLink href='filename?id=id'>
-///   handle_value
-/// </InChapterLink>
-/// ```
-/// ...if the filename is the same as the current 
-/// document's filename, or...
-/// ```
-/// <a href='filename?id=id'>
-///  handle_value
-/// </a>
-/// ```
-/// ...elsewise.
+/// Replaces >>handle_name occurrences by links,
+/// using two different kinds of tags for links
+/// that point to elements in the same page and 
+/// links that point element in a different page.
+///
+/// Given a certain occurrence >>handle_name where
+/// handle_name points to an element of path 'path'
+/// as given by the key-value in GrandWrapper,
+/// determines if 'path' is in another page of the
+/// final set of pages by looking up the current of
+/// of the element where >>handle_name occurs. This
+/// current page is found on the latest (closest)
+/// ancestor of the element whose tag is an element
+/// of the first list in the Param argument, with
+/// the path itself being looked up in the attribute
+/// whose key is the second argument of Param. The 
+/// third and fourth arguments of Param specify 
+/// which tags and classes to use for the in- and 
+/// out- page links respectively. If the class list 
+/// is empty no 'class' attribute will be added at all to the link element.
 /// 
 /// Destroys the GrandWrapper on exit, returning its
 /// unique child. 
@@ -309,25 +310,30 @@ pub fn handles_substitute(param: Param) -> Desugarer {
     "
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
-/// the form : handle_name | id | filename | value
-/// and with a unique child being the  root of the 
+/// the form : handle_name | id | path | value
+/// and with a unique child being the root of the 
 /// original document.
 /// 
-/// Traverses the document and replaces each 
-/// >>handle_name occurrence by...
-/// ```
-/// <InChapterLink href='filename?id=id'>
-///   handle_value
-/// </InChapterLink>
-/// ```
-/// ...if the filename is the same as the current 
-/// document's filename, or...
-/// ```
-/// <a href='filename?id=id'>
-///  handle_value
-/// </a>
-/// ```
-/// ...elsewise.
+/// Replaces >>handle_name occurrences by links,
+/// using two different kinds of tags for links
+/// that point to elements in the same page and 
+/// links that point element in a different page.
+///
+/// Given a certain occurrence >>handle_name where
+/// handle_name points to an element of path 'path'
+/// as given by the key-value in GrandWrapper,
+/// determines if 'path' is in another page of the
+/// final set of pages by looking up the current of
+/// of the element where >>handle_name occurs. This
+/// current page is found on the latest (closest)
+/// ancestor of the element whose tag is an element
+/// of the first list in the Param argument, with
+/// the path itself being looked up in the attribute
+/// whose key is the second argument of Param. The 
+/// third and fourth arguments of Param specify 
+/// which tags and classes to use for the in- and 
+/// out- page links respectively. If the class list 
+/// is empty no 'class' attribute will be added at all to the link element.
 /// 
 /// Destroys the GrandWrapper on exit, returning its
 /// unique child. 
