@@ -61,20 +61,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  param
-  |> list.map(fn(triple) {
-    let #(parent_tag, child_tag, class_to_append) = triple
-    #(parent_tag, #(child_tag, class_to_append))
-  })
-  |> infra.aggregate_on_first
-  |> Ok
+  Ok(dict.from_list(param))
 }
 
 type Param =
-  List(#(String, String, String))
-//       ↖       ↖       ↖
-//       parent  child   class to
-//       tag     tag     append
+  List(#(String, List(#(String, String))))
+//       ↖       ↖
+//       parent  list of (child_tag, class_to_append) pairs
+//       tag
 
 type InnerParam = Dict(String, List(#(String, String)))
 
@@ -85,17 +79,17 @@ const constructor = append_class_to_children_with_tag
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// appends a class to children with a specific tag 
+/// appends a class to children with a specific tag
 /// when they are children of a specified parent tag.
-/// takes tuples of (parent_tag, child_tag, class_to_append).
+/// takes tuples of (parent_tag, list_of_tag_class_mappings).
 pub fn append_class_to_children_with_tag(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// appends a class to children with a specific tag 
+/// appends a class to children with a specific tag
 /// when they are children of a specified parent tag.
-/// takes tuples of (parent_tag, child_tag, class_to_append).
+/// takes tuples of (parent_tag, list_of_tag_class_mappings).
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
@@ -110,7 +104,7 @@ pub fn append_class_to_children_with_tag(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [#("Chapter", "p", "main-column")],
+      param: [#("Chapter", [#("p", "main-column")])],
       source:   "
                 <> root
                   <> Chapter
@@ -139,7 +133,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: [#("container", "span", "highlight"), #("container", "div", "block")],
+      param: [#("container", [#("span", "highlight"), #("div", "block")])],
       source:   "
                 <> root
                   <> container
@@ -162,7 +156,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: [#("parent", "child", "new"), #("other", "child", "different")],
+      param: [#("parent", [#("child", "new")]), #("other", [#("child", "different")])],
       source:   "
                 <> root
                   <> parent
