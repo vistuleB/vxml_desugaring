@@ -45,11 +45,18 @@ fn hyperlink_constructor(
     True -> #(in_page_link_tag, in_page_link_classes |> string.join(" "))
     False -> #(out_of_page_link_tag, out_of_page_link_classes |> string.join(" "))
   }
+
+
   V(blame, tag, 
-    [
-      BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
-      BlamedAttribute(blame, "class", classes),
-    ],
+    case classes {
+      "" -> [
+        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+      ]
+      _ -> [
+        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+        BlamedAttribute(blame, "class", classes),
+      ]
+    },
     [T(blame, [BlamedContent(blame, value)])],
   )
 }
@@ -174,9 +181,11 @@ fn v_before_transform(
   let assert V(_, tag, attributes, _) = vxml
   let #(path_tags, path_key, _, _) = inner
 
-  use <- infra.on_true_on_false(
+  use <- infra.on_lazy_true_on_false(
     tag == "GrandWrapper",
-    Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
+    fn(){
+      Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
+    }
   )
 
   use <- infra.on_lazy_true_on_false(
@@ -390,6 +399,53 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     <> Math
                       <>
                         \"$x^2 + b^2$\"
+                ",
+    ),
+     infra.AssertiveTestData(
+      param: #(["Page"], "testerpath", #("inLink", []), #("outLink", [])),
+      source:   "
+                <> GrandWrapper
+                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  handle=out | _24-super-id | ./ch1.html | AA
+
+                  <> root
+                    <> Page
+                      testerpath=./ch1.html
+                      <>
+                        \"some text with >>fluescence in it\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                    <> Page
+                      testerpath=./ch2.html
+                      <>
+                        \"this is >>out outer link\"
+                ",
+      expected: "
+                <> root
+                  <> Page
+                    testerpath=./ch1.html
+                    <>
+                      \"some text with \"
+                    <> inLink
+                      href=./ch1.html?id=_23-super-id
+                      <>
+                        \"AA\"
+                    <>
+                      \" in it\"
+                    <> Math
+                      <>
+                        \"$x^2 + b^2$\"
+                  <> Page
+                    testerpath=./ch2.html
+                    <>
+                      \"this is \"
+                    <> outLink
+                      href=./ch1.html?id=_24-super-id
+                      <>
+                        \"AA\"
+                    <>
+                      \" outer link\"
                 ",
     )
   ]
