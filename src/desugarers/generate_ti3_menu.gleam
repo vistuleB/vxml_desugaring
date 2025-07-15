@@ -5,7 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, BlamedContent, V, T}
 
-type ChapterInfo = #(Int, Int)  // (chapter_no, sub_no)
+type PageInfo = #(Int, Int)  // (chapter_no, sub_no)
 
 fn get_course_homepage(document: VXML) -> String {
   case infra.v_attribute_with_key(document, "course_homepage") {
@@ -21,19 +21,19 @@ fn format_chapter_link(chapter_no: Int, sub_no: Int) -> String {
 fn get_prev_next_info(
   current_chapter: Int,
   current_sub: Int,
-  all_chapters: List(ChapterInfo),
-) -> #(Option(ChapterInfo), Option(ChapterInfo)) {
+  all_pages: List(PageInfo),
+) -> #(Option(PageInfo), Option(PageInfo)) {
   let idx = infra.index_of(
-    all_chapters,
+    all_pages,
     #(current_chapter, current_sub),
   )
   use <- infra.on_lazy_true_on_false(
     idx < 0,
-    fn(){ panic as "#(current_chapter, current_sub) not found in all_chapters" }
+    fn(){ panic as "#(current_chapter, current_sub) not found in all_pages" }
   )
   #(
-    infra.get_at(all_chapters, idx - 1) |> option.from_result,
-    infra.get_at(all_chapters, idx + 1) |> option.from_result,
+    infra.get_at(all_pages, idx - 1) |> option.from_result,
+    infra.get_at(all_pages, idx + 1) |> option.from_result,
   )
 }
 
@@ -47,7 +47,7 @@ fn a_tag_with_href_and_content(
 
 fn info_2_link(
   blame: Blame,
-  info: ChapterInfo,
+  info: PageInfo,
   direction: #(String, Bool) // '<<' or '>>', is_append
 ) -> VXML {
   a_tag_with_href_and_content(
@@ -67,7 +67,7 @@ fn info_2_link(
 }
 
 fn info_2_left_menu(
-  prev_info: Option(ChapterInfo)
+  prev_info: Option(PageInfo)
 ) -> VXML {
   let blame = infra.blame_us("info_2_left_menu")
   let index_link_option = Some(a_tag_with_href_and_content(blame, "./index.html", "Inhaltsverzeichnis"))
@@ -82,7 +82,7 @@ fn info_2_left_menu(
 }
 
 fn info_2_right_menu(
-  next_info: Option(ChapterInfo),
+  next_info: Option(PageInfo),
   homepage_url: String,
 ) -> VXML {
   let blame = infra.blame_us("info_2_right_menu")
@@ -98,7 +98,7 @@ fn info_2_right_menu(
 }
 
 fn infos_2_menu(
-  infos: #(Option(ChapterInfo), Option(ChapterInfo)),
+  infos: #(Option(PageInfo), Option(PageInfo)),
   homepage_url: String,
 ) -> VXML {
   V(
@@ -116,11 +116,11 @@ fn prepend_menu_element(
   node: VXML,
   chapter_no: Int,
   sub_no: Int,
-  all_chapters: List(ChapterInfo),
+  all_pages: List(PageInfo),
   homepage_url: String,
 ) -> VXML {
   let menu = infos_2_menu(
-    get_prev_next_info(chapter_no, sub_no, all_chapters),
+    get_prev_next_info(chapter_no, sub_no, all_pages),
     homepage_url,
   )
   infra.prepend_child(node, menu)
@@ -129,10 +129,10 @@ fn prepend_menu_element(
 fn process_chapters(
   chapter: VXML,
   chapter_no: Int,
-  all_chapters: List(ChapterInfo),
+  all_pages: List(PageInfo),
   homepage_url: String,
 ) -> VXML {
-  let chapter = prepend_menu_element(chapter, chapter_no, 0, all_chapters, homepage_url)
+  let chapter = prepend_menu_element(chapter, chapter_no, 0, all_pages, homepage_url)
   let assert V(_, _, _, children) = chapter
   let #(_, children) = list.map_fold(
     children,
@@ -141,7 +141,7 @@ fn process_chapters(
       case child {
         V(_, tag, _, _) if tag == "Sub" -> #(
           acc + 1,
-          prepend_menu_element(child, chapter_no, acc + 1, all_chapters, homepage_url)
+          prepend_menu_element(child, chapter_no, acc + 1, all_pages, homepage_url)
         )
         _ -> #(
           acc,
@@ -153,7 +153,7 @@ fn process_chapters(
   V(..chapter, children: children)
 }
 
-fn build_chapter_info_list(root: VXML) -> List(ChapterInfo) {
+fn build_page_info_list(root: VXML) -> List(PageInfo) {
   let chapters = infra.children_with_tag(root, "Chapter")
   list.index_fold(
     chapters,
@@ -173,7 +173,7 @@ fn build_chapter_info_list(root: VXML) -> List(ChapterInfo) {
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let assert V(_, "Document", _, children) = root
   let homepage_url = get_course_homepage(root)
-  let all_chapters = build_chapter_info_list(root)
+  let all_pages = build_page_info_list(root)
   let #(_, children) = list.map_fold(
     children,
     0,
@@ -181,7 +181,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
       case child {
         V(_, tag, _, _) if tag == "Chapter" -> #(
           acc + 1,
-          process_chapters(child, acc + 1, all_chapters, homepage_url)
+          process_chapters(child, acc + 1, all_pages, homepage_url)
         )
         _ -> #(
           acc,
