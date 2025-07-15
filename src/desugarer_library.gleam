@@ -11,6 +11,7 @@ import desugarers/add_between_tags
 import desugarers/add_spacer_divs_after
 import desugarers/add_spacer_divs_before
 import desugarers/add_spacer_divs_between
+import desugarers/append_class_to_child_if
 import desugarers/append_class_to_children_with_class
 import desugarers/append_class_to_children_with_tag
 import desugarers/associate_counter_by_prepending_incrementing_attribute
@@ -112,6 +113,7 @@ pub const add_between_tags = add_between_tags.add_between_tags
 pub const add_spacer_divs_after = add_spacer_divs_after.add_spacer_divs_after
 pub const add_spacer_divs_before = add_spacer_divs_before.add_spacer_divs_before
 pub const add_spacer_divs_between = add_spacer_divs_between.add_spacer_divs_between
+pub const append_class_to_child_if = append_class_to_child_if.append_class_to_child_if
 pub const append_class_to_children_with_class = append_class_to_children_with_class.append_class_to_children_with_class
 pub const append_class_to_children_with_tag = append_class_to_children_with_tag.append_class_to_children_with_tag
 pub const associate_counter_by_prepending_incrementing_attribute = associate_counter_by_prepending_incrementing_attribute.associate_counter_by_prepending_incrementing_attribute
@@ -214,6 +216,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   add_spacer_divs_after.assertive_tests,
   add_spacer_divs_before.assertive_tests,
   add_spacer_divs_between.assertive_tests,
+  append_class_to_child_if.assertive_tests,
   append_class_to_children_with_class.assertive_tests,
   append_class_to_children_with_tag.assertive_tests,
   associate_counter_by_prepending_incrementing_attribute.assertive_tests,
