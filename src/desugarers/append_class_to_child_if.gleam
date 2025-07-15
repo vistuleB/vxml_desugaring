@@ -1,7 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
@@ -69,17 +68,19 @@ const constructor = append_class_to_child_if
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// appends a class to children if they meet a condition
-/// when they are children of a specified parent tag.
-/// takes tuples of (parent_tag, class_to_append, condition_function).
+/// appends a class to children if they meet a
+/// condition when they are children of a specified
+/// parent tag. takes tuples of
+/// (parent_tag, class_to_append, condition_function).
 pub fn append_class_to_child_if(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None, // cannot stringify function parameters
     "
-/// appends a class to children if they meet a condition
-/// when they are children of a specified parent tag.
-/// takes tuples of (parent_tag, class_to_append, condition_function).
+/// appends a class to children if they meet a
+/// condition when they are children of a specified
+/// parent tag. takes tuples of
+/// (parent_tag, class_to_append, condition_function).
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

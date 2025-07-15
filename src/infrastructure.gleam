@@ -1378,6 +1378,18 @@ pub fn children_with_class(vxml: VXML, class: String) -> List(VXML) {
   filter_children(vxml, has_class(_, class))
 }
 
+pub fn index_of(ze_list: List(a), thing: a) -> Int {
+  index_of_internal(ze_list, thing, 0)
+}
+
+fn index_of_internal(ze_list: List(a), thing: a, current_index: Int) -> Int {
+  case ze_list {
+    [] -> -1
+    [first, ..] if first == thing -> current_index
+    [_, ..rest] -> index_of_internal(rest, thing, current_index + 1)
+  }
+}
+
 pub fn index_filter_children(
   vxml: VXML,
   condition: fn(VXML) -> Bool,
@@ -1558,6 +1570,13 @@ pub fn map_v_nodes(
       }
     }
   )
+}
+
+pub fn if_else(cond: Bool, if_branch: a, else_branch: a) -> a {
+  case cond {
+    True -> if_branch
+    False -> else_branch
+  }
 }
 
 //*******************
