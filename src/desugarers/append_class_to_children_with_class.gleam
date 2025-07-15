@@ -58,8 +58,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param =
   List(#(String, List(#(String, String))))
 //       ↖       ↖
-//       parent  list of (target_class, class_to_append) pairs
-//       tag
+//       parent  list of (target_class, class_to_append)
+//       tag     pairs
 
 type InnerParam = Dict(String, List(#(String, String)))
 
