@@ -1,10 +1,9 @@
 import gleam/list
-import gleam/option
+import gleam/option.{Some,None}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
-import gleam/function
 
 type ChapterNo = Int
 type SubChapterNo = Int
@@ -121,31 +120,30 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
 
 fn construct_header(document: VXML) -> VXML {
   let blame = infra.blame_us("construct_header")
-  let default_attr = BlamedAttribute(blame, "key", "")
 
-  let title = infra.on_none_on_some(
-    infra.v_attribute_with_key(document, "title"),
-    default_attr,
-    function.identity
-  ).value
+  let title =
+    case infra.v_attribute_with_key(document, "title") {
+      None -> "no title"
+      Some(x) -> x.value
+    }
 
-  let program = infra.on_none_on_some(
-    infra.v_attribute_with_key(document, "program"),
-    default_attr,
-    function.identity
-  ).value
+  let program =
+    case infra.v_attribute_with_key(document, "program") {
+      None -> "no program"
+      Some(x) -> x.value
+    }
 
-  let institution = infra.on_none_on_some(
-    infra.v_attribute_with_key(document, "institution"),
-    default_attr,
-    function.identity
-  ).value
+  let institution =
+    case infra.v_attribute_with_key(document, "institution") {
+      None -> "no institution"
+      Some(x) -> x.value
+    }
 
-  let lecturer = infra.on_none_on_some(
-    infra.v_attribute_with_key(document, "lecturer"),
-    default_attr,
-    function.identity
-  ).value
+  let lecturer =
+    case infra.v_attribute_with_key(document, "lecturer") {
+      None -> "no lecturer"
+      Some(x) -> x.value
+    }
 
   V(
     blame,
