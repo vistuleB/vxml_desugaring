@@ -301,7 +301,7 @@ fn prefix_match_to_atomized_list(
           let a_node = V(
             blame,
             tag,
-            attributes |> infra.add_to_class_attribute(blame, classes),
+            attributes |> infra.append_to_class_attribute(blame, classes),
             prefix_match_to_atomized_list(
               vxml.blame,
               internal_pattern,

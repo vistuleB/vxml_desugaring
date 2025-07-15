@@ -1472,7 +1472,7 @@ pub fn valid_attribute_key(tag: String) -> Bool {
   !string.contains(tag, "\t")
 }
 
-pub fn append_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
+pub fn append_class_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
   case list.contains(ze_list, ze_thing) {
     True -> ze_list
     False -> list.append(ze_list, [ze_thing])
@@ -1499,11 +1499,11 @@ pub fn concatenate_classes(a: String, b: String) -> String {
   let all_a = a |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all_b = b |> string.split(" ") |> list.filter(fn(s){!string.is_empty(s)}) |> list.map(string.trim)
   let all = list.flatten([all_a, all_b])
-  list.fold(all, [], append_if_not_present)
+  list.fold(all, [], append_class_if_not_present)
   |> string.join(" ")
 }
 
-pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classes: String) -> List(BlamedAttribute) {
+pub fn append_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classes: String) -> List(BlamedAttribute) {
   let #(index, new_attribute) = list.index_fold(
     attrs,
     #(-1, BlamedAttribute(blame, "", "")),
@@ -1520,48 +1520,44 @@ pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classe
   }
 }
 
-/// folds over attribute mappings and conditionally appends classes
-/// when the condition function returns true for the mapping value
-pub fn fold_class_attributes_with_condition(
-  attributes: List(BlamedAttribute),
-  blame: Blame,
-  mappings: List(#(a, String)),
-  condition_fn: fn(a) -> Bool,
-) -> List(BlamedAttribute) {
-  list.fold(
-    mappings,
-    attributes,
-    fn(current_attributes, mapping) {
-      let #(condition_value, class_to_append) = mapping
-      case condition_fn(condition_value) {
-        True -> add_to_class_attribute(current_attributes, blame, class_to_append)
-        False -> current_attributes
-      }
-    }
+/// adds classes to a V node
+pub fn v_append_classes(
+  node: VXML,
+  classes: String,
+) -> VXML {
+  let assert V(blame, _, attributes, _) = node
+  V(
+    ..node,
+    attributes: append_to_class_attribute(attributes, blame, classes),
   )
 }
 
-/// maps over children and conditionally appends classes based on a condition function
-/// only processes V nodes, leaves T nodes unchanged
-pub fn map_children_with_conditional_class_append(
-  children: List(VXML),
-  mappings: List(#(a, String)),
-  condition_fn: fn(VXML, a) -> Bool,
+/// adds classes to a V node if condition is met
+pub fn v_append_classes_if(
+  node: VXML,
+  classes: String,
+  condition: fn(VXML) -> Bool,
+) -> VXML {
+  case condition(node) {
+    True -> v_append_classes(node, classes)
+    False -> node
+  }
+}
+
+/// maps over a list of VXML nodes, applying mapper only to V nodes
+pub fn map_v_nodes(
+  vxmls: List(VXML),
+  mapper: fn(VXML) -> VXML
 ) -> List(VXML) {
-  list.map(children, fn(child) {
-    case child {
-      T(_, _) -> child
-      V(blame, tag, attributes, grandchildren) -> {
-        let updated_attributes = fold_class_attributes_with_condition(
-          attributes,
-          blame,
-          mappings,
-          fn(condition_value) { condition_fn(child, condition_value) }
-        )
-        V(blame, tag, updated_attributes, grandchildren)
+  list.map(
+    vxmls,
+    fn(vxml) {
+      case vxml {
+        T(_, _) -> vxml
+        V(_, _, _, _) -> mapper(vxml)
       }
     }
-  })
+  )
 }
 
 //*******************
