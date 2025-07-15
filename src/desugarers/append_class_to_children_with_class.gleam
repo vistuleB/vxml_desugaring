@@ -4,15 +4,22 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import gleam/list
 
-fn update_children_with_multiple_classes(
-  children: List(VXML),
-  class_mappings: List(#(String, String)),
-) -> List(VXML) {
-  infra.map_children_with_conditional_class_append(
-    children,
-    class_mappings,
-    fn(child, target_class) { infra.has_class(child, target_class) }
+fn update_child(
+  node: VXML,
+  targets_and_classes_to_append: List(#(String, String)),
+) -> VXML {
+  list.fold(
+    targets_and_classes_to_append,
+    node,
+    fn(acc, target_and_classes_to_append) {
+      infra.v_append_classes_if(
+        acc,
+        target_and_classes_to_append.1,
+        infra.has_class(_, target_and_classes_to_append.0),
+      )
+    }
   )
 }
 
@@ -22,15 +29,14 @@ fn nodemap(
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
-    V(blame, tag, attributes, children) -> {
+    V(_, tag, _, children) -> {
       case dict.get(inner, tag) {
         Error(Nil) -> Ok(vxml)
-        Ok(class_mappings) -> {
-          let updated_children = update_children_with_multiple_classes(
-            children,
-            class_mappings,
-          )
-          Ok(V(blame, tag, attributes, updated_children))
+        Ok(targets_and_classes_to_append) -> {
+          Ok(V(
+              ..vxml,
+              children: infra.map_v_nodes(children, update_child(_, targets_and_classes_to_append))
+          ))
         }
       }
     }
@@ -46,7 +52,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(dict.from_list(param))
+  infra.dict_from_list_with_desugaring_error(param)
 }
 
 type Param =
