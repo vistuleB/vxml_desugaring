@@ -41,6 +41,7 @@ import desugarers/generate_lbp_table_of_contents
 import desugarers/generate_ti2_table_of_contents
 import desugarers/generate_ti2_table_of_contents_html
 import desugarers/generate_ti3_index_element
+import desugarers/generate_ti3_menu
 import desugarers/group_consecutive_children_avoiding
 import desugarers/handles_generate_dictionary
 import desugarers/handles_generate_ids
@@ -141,6 +142,7 @@ pub const generate_lbp_table_of_contents = generate_lbp_table_of_contents.genera
 pub const generate_ti2_table_of_contents = generate_ti2_table_of_contents.generate_ti2_table_of_contents
 pub const generate_ti2_table_of_contents_html = generate_ti2_table_of_contents_html.generate_ti2_table_of_contents_html
 pub const generate_ti3_index_element = generate_ti3_index_element.generate_ti3_index_element
+pub const generate_ti3_menu = generate_ti3_menu.generate_ti3_menu
 pub const group_consecutive_children_avoiding = group_consecutive_children_avoiding.group_consecutive_children_avoiding
 pub const handles_generate_dictionary = handles_generate_dictionary.handles_generate_dictionary
 pub const handles_generate_ids = handles_generate_ids.handles_generate_ids
@@ -240,6 +242,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   generate_ti2_table_of_contents.assertive_tests,
   generate_ti2_table_of_contents_html.assertive_tests,
   generate_ti3_index_element.assertive_tests,
+  generate_ti3_menu.assertive_tests,
   group_consecutive_children_avoiding.assertive_tests,
   handles_generate_dictionary.assertive_tests,
   handles_generate_ids.assertive_tests,
