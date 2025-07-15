@@ -1508,28 +1508,15 @@ pub fn add_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, classe
     attrs,
     #(-1, BlamedAttribute(blame, "", "")),
     fn (acc, attr, i) {
-      case acc |> pair.first {
-        -1 -> case attr.key {
-          "class" -> #(i, BlamedAttribute(..attr, value: concatenate_classes(attr.value, classes)))
-          _ -> acc
-        }
-        _ -> acc
+      case acc.0, attr.key {
+        -1, "class" -> #(i, BlamedAttribute(..attr, value: concatenate_classes(attr.value, classes)))
+        _, _ -> acc
       }
     }
   )
-
   case index >= 0 {
     True -> list_set(attrs, index, new_attribute)
-    False -> list.append(
-      attrs,
-      [
-        BlamedAttribute(
-          blame,
-          "class",
-          concatenate_classes("", classes),
-        )
-      ],
-    )
+    False -> list.append(attrs, [BlamedAttribute(blame, "class", concatenate_classes("", classes))])
   }
 }
 
