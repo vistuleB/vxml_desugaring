@@ -214,6 +214,8 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   add_spacer_divs_after.assertive_tests,
   add_spacer_divs_before.assertive_tests,
   add_spacer_divs_between.assertive_tests,
+  append_class_to_children_with_class.assertive_tests,
+  append_class_to_children_with_tag.assertive_tests,
   associate_counter_by_prepending_incrementing_attribute.assertive_tests,
   auto_generate_child_if_missing_from_attribute.assertive_tests,
   auto_generate_child_if_missing_from_first_descendant_of_type.assertive_tests,
