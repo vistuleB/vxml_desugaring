@@ -48,20 +48,17 @@ fn a_tag_with_href_and_content(
 fn info_2_link(
   blame: Blame,
   info: PageInfo,
-  direction: #(String, Bool) // '<<' or '>>', is_append
+  direction: String
 ) -> VXML {
   a_tag_with_href_and_content(
     blame,
     format_chapter_link(info.0, info.1),
-    case info.1 {
-      0 -> infra.if_else(direction.1,
-        "Kapitel " <> ins(info.0) <> "  " <> direction.0,
-        direction.0 <> " Kapitel " <> ins(info.0)
-      )
-      _ -> infra.if_else(direction.1,
-        "Kapitel " <> ins(info.0) <> "." <> ins(info.1) <> " " <> direction.0,
-        direction.0 <> " Kapitel " <> ins(info.0) <> "." <> ins(info.1)
-      )
+    case info.1, direction {
+      0, ">>" -> "Kapitel " <> ins(info.0) <> "  " <> direction
+      _, ">>" -> "Kapitel " <> ins(info.0) <> "." <> ins(info.1) <> "  " <> direction
+      0, "<<" -> direction <> " Kapitel " <> ins(info.0)
+      _, "<<" -> direction <> " Kapitel " <> ins(info.0) <> "." <> ins(info.1)
+      _, _ -> panic as "unknown direction"
     }
   )
 }
@@ -71,7 +68,7 @@ fn info_2_left_menu(
 ) -> VXML {
   let blame = infra.blame_us("info_2_left_menu")
   let index_link_option = Some(a_tag_with_href_and_content(blame, "./index.html", "Inhaltsverzeichnis"))
-  let ch_link_option = option.map(prev_info, info_2_link(blame, _, #("<<", False)))
+  let ch_link_option = option.map(prev_info, info_2_link(blame, _, "<<"))
 
   V(
     blame,
@@ -87,7 +84,7 @@ fn info_2_right_menu(
 ) -> VXML {
   let blame = infra.blame_us("info_2_right_menu")
   let course_homepage_link = Some(a_tag_with_href_and_content(blame, homepage_url, "zür Kursübersicht"))
-  let ch_link_option = option.map(next_info, info_2_link(blame, _, #(">>", True)))
+  let ch_link_option = option.map(next_info, info_2_link(blame, _, ">>"))
 
   V(
     blame,
@@ -153,7 +150,7 @@ fn process_chapters(
   V(..chapter, children: children)
 }
 
-fn build_page_info_list(root: VXML) -> List(PageInfo) {
+fn build_page_infos(root: VXML) -> List(PageInfo) {
   let chapters = infra.children_with_tag(root, "Chapter")
   list.index_fold(
     chapters,
@@ -173,7 +170,7 @@ fn build_page_info_list(root: VXML) -> List(PageInfo) {
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let assert V(_, "Document", _, children) = root
   let homepage_url = get_course_homepage(root)
-  let all_pages = build_page_info_list(root)
+  let all_pages = build_page_infos(root)
   let #(_, children) = list.map_fold(
     children,
     0,
