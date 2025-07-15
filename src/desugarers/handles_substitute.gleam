@@ -46,8 +46,9 @@ fn hyperlink_constructor(
     False -> #(out_of_page_link_tag, out_of_page_link_classes |> string.join(" "))
   }
 
-
-  V(blame, tag, 
+  V(
+    blame,
+    tag, 
     case classes {
       "" -> [
         BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
@@ -66,7 +67,7 @@ fn hyperlink_maybe(
   blame: Blame,
   state: State,
   inner: InnerParam,
-) {
+) -> Result(VXML, DesugaringError) {
   case dict.get(state.handles, handle_name) {
     Ok(triple) -> Ok(hyperlink_constructor(triple, blame, state, inner))
     _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
@@ -120,7 +121,7 @@ fn split_2_t(
   T(blame, [BlamedContent(blame, split)])
 }
 
-fn splits_2_text_nodes(
+fn splits_2_ts(
   splits: List(String),
   blame: Blame,
 ) -> List(VXML) {
@@ -140,11 +141,8 @@ fn process_blamed_content(
   let matches = regexp.scan(handle_regexp, content)
   let splits = regexp.split(handle_regexp, content)
   use hyperlinks <- result.try(matches_2_hyperlinks(matches, blame, state, inner))
-  let text_nodes = splits_2_text_nodes(splits, blame)
-  list.interleave([
-    text_nodes,
-    hyperlinks,
-  ]) |> Ok
+  let text_nodes = splits_2_ts(splits, blame)
+  Ok(list.interleave([text_nodes, hyperlinks]))
 }
 
 fn process_blamed_contents(
@@ -154,10 +152,10 @@ fn process_blamed_contents(
   handle_regexp: Regexp,
 ) -> Result(List(VXML), DesugaringError) {
   contents
-    |> list.map(process_blamed_content(_, state, inner, handle_regexp))
-    |> result.all
-    |> result.map(list.flatten)                      // you now have a list of t-nodes and of hyperlinks
-    |> result.map(infra.plain_concatenation_in_list) // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
+  |> list.map(process_blamed_content(_, state, inner, handle_regexp))
+  |> result.all
+  |> result.map(list.flatten)                      // you now have a list of t-nodes and of hyperlinks
+  |> result.map(infra.plain_concatenation_in_list) // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
 }
 
 fn get_handles_instances_from_grand_wrapper(
@@ -192,8 +190,6 @@ fn v_before_transform(
     list.contains(path_tags, tag),
     fn() {
       case infra.v_attribute_with_key(vxml, path_key) {
-        // recently changed the 'None' case to accommdate new dynamic path key:
-        // None -> Ok(#(vxml, state))
         None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing '" <> path_key <> "' attribute"))
         Some(blamed_attribute) -> Ok(#(vxml, State(..state, local_path: Some(blamed_attribute.value))))
       }
@@ -233,9 +229,7 @@ fn t_transform(
   Ok(#(updated_contents, state))
 }
 
-fn counter_handle_nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(
-  State,
-) {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(State) {
   let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
   n2t.OneToManyBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(vxml, state) {v_before_transform(vxml, state, inner)},
@@ -244,17 +238,9 @@ fn counter_handle_nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAf
   )
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(
-  State,
-) {
-  counter_handle_nodemap_factory(inner)
-}
-
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
-    nodemap_factory(inner),
-    State(handles: dict.new(), local_path: None)
-  )
+  nodemap_factory(inner)
+  |> n2t.one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(State(dict.new(), None))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -263,8 +249,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
    #(
-    List(String), // tags that can have handle path value
-    String, // handle path attribute key
+    List(String),            // tags that can have handle path value
+    String,                  // handle path attribute key
     #(String, List(String)), // in-page link element tag / classes
     #(String, List(String)), // outer-page link element tag / classes
    )
@@ -370,7 +356,12 @@ pub fn handles_substitute(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: #(["Chapter", "Bootcamp"], "path", #("InChapterLink", ["handle-in-chapter-link"]), #("a", ["handle-out-chapter-link"])),
+      param:    #(
+                  ["Chapter", "Bootcamp"],
+                  "path", #("InChapterLink",
+                  ["handle-in-chapter-link"]),
+                  #("a", ["handle-out-chapter-link"])
+                ),
       source:   "
                 <> GrandWrapper
                   handle=fluescence | _23-super-id | ./ch1.html | AA
@@ -402,12 +393,16 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ",
     ),
      infra.AssertiveTestData(
-      param: #(["Page"], "testerpath", #("inLink", []), #("outLink", [])),
+      param:    #(
+                  ["Page"],
+                  "testerpath",
+                  #("inLink", []),
+                  #("outLink", [])
+                ),
       source:   "
                 <> GrandWrapper
                   handle=fluescence | _23-super-id | ./ch1.html | AA
                   handle=out | _24-super-id | ./ch1.html | AA
-
                   <> root
                     <> Page
                       testerpath=./ch1.html
