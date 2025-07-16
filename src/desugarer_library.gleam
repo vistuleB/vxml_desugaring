@@ -54,6 +54,7 @@ import desugarers/insert_bookend_text_if_no_attributes
 import desugarers/insert_ti2_counter_commands
 import desugarers/keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 import desugarers/merge_parent_attributes_into_child
+import desugarers/normalize_begin_end_align
 import desugarers/normalize_math_delimiters_inside
 import desugarers/pair_bookends
 import desugarers/pair_double_dollars_together
@@ -157,6 +158,7 @@ pub const insert_bookend_text_if_no_attributes = insert_bookend_text_if_no_attri
 pub const insert_ti2_counter_commands = insert_ti2_counter_commands.insert_ti2_counter_commands
 pub const keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 pub const merge_parent_attributes_into_child = merge_parent_attributes_into_child.merge_parent_attributes_into_child
+pub const normalize_begin_end_align = normalize_begin_end_align.normalize_begin_end_align
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const pair_double_dollars_together = pair_double_dollars_together.pair_double_dollars_together
@@ -261,6 +263,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   insert_ti2_counter_commands.assertive_tests,
   keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.assertive_tests,
   merge_parent_attributes_into_child.assertive_tests,
+  normalize_begin_end_align.assertive_tests,
   normalize_math_delimiters_inside.assertive_tests,
   pair_bookends.assertive_tests,
   pair_double_dollars_together.assertive_tests,
