@@ -83,6 +83,7 @@ import desugarers/replace_multiple_spaces_by_one
 import desugarers/replace_text_parent_by_text_bookends
 import desugarers/split_by_indexed_regexes
 import desugarers/split_content_by_low_level_delimiters
+import desugarers/split_with_replacement_instructions
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
 import desugarers/trim_spaces_around_newlines
@@ -185,6 +186,7 @@ pub const replace_multiple_spaces_by_one = replace_multiple_spaces_by_one.replac
 pub const replace_text_parent_by_text_bookends = replace_text_parent_by_text_bookends.replace_text_parent_by_text_bookends
 pub const split_by_indexed_regexes = split_by_indexed_regexes.split_by_indexed_regexes
 pub const split_content_by_low_level_delimiters = split_content_by_low_level_delimiters.split_content_by_low_level_delimiters
+pub const split_with_replacement_instructions = split_with_replacement_instructions.split_with_replacement_instructions
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
 pub const trim_spaces_around_newlines = trim_spaces_around_newlines.trim_spaces_around_newlines
@@ -288,6 +290,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   replace_text_parent_by_text_bookends.assertive_tests,
   split_by_indexed_regexes.assertive_tests,
   split_content_by_low_level_delimiters.assertive_tests,
+  split_with_replacement_instructions.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
   trim_spaces_around_newlines.assertive_tests,
