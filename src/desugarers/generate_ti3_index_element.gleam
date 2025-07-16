@@ -10,6 +10,10 @@ type SubChapterNo = Int
 type ChapterTitle = String
 type SubchapterTitle = String
 
+fn format_chapter_link(chapter_no: Int, sub_no: Int) -> String {
+  "./" <> ins(chapter_no) <> "-" <> ins(sub_no) <> ".html"
+}
+
 fn extract_chapter_title(chapter: VXML) -> ChapterTitle {
   chapter
   |> infra.unique_child_with_tag("ChapterTitle")
@@ -75,7 +79,7 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
       V(
         blame,
         "a",
-        [BlamedAttribute(blame, "href", "./" <> ins(chapter_number) <> "-" <> ins(subchapter_number) <> ".html")],
+        [BlamedAttribute(blame, "href", format_chapter_link(chapter_number, subchapter_number))],
         [T(blame, [BlamedContent(blame, subchapter_title)])]
       )
     ]
@@ -148,7 +152,7 @@ fn construct_header(document: VXML) -> VXML {
   V(
     blame,
     "header",
-    [BlamedAttribute(blame, "class", "main-column-width index__header")],
+    [BlamedAttribute(blame, "class", "index__header")],
     [
       V(
         blame,
@@ -172,12 +176,65 @@ fn construct_header(document: VXML) -> VXML {
   )
 }
 
+fn construct_right_menu(document: VXML) -> VXML {
+  let blame = infra.blame_us("construct_right_menu")
+  let first_chapter_title =
+    document
+    |> infra.children_with_tag("Chapter")
+    |> list.first
+    |> result.map(fn(chapter) { infra.v_attribute_with_key(chapter, "title") })
+    |> result.map(fn(opt) { option.map(opt, fn(attr) {attr.value})})
+    |> result.map(fn(opt) { option.unwrap(opt, "no title found")})
+    |> result.unwrap("no title found")
+
+    V(
+      blame,
+      "RightMenu",
+      [BlamedAttribute(blame, "class", "menu-right")],
+      [ V(
+          blame,
+          "a",
+          [BlamedAttribute(blame, "href", format_chapter_link(1, 0))],
+          [T(blame, [BlamedContent(blame, "1. " <> first_chapter_title <> " >>")])]
+        )
+      ]
+    )
+}
+
+fn construct_menu(document: VXML) -> VXML {
+  let blame = infra.blame_us("construct_menu")
+  let course_homepage_link =
+    case infra.v_attribute_with_key(document, "course_homepage") {
+      None -> "no url for course homepage"
+      Some(x) -> x.value
+    }
+
+  let menu_left =
+    V(
+      blame,
+      "LeftMenu",
+      [BlamedAttribute(blame, "class", "menu-left")]
+      ,[
+        V(blame, "a", [BlamedAttribute(blame, "href", course_homepage_link)], [T(blame, [BlamedContent(blame, "zür Kursübersicht")])])
+      ]
+    )
+
+  V(
+    blame,
+    "nav",
+    [ BlamedAttribute(blame, "class", "menu")],
+    [ menu_left,
+      construct_right_menu(document)
+    ]
+  )
+}
+
 fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo, SubchapterTitle))))) -> VXML {
   let blame = infra.blame_us("construct_index")
   V(
     blame,
     "section",
-    [BlamedAttribute(blame, "class", "main-column-width")],
+    [],
     [
       V(
         blame,
@@ -194,6 +251,7 @@ fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo
 
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let assert V(_, "Document", _attrs, _children) = root
+  let menu_node = construct_menu(root)
   let header_node = construct_header(root)
   let index_list_node =
         root
@@ -205,7 +263,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
     infra.blame_us("construct_index"),
     "Index",
     [],
-    [header_node, index_list_node]
+    [menu_node, header_node, index_list_node]
   )
 
   infra.prepend_child(root, index_node)
