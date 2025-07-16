@@ -1,6 +1,6 @@
 import blamedlines.{type Blame, Blame}
 import gleam/list
-import gleam/option.{None, Some, is_some}
+import gleam/option.{None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/string
 import infrastructure.{type DesugaringError} as infra
@@ -9,7 +9,7 @@ import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V
 pub type RegexpMatchedGroupReplacementInstructions {
   Keep
   Trash
-  TagReplaceTrashPayload(String)
+  TagReplace(String)
   TagReplaceKeepPayloadAsAttribute(String, String)
   TagReplaceKeepPayloadAsTextChild(String)
 }
@@ -49,7 +49,7 @@ pub fn split_content_with_replacement(
       let node_replacement = case instruction {
         Trash -> None
         Keep -> Some(T(updated_blame, [BlamedContent(updated_blame, split)]))
-        TagReplaceTrashPayload(tag) -> Some(V(updated_blame, tag, [], []))
+        TagReplace(tag) -> Some(V(updated_blame, tag, [], []))
         TagReplaceKeepPayloadAsAttribute(tag, key) -> Some(V(
           updated_blame,
           tag,
