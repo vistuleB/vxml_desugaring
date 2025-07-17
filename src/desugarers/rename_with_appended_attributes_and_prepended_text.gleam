@@ -18,7 +18,7 @@ fn nodemap(
         Ok(#(new_tag, text, new_attrs)) -> {
           let text_node = T(blame, [BlamedContent(blame, text)])
           let attrs = list.append(attrs, new_attrs)
-          Ok(V(blame, new_tag, attrs , [text_node, ..children]))
+          Ok(V(blame, new_tag, attrs, [text_node, ..children]))
         }
       }
     }
@@ -61,7 +61,7 @@ const constructor = rename_with_appended_attributes_and_prepended_text
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------53A
+//------------------------------------------------53
 /// renames tags while adding attributes and
 /// prepending a new text node as the first child
 /// of the renamed tag
