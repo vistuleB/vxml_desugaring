@@ -194,7 +194,7 @@ fn replace_indexed_group_by_tag_in_nodes(
 // public splitters
 //********************
 
-pub fn split_by_regexes_with_indexed_group_node_to_nodes_transform(
+pub fn split_by_regexes_with_indexed_group_nodemap(
   node: VXML,
   rules: List(#(RegexWithIndexedGroup, String)),
 ) -> Result(List(VXML), DesugaringError) {

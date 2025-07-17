@@ -6,7 +6,7 @@ import nodemaps_2_desugarer_transforms as n2t
 
 fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   let #(replacement_instructions, forbidden_parents) = inner
-  grs.split_if_t_with_replacement(_, replacement_instructions)
+  grs.split_if_t_with_replacement_nodemap(_, replacement_instructions)
   |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
 }
 
@@ -18,9 +18,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(grs.RegexpWithGroupReplacementInstructions, List(String))
-//            ↖                                            ↖
-//            replacement_instructions                   forbidden_parents
+type Param = #(List(grs.RegexpWithGroupReplacementInstructions), List(String))
+//            ↖                                                   ↖
+//            replacement_instructions                            forbidden_parents
+//            List(grs.RegexpWithGroupReplacementInstructions)    List(String)
 
 type InnerParam = Param
 

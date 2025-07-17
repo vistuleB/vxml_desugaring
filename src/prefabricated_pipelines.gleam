@@ -1,5 +1,6 @@
 import gleam/list
 import indexed_regex_splitting.{type RegexWithIndexedGroup} as irs
+import group_replacement_splitting as grs
 import infrastructure.{
   type Desugarer,
   type LatexDelimiterPair,
@@ -45,14 +46,14 @@ fn opening_and_closing_string_for_pair(
 
 fn all_stuff_for_latex_delimiter_singleton(
   which: LatexDelimiterSingleton
-) -> #(RegexWithIndexedGroup, String, String) {
+) -> #(grs.RegexpWithGroupReplacementInstructions, String, String) {
   case which {
-    DoubleDollarSingleton -> #(irs.unescaped_suffix_indexed_regex("\\$\\$"), "DoubleDollar", "$$")
-    SingleDollarSingleton -> #(irs.unescaped_suffix_indexed_regex("\\$"), "SingleDollar", "$")
-    BackslashOpeningParenthesis -> #(irs.unescaped_suffix_indexed_regex("\\\\\\("), "LatexOpeningPar", "\\(")
-    BackslashClosingParenthesis -> #(irs.unescaped_suffix_indexed_regex("\\\\\\)"), "LatexClosingPar", "\\)")
-    BackslashOpeningSquareBracket -> #(irs.unescaped_suffix_indexed_regex("\\\\\\["), "LatexOpeningBra", "\\[")
-    BackslashClosingSquareBracket -> #(irs.unescaped_suffix_indexed_regex("\\\\\\]"), "LatexClosingBra", "\\]")
+    DoubleDollarSingleton -> #(grs.unescaped_suffix_replacement_splitter("\\$\\$", "DoubleDollar"), "DoubleDollar", "$$")
+    SingleDollarSingleton -> #(grs.unescaped_suffix_replacement_splitter("\\$", "SingleDollar"), "SingleDollar", "$")
+    BackslashOpeningParenthesis -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\(", "LatexOpeningPar"), "LatexOpeningPar", "\\(")
+    BackslashClosingParenthesis -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\)", "LatexClosingPar"), "LatexClosingPar", "\\)")
+    BackslashOpeningSquareBracket -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\[", "LatexOpeningBra"), "LatexOpeningBra", "\\[")
+    BackslashClosingSquareBracket -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\]", "LatexClosingBra"), "LatexClosingBra", "\\]")
   }
 }
 
@@ -76,7 +77,7 @@ fn split_pair_fold_for_delimiter_pair(
     True -> {
       let #(ind_regex, tag, replacement) = all_stuff_for_latex_delimiter_singleton(d1)
       [
-        dl.split_by_indexed_regexes(#([#(ind_regex, tag)], forbidden)),
+        dl.split_with_replacement_instructions(#([ind_regex], forbidden)),
         dl.pair_bookends(#([tag], [tag], wrapper)),
         dl.fold_tags_into_text([#(tag, replacement)])
       ]
@@ -86,7 +87,7 @@ fn split_pair_fold_for_delimiter_pair(
       let #(ind_regex1, tag1, replacement1) = all_stuff_for_latex_delimiter_singleton(d1)
       let #(ind_regex2, tag2, replacement2) = all_stuff_for_latex_delimiter_singleton(d2)
       [
-        dl.split_by_indexed_regexes(#([#(ind_regex1, tag1), #(ind_regex2, tag2)], forbidden)),
+        dl.split_with_replacement_instructions(#([ind_regex1, ind_regex2], forbidden)),
         dl.pair_bookends(#([tag1], [tag2], wrapper)),
         dl.fold_tags_into_text([#(tag1, replacement1), #(tag2, replacement2)])
       ]

@@ -1,3 +1,4 @@
+import indexed_regex_splitting
 import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{None, Some}
@@ -18,6 +19,19 @@ pub type RegexpWithGroupReplacementInstructions {
   RegexpWithGroupReplacementInstructions(
     re: Regexp,
     instructions: List(RegexpMatchedGroupReplacementInstructions),
+  )
+}
+
+pub fn unescaped_suffix_replacement_splitter(
+  suffix: String,
+  tag: String,
+) -> RegexpWithGroupReplacementInstructions {
+  let assert Ok(re) = regexp.from_string(
+    indexed_regex_splitting.unescaped_suffix(suffix)
+  )
+  RegexpWithGroupReplacementInstructions(
+    re: re,
+    instructions: [TagReplace(tag)],
   )
 }
 
@@ -83,18 +97,38 @@ pub fn split_blamed_line_with_replacement(
   split_content_with_replacement(line.blame, line.content, w)
 }
 
-pub fn split_if_t_with_replacement(
+fn split_if_t_with_replacement_in_node(
   vxml: VXML,
-  inner: RegexpWithGroupReplacementInstructions,
-) -> Result(List(VXML), DesugaringError) {
+  re: RegexpWithGroupReplacementInstructions,
+) -> List(VXML) {
   case vxml {
-    V(_, _, _, _) -> Ok([vxml])
+    V(_, _, _, _) -> [vxml]
     T(_, lines) -> {
       lines
-      |> list.map(split_blamed_line_with_replacement(_, inner))
+      |> list.map(split_blamed_line_with_replacement(_, re))
       |> list.flatten
       |> infra.plain_concatenation_in_list
-      |> Ok
     }
   }
+}
+
+fn split_if_t_with_replacement_in_nodes(
+  nodes: List(VXML),
+  re: RegexpWithGroupReplacementInstructions,
+) -> List(VXML) {
+  nodes
+  |> list.map(split_if_t_with_replacement_in_node(_, re))
+  |> list.flatten
+}
+
+pub fn split_if_t_with_replacement_nodemap(
+  vxml: VXML,
+  rules: List(RegexpWithGroupReplacementInstructions),
+) -> Result(List(VXML), DesugaringError) {
+  list.fold(
+    rules,
+    [vxml],
+    split_if_t_with_replacement_in_nodes
+  )
+  |> Ok
 }

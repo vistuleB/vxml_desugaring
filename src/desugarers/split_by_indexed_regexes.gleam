@@ -6,7 +6,7 @@ import indexed_regex_splitting as rs
 
 fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   let #(regexes_and_tags, forbidden_parents) = inner
-  rs.split_by_regexes_with_indexed_group_node_to_nodes_transform(
+  rs.split_by_regexes_with_indexed_group_nodemap(
     _,
     regexes_and_tags,
   )
