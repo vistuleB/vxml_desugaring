@@ -1071,7 +1071,7 @@ pub fn cli_usage() {
   io.println("         -> print output of last pipe")
   io.println("      --debug-pipeline-0-0")
   io.println("         -> print output of all pipes")
-  io.println("      --debug-fragments-emu <local_path1> <local_path2> ...")
+  io.println("      --debug-fragments-wly <local_path1> <local_path2> ...")
   io.println(
     "         -> print blamed lines of fragments associated to local paths",
   )
@@ -1133,7 +1133,7 @@ pub fn process_command_line_arguments(
         Ok(amendments |> amend_debug_assembled_input(True))
       }
 
-      "--debug-fragments-emu" -> {
+      "--debug-fragments-wly" -> {
         Ok(amendments |> amend_debug_vxml_fragments_local_paths(values))
       }
 
