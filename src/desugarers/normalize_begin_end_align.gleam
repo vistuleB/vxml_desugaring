@@ -1,33 +1,30 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type LatexDelimiterPair, DoubleDollar, SingleDollar, BackslashParenthesis, BackslashSquareBracket} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type LatexDelimiterPair, DoubleDollar} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, type BlamedContent}
 
-fn opening_and_closing_string_for_pair(
-  pair: LatexDelimiterPair
-) -> #(String, String) {
-  case pair {
-    DoubleDollar -> #("$$", "$$")
-    SingleDollar -> #("$", "$")
-    BackslashParenthesis -> #("\\(", "\\)")
-    BackslashSquareBracket -> #("\\[", "\\]")
+fn nodemap(
+  node: VXML,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
+  case node {
+    vxml.V(_, _, _, _) -> Ok(node)
+    vxml.T(blame, blamed_contents) -> {
+      let processed_contents = process_blamed_contents_for_align_delimiters(blamed_contents, inner.0, inner.1)
+      Ok(vxml.T(blame, processed_contents))
+    }
   }
 }
 
-fn normalize_begin_end_align_transform(s1: String, s2: String) -> DesugarerTransform {
-  let nodemap = fn(node: VXML) -> Result(VXML, DesugaringError) {
-    case node {
-      vxml.V(_, _, _, _) -> Ok(node)
-      vxml.T(blame, blamed_contents) -> {
-        let processed_contents = process_blamed_contents_for_align_delimiters(blamed_contents, s1, s2)
-        Ok(vxml.T(blame, processed_contents))
-      }
-    }
-  }
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
+}
 
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap)
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  nodemap_factory(inner)
+  |> n2t.one_to_one_nodemap_2_desugarer_transform
 }
 
 fn process_blamed_contents_for_align_delimiters(
@@ -216,13 +213,8 @@ fn starts_with_end_pattern(text: String) -> Bool {
   string.starts_with(trimmed, "\\end{align}") || string.starts_with(trimmed, "\\end{align*}")
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  let #(s1, s2) = inner
-  normalize_begin_end_align_transform(s1, s2)
-}
-
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(opening_and_closing_string_for_pair(param))
+  Ok(infra.opening_and_closing_string_for_pair(param))
 }
 
 type Param = LatexDelimiterPair
