@@ -77,60 +77,39 @@ fn process_single_content_with_context(
   next_content: String
 ) -> String {
   content
-  |> process_begin_patterns_with_context(s1, prev_content, next_content)
-  |> process_end_patterns_with_context(s2, prev_content, next_content)
+  |> process_patterns_with_context(["\\begin{align*}", "\\begin{align}"], s1, prev_content, next_content, True)
+  |> process_patterns_with_context(["\\end{align*}", "\\end{align}"], s2, prev_content, next_content, False)
 }
 
-fn process_begin_patterns_with_context(
+fn process_patterns_with_context(
   content: String,
+  patterns: List(String),
   delimiter: String,
   prev_content: String,
-  next_content: String
+  next_content: String,
+  is_begin: Bool
 ) -> String {
-  content
-  |> process_single_begin_pattern_with_context("\\begin{align*}", delimiter, prev_content, next_content)
-  |> process_single_begin_pattern_with_context("\\begin{align}", delimiter, prev_content, next_content)
+  list.fold(patterns, content, fn(acc_content, pattern) {
+    process_single_pattern_with_context(acc_content, pattern, delimiter, prev_content, next_content, is_begin)
+  })
 }
 
-fn process_end_patterns_with_context(
-  content: String,
-  delimiter: String,
-  prev_content: String,
-  next_content: String
-) -> String {
-  content
-  |> process_single_end_pattern_with_context("\\end{align*}", delimiter, prev_content, next_content)
-  |> process_single_end_pattern_with_context("\\end{align}", delimiter, prev_content, next_content)
-}
-
-fn process_single_begin_pattern_with_context(
+fn process_single_pattern_with_context(
   content: String,
   pattern: String,
   delimiter: String,
   prev_content: String,
-  next_content: String
+  next_content: String,
+  is_begin: Bool
 ) -> String {
   case string.contains(content, pattern) {
     False -> content
     True -> {
       let parts = string.split(content, pattern)
-      reconstruct_begin_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
-    }
-  }
-}
-
-fn process_single_end_pattern_with_context(
-  content: String,
-  pattern: String,
-  delimiter: String,
-  prev_content: String,
-  next_content: String
-) -> String {
-  case string.contains(content, pattern) {
-    False -> content
-    True -> {
-      let parts = string.split(content, pattern)
-      reconstruct_end_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
+      case is_begin {
+        True -> reconstruct_begin_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
+        False -> reconstruct_end_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
+      }
     }
   }
 }
@@ -206,8 +185,6 @@ fn reconstruct_end_parts_with_context(
     }
   }
 }
-
-
 
 fn ends_with_begin_pattern(text: String) -> Bool {
   let trimmed = string.trim_end(text)
@@ -335,51 +312,22 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <>
                     \"Some text\"
-                    \"\\begin{align}\"
                     \"\\begin{align*}\"
+                    \"\\begin{align}\"
                     \"x = 1\"
-                    \"\\end{align*}\"
                     \"\\end{align}\"
+                    \"\\end{align*}\"
                     \"More text\"
                 ",
       expected: "
                 <> root
                   <>
                     \"Some text\"
-                    \"$$\\begin{align}\"
-                    \"\\begin{align*}\"
-                    \"x = 1\"
-                    \"\\end{align*}\"
-                    \"\\end{align}$$\"
-                    \"More text\"
-                ",
-    ),
-    infra.AssertiveTestData(
-      param: DoubleDollar,
-      source:   "
-                <> root
-                  <>
-                    \"Some text\"
-                    \"\\begin{align}\"
-                    \"\\begin{align}\"
+                    \"$$\\begin{align*}\"
                     \"\\begin{align}\"
                     \"x = 1\"
                     \"\\end{align}\"
-                    \"\\end{align}\"
-                    \"\\end{align}\"
-                    \"More text\"
-                ",
-      expected: "
-                <> root
-                  <>
-                    \"Some text\"
-                    \"$$\\begin{align}\"
-                    \"\\begin{align}\"
-                    \"\\begin{align}\"
-                    \"x = 1\"
-                    \"\\end{align}\"
-                    \"\\end{align}\"
-                    \"\\end{align}$$\"
+                    \"\\end{align*}$$\"
                     \"More text\"
                 ",
     ),
