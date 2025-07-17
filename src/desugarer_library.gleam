@@ -79,6 +79,7 @@ import desugarers/rename_attributes
 import desugarers/rename_attributes_by_function
 import desugarers/rename_when_child_of
 import desugarers/rename_with_attributes
+import desugarers/rename_with_attributes_and_text
 import desugarers/replace_in_attribute_values
 import desugarers/replace_multiple_spaces_by_one
 import desugarers/replace_text_parent_by_text_bookends
@@ -183,6 +184,7 @@ pub const rename_attributes = rename_attributes.rename_attributes
 pub const rename_attributes_by_function = rename_attributes_by_function.rename_attributes_by_function
 pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
+pub const rename_with_attributes_and_text = rename_with_attributes_and_text.rename_with_attributes_and_text
 pub const replace_in_attribute_values = replace_in_attribute_values.replace_in_attribute_values
 pub const replace_multiple_spaces_by_one = replace_multiple_spaces_by_one.replace_multiple_spaces_by_one
 pub const replace_text_parent_by_text_bookends = replace_text_parent_by_text_bookends.replace_text_parent_by_text_bookends
@@ -288,6 +290,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   rename_attributes_by_function.assertive_tests,
   rename_when_child_of.assertive_tests,
   rename_with_attributes.assertive_tests,
+  rename_with_attributes_and_text.assertive_tests,
   replace_in_attribute_values.assertive_tests,
   replace_multiple_spaces_by_one.assertive_tests,
   replace_text_parent_by_text_bookends.assertive_tests,
