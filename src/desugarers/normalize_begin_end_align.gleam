@@ -59,26 +59,64 @@ fn process_contents_with_neighbors(
         [] -> ""
       }
 
-      let processed_text = process_single_content_with_context(
-        current.content, s1, s2, prev_content, next_content
+      let processed_result = process_single_content_with_context(
+        current, s1, s2, prev_content, next_content
       )
 
-      let new_content = vxml.BlamedContent(..current, content: processed_text)
-      process_contents_with_neighbors(rest, s1, s2, [new_content, ..acc], index + 1)
+      process_contents_with_neighbors(rest, s1, s2, list.append(list.reverse(processed_result), acc), index + 1)
     }
   }
 }
 
 fn process_single_content_with_context(
-  content: String,
+  content: BlamedContent,
   s1: String,
   s2: String,
   prev_content: String,
   next_content: String
-) -> String {
-  content
-  |> process_patterns_with_context(["\\begin{align*}", "\\begin{align}"], s1, prev_content, next_content, True)
-  |> process_patterns_with_context(["\\end{align*}", "\\end{align}"], s2, prev_content, next_content, False)
+) -> List(BlamedContent) {
+  let text = content.content
+
+  let processed_text = text
+    |> process_patterns_with_context(["\\begin{align*}", "\\begin{align}"], s1, prev_content, next_content, True)
+    |> process_patterns_with_context(["\\end{align*}", "\\end{align}"], s2, prev_content, next_content, False)
+
+  // check if delimiters need to be added as separate lines
+  check_and_add_delimiters_as_lines(content, text, processed_text, s1, s2)
+}
+
+
+
+fn check_and_add_delimiters_as_lines(
+  original_content: BlamedContent,
+  original_text: String,
+  processed_text: String,
+  s1: String,
+  s2: String
+) -> List(BlamedContent) {
+  let result = [vxml.BlamedContent(..original_content, content: processed_text)]
+
+  // check if s1 was prepended
+  case string.starts_with(processed_text, s1) && !string.starts_with(original_text, s1) {
+    True -> {
+      let without_s1 = string.drop_start(processed_text, string.length(s1))
+      let delimiter_content = vxml.BlamedContent(..original_content, content: s1)
+      let main_content = vxml.BlamedContent(..original_content, content: without_s1)
+      [delimiter_content, main_content]
+    }
+    False -> {
+      // check if s2 was appended
+      case string.ends_with(processed_text, s2) && !string.ends_with(original_text, s2) {
+        True -> {
+          let without_s2 = string.drop_end(processed_text, string.length(s2))
+          let delimiter_content = vxml.BlamedContent(..original_content, content: s2)
+          let main_content = vxml.BlamedContent(..original_content, content: without_s2)
+          [main_content, delimiter_content]
+        }
+        False -> result
+      }
+    }
+  }
 }
 
 fn process_patterns_with_context(
@@ -106,82 +144,64 @@ fn process_single_pattern_with_context(
     False -> content
     True -> {
       let parts = string.split(content, pattern)
-      case is_begin {
-        True -> reconstruct_begin_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
-        False -> reconstruct_end_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
-      }
+      reconstruct_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [], is_begin)
     }
   }
 }
 
-fn reconstruct_begin_parts_with_context(
+fn reconstruct_parts_with_context(
   parts: List(String),
   pattern: String,
   delimiter: String,
   prev_content: String,
   next_content: String,
-  acc: List(String)
+  acc: List(String),
+  is_begin: Bool
 ) -> String {
   case parts {
     [] -> string.join(list.reverse(acc), "")
     [single] -> string.join(list.reverse([single, ..acc]), "")
     [before, ..rest] -> {
-      let is_first_pattern_in_content = acc == []
-      let is_first_in_consecutive_group = case is_first_pattern_in_content {
+      let should_add_delimiter = case is_begin {
         True -> {
-          let combined = prev_content <> before
-          !ends_with_begin_pattern(string.trim_end(combined)) && !string.ends_with(string.trim_end(combined), delimiter)
-        }
-        False -> !ends_with_begin_pattern(before)
-      }
-
-      let new_part = case is_first_in_consecutive_group {
-        True -> before <> delimiter <> pattern
-        False -> before <> pattern
-      }
-
-      reconstruct_begin_parts_with_context(rest, pattern, delimiter, prev_content, next_content, [new_part, ..acc])
-    }
-  }
-}
-
-fn reconstruct_end_parts_with_context(
-  parts: List(String),
-  pattern: String,
-  delimiter: String,
-  prev_content: String,
-  next_content: String,
-  acc: List(String)
-) -> String {
-  case parts {
-    [] -> string.join(list.reverse(acc), "")
-    [single] -> string.join(list.reverse([single, ..acc]), "")
-    [before, ..rest] -> {
-      let is_last_pattern_in_content = list.length(rest) == 1
-      let is_last_in_consecutive_group = case rest {
-        [after, .._more_rest] -> {
-          let combined_after = case is_last_pattern_in_content {
-            True -> after <> next_content
-            False -> after
-          }
-          let trimmed_after = string.trim_start(combined_after)
-          !starts_with_end_pattern(trimmed_after) && case is_last_pattern_in_content {
-            True -> !string.starts_with(trimmed_after, delimiter)
-            False -> True
+          let is_first_pattern_in_content = acc == []
+          case is_first_pattern_in_content {
+            True -> {
+              let combined = prev_content <> before
+              !ends_with_begin_pattern(string.trim_end(combined)) && !string.ends_with(string.trim_end(combined), delimiter)
+            }
+            False -> !ends_with_begin_pattern(before)
           }
         }
-        [] -> {
-          let trimmed_next = string.trim_start(next_content)
-          !starts_with_end_pattern(trimmed_next) && !string.starts_with(trimmed_next, delimiter)
+        False -> {
+          let is_last_pattern_in_content = list.length(rest) == 1
+          case rest {
+            [after, .._more_rest] -> {
+              let combined_after = case is_last_pattern_in_content {
+                True -> after <> next_content
+                False -> after
+              }
+              let trimmed_after = string.trim_start(combined_after)
+              !starts_with_end_pattern(trimmed_after) && case is_last_pattern_in_content {
+                True -> !string.starts_with(trimmed_after, delimiter)
+                False -> True
+              }
+            }
+            [] -> {
+              let trimmed_next = string.trim_start(next_content)
+              !starts_with_end_pattern(trimmed_next) && !string.starts_with(trimmed_next, delimiter)
+            }
+          }
         }
       }
 
-      let new_part = case is_last_in_consecutive_group {
-        True -> before <> pattern <> delimiter
-        False -> before <> pattern
+      let new_part = case should_add_delimiter, is_begin {
+        True, True -> before <> delimiter <> pattern
+        True, False -> before <> pattern <> delimiter
+        False, _ -> before <> pattern
       }
 
-      reconstruct_end_parts_with_context(rest, pattern, delimiter, prev_content, next_content, [new_part, ..acc])
+      reconstruct_parts_with_context(rest, pattern, delimiter, prev_content, next_content, [new_part, ..acc], is_begin)
     }
   }
 }
@@ -254,9 +274,11 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <>
                     \"Some text\"
-                    \"$$\\begin{align}\"
+                    \"$$\"
+                    \"\\begin{align}\"
                     \"x = 1\"
-                    \"\\end{align}$$\"
+                    \"\\end{align}\"
+                    \"$$\"
                     \"More text\"
                 ",
     ),
@@ -275,9 +297,11 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <>
                     \"Some text\"
-                    \"$$\\begin{align*}\"
+                    \"$$\"
+                    \"\\begin{align*}\"
                     \"x = 1\"
-                    \"\\end{align*}$$\"
+                    \"\\end{align*}\"
+                    \"$$\"
                     \"More text\"
                 ",
     ),
@@ -298,11 +322,69 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <>
                     \"Some text\"
-                    \"$$\\begin{align}\"
+                    \"$$\"
+                    \"\\begin{align}\"
                     \"\\begin{align}\"
                     \"x = 1\"
                     \"\\end{align}\"
-                    \"\\end{align}$$\"
+                    \"\\end{align}\"
+                    \"$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: DoubleDollar,
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"\\begin{align*}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align*}\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\"
+                    \"\\begin{align*}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align*}\"
+                    \"$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: DoubleDollar,
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\"
+                    \"\\begin{align*}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align*}\"
+                    \"$$\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\"
+                    \"\\begin{align*}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align*}\"
+                    \"$$\"
                     \"More text\"
                 ",
     ),
