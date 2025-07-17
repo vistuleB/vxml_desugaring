@@ -172,6 +172,52 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     \"More text\"
                 ",
     ),
+    infra.AssertiveTestData(
+      param: DoubleDollar,
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"\\begin{align*}\"
+                    \"x = 1\"
+                    \"\\end{align*}\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\\begin{align*}\"
+                    \"x = 1\"
+                    \"\\end{align*}$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: DoubleDollar,
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"\\begin{align}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align}\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\\begin{align}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align*}$$\"
+                    \"More text\"
+                ",
+    ),
   ]
 }
 
