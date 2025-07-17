@@ -1,5 +1,5 @@
+import indexed_regex_splitting as irs
 import gleam/list
-import indexed_regex_splitting.{type RegexWithIndexedGroup} as irs
 import group_replacement_splitting as grs
 import infrastructure.{
   type Desugarer,
@@ -227,22 +227,10 @@ pub fn barbaric_symmetric_delim_splitting(
   tag: String,
   forbidden: List(String),
 ) -> List(Desugarer) {
-  let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
-
+  let opening_or_closing_ir = irs.unescaped_suffix_indexed_regex(delim_regex_form)
   [
-    dl.split_by_indexed_regexes(#(
-      [
-        #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
-      ],
-      forbidden,
-    )),
-    dl.pair_bookends(#(
-      ["OpeningOrClosingSymmetricDelim"],
-      ["OpeningOrClosingSymmetricDelim"],
-      tag,
-    )),
-    dl.fold_tags_into_text([
-      #("OpeningOrClosingSymmetricDelim", delim_ordinary_form),
-    ])
+    dl.split_by_indexed_regexes(#([#(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim")], forbidden)),
+    dl.pair_bookends(#(["OpeningOrClosingSymmetricDelim"], ["OpeningOrClosingSymmetricDelim"], tag)),
+    dl.fold_tags_into_text([#("OpeningOrClosingSymmetricDelim", delim_ordinary_form)])
   ]
 }
