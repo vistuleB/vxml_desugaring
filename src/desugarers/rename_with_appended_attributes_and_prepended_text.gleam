@@ -15,11 +15,10 @@ fn nodemap(
     V(blame, tag, attrs, children) -> {
       case dict.get(inner, tag) {
         Error(Nil) -> Ok(vxml)
-        Ok(new_tag_info) -> {
-          let #(new_tag, text, new_attrs) = new_tag_info
+        Ok(#(new_tag, text, new_attrs)) -> {
           let text_node = T(blame, [BlamedContent(blame, text)])
-          let new_attributes = list.append(attrs, new_attrs)
-          Ok(V(blame, new_tag, new_attributes, [text_node, ..children]))
+          let attrs = list.append(attrs, new_attrs)
+          Ok(V(blame, new_tag, attrs , [text_node, ..children]))
         }
       }
     }
@@ -56,22 +55,24 @@ type Param =
 type InnerParam =
   Dict(String, #(String, String, List(vxml.BlamedAttribute)))
 
-const name = "rename_with_attributes_and_text"
-const constructor = rename_with_attributes_and_text
+const name = "rename_with_appended_attributes_and_prepended_text"
+const constructor = rename_with_appended_attributes_and_prepended_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
-//------------------------------------------------53
-/// renames tags and adds attributes and a text
-/// node to them
-pub fn rename_with_attributes_and_text(param: Param) -> Desugarer {
+//------------------------------------------------53A
+/// renames tags while adding attributes and
+/// prepending a new text node as the first child
+/// of the renamed tag
+pub fn rename_with_appended_attributes_and_prepended_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// renames tags and adds attributes and a text
-/// node to them
+/// renames tags while adding attributes and
+/// prepending a new text node as the first child
+/// of the renamed tag
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
