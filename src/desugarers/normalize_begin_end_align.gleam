@@ -312,11 +312,11 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <>
                     \"Some text\"
-                    \"\\begin{align*}\"
+                    \"$$\\begin{align*}\"
                     \"\\begin{align}\"
                     \"x = 1\"
                     \"\\end{align}\"
-                    \"\\end{align*}\"
+                    \"\\end{align*}$$\"
                     \"More text\"
                 ",
       expected: "
