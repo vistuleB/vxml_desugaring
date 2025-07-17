@@ -35,7 +35,7 @@ fn process_blamed_contents_for_align_delimiters(
   s1: String,
   s2: String
 ) -> List(BlamedContent) {
-  // Process each content with awareness of its neighbors
+  // process each content with awareness of its neighbors
   process_contents_with_neighbors(contents, s1, s2, [], 0)
 }
 
