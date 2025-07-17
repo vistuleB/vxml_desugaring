@@ -216,3 +216,33 @@ pub fn asymmetric_delim_splitting(
     ]),
   ]
 }
+
+//***************
+// barbaric symmetric & asymmetric delim splitting
+//***************
+
+pub fn barbaric_symmetric_delim_splitting(
+  delim_regex_form: String,
+  delim_ordinary_form: String,
+  tag: String,
+  forbidden: List(String),
+) -> List(Desugarer) {
+  let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
+
+  [
+    dl.split_by_indexed_regexes(#(
+      [
+        #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
+      ],
+      forbidden,
+    )),
+    dl.pair_bookends(#(
+      ["OpeningOrClosingSymmetricDelim"],
+      ["OpeningOrClosingSymmetricDelim"],
+      tag,
+    )),
+    dl.fold_tags_into_text([
+      #("OpeningOrClosingSymmetricDelim", delim_ordinary_form),
+    ])
+  ]
+}
