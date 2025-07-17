@@ -16,20 +16,21 @@ fn nodemap(
   }
 }
 
-fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   nodemap
+  |> n2t.prevent_node_to_node_transform_inside(inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = Nil
-type InnerParam = Nil
+type Param = List(String) // forbidden tags
+type InnerParam = Param
 
 const name = "trim_spaces_around_newlines"
 const constructor = trim_spaces_around_newlines
@@ -39,14 +40,18 @@ const constructor = trim_spaces_around_newlines
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// trims spaces around newlines in text nodes
-pub fn trim_spaces_around_newlines() -> Desugarer {
+/// outside of subtrees rooted at tags given by the
+/// param argument
+pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
 /// trims spaces around newlines in text nodes
+/// outside of subtrees rooted at tags given by the
+/// param argument
     ",
-    case param_to_inner_param(Nil) {
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -61,5 +66,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }
