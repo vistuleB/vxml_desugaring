@@ -35,77 +35,188 @@ fn process_blamed_contents_for_align_delimiters(
   s1: String,
   s2: String
 ) -> List(BlamedContent) {
-  contents
-  |> list.map(fn(blamed_content) {
-    let processed_text = process_text_for_align_delimiters(blamed_content.content, s1, s2)
-    vxml.BlamedContent(..blamed_content, content: processed_text)
-  })
+  // Process each content with awareness of its neighbors
+  process_contents_with_neighbors(contents, s1, s2, [], 0)
 }
 
-fn process_text_for_align_delimiters(text: String, s1: String, s2: String) -> String {
-  text
-  |> process_begin_align_delimiters(s1)
-  |> process_end_align_delimiters(s2)
-}
+fn process_contents_with_neighbors(
+  contents: List(BlamedContent),
+  s1: String,
+  s2: String,
+  acc: List(BlamedContent),
+  index: Int
+) -> List(BlamedContent) {
+  case contents {
+    [] -> list.reverse(acc)
+    [current, ..rest] -> {
+      let prev_content = case acc {
+        [prev, ..] -> prev.content
+        [] -> ""
+      }
 
-fn process_begin_align_delimiters(text: String, s1: String) -> String {
-  process_align_pattern(text, "\\begin{align*}", s1, True)
-  |> process_align_pattern("\\begin{align}", s1, True)
-}
+      let next_content = case rest {
+        [next, ..] -> next.content
+        [] -> ""
+      }
 
-fn process_end_align_delimiters(text: String, s2: String) -> String {
-  process_align_pattern(text, "\\end{align*}", s2, False)
-  |> process_align_pattern("\\end{align}", s2, False)
-}
+      let processed_text = process_single_content_with_context(
+        current.content, s1, s2, prev_content, next_content
+      )
 
-fn process_align_pattern(text: String, pattern: String, delimiter: String, is_opening: Bool) -> String {
-  case string.contains(text, pattern) {
-    False -> text
-    True -> {
-      let parts = string.split(text, pattern)
-      process_align_parts(parts, pattern, delimiter, is_opening, [])
+      let new_content = vxml.BlamedContent(..current, content: processed_text)
+      process_contents_with_neighbors(rest, s1, s2, [new_content, ..acc], index + 1)
     }
   }
 }
 
-fn process_align_parts(
+fn process_single_content_with_context(
+  content: String,
+  s1: String,
+  s2: String,
+  prev_content: String,
+  next_content: String
+) -> String {
+  content
+  |> process_begin_patterns_with_context(s1, prev_content, next_content)
+  |> process_end_patterns_with_context(s2, prev_content, next_content)
+}
+
+fn process_begin_patterns_with_context(
+  content: String,
+  delimiter: String,
+  prev_content: String,
+  next_content: String
+) -> String {
+  content
+  |> process_single_begin_pattern_with_context("\\begin{align*}", delimiter, prev_content, next_content)
+  |> process_single_begin_pattern_with_context("\\begin{align}", delimiter, prev_content, next_content)
+}
+
+fn process_end_patterns_with_context(
+  content: String,
+  delimiter: String,
+  prev_content: String,
+  next_content: String
+) -> String {
+  content
+  |> process_single_end_pattern_with_context("\\end{align*}", delimiter, prev_content, next_content)
+  |> process_single_end_pattern_with_context("\\end{align}", delimiter, prev_content, next_content)
+}
+
+fn process_single_begin_pattern_with_context(
+  content: String,
+  pattern: String,
+  delimiter: String,
+  prev_content: String,
+  next_content: String
+) -> String {
+  case string.contains(content, pattern) {
+    False -> content
+    True -> {
+      let parts = string.split(content, pattern)
+      reconstruct_begin_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
+    }
+  }
+}
+
+fn process_single_end_pattern_with_context(
+  content: String,
+  pattern: String,
+  delimiter: String,
+  prev_content: String,
+  next_content: String
+) -> String {
+  case string.contains(content, pattern) {
+    False -> content
+    True -> {
+      let parts = string.split(content, pattern)
+      reconstruct_end_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [])
+    }
+  }
+}
+
+fn reconstruct_begin_parts_with_context(
   parts: List(String),
   pattern: String,
   delimiter: String,
-  is_opening: Bool,
+  prev_content: String,
+  next_content: String,
   acc: List(String)
 ) -> String {
   case parts {
     [] -> string.join(list.reverse(acc), "")
     [single] -> string.join(list.reverse([single, ..acc]), "")
     [before, ..rest] -> {
-      let should_add_delimiter = case is_opening {
-        True -> !text_ends_with_delimiter_ignoring_whitespace(before, delimiter)
-        False -> case rest {
-          [after, ..] -> !text_starts_with_delimiter_ignoring_whitespace(after, delimiter)
-          [] -> False
+      let is_first_pattern_in_content = acc == []
+      let is_first_in_consecutive_group = case is_first_pattern_in_content {
+        True -> {
+          let combined = prev_content <> before
+          !ends_with_begin_pattern(string.trim_end(combined)) && !string.ends_with(string.trim_end(combined), delimiter)
         }
+        False -> !ends_with_begin_pattern(before)
       }
 
-      let new_part = case should_add_delimiter, is_opening {
-        True, True -> before <> delimiter <> pattern
-        True, False -> before <> pattern <> delimiter
-        False, _ -> before <> pattern
+      let new_part = case is_first_in_consecutive_group {
+        True -> before <> delimiter <> pattern
+        False -> before <> pattern
       }
 
-      process_align_parts(rest, pattern, delimiter, is_opening, [new_part, ..acc])
+      reconstruct_begin_parts_with_context(rest, pattern, delimiter, prev_content, next_content, [new_part, ..acc])
     }
   }
 }
 
-fn text_ends_with_delimiter_ignoring_whitespace(text: String, delimiter: String) -> Bool {
-  let trimmed = string.trim_end(text)
-  string.ends_with(trimmed, delimiter)
+fn reconstruct_end_parts_with_context(
+  parts: List(String),
+  pattern: String,
+  delimiter: String,
+  prev_content: String,
+  next_content: String,
+  acc: List(String)
+) -> String {
+  case parts {
+    [] -> string.join(list.reverse(acc), "")
+    [single] -> string.join(list.reverse([single, ..acc]), "")
+    [before, ..rest] -> {
+      let is_last_pattern_in_content = list.length(rest) == 1
+      let is_last_in_consecutive_group = case rest {
+        [after, .._more_rest] -> {
+          let combined_after = case is_last_pattern_in_content {
+            True -> after <> next_content
+            False -> after
+          }
+          let trimmed_after = string.trim_start(combined_after)
+          !starts_with_end_pattern(trimmed_after) && case is_last_pattern_in_content {
+            True -> !string.starts_with(trimmed_after, delimiter)
+            False -> True
+          }
+        }
+        [] -> {
+          let trimmed_next = string.trim_start(next_content)
+          !starts_with_end_pattern(trimmed_next) && !string.starts_with(trimmed_next, delimiter)
+        }
+      }
+
+      let new_part = case is_last_in_consecutive_group {
+        True -> before <> pattern <> delimiter
+        False -> before <> pattern
+      }
+
+      reconstruct_end_parts_with_context(rest, pattern, delimiter, prev_content, next_content, [new_part, ..acc])
+    }
+  }
 }
 
-fn text_starts_with_delimiter_ignoring_whitespace(text: String, delimiter: String) -> Bool {
+
+
+fn ends_with_begin_pattern(text: String) -> Bool {
+  let trimmed = string.trim_end(text)
+  string.ends_with(trimmed, "\\begin{align}") || string.ends_with(trimmed, "\\begin{align*}")
+}
+
+fn starts_with_end_pattern(text: String) -> Bool {
   let trimmed = string.trim_start(text)
-  string.starts_with(trimmed, delimiter)
+  string.starts_with(trimmed, "\\end{align}") || string.starts_with(trimmed, "\\end{align*}")
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
@@ -214,7 +325,61 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     \"\\begin{align}\"
                     \"x = 1\"
                     \"\\end{align}\"
-                    \"\\end{align*}$$\"
+                    \"\\end{align}$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: DoubleDollar,
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"\\begin{align}\"
+                    \"\\begin{align*}\"
+                    \"x = 1\"
+                    \"\\end{align*}\"
+                    \"\\end{align}\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\\begin{align}\"
+                    \"\\begin{align*}\"
+                    \"x = 1\"
+                    \"\\end{align*}\"
+                    \"\\end{align}$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: DoubleDollar,
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"\\begin{align}\"
+                    \"\\begin{align}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align}\"
+                    \"\\end{align}\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\\begin{align}\"
+                    \"\\begin{align}\"
+                    \"\\begin{align}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"\\end{align}\"
+                    \"\\end{align}$$\"
                     \"More text\"
                 ",
     ),
