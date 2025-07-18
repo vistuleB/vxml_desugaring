@@ -852,6 +852,44 @@ pub fn lines_trim_start(
   }
 }
 
+pub fn reversed_lines_trim_end(
+  lines: List(BlamedContent),
+) -> List(BlamedContent) {
+  case lines {
+    [] -> []
+    [first, ..rest] -> {
+      case string.last(first.content) {
+        Error(_) -> reversed_lines_trim_end(rest)
+        Ok(" ") -> case string.trim_end(first.content) {
+          "" -> reversed_lines_trim_end(rest)
+          nonempty -> reversed_lines_trim_end([BlamedContent(first.blame, nonempty), ..rest])
+        }
+        _ -> lines
+      }
+    }
+  }
+}
+
+pub fn first_line_starts_with(
+  lines: List(BlamedContent),
+  s: String,
+) -> Bool {
+  case lines {
+    [] -> False
+    [BlamedContent(_, line), ..] -> string.starts_with(line, s)
+  }
+}
+
+pub fn first_line_ends_with(
+  lines: List(BlamedContent),
+  s: String,
+) -> Bool {
+  case lines {
+    [] -> False
+    [BlamedContent(_, line), ..] -> string.ends_with(line,s)
+  }
+}
+
 pub fn t_remove_starting_empty_lines(vxml: VXML) -> Option(VXML) {
   let assert T(blame, lines) = vxml
   let lines = remove_lines_while_empty(lines)
