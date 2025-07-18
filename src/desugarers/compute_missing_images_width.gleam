@@ -5,11 +5,13 @@ import gleam/float
 import gleam/int
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError,DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugarerTransform} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 import blamedlines.{type Blame}
 import gleam/regexp
 import shellout
+import nodemaps_2_desugarer_transforms as n2t
+import ansel/image.{read, get_width}
 
 fn get_svg_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   let assert Ok(file) = simplifile.read(path)
@@ -33,7 +35,7 @@ fn get_svg_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   }
 }
 
-fn get_bitmap_image_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
+fn get_bitmap_image_width_with_imagemagick(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   // Use ImageMagick's identify command to get image dimensions
   // Format: identify -format "%w" image.png
   case shellout.command(
@@ -56,17 +58,23 @@ fn get_bitmap_image_width(blame: Blame, path: String) -> Result(Float, Desugarin
   }
 }
 
+fn get_bitmap_image_width_with_ansel(blame: Blame, path: String) -> Result(Float, DesugaringError) {
+  case read(path) {
+    Ok(img) -> Ok(get_width(img) |> int.to_float)
+    Error(error) -> Error(DesugaringError(blame, ins(error)))
+  }
+}
+
 fn get_image_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   let assert [extension, ..] = string.split(path, ".") |> list.reverse
 
   case extension {
-    "svg"  -> get_svg_width(blame, path) // this is much faster than get_bitmap_image_width
-     "png" | "jpg" | "jpeg" -> get_bitmap_image_width(blame, path)
-    _ -> Error(DesugaringError(blame, "Unsupported image format. Only SVG, PNG, JPG, JPEG are supported\n file: " <> path))
+    "svg"  -> get_svg_width(blame, path)
+    _ -> get_bitmap_image_width_with_ansel(blame, path)
   }
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -91,12 +99,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory() -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory() -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory())
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -107,17 +115,35 @@ type Param = Nil
 
 type InnerParam = Nil
 
+const name = "compute_missing_images_width"
+const constructor = compute_missing_images_width
 
-pub fn add_width_attribure_to_images() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      "add_width_attribure_to_images",
-      option.None,
-      "...",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// compute missing images widths
+pub fn compute_missing_images_width() -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// compute missing images widths
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(_) -> transform_factory()
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

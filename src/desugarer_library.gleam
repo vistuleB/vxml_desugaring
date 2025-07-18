@@ -11,7 +11,6 @@ import desugarers/add_between_tags
 import desugarers/add_spacer_divs_after
 import desugarers/add_spacer_divs_before
 import desugarers/add_spacer_divs_between
-import desugarers/add_width_attribure_to_images
 import desugarers/append_class_to_child_if
 import desugarers/append_class_to_children_with_class
 import desugarers/append_class_to_children_with_tag
@@ -20,6 +19,8 @@ import desugarers/auto_generate_child_if_missing_from_attribute
 import desugarers/auto_generate_child_if_missing_from_first_descendant_of_type
 import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
+import desugarers/compute_max_element_width
+import desugarers/compute_missing_images_width
 import desugarers/concatenate_tags
 import desugarers/concatenate_text_nodes
 import desugarers/convert_int_attributes_to_float
@@ -30,7 +31,6 @@ import desugarers/cut_paste_attribute_from_self_to_child
 import desugarers/encode_spaces_in_first_and_last_child
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
-import desugarers/find_out_largest_image_in_chapter
 import desugarers/find_replace
 import desugarers/find_replace_in_descendants_of
 import desugarers/fix_ti2_local_links
@@ -118,7 +118,6 @@ pub const add_between_tags = add_between_tags.add_between_tags
 pub const add_spacer_divs_after = add_spacer_divs_after.add_spacer_divs_after
 pub const add_spacer_divs_before = add_spacer_divs_before.add_spacer_divs_before
 pub const add_spacer_divs_between = add_spacer_divs_between.add_spacer_divs_between
-pub const add_width_attribure_to_images = add_width_attribure_to_images.add_width_attribure_to_images
 pub const append_class_to_child_if = append_class_to_child_if.append_class_to_child_if
 pub const append_class_to_children_with_class = append_class_to_children_with_class.append_class_to_children_with_class
 pub const append_class_to_children_with_tag = append_class_to_children_with_tag.append_class_to_children_with_tag
@@ -127,6 +126,8 @@ pub const auto_generate_child_if_missing_from_attribute = auto_generate_child_if
 pub const auto_generate_child_if_missing_from_first_descendant_of_type = auto_generate_child_if_missing_from_first_descendant_of_type.auto_generate_child_if_missing_from_first_descendant_of_type
 pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
 pub const change_attribute_value = change_attribute_value.change_attribute_value
+pub const compute_max_element_width = compute_max_element_width.compute_max_element_width
+pub const compute_missing_images_width = compute_missing_images_width.compute_missing_images_width
 pub const concatenate_tags = concatenate_tags.concatenate_tags
 pub const concatenate_text_nodes = concatenate_text_nodes.concatenate_text_nodes
 pub const convert_int_attributes_to_float = convert_int_attributes_to_float.convert_int_attributes_to_float
@@ -137,7 +138,6 @@ pub const cut_paste_attribute_from_self_to_child = cut_paste_attribute_from_self
 pub const encode_spaces_in_first_and_last_child = encode_spaces_in_first_and_last_child.encode_spaces_in_first_and_last_child
 pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
-pub const find_out_largest_image_in_chapter = find_out_largest_image_in_chapter.find_out_largest_image_in_chapter
 pub const find_replace = find_replace.find_replace
 pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_replace_in_descendants_of
 pub const fix_ti2_local_links = fix_ti2_local_links.fix_ti2_local_links
@@ -226,7 +226,6 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   add_spacer_divs_after.assertive_tests,
   add_spacer_divs_before.assertive_tests,
   add_spacer_divs_between.assertive_tests,
-  add_width_attribure_to_images.assertive_tests,
   append_class_to_child_if.assertive_tests,
   append_class_to_children_with_class.assertive_tests,
   append_class_to_children_with_tag.assertive_tests,
@@ -235,6 +234,8 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   auto_generate_child_if_missing_from_first_descendant_of_type.assertive_tests,
   break_lines_into_span_tooltips.assertive_tests,
   change_attribute_value.assertive_tests,
+  compute_max_element_width.assertive_tests,
+  compute_missing_images_width.assertive_tests,
   concatenate_tags.assertive_tests,
   concatenate_text_nodes.assertive_tests,
   convert_int_attributes_to_float.assertive_tests,
@@ -245,7 +246,6 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   encode_spaces_in_first_and_last_child.assertive_tests,
   extract_starting_and_ending_spaces.assertive_tests,
   filter_nodes_by_attributes.assertive_tests,
-  find_out_largest_image_in_chapter.assertive_tests,
   find_replace.assertive_tests,
   find_replace_in_descendants_of.assertive_tests,
   fix_ti2_local_links.assertive_tests,
