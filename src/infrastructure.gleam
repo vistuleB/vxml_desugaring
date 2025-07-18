@@ -684,7 +684,7 @@ pub fn find_replace_in_node_transform_version(
 }
 
 //**************************************************************
-//* blame-renated                                              *
+//* blame-related                                              *
 //**************************************************************
 
 pub const no_blame = Blame("", -1, -1, [])
@@ -818,6 +818,75 @@ pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
         "" -> remove_lines_while_empty(rest)
         _ -> l
       }
+  }
+}
+
+pub fn split_lines(
+  lines: List(BlamedContent),
+  splitter: String,
+) -> List(List(BlamedContent)) {
+  let blame = blame_us("split_lines")
+  lines
+  |> list.map(fn(l) {
+    l.content
+    |> string.split(on: splitter)
+    |> list.map(BlamedContent(blame, _))
+  })
+}
+
+pub fn lines_trim_start(
+  lines: List(BlamedContent),
+) -> List(BlamedContent) {
+  case lines {
+    [] -> []
+    [first, ..rest] -> {
+      case string.first(first.content) {
+        Error(_) -> lines_trim_start(rest)
+        Ok(" ") -> case string.trim_start(first.content) {
+          "" -> lines_trim_start(rest)
+          nonempty -> [BlamedContent(first.blame, nonempty), ..rest]
+        }
+        _ -> lines
+      }
+    }
+  }
+}
+
+pub fn reversed_lines_trim_end(
+  lines: List(BlamedContent),
+) -> List(BlamedContent) {
+  case lines {
+    [] -> []
+    [first, ..rest] -> {
+      case string.last(first.content) {
+        Error(_) -> reversed_lines_trim_end(rest)
+        Ok(" ") -> case string.trim_end(first.content) {
+          "" -> reversed_lines_trim_end(rest)
+          nonempty -> reversed_lines_trim_end([BlamedContent(first.blame, nonempty), ..rest])
+        }
+        _ -> lines
+      }
+    }
+  }
+}
+
+pub fn first_line_starts_with(
+  lines: List(BlamedContent),
+  s: String,
+) -> Bool {
+  case lines {
+    [] -> False
+    [BlamedContent(_, line), ..] -> string.starts_with(line, s)
+  }
+}
+
+pub fn first_line_ends_with(
+  lines: List(BlamedContent),
+  s: String,
+) -> Bool {
+  case lines {
+    [] -> False
+    [BlamedContent(_, line), ..] -> string.ends_with(line,s)
   }
 }
 
