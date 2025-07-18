@@ -190,6 +190,10 @@ fn replace_indexed_group_by_tag_in_nodes(
   |> list.flatten
 }
 
+pub fn unescaped_suffix_capture_all_groups(suffix: String) -> String {
+  "(" <> regex_prefix_to_make_unescaped <> ")(" <> suffix <> ")"
+}
+
 //********************
 // public splitters
 //********************

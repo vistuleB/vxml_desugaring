@@ -27,11 +27,11 @@ pub fn unescaped_suffix_replacement_splitter(
   tag: String,
 ) -> RegexpWithGroupReplacementInstructions {
   let assert Ok(re) = regexp.from_string(
-    indexed_regex_splitting.unescaped_suffix(suffix)
+    indexed_regex_splitting.unescaped_suffix_capture_all_groups(suffix)
   )
   RegexpWithGroupReplacementInstructions(
     re: re,
-    instructions: [TagReplace(tag)],
+    instructions: [TagReplace(tag), Trash],
   )
 }
 
