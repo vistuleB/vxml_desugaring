@@ -1,7 +1,8 @@
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
 
 fn updated_node(
@@ -48,7 +49,7 @@ fn updated_node(
   V(blame, tag, attributes, new_children)
 }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
@@ -58,7 +59,7 @@ fn transform(
     T(_, _) -> Ok(vxml)
     V(_, _, _, children) -> {
       use <- infra.on_false_on_true(
-        over: infra.v_has_key_value_attribute(vxml, key, value),
+        over: infra.v_has_key_value(vxml, key, value),
         with_on_false: Ok(vxml),
       )
 
@@ -103,12 +104,12 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -126,29 +127,48 @@ type Param =
 
 type InnerParam = Param
 
-/// inserts TI2 counter commands into text nodes of specified elements
+const name = "insert_ti2_counter_commands"
+const constructor = insert_ti2_counter_commands
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// inserts TI2 counter commands into text nodes of
+/// specified elements
 /// # Param:
 ///  - Counter command to insert . ex: "::++Counter"
-///  - key-value pair of node to insert counter command
+///  - key-value pair of node to insert counter
+///    command
 ///  - list of strings before counter command
-///  - A wrapper tag to wrap the counter command string
-pub fn insert_ti2_counter_commands(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "insert_ti2_counter_commands",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+///  - A wrapper tag to wrap the counter command
+///    string
+pub fn insert_ti2_counter_commands(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
 /// inserts TI2 counter commands into text nodes of specified elements
 /// # Param:
 ///  - Counter command to insert . ex: \"::++Counter\"
 ///  - key-value pair of node to insert counter command
 ///  - list of strings before counter command
 ///  - A wrapper tag to wrap the counter command string
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

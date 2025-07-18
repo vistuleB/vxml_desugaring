@@ -2,7 +2,8 @@ import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
 fn is_double_dollar(x: VXML) -> Option(Blame) {
@@ -88,7 +89,7 @@ fn pair_double_dollars_even(
   }
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -100,12 +101,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -113,22 +114,39 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
-pub fn pair_double_dollars_together_desugarer() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "pair_double_dollars_together_desugarer",
-      stringified_param: option.None,
-      general_description: "
-/// pairs DoubleDollar tags together and wraps content between them in MathBlock tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "pair_double_dollars_together"
+const constructor = pair_double_dollars_together
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// pairs DoubleDollar tags together and wraps
+/// content between them in MathBlock tags
+pub fn pair_double_dollars_together(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// pairs DoubleDollar tags together and wraps
+/// content between them in MathBlock tags
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

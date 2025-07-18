@@ -2,10 +2,11 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
@@ -45,14 +46,14 @@ fn transform(
   Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   fn(vxml, ancestors, s1, s2, s3) {
-    transform(vxml, ancestors, s1, s2, s3, inner)
+    nodemap(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -63,31 +64,72 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String, String))
-//       ↖      ↖       ↖       ↖
-//       tag    parent  attr    value
+//       ↖       ↖       ↖       ↖
+//       tag     parent  attr    value
 
 type InnerParam =
   Dict(#(String, String), List(#(String, String)))
 
-/// adds an attribute-pair to a tag
-/// when it is the child of another specified
-/// tag; will not overwrite if attribute with
-/// that key already exists
-pub fn add_attribute_when_child_of(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "add_attribute_when_child_of",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// adds an attribute-pair to a tag
-/// when it is the child of another specified
-/// tag; will not overwrite if attribute with
-/// that key already exists
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+const name = "add_attribute_when_child_of"
+const constructor = add_attribute_when_child_of
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// adds an attribute-pair to a tag when it is the 
+/// child of another specified tag; will not 
+/// overwrite if attribute with that key already
+/// exists
+pub fn add_attribute_when_child_of(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// adds an attribute-pair to a tag when it is the
+/// child of another specified tag; will not 
+/// overwrite if attribute with that key already
+/// exists
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+    infra.AssertiveTestData(
+      param: [#("B", "parent", "key1", "val1")],
+      source:   "
+                <> root
+                  <> B
+                    <> parent
+                  <> parent
+                    <> B
+                  <> parent
+                    <> B
+                      key1=val2
+                ",
+      expected: "
+                <> root
+                  <> B
+                    <> parent
+                  <> parent
+                    <> B
+                      key1=val1
+                  <> parent
+                    <> B
+                      key1=val2
+                "
+    )
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

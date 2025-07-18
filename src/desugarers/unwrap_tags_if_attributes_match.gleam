@@ -2,7 +2,8 @@ import gleam/list
 import gleam/option
 import gleam/pair
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type VXML, T, V}
 
 fn matches_all_key_value_pairs(
@@ -15,7 +16,7 @@ fn matches_all_key_value_pairs(
   })
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
   inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
@@ -36,12 +37,12 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodesTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_nodes_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -54,17 +55,35 @@ type Param = List(#(String, List(#(String, String))))
 
 type InnerParam = Param
 
+const name = "unwrap_tags_if_attributes_match"
+const constructor = unwrap_tags_if_attributes_match
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// unwraps tags if all specified attributes match
-pub fn unwrap_tags_if_attributes_match(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "unwrap_tags_if_attributes_match",
-      stringified_param: option.Some(ins(param)),
-      general_description: "/// unwraps tags if all specified attributes match",
-    ),
-    desugarer: case param_to_inner_param(param) {
+pub fn unwrap_tags_if_attributes_match(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// unwraps tags if all specified attributes match
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

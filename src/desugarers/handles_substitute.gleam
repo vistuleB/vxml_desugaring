@@ -1,225 +1,246 @@
-import gleam/pair
 import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option
-import gleam/regexp
+import gleam/option.{type Option, Some, None}
+import gleam/regexp.{type Regexp, type Match, Match}
 import gleam/result
-import gleam/string
-import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
-  DesugaringError, Pipe,
-} as infra
-import vxml.{
-  type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute,
-  BlamedContent, T, V,
-}
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 type HandleInstances =
-  Dict(String, #(String, String, String))
-//     ↖        ↖                      
-//     handle   local path, element id, string value
-//     name     of page     on page     of handle
+  Dict(String, #(String,     String,     String))
+//     ↖         ↖           ↖           ↖
+//     handle    local path  element id  string value
+//     name      of page     on page     of handle
 
-fn target_is_on_same_chapter(
-  current_filename: String, // eg: /article/chapter1
-  target_blame: Blame, // eg: chapter1/chapter.emu
-) -> Bool {
-  let assert [target_filename, ..] = target_blame.filename |> string.split("/")
-  let assert [current_filename, ..] = current_filename |> string.split("/") |> list.reverse()
-
-  target_filename == current_filename
+type State {
+  State(
+    handles: HandleInstances,
+    local_path: Option(String),
+  )
 }
 
-fn construct_hyperlink(
-  blame: Blame,
-  handle: #(String, String, String),
-  inner: InnerParam
+fn extract_handle_name(match) {
+  let assert Match(_, [_, option.Some(handle_name)]) = match
+  handle_name
+}
+
+fn hyperlink_constructor(
+    handle: #(String, String, String),
+    blame: Blame,
+    state: State,
+    inner: InnerParam,
 ) {
-  let #(id, filename, value) = handle
-  let #(tag, classes) = case target_is_on_same_chapter(filename, blame) {
-    True -> #("InChapterLink", "handle-in-chapter-link")
-    False -> #("a", "handle-out-of-chapter-link")
+  let #(id, target_path, value) = handle
+  let assert Some(local_path) = state.local_path
+  let #(
+    _, _, 
+    #(in_page_link_tag, in_page_link_classes),
+    #(out_of_page_link_tag, out_of_page_link_classes)
+  ) = inner
+
+  let #(tag, classes) = case target_path == local_path {
+    True -> #(in_page_link_tag, in_page_link_classes |> string.join(" "))
+    False -> #(out_of_page_link_tag, out_of_page_link_classes |> string.join(" "))
   }
 
-  V(blame, tag, list.flatten([
-      list.map(inner, fn(x) { BlamedAttribute(blame, pair.first(x), pair.second(x)) }),
-      [
-        BlamedAttribute(blame, "href", filename <> "?id=" <> id),
+  V(
+    blame,
+    tag, 
+    case classes {
+      "" -> [
+        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+      ]
+      _ -> [
+        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
         BlamedAttribute(blame, "class", classes),
       ]
-    ]),
+    },
     [T(blame, [BlamedContent(blame, value)])],
   )
 }
 
-fn handle_handle_matches(
+fn hyperlink_maybe(
+  handle_name: String,
   blame: Blame,
-  matches: List(regexp.Match),
-  splits: List(String),
-  handles: HandleInstances,
-  inner: InnerParam
+  state: State,
+  inner: InnerParam,
+) -> Result(VXML, DesugaringError) {
+  case dict.get(state.handles, handle_name) {
+    Ok(triple) -> Ok(hyperlink_constructor(triple, blame, state, inner))
+    _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
+  }
+}
+
+fn matches_2_hyperlinks(
+  matches: List(Match),
+  blame: Blame,
+  state: State,
+  inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
-  case matches {
-    [] -> {
-      Ok([T(blame, [BlamedContent(blame, string.join(splits, " "))])])
+  matches
+  |> list.map(extract_handle_name)
+  |> list.map(hyperlink_maybe(_, blame, state, inner))
+  |> result.all
+}
+
+fn augment_to_1_mod_3(
+  splits: List(String),
+) -> List(String) {
+  case list.length(splits) % 3 != 1 {
+    True -> {
+      let assert True = list.is_empty(splits)
+      [""]
     }
-    [first, ..rest] -> {
-      let regexp.Match(_, sub_matches) = first
+    False -> splits
+  }
+}
 
-      let assert [_, handle_name] = sub_matches
-      let assert option.Some(handle_name) = handle_name
-      case dict.get(handles, handle_name) {
-        Error(_) ->
-          Error(DesugaringError(
-            blame,
-            "Handle " <> handle_name <> " was not assigned",
-          ))
-
-        Ok(handle) -> {
-          let assert [first_split, _, _, ..rest_splits] = splits
-
-          use rest_content <- result.then(handle_handle_matches(
-            blame,
-            rest,
-            rest_splits,
-            handles,
-            inner
-          ))
-
-          Ok(
-            list.flatten([
-              [T(blame, [BlamedContent(blame, first_split)])],
-              [construct_hyperlink(blame, handle, inner)],
-              rest_content,
-            ]),
-          )
-        }
+fn retain_0_mod_3(
+  splits: List(String),
+) -> List(String) {
+  splits
+  |> list.index_fold(
+    from: [],
+    with: fn(acc, split, index) {
+      case index % 3 == 0 {
+        True -> [split, ..acc]
+        False -> acc
       }
     }
-  }
+  )
+  |> list.reverse
 }
 
-fn print_handle(
-  blamed_line: BlamedContent,
-  handles: HandleInstances,
-  inner: InnerParam
+fn split_2_t(
+  split: String,
+  blame: Blame,
+) -> VXML {
+  T(blame, [BlamedContent(blame, split)])
+}
 
+fn splits_2_ts(
+  splits: List(String),
+  blame: Blame,
+) -> List(VXML) {
+  splits
+  |> augment_to_1_mod_3  
+  |> retain_0_mod_3
+  |> list.map(split_2_t(_, blame))
+}
+
+fn process_blamed_content(
+  blamed_content: BlamedContent,
+  state: State,
+  inner: InnerParam,
+  handle_regexp: Regexp,
 ) -> Result(List(VXML), DesugaringError) {
-  let assert Ok(re) = regexp.from_string("(>>)(\\w+)")
-
-  let matches = regexp.scan(re, blamed_line.content)
-  let splits = regexp.split(re, blamed_line.content)
-  handle_handle_matches(blamed_line.blame, matches, splits, handles, inner)
+  let BlamedContent(blame, content) = blamed_content
+  let matches = regexp.scan(handle_regexp, content)
+  let splits = regexp.split(handle_regexp, content)
+  use hyperlinks <- result.try(matches_2_hyperlinks(matches, blame, state, inner))
+  let text_nodes = splits_2_ts(splits, blame)
+  Ok(list.interleave([text_nodes, hyperlinks]))
 }
 
-fn print_handle_for_contents(
+fn process_blamed_contents(
   contents: List(BlamedContent),
-  handles: HandleInstances,
-  inner: InnerParam
+  state: State,
+  inner: InnerParam,
+  handle_regexp: Regexp,
 ) -> Result(List(VXML), DesugaringError) {
-
-  case contents {
-    [] -> Ok([])
-    [first, ..rest] -> {
-      use updated_line <- result.then(print_handle(first, handles, inner))
-      use updated_rest <- result.then(print_handle_for_contents(rest, handles, inner))
-
-      Ok(list.flatten([updated_line, updated_rest]))
-    }
-  }
+  contents
+  |> list.map(process_blamed_content(_, state, inner, handle_regexp))
+  |> result.all
+  |> result.map(list.flatten)                      // you now have a list of t-nodes and of hyperlinks
+  |> result.map(infra.plain_concatenation_in_list) // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
 }
 
-fn get_handles_from_root_attributes(
+fn get_handles_instances_from_grand_wrapper(
   attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), HandleInstances) {
-
-   let #(handle_attributes, filtered_attributes) =
-    list.partition(attributes, fn(att) {
-      att.key == "handle"
-    })
-
-  let extracted_handles =
-    handle_attributes
-    |> list.fold(dict.new(), fn(acc, att) {
+) -> HandleInstances {
+  attributes
+  |> list.fold(
+    dict.new(),
+    fn(acc, att) {
       let assert [handle_name, id, filename, value] = att.value |> string.split(" | ")
       dict.insert(acc, handle_name, #(id, filename, value))
-    })
-
-  #(filtered_attributes, extracted_handles)
+    }
+  )
 }
 
-fn counter_handles_transform_to_get_handles(
+fn v_before_transform(
   vxml: VXML,
-  handles: HandleInstances,
-) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  let assert V(b, t, attributes, c) = vxml
-  case t == "GrandWrapper" {
-    False -> Ok(#([vxml], handles))
-    True -> {
-      let #(filtered_attributes, handles) =
-        get_handles_from_root_attributes(attributes)
+  state: State,
+  inner: InnerParam
+) -> Result(#(VXML, State), DesugaringError) {
+  let assert V(_, tag, attributes, _) = vxml
+  let #(path_tags, path_key, _, _) = inner
 
-      Ok(#([V(b, t, filtered_attributes, c)], handles))
+  use <- infra.on_lazy_true_on_false(
+    tag == "GrandWrapper",
+    fn(){
+      Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
     }
+  )
+
+  use <- infra.on_lazy_true_on_false(
+    list.contains(path_tags, tag),
+    fn() {
+      case infra.v_attribute_with_key(vxml, path_key) {
+        None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing '" <> path_key <> "' attribute"))
+        Some(blamed_attribute) -> Ok(#(vxml, State(..state, local_path: Some(blamed_attribute.value))))
+      }
+    }
+  )
+
+  Ok(#(vxml, state))
+}
+
+fn v_after_transform(
+  vxml: VXML,
+  state: State,
+) -> Result(#(List(VXML), State), DesugaringError) {
+  let assert V(_, tag, _, children)  = vxml
+  case tag == "GrandWrapper" {
+    True -> {
+      let assert [V(_, _, _, _) as root] = children
+      Ok(#([root], state))
+    }
+    False -> Ok(#([vxml], state))
   }
 }
 
-fn counter_handles_transform_to_replace_handles(
+fn t_transform(
   vxml: VXML,
-  handles: HandleInstances
-) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
-  let assert V(_, t, _, children)  = vxml
-  case t == "GrandWrapper" {
-    False -> Ok(#([vxml], handles))
-    True -> {
-      let assert [first_child] = children
-      Ok(#([first_child], handles))
-    }
-  }
-}
-
-fn t_transform(vxml: VXML, handles: HandleInstances, inner: InnerParam) -> Result(#(List(VXML), HandleInstances), DesugaringError) {
+  state: State,
+  inner: InnerParam,
+  handles_regexp: Regexp,
+) -> Result(#(List(VXML), State), DesugaringError) {
   let assert T(_, contents)  = vxml
-  use update_contents <- result.then(print_handle_for_contents(
+  use updated_contents <- result.try(process_blamed_contents(
     contents,
-    handles,
-    inner
+    state,
+    inner,
+    handles_regexp,
   ))
-  Ok(#(update_contents, handles))
+  Ok(#(updated_contents, state))
 }
 
-fn counter_handle_transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
-  HandleInstances,
-) {
-  infra.StatefulDownAndUpNodeToNodesTransform(
-    v_before_transforming_children: fn(vxml, s) {
-      use #(vxml, handles) <- result.then(
-        counter_handles_transform_to_get_handles(vxml, s),
-      )
-      let assert [vxml] = vxml
-      Ok(#(vxml, handles))
-    },
-    v_after_transforming_children: fn(vxml, _, new) {
-      counter_handles_transform_to_replace_handles(vxml, new)
-    },
-    t_transform: fn(vxml, state) {
-      t_transform(vxml, state, inner)
-    }
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(State) {
+  let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
+  n2t.OneToManyBeforeAndAfterStatefulNodeMap(
+    v_before_transforming_children: fn(vxml, state) {v_before_transform(vxml, state, inner)},
+    v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
+    t_nodemap: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
   )
 }
 
-fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodesTransform(
-  HandleInstances,
-) {
-  counter_handle_transform_factory(inner)
-}
-
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.stateful_down_up_node_to_nodes_desugarer_factory(
-    transform_factory(inner),
-    dict.new(),
-  )
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  nodemap_factory(inner)
+  |> n2t.one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(State(dict.new(), None))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -227,98 +248,204 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, String))
-//       ↖       ↖
-//       additional key-value pairs
-//       to attach to anchor tag
+   #(
+    List(String),            // tags that can have handle path value
+    String,                  // handle path attribute key
+    #(String, List(String)), // in-page link element tag / classes
+    #(String, List(String)), // outer-page link element tag / classes
+   )
+
 
 type InnerParam = Param
 
+const name = "handles_substitute"
+const constructor = handles_substitute
 
-/// Expects a document with root 
-/// 'GrandWrapper' whose attributes
-///  comprise of key-value pairs of
-///  the form :
-/// handle_name | id | filename | value
-/// and with a unique child being the 
-/// root of the original document.
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// Expects a document with root 'GrandWrapper' 
+/// whose attributes comprise of key-value pairs of
+/// the form handle=handle_name | id | path | value
+/// and with a unique child being the root of the 
+/// original document.
 /// 
-/// Decodes the attributes into a dictionary
-/// of the form:
-/// ```
-/// Dict(String, #(String, String, String))
-/// ```
+/// Replaces >>handle_name occurrences by links,
+/// using two different kinds of tags for links
+/// that point to elements in the same page versus 
+/// links that point element in a different page.
+///
+/// More specifically, given an occurrence 
+/// >>handle_name where handle_name points to an 
+/// element of path 'path' as given by one of the 
+/// key-value pairs in GrandWrapper, determines if 
+/// 'path' is in another page of the final set of 
+/// pages with respect to the current page of the
+/// document by trying to look up the latter on the
+/// latest (closest) ancestor of the element whose
+/// tag is an element of the first list in the 
+/// desugarer's Param argument, looking at the
+/// attribute value of the attribute whose key is
+/// the second argument of Param. The third and 
+/// fourth arguments of Param specify which tags 
+/// and classes to use for the in- and out- page 
+/// links respectively. If the class list is empty 
+/// no 'class' attribute will be added at all to 
+/// that type of link element.
 /// 
-/// Traverses the document and replaces 
-/// each >>handle_name occurrence by 
-/// 1. if filename is the same as the 
-///    current document's filename:
-/// ```
-/// <InChapterLink href='filename?id=id'>
-///   handle_value
-/// </InChapterLink>
-/// ```
-/// 2. if filename is different:
-/// ```
-/// <a href='filename?id=id'>
-///  handle_value
-/// </a>
-/// ```
+/// Destroys the GrandWrapper root note on exit,
+/// returning its unique child. 
 /// 
-/// Destroys the GrandWrapper on exit
-/// returning its unique child of GrandWrapper. 
+/// Throws a DesugaringError if a given handle name
+/// is not found in the list of GrandWrapper 
+/// 'handle' attributes values, or if unable to
+/// locate a local page path for a given handle.
+pub fn handles_substitute(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// Expects a document with root 'GrandWrapper' 
+/// whose attributes comprise of key-value pairs of
+/// the form handle=handle_name | id | path | value
+/// and with a unique child being the root of the 
+/// original document.
 /// 
-/// Throws errors if handle_name in
-/// >>handle_name doesn't exist in the 
-/// GrandWrapper attributes.
-pub fn handles_substitute(param: Param) -> Pipe {
-
-  Pipe(
-    description: DesugarerDescription(
-      "handles_substitute",
-      option.None,
-      "
-Expects a document with root 
-'GrandWrapper' whose attributes
- comprise of key-value pairs of
- the form :
-handle_name | id | filename | value
-and with a unique child being the 
-root of the original document.
-
-Decodes the attributes into a dictionary
-of the form:
-```
-Dict(String, #(String, String, String))
-```
-
-Traverses the document and replaces 
-each >>handle_name occurrence by 
-1. if filename is the same as the 
-   current document's filename:
-```
-<InChapterLink href='filename?id=id'>
-  handle_value
-</InChapterLink>
-```
-2. if filename is different:
-```
-<a href='filename?id=id'>
- handle_value
-</a>
-```
-
-Destroys the GrandWrapper on exit
-returning its unique child of GrandWrapper. 
-
-Throws errors if handle_name in
->>handle_name doesn't exist in the 
-GrandWrapper attributes.
-      "
-    ),
-    desugarer: case param_to_inner_param(param) {
+/// Replaces >>handle_name occurrences by links,
+/// using two different kinds of tags for links
+/// that point to elements in the same page versus 
+/// links that point element in a different page.
+///
+/// More specifically, given an occurrence 
+/// >>handle_name where handle_name points to an 
+/// element of path 'path' as given by one of the 
+/// key-value pairs in GrandWrapper, determines if 
+/// 'path' is in another page of the final set of 
+/// pages with respect to the current page of the
+/// document by trying to look up the latter on the
+/// latest (closest) ancestor of the element whose
+/// tag is an element of the first list in the 
+/// desugarer's Param argument, looking at the
+/// attribute value of the attribute whose key is
+/// the second argument of Param. The third and 
+/// fourth arguments of Param specify which tags 
+/// and classes to use for the in- and out- page 
+/// links respectively. If the class list is empty 
+/// no 'class' attribute will be added at all to 
+/// that type of link element.
+/// 
+/// Destroys the GrandWrapper root note on exit,
+/// returning its unique child. 
+/// 
+/// Throws a DesugaringError if a given handle name
+/// is not found in the list of GrandWrapper 
+/// 'handle' attributes values, or if unable to
+/// locate a local page path for a given handle.
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+    infra.AssertiveTestData(
+      param:    #(
+                  ["Chapter", "Bootcamp"],
+                  "path", #("InChapterLink",
+                  ["handle-in-chapter-link"]),
+                  #("a", ["handle-out-chapter-link"])
+                ),
+      source:   "
+                <> GrandWrapper
+                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  <> root
+                    <> Chapter
+                      path=./ch1.html
+                      <>
+                        \"some text with >>fluescence in it\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                ",
+      expected: "
+                <> root
+                  <> Chapter
+                    path=./ch1.html
+                    <>
+                      \"some text with \"
+                    <> InChapterLink
+                      href=./ch1.html?id=_23-super-id
+                      class=handle-in-chapter-link
+                      <>
+                        \"AA\"
+                    <>
+                      \" in it\"
+                    <> Math
+                      <>
+                        \"$x^2 + b^2$\"
+                ",
+    ),
+     infra.AssertiveTestData(
+      param:    #(
+                  ["Page"],
+                  "testerpath",
+                  #("inLink", []),
+                  #("outLink", [])
+                ),
+      source:   "
+                <> GrandWrapper
+                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  handle=out | _24-super-id | ./ch1.html | AA
+                  <> root
+                    <> Page
+                      testerpath=./ch1.html
+                      <>
+                        \"some text with >>fluescence in it\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                    <> Page
+                      testerpath=./ch2.html
+                      <>
+                        \"this is >>out outer link\"
+                ",
+      expected: "
+                <> root
+                  <> Page
+                    testerpath=./ch1.html
+                    <>
+                      \"some text with \"
+                    <> inLink
+                      href=./ch1.html?id=_23-super-id
+                      <>
+                        \"AA\"
+                    <>
+                      \" in it\"
+                    <> Math
+                      <>
+                        \"$x^2 + b^2$\"
+                  <> Page
+                    testerpath=./ch2.html
+                    <>
+                      \"this is \"
+                    <> outLink
+                      href=./ch1.html?id=_24-super-id
+                      <>
+                        \"AA\"
+                    <>
+                      \" outer link\"
+                ",
+    )
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

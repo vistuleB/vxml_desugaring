@@ -4,11 +4,13 @@ import gleam/list
 import gleam/option.{Some, None}
 import gleam/result
 import gleam/string
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandlesDict =
   Dict(String, #(String,     String,     String))
+//     ↖         ↖           ↖           ↖
 //     handle    local path  element id  string value
 //     name      of page     on page     of handle
 
@@ -128,23 +130,23 @@ fn v_after_transforming_children(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.StatefulDownAndUpNodeToNodeFancyTransform(State) {
-   infra.StatefulDownAndUpNodeToNodeFancyTransform(
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneBeforeAndAfterStatefulNodeMap(State) {
+   n2t.FancyOneToOneBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(vxml, _, _, _, _, state) {
       v_before_transforming_children(vxml, state, inner)
     },
     v_after_transforming_children: fn(vxml, ancestors, _, _, _, _, state) {
       v_after_transforming_children(vxml, ancestors, state)
     },
-    t_transform: fn(vxml, _, _, _, _, state) {
+    t_nodemap: fn(vxml, _, _, _, _, state) {
       t_transform(vxml, state)
     },
   )
 }
 
-fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
-  infra.stateful_down_up_fancy_node_to_node_desugarer_factory(
-    transform_factory(inner),
+fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
+  n2t.fancy_one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
+    nodemap_factory(inner),
     #(dict.new(), "")
   )
 }
@@ -162,79 +164,118 @@ type Param =
 
 type InnerParam = Param
 
-/// Looks for `handle` attributes 
-/// in the V nodes and transforms
-/// which are expected to be in form:
-/// `handle | id | value`.
-/// ( panics if not in this form )
+const name = "handles_generate_dictionary"
+const constructor = handles_generate_dictionary
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// Looks for `handle` attributes in the V nodes
+/// that are expected to be in form
 /// 
-/// Transform the values into a dict
-/// where the key is the handle name
-/// and the values are tuples 
-/// #(String, String, String) comprising
-/// the handle, id, and value.
+/// `handle=handle_name | id | value`
 /// 
-/// Adds new field of data (path)
-/// which represents the filename
-/// and is expected to be available
-/// In attribute value of node with
-/// Param.0 tag Param.1 attribute_key.
+/// (Panics if not in this form.)
 /// 
-/// Wraps the document root by a V
-/// node with tag GrandWrapper
-/// and transform back the dict as the
+/// Transform the values into a dict where the key 
+/// is the handle name and the values are tuples 
+/// #(String, String, String) comprising the handle, 
+/// id, and value.
+/// 
+/// Adds new field of data (path) which represents 
+/// the filename and is expected to be available
+/// In attribute value of node with Param.0 tag 
+/// Param.1 attribute_key.
+/// 
+/// Wraps the document root by a V node with tag 
+/// GrandWrapper and transform back the dict as the
 /// grandwrapper's attributes.
 /// 
-/// Returns a pair of newly created
-/// node and state of handles used
-/// to check for name uniqueness.
+/// Returns a pair of newly created node and state 
+/// of handles used to check for name uniqueness.
 /// 
 /// Throws error if
-/// 1. there are multiple handles
-///    with same handle_name
-/// 2. no node found with Param.0 tag Param.1 attribute_key
-
-pub fn handles_generate_dictionary(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      "handles_generate_dictionary",
-      None,
-      "
-Looks for `handle` attributes 
-in the V nodes and transforms
-which are expected to be in form:
-`handle | id | value`.
-( panics if not in this form )
-
-Transform the values into a dict
-where the key is the handle name
-and the values are tuples 
-#(String, String, String) comprising
-the handle, id, and value.
-
-Adds new field of data (path)
-which represents the filename
-and is expected to be available
-In attribute value of node with
-Param.0 tag Param.1 attribute_key.
-
-Wraps the document root by a V
-node with tag GrandWrapper
-and transform back the dict as the
-grandwrapper's attributes.
-
-Returns a pair of newly created
-node and state of handles used
-to check for name uniqueness.
-
-Throws error if
-1. there are multiple handles
-   with same handle_name
-2. no node found with Param.0 tag Param.1 attribute_key",
-    ),
-    desugarer: case param_to_inner_param(param) {
+/// 1. there are multiple handles with same 
+///    handle_name
+/// 2. no node found with Param.0 tag Param.1 
+///    attribute_key
+pub fn handles_generate_dictionary(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// Looks for `handle` attributes in the V nodes
+/// that are expected to be in form
+/// 
+/// `handle=handle_name | id | value`
+/// 
+/// (Panics if not in this form.)
+/// 
+/// Transform the values into a dict where the key 
+/// is the handle name and the values are tuples 
+/// #(String, String, String) comprising the handle, 
+/// id, and value.
+/// 
+/// Adds new field of data (path) which represents 
+/// the filename and is expected to be available
+/// In attribute value of node with Param.0 tag 
+/// Param.1 attribute_key.
+/// 
+/// Wraps the document root by a V node with tag 
+/// GrandWrapper and transform back the dict as the
+/// grandwrapper's attributes.
+/// 
+/// Returns a pair of newly created node and state 
+/// of handles used to check for name uniqueness.
+/// 
+/// Throws error if
+/// 1. there are multiple handles with same 
+///    handle_name
+/// 2. no node found with Param.0 tag Param.1 
+///    attribute_key
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+    infra.AssertiveTestData(
+      param: [#("ChapterChapter", "local_path")],
+      source:   "
+                <> root
+                  <> ChapterChapter
+                    local_path=./ch1.html
+                    <>
+                      \"some text\"
+                    <> Math
+                      handle=fluescence | _23-super-id | AA
+                      <>
+                        \"$x^2 + b^2$\"
+                ",
+      expected: "
+                <> GrandWrapper
+                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  <> root
+                    <> ChapterChapter
+                      local_path=./ch1.html
+                      <>
+                        \"some text\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                "
+    ),
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

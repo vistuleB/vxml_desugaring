@@ -1,3 +1,5 @@
+import gleam/float
+import gleam/time/duration
 import blamedlines.{type Blame, type BlamedLine, Blame, BlamedLine} as bl
 import desugarers/filter_nodes_by_attributes.{filter_nodes_by_attributes}
 import gleam/dict.{type Dict}
@@ -6,15 +8,14 @@ import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
-import infrastructure.{type DetailedDesugaringError, DetailedDesugaringError, type Pipe} as infra
-import pipeline_debug
+import gleam/string.{inspect as ins}
+import infrastructure.{type InSituDesugaringError, InSituDesugaringError, type Desugarer} as infra
+import star_block
 import shellout
 import simplifile
 import vxml.{type VXML, V} as vp
 import writerly as wp
-
-const ins = string.inspect
+import gleam/time/timestamp
 
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
@@ -56,19 +57,19 @@ pub fn default_writerly_source_parser(
   lines: List(BlamedLine),
   spotlight_args: List(#(String, String, String)),
 ) -> Result(VXML, RendererError(a, String, c, d, e)) {
-  use writerlys <- result.then(
+  use writerlys <- result.try(
     wp.parse_blamed_lines(lines)
     |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
   )
 
-  use vxml <- result.then(
+  use vxml <- result.try(
     wp.writerlys_to_vxmls(writerlys)
     |> infra.get_root
     |> result.map_error(SourceParserError),
   )
 
-  use filtered_vxml <- result.then(
-    filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+  use filtered_vxml <- result.try(
+    filter_nodes_by_attributes(spotlight_args).transform(vxml)
     |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
   )
 
@@ -80,9 +81,17 @@ pub fn default_html_source_parser(
   spotlight_args: List(#(String, String, String)),
 ) -> Result(VXML, RendererError(a, String, b, c, d)) {
   let path = bl.first_blame_filename(lines) |> result.unwrap("")
+  let s = string.trim(bl.blamed_lines_to_string(lines))
 
-  use vxml <- result.then(
-    bl.blamed_lines_to_string(lines)
+  use nonempty_string <- result.try(
+    case s {
+      "" -> Error(SourceParserError("empty content"))
+      _ -> Ok(s)
+    }
+  )
+
+  use vxml <- result.try(
+    nonempty_string
     |> vp.xmlm_based_html_parser(path)
     |> result.map_error(fn(e) {
       case e {
@@ -92,7 +101,7 @@ pub fn default_html_source_parser(
     }),
   )
 
-  filter_nodes_by_attributes(spotlight_args).desugarer(vxml)
+  filter_nodes_by_attributes(spotlight_args).transform(vxml)
   |> result.map_error(fn(e: infra.DesugaringError) { SourceParserError(e.message) })
 }
 
@@ -102,12 +111,12 @@ pub fn default_html_source_parser(
 // *************
 
 pub type Pipeline =
-  List(Pipe)
+  List(Desugarer)
 
 pub type PipelineDebugOptions {
   PipelineDebugOptions(
-    debug_print: fn(Int, Pipe) -> Bool,
-    artifact_print: fn(Int, Pipe) -> Bool,
+    debug_print: fn(Int, Desugarer) -> Bool,
+    artifact_print: fn(Int, Desugarer) -> Bool,
     artifact_directory: String,
   )
 }
@@ -274,7 +283,7 @@ pub fn prettier_prettifier(
 }
 
 pub fn guarded_prettier_prettifier(
-  user_args: Dict(String, List(String)),
+  user_args: Dict(String, _),
 ) -> fn(String, #(String, d)) -> Result(String, #(Int, String)) {
   case dict.get(user_args, "--prettier") {
     Error(Nil) -> fn(_, _) { Ok("") }
@@ -291,32 +300,20 @@ pub fn empty_prettifier(_: String, _: #(String, d)) -> Result(String, Nil) {
 // *************
 
 pub type Renderer(
-  a,
-  c,
-  d,
-  e,
-  f,
-  h,
-  // blamed line assembly error type
-  // source parsing error type
-  // VXML Fragment enum type
-  // splitting error type
-  // fragment emitting error type
-  // prettifying error type
+  a, // blamed line assembly error type
+  c, // source parsing error type
+  d, // VXML Fragment enum type
+  e, // splitting error type
+  f, // fragment emitting error type
+  h, // prettifying error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),
-    // file/directory -> List(BlamedLine)                     Result w/ error type a
-    source_parser: SourceParser(c),
-    // List(BlamedLine) -> VXML                               Result w/ error type c
-    pipeline: List(Pipe),
-    // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
-    splitter: Splitter(d, e),
-    // VXML -> List(#(String, VXML, d))                       Result w/ error type e
-    emitter: Emitter(d, f),
-    // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
-    prettifier: Prettifier(d, h),
-    // String, #(String, d) -> Nil                            Result w/ error type h
+    assembler: BlamedLinesAssembler(a), // file/directory -> List(BlamedLine)                     Result w/ error type a
+    source_parser: SourceParser(c),     // List(BlamedLine) -> VXML                               Result w/ error type c
+    pipeline: List(Desugarer),               // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
+    splitter: Splitter(d, e),           // VXML -> List(#(String, VXML, d))                       Result w/ error type e
+    emitter: Emitter(d, f),             // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
+    prettifier: Prettifier(d, h),       // String, #(String, d) -> Nil                            Result w/ error type h
   )
 }
 
@@ -352,24 +349,25 @@ pub type RendererParameters {
 
 fn pipeline_runner(
   vxml: VXML,
-  pipeline: List(Pipe),
+  pipeline: List(Desugarer),
   pipeline_debug_options: PipelineDebugOptions,
   step: Int,
-) -> Result(VXML, DetailedDesugaringError) {
+) -> Result(VXML, InSituDesugaringError) {
   case pipeline {
     [] -> Ok(vxml)
+
     [pipe, ..rest] -> {
       case pipeline_debug_options.debug_print(step, pipe) {
         False -> Nil
         True ->
-          pipeline_debug.desugarer_description_star_block(
-            pipe.description,
+          star_block.desugarer_description_star_block(
+            pipe,
             step,
           )
           |> io.print
       }
   
-      case pipe.desugarer(vxml) {
+      case pipe.transform(vxml) {
         Ok(vxml) -> {
           case pipeline_debug_options.debug_print(step, pipe) {
             False -> Nil
@@ -377,11 +375,12 @@ fn pipeline_runner(
           }
           pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
         }
-        Error(error) -> Error(DetailedDesugaringError(
+
+        Error(error) -> Error(InSituDesugaringError(
+          desugarer: pipe,
+          pipeline_step: step,
           blame: error.blame, 
           message: error.message,
-          desugarer: pipe.description.desugarer_name,
-          step: step,
         ))
       }
     }
@@ -425,7 +424,7 @@ pub fn possible_error_message(
 pub type RendererError(a, c, e, f, h) {
   AssemblyError(a)
   SourceParserError(c)
-  PipelineError(DetailedDesugaringError)
+  PipelineError(InSituDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
   ArtifactPrintingError(String)
@@ -437,9 +436,62 @@ pub type ThreePossibilities(f, g, h) {
   C3(h)
 }
 
-fn quick_message(thing: a, msg: String) -> a {
-  io.println(msg)
-  thing
+fn pipeline_overview(pipes: List(Desugarer)) {
+  let number_columns = 4
+  let name_columns = 70
+  let max_param_cols = 40
+  let separator = ""
+  let none_param = ""
+
+  io.println("ur pipeline is:\n")
+
+  io.println(
+    "#."
+    <> string.repeat(" ", number_columns - 2)
+    <> separator
+    <> " NAME"
+    <> string.repeat(" ", name_columns - 5)
+    <> separator
+    <> " PARAM"
+  )
+
+  io.println(
+    string.repeat("-", 2 + number_columns + name_columns + 20)
+  )
+
+  list.index_map(
+    pipes,
+    fn (pipe, i) {
+      let param = case pipe.stringified_param {
+        None -> none_param
+        Some(thing) -> thing
+      }
+      let name = pipe.name
+      let num = ins(i + 1) <> "."
+      let num_spaces = number_columns - string.length(num)
+      let name_spaces = name_columns - {1 + string.length(name)}
+      let param = case string.length(param) > max_param_cols {
+        False -> param
+        True -> {
+          let excess = string.length(param) - max_param_cols
+          string.drop_end(param, excess + 3) <> "..."
+        }
+      }
+      io.println(
+        num
+        <> string.repeat(" ", num_spaces)
+        <> separator
+        <> " "
+        <> name
+        <> string.repeat(" ", name_spaces)
+        <> separator
+        <> " "
+        <> param
+      )
+    }
+  )
+
+  io.println("")
 }
 
 // *************
@@ -454,6 +506,10 @@ pub fn run_renderer(
   io.println("")
 
   let parameters = sanitize_output_dir(parameters)
+
+  pipeline_overview(renderer.pipeline)
+
+  io.println("-- assembling blamed lines (" <> parameters.input_dir <> ")")
 
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(parameters.input_dir),
@@ -472,8 +528,6 @@ pub fn run_renderer(
     },
   )
 
-  io.println("-- assembling blamed lines (" <> parameters.input_dir <> ") --")
-
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
     True -> {
@@ -484,7 +538,7 @@ pub fn run_renderer(
     }
   }
 
-  io.println("-- parsing source (" <> parameters.input_dir <> ") --")
+  io.println("-- parsing source (" <> parameters.input_dir <> ")")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -497,7 +551,8 @@ pub fn run_renderer(
     },
   )
 
-  io.println("(starting pipeline)")
+  io.print("-- starting pipeline...")
+  let t0 = timestamp.system_time()
 
   use desugared <- infra.on_error_on_ok(
     over: pipeline_runner(
@@ -506,23 +561,41 @@ pub fn run_renderer(
       debug_options.pipeline_debug_options,
       1,
     ),
-    with_on_error: fn(e: DetailedDesugaringError) {
+    with_on_error: fn(e: InSituDesugaringError) {
       case debug_options.error_messages {
         True -> {
-          {
-            "\nError thrown by " <> e.desugarer <> ".gleam desugarer" <>
-            "\nPipeline position: " <> ins(e.step) <>
-            "\nBlame: " <> ins(e.blame) <>
-            "\nMessage: " <> e.message <>
-            "\n"
-          }
-          |> io.print
+          let z = [
+            "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
+            "🏯🏯pipeline step:   " <> ins(e.pipeline_step),
+            "🏯🏯blame:           " <> e.blame.filename <> ":" <> ins(e.blame.line_no) <> ":" <> ins(e.blame.char_no) <> " " <> ins(e.blame.comments),
+            "🏯🏯message:         " <> e.message,
+          ]
+          let lengths = list.map(z, string.length)
+          let width = list.fold(lengths, 0, fn (acc, n) { int.max(acc, n) }) + 2
+          io.println("")
+          io.println("")
+          io.println(string.repeat("🏯", width * 6 / 11))
+          io.println(string.repeat("🏯", width * 6 / 11))
+          list.each(
+            list.zip(z, lengths),
+            fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯") }
+          )
+          io.println(string.repeat("🏯", width * 6 / 11))
+          io.println(string.repeat("🏯", width * 6 / 11))
+          io.println("")
         }
         False -> Nil
       }
       Error(PipelineError(e))
     },
   )
+
+  let t1 = timestamp.system_time()
+  let s = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
+
+  io.println(" ...ended pipeline (" <> ins(s) <> "s)")
+
+  io.print("-- splitting the vxml...")
 
   // vxml fragments generation
   use fragments <- infra.on_error_on_ok(
@@ -533,7 +606,54 @@ pub fn run_renderer(
     },
   )
 
-  // blamed line fragments .emu debug printing
+  let output_dir_square_brackets = case parameters.output_dir {
+    None -> ""
+    Some(output_dir) -> "[" <> output_dir <> "/]"
+  }
+  
+  let fragments_types_and_paths_4_table = list.map(
+    fragments,
+    fn(triple) {#(ins(triple.2), output_dir_square_brackets <> triple.0)}
+  )
+
+  io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments:")
+  star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 3)
+  // let #(max_length_fragment_type, max_length_local_path) = 
+  //   list.fold(
+  //     fragments_types_and_paths_4_table,
+  //     #(0, 0),
+  //     fn(acc, pair) {
+  //       #(
+  //         int.max(acc.0, string.length(pair.0)),
+  //         int.max(acc.1, string.length(pair.1))
+  //       )
+  //     }
+  //   )
+
+  // let dashes = fn(num: Int) -> String { string.repeat("-", num) }
+  // let spaces = fn(num: Int) -> String { string.repeat(" ", num) }
+
+  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  // io.println("   | type" <> spaces(max_length_fragment_type + 2 - 4) <> "| path" <> spaces(max_length_local_path + 2 - 4) <> "|")
+  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+  // // list the fragments
+  // fragments_types_and_paths_4_table
+  // |> list.each(
+  //   fn(pair) {
+  //     io.println(
+  //       "   | "
+  //       <> pair.0
+  //       <> spaces(max_length_fragment_type - string.length(pair.0) + 2)
+  //       <> "| "
+  //       <> pair.1
+  //       <> spaces(max_length_local_path - string.length(pair.1) + 2)
+  //       <> "|"
+  //     )
+  //   }
+  // )
+  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
+
+  // fragments debug printing
   fragments
   |> list.each(fn(triple) {
     let #(local_path, vxml, fragment_type) = triple
@@ -561,18 +681,16 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting vxml fragments to blamed line fragments --")
+  io.println("-- converting fragments to blamed line fragments")
 
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
     |> list.map(fn(tuple) {
-      let #(name, _, _) = tuple
+      let #(_name, _, _) = tuple
       renderer.emitter(tuple)
-      |> quick_message("converted: " <> name <> " to blamed lines")
+      // |> quick_message("   converted: " <> name <> " to blamed lines")
     })
-
-  io.println("-- blamed lines debug printing --")
 
   // blamed line fragments debug printing
   fragments
@@ -600,7 +718,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting blamed line fragments to strings --")
+  io.println("-- converting blamed line fragments to string fragments")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -616,6 +734,7 @@ pub fn run_renderer(
         }
         Ok(#(local_path, lines, fragment_type)) -> {
           Ok(#(local_path, bl.blamed_lines_to_string(lines), fragment_type))
+          // |> quick_message("   converted: " <> local_path <> " to string")
         }
       }
     })
@@ -641,7 +760,7 @@ pub fn run_renderer(
               <> " -----------------"
             io.println(header)
             io.println(content)
-            io.println(string.repeat("-", string.length(header)))
+            io.println(star_block.dashes(string.length(header)))
             io.println("")
           }
         }
@@ -649,13 +768,13 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- writing string fragments to files --")
+  io.println("-- writing string fragments to files")
 
   // printing string fragments (list.map to record errors)
   let fragments =
     fragments
     |> list.map(fn(result) {
-      use triple <- result.then(result)
+      use triple <- result.try(result)
       let #(local_path, content, fragment_type) = triple
       use output_dir <- infra.on_none_on_some(
         parameters.output_dir,
@@ -665,7 +784,7 @@ pub fn run_renderer(
         Ok(Nil) -> {
           case debug_options.basic_messages {
             False -> Nil
-            True -> io.println("wrote: [" <> output_dir <> "/]" <> local_path)
+            True -> io.println("   wrote: [" <> output_dir <> "/]" <> local_path)
           }
           Ok(#(local_path, fragment_type))
         }
@@ -684,7 +803,7 @@ pub fn run_renderer(
   let fragments =
     fragments
     |> list.map(fn(result) {
-      use #(local_path, fragment_type) <- result.then(result)
+      use #(local_path, fragment_type) <- result.try(result)
       use output_dir <- infra.on_none_on_some(parameters.output_dir, result)
       case renderer.prettifier(output_dir, #(local_path, fragment_type)) {
         Error(e) -> Error(C3(e))
@@ -729,7 +848,7 @@ pub fn run_renderer(
           <> " -----------------"
         io.println(header)
         io.println(file_contents)
-        io.println(string.repeat("-", string.length(header)))
+        io.println(star_block.dashes(string.length(header)))
         io.println("")
       }
     }
@@ -792,7 +911,7 @@ pub type CommandLineAmendments {
     output_dir: Option(String),
     debug_assembled_input: Bool,
     debug_pipeline_range: #(Int, Int),
-    debug_pipeline_desugarer_names: List(String),
+    debug_pipeline_names: List(String),
     basic_messages: Bool,
     debug_vxml_fragments_local_paths: List(String),
     debug_blamed_lines_fragments_local_paths: List(String),
@@ -814,7 +933,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     output_dir: None,
     debug_assembled_input: False,
     debug_pipeline_range: #(-1, -1),
-    debug_pipeline_desugarer_names: [],
+    debug_pipeline_names: [],
     basic_messages: True,
     debug_vxml_fragments_local_paths: [],
     debug_blamed_lines_fragments_local_paths: [],
@@ -841,14 +960,14 @@ fn amend_debug_pipeline_range(
   CommandLineAmendments(..amendments, debug_pipeline_range: #(start, end))
 }
 
-fn amend_debug_pipeline_desugarer_names(
+fn amend_debug_pipeline_names(
   amendments: CommandLineAmendments,
   names: List(String),
 ) -> CommandLineAmendments {
   CommandLineAmendments(
     ..amendments,
-    debug_pipeline_desugarer_names: list.append(
-      amendments.debug_pipeline_desugarer_names,
+    debug_pipeline_names: list.append(
+      amendments.debug_pipeline_names,
       names,
     ),
   )
@@ -952,7 +1071,7 @@ pub fn cli_usage() {
   io.println("         -> print output of last pipe")
   io.println("      --debug-pipeline-0-0")
   io.println("         -> print output of all pipes")
-  io.println("      --debug-fragments-emu <local_path1> <local_path2> ...")
+  io.println("      --debug-fragments-wly <local_path1> <local_path2> ...")
   io.println(
     "         -> print blamed lines of fragments associated to local paths",
   )
@@ -978,7 +1097,12 @@ fn parse_attribute_value_args_in_filename(
 ) -> List(#(String, String, String)) {
   let assert [path, ..args] = string.split(path, "&")
   case args {
-    [] -> [#(path, "", "")]
+    [] -> {
+      case string.split_once(path, "=") {
+        Ok(#(key, value)) -> [#("", key, value)]
+        Error(Nil) -> [#(path, "", "")]
+      }
+    }
     _ ->
       list.map(args, fn(arg) {
         let assert [key, value] = string.split(arg, "=")
@@ -998,7 +1122,7 @@ pub fn process_command_line_arguments(
 
   list_key_values
   |> list.fold(Ok(empty_command_line_amendments()), fn(result, pair) {
-    use amendments <- result.then(result)
+    use amendments <- result.try(result)
     let #(option, values) = pair
     case option {
       "--debug-assembled-input" -> {
@@ -1009,7 +1133,7 @@ pub fn process_command_line_arguments(
         Ok(amendments |> amend_debug_assembled_input(True))
       }
 
-      "--debug-fragments-emu" -> {
+      "--debug-fragments-wly" -> {
         Ok(amendments |> amend_debug_vxml_fragments_local_paths(values))
       }
 
@@ -1042,7 +1166,7 @@ pub fn process_command_line_arguments(
         case list.is_empty(values) {
           True -> Ok(amendments |> amend_debug_pipeline_range(0, 0))
           False ->
-            Ok(amendments |> amend_debug_pipeline_desugarer_names(values))
+            Ok(amendments |> amend_debug_pipeline_names(values))
         }
       }
 
@@ -1050,7 +1174,7 @@ pub fn process_command_line_arguments(
         case list.is_empty(values) {
           True -> Ok(amendments |> amend_debug_pipeline_range(-2, -2))
           False ->
-            Ok(amendments |> amend_debug_pipeline_desugarer_names(values))
+            Ok(amendments |> amend_debug_pipeline_names(values))
         }
       }
 
@@ -1152,12 +1276,12 @@ pub fn db_amend_assembler_debug_options(
 pub fn db_amend_pipeline_debug_options(
   options: PipelineDebugOptions,
   amendments: CommandLineAmendments,
-  pipeline: List(Pipe),
+  pipeline: List(Desugarer),
 ) -> PipelineDebugOptions {
   let PipelineDebugOptions(_, artifact_print, artifact_directory) = options
 
   let #(start, end) = amendments.debug_pipeline_range
-  let names = amendments.debug_pipeline_desugarer_names
+  let names = amendments.debug_pipeline_names
 
   PipelineDebugOptions(
     fn(step, pipe) {
@@ -1166,7 +1290,7 @@ pub fn db_amend_pipeline_debug_options(
       || { start == -2 && end == -2 && step == list.length(pipeline) }
       || {
         list.is_empty(names) == False
-        && list.any(names, fn (name) { string.contains(pipe.description.desugarer_name, name) })
+        && list.any(names, fn (name) { string.contains(pipe.name, name) })
       }
     },
     artifact_print,
@@ -1257,9 +1381,8 @@ pub fn db_amend_prettifier_debug_options(
 pub fn amend_renderer_debug_options_by_command_line_amendment(
   debug_options: RendererDebugOptions(d),
   amendments: CommandLineAmendments,
-  pipeline: List(Pipe),
+  pipeline: List(Desugarer),
 ) -> RendererDebugOptions(d) {
-  io.println("inside amend_renderer_debug_options_by_command_line_amendment")
   RendererDebugOptions(
     debug_options.basic_messages,
     debug_options.error_messages,
@@ -1357,20 +1480,15 @@ pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
 pub fn empty_renderer_debug_options(
   artifact_directory: String,
 ) -> RendererDebugOptions(d) {
-  let res =
-    RendererDebugOptions(
-      basic_messages: True,
-      error_messages: True,
-      assembler_debug_options: empty_assembler_debug_options(artifact_directory),
-      source_parser_debug_options: empty_source_parser_debug_options(
-        artifact_directory,
-      ),
-      pipeline_debug_options: empty_pipeline_debug_options(artifact_directory),
-      splitter_debug_options: empty_splitter_debug_options(artifact_directory),
-      emitter_debug_options: empty_emitter_debug_options(artifact_directory),
-      printer_debug_options: empty_printer_debug_options(),
-      prettifier_debug_options: empty_prettifier_debug_options(),
-    )
-  io.println("end of empty_renderer_debug_options")
-  res
+  RendererDebugOptions(
+    basic_messages: True,
+    error_messages: True,
+    assembler_debug_options: empty_assembler_debug_options(artifact_directory),
+    source_parser_debug_options: empty_source_parser_debug_options(artifact_directory),
+    pipeline_debug_options: empty_pipeline_debug_options(artifact_directory),
+    splitter_debug_options: empty_splitter_debug_options(artifact_directory),
+    emitter_debug_options: empty_emitter_debug_options(artifact_directory),
+    printer_debug_options: empty_printer_debug_options(),
+    prettifier_debug_options: empty_prettifier_debug_options(),
+  )
 }

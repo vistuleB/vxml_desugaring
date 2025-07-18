@@ -1,18 +1,19 @@
 import gleam/list
 import gleam/option
 import gleam/regexp
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedContent, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, t, atts, children) -> {
       // remove carousel buttons
       use <- infra.on_false_on_true(
-        over: infra.v_has_key_value_attribute(vxml, "class", "chapterTitle")
-          || infra.v_has_key_value_attribute(vxml, "class", "subChapterTitle"),
+        over: infra.v_has_key_value(vxml, "class", "chapterTitle")
+          || infra.v_has_key_value(vxml, "class", "subChapterTitle"),
         with_on_false: Ok(vxml),
       )
 
@@ -32,11 +33,7 @@ fn transform(
       )
 
       let new_line = regexp.replace(re, first_text_node_line, "")
-      let contents =
-        T(t_blame, [
-          BlamedContent(l_blame, new_line),
-          ..list.drop(rest_contents, 1)
-        ])
+      let contents = T(t_blame, [BlamedContent(l_blame, new_line), ..list.drop(rest_contents, 1)])
       let children = [contents, ..list.drop(rest_children, 1)]
 
       Ok(V(blame, t, atts, children))
@@ -45,12 +42,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -58,22 +55,39 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// removes chapter numbers from titles in chapter and subchapter title elements
-pub fn remove_chapter_number_from_title() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "remove_chapter_number_from_title",
-      stringified_param: option.None,
-      general_description: "
-/// removes chapter numbers from titles in chapter and subchapter title elements
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "remove_chapter_number_from_title"
+const constructor = remove_chapter_number_from_title
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// removes chapter numbers from titles in chapter 
+/// and subchapter title elements
+pub fn remove_chapter_number_from_title() -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// removes chapter numbers from titles in chapter
+/// and subchapter title elements
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

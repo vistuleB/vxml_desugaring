@@ -1,6 +1,7 @@
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
 fn wrap_second_element_if_its_math_and_recurse(
@@ -57,7 +58,7 @@ fn wrap_second_element_if_its_math_and_recurse(
   ]
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
@@ -75,12 +76,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -88,22 +89,39 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// wraps math elements with no-break containers to prevent line breaks
-pub fn wrap_math_with_no_break() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "wrap_math_with_no_break",
-      stringified_param: option.None,
-      general_description: "
-/// wraps math elements with no-break containers to prevent line breaks
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "wrap_math_with_no_break"
+const constructor = wrap_math_with_no_break
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// wraps math elements with no-break containers to 
+/// prevent line breaks
+pub fn wrap_math_with_no_break() -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// wraps math elements with no-break containers to
+/// prevent line breaks
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

@@ -2,10 +2,11 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
@@ -48,7 +49,7 @@ fn transform(
           Ok(V(
             blame,
             tag,
-            list.flatten([other_attributes, new_attributes]),
+            list.flatten([new_attributes, other_attributes]),
             children,
           ))
         }
@@ -58,12 +59,12 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -78,21 +79,69 @@ type Param =
 type InnerParam =
   Dict(String, List(String))
 
-/// associates counters by prepending incrementing attributes to specified tags
+const name = "associate_counter_by_prepending_incrementing_attribute"
+const constructor = associate_counter_by_prepending_incrementing_attribute
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// For each #(tag, counter_name) pair in the 
+/// parameter list, this desugarer adds an 
+/// attribute of the form
+/// ```
+/// .=counter_name ::++counter_name
+/// ```
+/// to each node of tag 'tag', where the key is
+/// a period '.' and the value is the string 
+/// '<counter_name> ::++<counter_name>'. As 
+/// counters are evaluated and substitued also
+/// inside of key-value pairs, adding this 
+/// key-value pair causes the counter <counter_name>
+/// to increment at each occurrence of a node
+/// of tag 'tag'. Also assigns unassigned 
+/// handles of the attribute list of node 'tag'
+/// to the first counter being incremented in
+/// this fashion, by this desugarer.
 pub fn associate_counter_by_prepending_incrementing_attribute(
   param: Param,
-) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "associate_counter_by_prepending_incrementing_attribute",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// associates counters by prepending incrementing attributes to specified tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// For each #(tag, counter_name) pair in the 
+/// parameter list, this desugarer adds an 
+/// attribute of the form
+/// ```
+/// .=counter_name ::++counter_name
+/// ```
+/// to each node of tag 'tag', where the key is
+/// a period '.' and the value is the string 
+/// '<counter_name> ::++<counter_name>'. As 
+/// counters are evaluated and substitued also
+/// inside of key-value pairs, adding this 
+/// key-value pair causes the counter <counter_name>
+/// to increment at each occurrence of a node
+/// of tag 'tag'. Also assigns unassigned 
+/// handles of the attribute list of node 'tag'
+/// to the first counter being incremented in
+/// this fashion, by this desugarer.
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

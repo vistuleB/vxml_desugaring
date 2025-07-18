@@ -1,8 +1,9 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
@@ -15,35 +16,55 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
+  nodemap
+  |> n2t.prevent_node_to_node_transform_inside(inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = Nil
+type Param = List(String) // forbidden tags
+type InnerParam = Param
 
-type InnerParam = Nil
+const name = "trim_spaces_around_newlines"
+const constructor = trim_spaces_around_newlines
 
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
 /// trims spaces around newlines in text nodes
-pub fn trim_spaces_around_newlines() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "trim_spaces_around_newlines",
-      stringified_param: option.None,
-      general_description: "
+/// outside of subtrees rooted at tags given by the
+/// param argument
+pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
 /// trims spaces around newlines in text nodes
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+/// outside of subtrees rooted at tags given by the
+/// param argument
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -1,19 +1,20 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   Ok(vxml)
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -21,24 +22,41 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// idempotent desugarer that leaves the
-/// VXML unchanged
-pub fn identity() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "identity",
-      stringified_param: option.None,
-      general_description: "
-/// idempotent desugarer that leaves the
-/// VXML unchanged
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "identity"
+const constructor =  identity
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// idempotent desugarer that leaves the VXML 
+/// unchanged and that never generates an error
+pub fn identity() -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// idempotent desugarer that leaves the VXML 
+/// unchanged and that never generates an error
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

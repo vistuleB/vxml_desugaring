@@ -1,8 +1,9 @@
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
-fn transform(
+fn nodemap(
   node: VXML,
   ancestors: List(VXML),
   previous_unmapped_siblings: List(VXML),
@@ -36,12 +37,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeFancyTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.FancyOneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -49,24 +50,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 /// Adds an 'indent true' attribute-value pair
 /// to VerticalChunk nodes that directly follow
 /// VerticalChunk nodes
-pub fn insert_indent() -> Pipe {
-  Pipe(
+pub fn insert_indent(param: Param) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
-      desugarer_name: "insert_indent",
+      name: "insert_indent",
       stringified_param: option.None,
-      general_description: "
+    "
 /// Adds an 'indent true' attribute-value pair
 /// to VerticalChunk nodes that whose previous
 /// sibling is also a VerticalChunk node
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }

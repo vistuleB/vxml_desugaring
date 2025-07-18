@@ -3,7 +3,8 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
@@ -93,7 +94,7 @@ fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML 
   ])
 }
 
-fn transform(
+fn nodemap(
   root: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
@@ -119,12 +120,12 @@ fn transform(
   ))
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> infra.Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -141,19 +142,37 @@ type Param =
 
 type InnerParam = Param
 
-/// generates table of contents for TI2 content with sections
-pub fn generate_ti2_table_of_contents(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "generate_ti2_table_of_contents",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// generates table of contents for TI2 content with sections
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+const name = "generate_ti2_table_of_contents"
+const constructor = generate_ti2_table_of_contents
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// generates table of contents for TI2 content with
+/// sections
+pub fn generate_ti2_table_of_contents(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// generates table of contents for TI2 content with
+/// sections
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

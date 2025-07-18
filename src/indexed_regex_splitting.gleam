@@ -190,11 +190,15 @@ fn replace_indexed_group_by_tag_in_nodes(
   |> list.flatten
 }
 
+pub fn unescaped_suffix_capture_all_groups(suffix: String) -> String {
+  "(" <> regex_prefix_to_make_unescaped <> ")(" <> suffix <> ")"
+}
+
 //********************
 // public splitters
 //********************
 
-pub fn split_by_regexes_with_indexed_group_node_to_nodes_transform(
+pub fn split_by_regexes_with_indexed_group_nodemap(
   node: VXML,
   rules: List(#(RegexWithIndexedGroup, String)),
 ) -> Result(List(VXML), DesugaringError) {

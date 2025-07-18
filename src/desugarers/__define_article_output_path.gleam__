@@ -2,9 +2,10 @@ import gleam/list
 import gleam/option.{None}
 import gleam/string
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn define_article_output_path_transform(
@@ -34,12 +35,12 @@ fn define_article_output_path_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.StatefulNodeToNodeTransform(Int) {
+fn nodemap_factory(extra: Extra) -> n2t.OneToOneStatefulNodeMap(Int) {
   fn(vxml, s) { define_article_output_path_transform(vxml, extra, s) }
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.stateful_node_to_node_desugarer_factory(transform_factory(extra), 1)
+  n2t.one_to_one_stateful_nodemap_2_desugarer_transform(nodemap_factory(extra), 1)
 }
 
 type Extra =
@@ -49,8 +50,8 @@ type Extra =
 //    Tag     File     attribute key       
 //            Path     
 
-pub fn define_article_output_path(extra: Extra) -> Pipe {
-  Pipe(
+pub fn define_article_output_path(extra: Extra) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription("define_article_output_path", None, "..."),
     desugarer: desugarer_factory(extra),
   )

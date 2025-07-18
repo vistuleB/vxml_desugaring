@@ -2,7 +2,8 @@ import gleam/dict
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedContent, T, V}
 
 type Where {
@@ -63,7 +64,7 @@ fn update_children(nodes: List(VXML), dollar: String) -> List(VXML) {
   }
 }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   let math_map = dict.from_list([#("Math", "$"), #("MathBlock", "$$")])
@@ -81,12 +82,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -94,22 +95,39 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// reinserts dollar delimiters into Math and MathBlock elements
-pub fn reinsert_math_dollar() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "reinsert_math_dollar",
-      stringified_param: option.None,
-      general_description: "
-/// reinserts dollar delimiters into Math and MathBlock elements
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "reinsert_math_dollar"
+const constructor = reinsert_math_dollar
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// reinserts dollar delimiters into Math and
+/// MathBlock elements
+pub fn reinsert_math_dollar(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// reinserts dollar delimiters into Math and
+/// MathBlock elements
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -1,7 +1,8 @@
 import gleam/io
 import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer,type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn is_known_outer_element(vxml: VXML) -> Bool {
@@ -11,8 +12,8 @@ fn is_known_outer_element(vxml: VXML) -> Bool {
         list.contains(
           [
             "Book", "Chapter", "Bootcamp", "Section", "TOCAuthorSuppliedContent",
-            "HamburgerPanelAuthorSuppliedContents", "Example", "Exercises", "Exercise",
-            "Solution",
+            "HamburgerPanelAuthorSuppliedContents", "Example", "Exercises",
+            "Exercise", "Solution",
           ],
           tag,
         )
@@ -50,35 +51,35 @@ fn is_known_other_element(vxml: VXML) -> Bool {
   list.contains(["Table", "table", "Pause", "p"], tag)
 }
 
-fn transform(vxml: VXML, _: List(VXML)) -> infra.EarlyReturn(VXML) {
+fn nodemap(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
   use <- infra.on_true_on_false(
     is_known_outer_element(vxml),
-    infra.Continue(vxml),
+    n2t.Continue(vxml),
   )
 
   use <- infra.on_lazy_true_on_false(is_known_inner_element(vxml), fn() {
     let blame = vxml |> infra.get_blame
-    infra.GoBack(
+    n2t.GoBack(
       V(blame, "div", [BlamedAttribute(blame, "class", "slice")], [vxml]),
     )
   })
 
   use <- infra.on_true_on_false(
     is_known_other_element(vxml),
-    infra.GoBack(vxml),
+    n2t.GoBack(vxml),
   )
 
   io.println("unclassified element: " <> { vxml |> infra.digest })
 
-  infra.GoBack(vxml)
+  n2t.GoBack(vxml)
 }
 
-fn transform_factory(_: InnerParam) -> infra.EarlyReturnNodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.early_return_node_to_node_desugarer_factory(transform_factory(inner))
+fn desugarer_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.early_return_node_to_node_desugarer_factory(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -86,22 +87,39 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// distributes slice wrappers around inner elements for LBP content
-pub fn lbp_distribute_slices() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "lbp_distribute_slices",
-      stringified_param: option.None,
-      general_description: "
-/// distributes slice wrappers around inner elements for LBP content
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "lbp_distribute_slices"
+const constructor = lbp_distribute_slices
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// distributes slice wrappers around inner elements
+/// for LBP content
+pub fn lbp_distribute_slices(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// distributes slice wrappers around inner elements
+/// for LBP content
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> desugarer_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

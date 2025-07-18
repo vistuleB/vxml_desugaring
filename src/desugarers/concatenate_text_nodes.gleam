@@ -1,47 +1,25 @@
-import gleam/list
 import gleam/option
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
-import vxml.{type VXML, T, V}
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type VXML, V}
 
-fn concatenate_lines_in(nodes: List(VXML)) -> VXML {
-  let assert [first, ..] = nodes
-  let assert T(blame, _) = first
-  let all_lines = {
-    nodes
-    |> list.map(fn(node) {
-      let assert T(_, blamed_lines) = node
-      blamed_lines
-    })
-    |> list.flatten
-  }
-  T(blame, all_lines)
-}
-
-fn transform(
+fn nodemap(
   node: VXML,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    V(blame, tag, attributes, children) -> {
-      let new_children =
-        children
-        |> infra.either_or_misceginator(infra.is_text_node)
-        |> infra.regroup_eithers_no_empty_lists
-        |> infra.map_either_ors(
-          fn(either: List(VXML)) -> VXML { concatenate_lines_in(either) },
-          fn(or: VXML) -> VXML { or },
-        )
-      Ok(V(blame, tag, attributes, new_children))
-    }
-    _ -> Ok(node)
+    V(_, _, _, children) ->
+      Ok(V(..node, children: infra.plain_concatenation_in_list(children)))
+    _ ->
+      Ok(node)
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -49,22 +27,39 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// concatenates adjacent text nodes into single text nodes
-pub fn concatenate_text_nodes() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "concatenate_text_nodes",
-      stringified_param: option.None,
-      general_description: "
-/// concatenates adjacent text nodes into single text nodes
-      ",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "concatenate_text_nodes"
+const constructor = concatenate_text_nodes
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// concatenates adjacent text nodes into single
+/// text nodes
+pub fn concatenate_text_nodes() -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// concatenates adjacent text nodes into single
+/// text nodes
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

@@ -5,12 +5,11 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/regexp
 import gleam/result
-import gleam/string
-import infrastructure.{ type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe } as infra
-import vxml.{ type VXML, BlamedAttribute, BlamedContent, T, V }
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 import xmlm
-
-const ins = string.inspect
 
 type LinkPatternToken {
   Word(String)    // (does not contain whitespace)
@@ -97,7 +96,15 @@ fn deatomize_vxmls(
 
         V(blame, "__EndAtomizedT", _, _) ->
           deatomize_vxmls(rest, [], case accumulated_contents {
-            [] -> panic as "__EndAtomizedT not following text nodes"
+            [] -> {
+              // this has been known to happen when the source
+              // contains (or starts with?) an empty
+              // <>
+              //    ""
+              // -type node
+              // (and this case should probably just return [] ?)
+              panic as "__EndAtomizedT not following text nodes"
+            }
             _ -> [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes]
           })
 
@@ -294,7 +301,7 @@ fn prefix_match_to_atomized_list(
           let a_node = V(
             blame,
             tag,
-            attributes |> infra.add_to_class_attribute(blame, classes),
+            attributes |> infra.append_to_class_attribute(blame, classes),
             prefix_match_to_atomized_list(
               vxml.blame,
               internal_pattern,
@@ -416,7 +423,7 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
   }
 }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   param: InnerParam,
 ) -> Result(VXML, DesugaringError) {
@@ -476,7 +483,7 @@ fn match_tag_and_children(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
 ) {
-  use tag_content_patterns <- result.then(children |> result.all)
+  use tag_content_patterns <- result.try(children |> result.all)
   let tag_content_patterns = tag_content_patterns |> list.flatten
   use <- infra.on_true_on_false(
     xmlm_tag_name(xmlm_tag) == "root",
@@ -490,7 +497,7 @@ fn match_tag_and_children(
         <> xmlm_tag_name(xmlm_tag),
     )),
   )
-  use href_attribute <- result.then(
+  use href_attribute <- result.try(
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "href"))
     |> result.map_error(fn(_) {
@@ -505,7 +512,7 @@ fn match_tag_and_children(
     |> list.find(xmlm_attribute_equals(_, "class"))
   let xmlm.Attribute(_, value) =
     href_attribute
-  use value <- result.then(
+  use value <- result.try(
     int.parse(value)
     |> result.map_error(fn(_) {
       DesugaringError(
@@ -662,13 +669,13 @@ fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
 fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
   let #(s1, s2) = string_pair
 
-  use pattern1 <- result.then(
+  use pattern1 <- result.try(
     { "<root>" <> s1 <> "</root>" }
     |> make_sure_attributes_are_quoted
     |> extra_string_to_link_pattern,
   )
 
-  use pattern2 <- result.then(
+  use pattern2 <- result.try(
     { "<root>" <> s2 <> "</root>" }
     |> make_sure_attributes_are_quoted
     |> extra_string_to_link_pattern,
@@ -677,36 +684,36 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   Ok(#(pattern1, pattern2))
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   param
   |> list.try_map(fn(string_pair) {
     let #(s1, s2) = string_pair
-    use #(pattern1, pattern2) <- result.then(string_pair_to_link_pattern_pair(string_pair))
+    use #(pattern1, pattern2) <- result.try(string_pair_to_link_pattern_pair(string_pair))
 
-    use unique_href_vars <- result.then(
+    use unique_href_vars <- result.try(
       collect_unique_href_vars(pattern1)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of href variable: " <> ins(var) ) })
     )
 
-    use unique_content_vars <- result.then(
+    use unique_content_vars <- result.try(
       collect_unique_content_vars(pattern1)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of content variable: " <> ins(var)) })
     )
 
-    use _ <- result.then(
+    use _ <- result.try(
       check_each_href_var_is_sourced(pattern2, unique_href_vars)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced href variable: " <> ins(var)) })
     )
 
-    use _ <- result.then(
+    use _ <- result.try(
       check_each_content_var_is_sourced(pattern2, unique_content_vars)
       |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced content variable: " <> ins(var)) })
     )
@@ -724,27 +731,41 @@ type Param =
 type InnerParam =
   List(#(LinkPattern, LinkPattern))
 
-/// matches appearance of first String
-/// while considering (x) as a variable
-/// and replaces it with the second String
-/// (x) can be used in second String to use
-/// the variable from first String
-pub fn rearrange_links(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "rearrange_links",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// matches appearance of first String
-/// while considering (x) as a variable
-/// and replaces it with the second String
-/// (x) can be used in second String to use
-/// the variable from first String
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+const name = "rearrange_links"
+const constructor = rearrange_links
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// matches appearance of first String while 
+/// considering (x) as a variable and replaces it 
+/// with the second String (x) can be used in second
+/// String to use the variable from first String
+pub fn rearrange_links(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// matches appearance of first String while 
+/// considering (x) as a variable and replaces it 
+/// with the second String (x) can be used in second
+/// String to use the variable from first String
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -2,7 +2,8 @@ import gleam/int
 import gleam/list
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn ensure_has_id_attribute(
@@ -23,7 +24,7 @@ fn ensure_has_id_attribute(
   }
 }
 
-fn transform(
+fn nodemap(
   node: VXML,
   counter: Int,
 ) -> Result(#(VXML, Int), DesugaringError) {
@@ -72,12 +73,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.StatefulNodeToNodeTransform(Int) {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneStatefulNodeMap(Int) {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.stateful_node_to_node_desugarer_factory(transform_factory(inner), 0)
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_stateful_nodemap_2_desugarer_transform(nodemap_factory(inner), 0)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -85,54 +86,79 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
-/// Generates a unique ID and
-/// filters attributes to find
-/// any that start with "handle"
-/// in which their values are expected
-/// to be in the format: handle_name handle_value
+const name = "handles_generate_ids"
+const constructor = handles_generate_ids
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// Generates a unique ID and filters attributes to
+/// find any that start with "handle" in which their
+/// values are expected to be in the format 
+/// ```
+/// ...=handle_name handle_value
+/// ```
 /// It does the following two things:
-/// 1- Processes these "handle" attributes values by:
+/// 1- Processes these "handle" attributes values 
+/// by:
 ///  . Splitting their values on space
-///  . Reformatting them to include the 
-///    generated ID in the format: 
-///    handle_name | id | handle_value
-///    or  just value | id 
+///  . Reformatting them to include the  generated
+///    ID in the format:
+///      handle_name | id | handle_value
+///    or just
+///      value | id 
 ///    if the value is not splitable,
 ///  
 /// 2- Add id attribute to the node
 ///    ( usefull for html href link ?id=x )
-
-/// Returns a new V node with the transformed attributes
-pub fn handles_generate_ids() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      "handles_generate_ids",
-      option.None,
-      "
-Generates a unique ID and
-filters attributes to find
-any that start with \"handle\"
-in which their values are expected
-to be in the format: handle_name handle_value
-It does the following two things:
-1- Processes these \"handle\" attributes values by:
- . Splitting their values on space
- . Reformatting them to include the 
-   generated ID in the format: 
-   handle_name | id | handle_value
-   or  just value | id 
-   if the value is not splitable,
- 
-2- Add id attribute to the node
-   ( usefull for html href link ?id=x )
-",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+/// 
+/// Returns a new V node with the transformed
+/// attributes
+pub fn handles_generate_ids() -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "
+/// Generates a unique ID and filters attributes to
+/// find any that start with \"handle\" in which their
+/// values are expected to be in the format 
+/// ```
+/// ...=handle_name handle_value
+/// ```
+/// It does the following two things:
+/// 1- Processes these \"handle\" attributes values 
+/// by:
+///  . Splitting their values on space
+///  . Reformatting them to include the  generated
+///    ID in the format:
+///      handle_name | id | handle_value
+///    or just
+///      value | id 
+///    if the value is not splitable,
+///  
+/// 2- Add id attribute to the node
+///    ( usefull for html href link ?id=x )
+/// 
+/// Returns a new V node with the transformed
+/// attributes
+    ",
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
 }

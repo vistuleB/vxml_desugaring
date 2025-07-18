@@ -1,11 +1,9 @@
-import gleam/string
+import gleam/string.{inspect as ins}
 import gleam/result
 import gleam/list
-import infrastructure.{type Pipe, Pipe, DesugarerDescription, type DesugaringError, DesugaringError} as infra
-import gleam/option.{type Option, Some, None}
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
-
-const ins = string.inspect
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use last <- infra.on_error_on_ok(
@@ -85,25 +83,6 @@ fn transform_children(children: List(VXML)) -> List(VXML){
   |> remove_period()
 }
 
-fn first_child_must_be(node: VXML, tag: String, fallback: Option(String), callback: fn(VXML) -> VXML) -> Result(VXML, DesugaringError) {
-case infra.get_children(node) |> list.first, fallback {
-    Ok(V(_, t, _, _) as node), _ if t == tag -> Ok(callback(node))
-    Ok(node), Some(fallback) -> {
-      [T(node.blame, [BlamedContent(node.blame, fallback)])]
-      |> V(node.blame, "", [], _)
-      |> callback
-      |> Ok
-    }
-    Ok(node), None -> {
-      Error(DesugaringError(
-        node.blame,
-        "First child must be a " <> tag
-      ))
-    }
-    _, _ -> panic as "section cannot be empty"
-  }
-}
-
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
   let blame = infra.blame_us("generate_lbp_sections_breadcrumbs")
 
@@ -118,18 +97,15 @@ fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> 
 }
 
 fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
-  // throw error if first child is not verticalChunk
-  use vertical_chunk <- result.then(first_child_must_be(section, "VerticalChunk", None, fn(child){
-      child
-  }))
-
-  // fallback to Section x if first child is not b
-  first_child_must_be(vertical_chunk, "b", Some("Section " <> ins(index)), fn(child){
-      let assert V(_, _, _, children) = child
+  case infra.get_children(section) {
+    [V(_, "BreadcrumbTitle", _, children), ..] -> {
       children
       |> transform_children
       |> construct_breadcrumb("section-" <> ins(index + 1), index)
-  })
+      |> Ok
+    }
+    _ -> Error(DesugaringError(section.blame, "Section must have a BreadcrumbTitle as first child"))
+  }
 }
 
 fn generate_sections_list(sections: List(VXML), exercises: List(VXML)) -> Result(VXML, DesugaringError) {
@@ -172,25 +148,53 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn the_desugarer(root: VXML) -> Result(VXML, DesugaringError) {
-  let children = infra.get_children(root)
-
-  use updated_children <- result.try(
+fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
+  let assert V(_, _, _, children) = root
+  use children <- result.try(
     children
     |> list.map(map_chapter)
     |> result.all
   )
-
-  Ok(infra.replace_children_with(root, updated_children))
+  Ok(infra.replace_children_with(root, children))
 }
 
-pub fn generate_lbp_sections_breadcrumbs() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      "generate_lbp_sections_breadcrumbs",
-      option.None,
-      "...",
-    ),
-    desugarer: the_desugarer(_),
+fn transform_factory(_: InnerParam) -> DesugarerTransform {
+  at_root
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = Nil
+type InnerParam = Nil
+
+const name = "generate_lbp_sections_breadcrumbs"
+const constructor = generate_lbp_sections_breadcrumbs
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+pub fn generate_lbp_sections_breadcrumbs(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.None,
+    "...",
+    case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> transform_factory(inner)
+    },
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

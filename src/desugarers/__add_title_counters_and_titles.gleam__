@@ -2,9 +2,11 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{
-  type Desugarer, type DesugaringError, type Pipe, DesugarerDescription,
+  type Desugarer, type DesugaringError, type Pipe,
   DesugaringError, Pipe,
 } as infra
+import nodemaps_2_desugarer_transforms as n2t
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn param_transform(
@@ -65,14 +67,14 @@ fn param_transform(
   }
 }
 
-fn transform_factory(extra: Extra) -> infra.NodeToNodeFancyTransform {
+fn nodemap_factory(extra: Extra) -> infra.FancyOneToOneNodeMap {
   fn(node, ancestors, s1, s2, s3) {
     param_transform(node, ancestors, s1, s2, s3, extra)
   }
 }
 
 fn desugarer_factory(extra: Extra) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(extra))
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(extra))
 }
 
 //**********************************
@@ -87,8 +89,8 @@ fn desugarer_factory(extra: Extra) -> Desugarer {
 type Extra =
   List(#(String, String, String, String, String))
 
-pub fn add_title_counters_and_titles(extra: Extra) -> Pipe {
-  Pipe(
+pub fn add_title_counters_and_titles(extra: Extra) -> Desugarer {
+  Desugarer(
     description: DesugarerDescription(
       "add_title_counters_and_titles",
       Some(ins(extra)),

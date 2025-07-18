@@ -2,45 +2,48 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) -> {
-      case dict.get(inner, tag) {
-        Error(Nil) -> Ok(vxml)
-        Ok(inner_dict) -> {
-          let new_children =
-            list.map(children, fn(child) {
-              case child {
-                T(_, _) -> child
-                V(child_blame, child_tag, child_attrs, grandchildren) -> {
-                  case dict.get(inner_dict, child_tag) {
-                    Error(Nil) -> child
-                    Ok(new_name) ->
-                      V(child_blame, new_name, child_attrs, grandchildren)
-                  }
-                }
-              }
-            })
-          Ok(V(blame, tag, attrs, new_children))
-        }
-      }
+
+      use inner_dict <- infra.on_error_on_ok(
+        dict.get(inner, tag),
+        fn(_) {
+          Ok(vxml)
+        },
+      )
+    
+      let new_children =
+        list.map(children, fn(child) {
+          use child_blame, child_tag, child_attrs, grandchildren <- infra.on_t_on_v(child, fn(_, _){
+            child
+          })
+          case dict.get(inner_dict, child_tag) {
+            Error(Nil) -> child
+            Ok(new_name) ->
+              V(child_blame, new_name, child_attrs, grandchildren)
+          }
+        })
+
+      Ok(V(blame, tag, attrs, new_children))
     }
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -81,19 +84,36 @@ type Param =
 type InnerParam =
   Dict(String, Dict(String, String))
 
+const name = "rename_when_child_of"
+const constructor = rename_when_child_of
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+
 /// renames tags when they are children of specified parent tags
-pub fn rename_when_child_of(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "rename_when_child_of",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
+pub fn rename_when_child_of(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
 /// renames tags when they are children of specified parent tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

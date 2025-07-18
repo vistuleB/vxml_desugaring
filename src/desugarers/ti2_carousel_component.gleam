@@ -1,20 +1,21 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, _, _, _) -> {
       // remove carousel buttons
       use <- infra.on_true_on_false(
-        over: infra.v_has_key_value_attribute(vxml, "data-slide", "prev"),
+        over: infra.v_has_key_value(vxml, "data-slide", "prev"),
         with_on_true: Ok(T(blame, [])),
       )
       use <- infra.on_true_on_false(
-        over: infra.v_has_key_value_attribute(vxml, "data-slide", "next"),
+        over: infra.v_has_key_value(vxml, "data-slide", "next"),
         with_on_true: Ok(T(blame, [])),
       )
       infra.v_attribute_with_key(vxml, "data-slide-to")
@@ -25,7 +26,7 @@ fn transform(
       )
       // carousel
       use <- infra.on_true_on_false(
-        over: !{ infra.v_has_key_value_attribute(vxml, "class", "carousel") },
+        over: !{ infra.v_has_key_value(vxml, "class", "carousel") },
         with_on_true: Ok(vxml),
       )
       // vxml is node with carousel class
@@ -34,7 +35,7 @@ fn transform(
 
       let attributes =
         infra.on_true_on_false(
-          over: infra.v_has_key_value_attribute(vxml, "id", "cyk-demo"),
+          over: infra.v_has_key_value(vxml, "id", "cyk-demo"),
           with_on_true: [
             vxml.BlamedAttribute(blame, "jumpToLast", "true"),
           ],
@@ -47,12 +48,12 @@ fn transform(
   }
 }
 
-fn transform_factory(_: InnerParam) -> infra.NodeToNodeTransform {
-  transform
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -62,17 +63,37 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-/// converts Bootstrap carousel components to custom Carousel components
-pub fn ti2_carousel_component() -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "ti2_carousel_component",
-      stringified_param: option.Some(ins(Nil)),
-      general_description: "/// converts Bootstrap carousel components to custom Carousel components",
-    ),
-    desugarer: case param_to_inner_param(Nil) {
+const name = "ti2_carousel_component"
+const constructor = ti2_carousel_component
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// converts Bootstrap carousel components to custom
+/// Carousel components
+pub fn ti2_carousel_component(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(Nil)),
+    "
+/// converts Bootstrap carousel components to custom
+/// Carousel components
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

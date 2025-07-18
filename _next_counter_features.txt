@@ -59,7 +59,7 @@ We WILL NOT discuss how to implement feature 3. in this document. Only 1. & 2..
 
 Feature 1.
 
-We build a StatefulNodeToNodeTransform.
+We build a OneToOneStatefulNodeMap.
 
 The state will consist of the current dictionary of counter names, types & values.
 

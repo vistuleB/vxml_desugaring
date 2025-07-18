@@ -1,10 +1,11 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, Pipe} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
   _: List(VXML),
@@ -27,14 +28,14 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeFancyTransform {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
   fn(vxml, ancestors, s1, s2, s3) {
-    transform(vxml, ancestors, s1, s2, s3, inner)
+    nodemap(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_fancy_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -42,25 +43,71 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  List(#(String, List(#(String, String))))
-//       ↖      ↖
-//       ancestor from/to pairs
+  List(#(String,   List(#(String, String))))
+//       ↖         ↖
+//       ancestor  from/to pairs
 
 type InnerParam = Param
 
-/// find and replace strings in text nodes that are descendants of specified ancestor tags
-pub fn find_replace_in_descendants_of(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "find_replace_in_descendants_of",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// find and replace strings in text nodes that are descendants of specified ancestor tags
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+const name = "find_replace_in_descendants_of"
+const constructor = find_replace_in_descendants_of
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// find and replace strings in text nodes that are
+/// descendants of specified ancestor tags
+pub fn find_replace_in_descendants_of(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// find and replace strings in text nodes that are
+/// descendants of specified ancestor tags
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+    infra.AssertiveTestData(
+      param: [#("ancestor", [#("_FROM_", "_TO_")])],
+      source:   "
+                <> root
+                  <> B
+                    <>
+                      \"hello _FROM_\"
+                      \"_FROM__FROM_\"
+                  <> ancestor
+                    <> B
+                      <>
+                        \"hello _FROM_\"
+                        \"_FROM__FROM_\"
+                ",
+      expected: "
+                <> root
+                  <> B
+                    <>
+                      \"hello _FROM_\"
+                      \"_FROM__FROM_\"
+                  <> ancestor
+                    <> B
+                      <>
+                        \"hello _TO_\"
+                        \"_TO__TO_\"
+                ",
+    )
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }

@@ -3,8 +3,9 @@ import gleam/list
 import gleam/option
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, type DesugaringError, type Pipe, DesugarerDescription, DesugaringError, Pipe} as infra
-import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, T, V}
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
 
 fn lookup_attributes_by_key(
   in: List(BlamedAttribute),
@@ -71,7 +72,7 @@ fn merge_attributes(
   })
 }
 
-fn transform(
+fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
@@ -106,12 +107,12 @@ fn transform(
   }
 }
 
-fn transform_factory(inner: InnerParam) -> infra.NodeToNodeTransform {
-  transform(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+  nodemap(_, inner)
 }
 
-fn desugarer_factory(inner: InnerParam) -> Desugarer {
-  infra.node_to_node_desugarer_factory(transform_factory(inner))
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -125,19 +126,37 @@ type Param =
 
 type InnerParam = Param
 
-/// merges parent attributes into child elements for specified parent-child tag pairs
-pub fn merge_parent_attributes_into_child(param: Param) -> Pipe {
-  Pipe(
-    description: DesugarerDescription(
-      desugarer_name: "merge_parent_attributes_into_child",
-      stringified_param: option.Some(ins(param)),
-      general_description: "
-/// merges parent attributes into child elements for specified parent-child tag pairs
-      ",
-    ),
-    desugarer: case param_to_inner_param(param) {
+const name = "merge_parent_attributes_into_child"
+const constructor = merge_parent_attributes_into_child
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// merges parent attributes into child elements for
+/// specified parent-child tag pairs
+pub fn merge_parent_attributes_into_child(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    "
+/// merges parent attributes into child elements for
+/// specified parent-child tag pairs
+    ",
+    case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> desugarer_factory(inner)
+      Ok(inner) -> transform_factory(inner)
     }
   )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  []
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
 }
