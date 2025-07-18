@@ -227,9 +227,9 @@ pub fn barbaric_symmetric_delim_splitting(
   tag: String,
   forbidden: List(String),
 ) -> List(Desugarer) {
-  let opening_or_closing_ir = irs.unescaped_suffix_indexed_regex(delim_regex_form)
+  let opening_or_closing_grs = grs.unescaped_suffix_replacement_splitter(delim_regex_form, "OpeningOrClosingSymmetricDelim")
   [
-    dl.split_by_indexed_regexes(#([#(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim")], forbidden)),
+    dl.split_with_replacement_instructions(#([opening_or_closing_grs], forbidden)),
     dl.pair_bookends(#(["OpeningOrClosingSymmetricDelim"], ["OpeningOrClosingSymmetricDelim"], tag)),
     dl.fold_tags_into_text([#("OpeningOrClosingSymmetricDelim", delim_ordinary_form)])
   ]
