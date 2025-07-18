@@ -7,7 +7,9 @@ import gleam/pair
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V, vxml_to_string}
+import gleam/regexp
+import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V,
+vxml_to_string}
 
 pub type LatexDelimiterSingleton {
   DoubleDollarSingleton
@@ -23,6 +25,33 @@ pub type LatexDelimiterPair {
   SingleDollar
   BackslashParenthesis
   BackslashSquareBracket
+}
+
+pub fn take_digits(s: String) -> Option(String) {
+  let assert Ok(digits_pattern) = regexp.from_string("^([0-9.]+)")
+  case regexp.scan(digits_pattern, s) {
+    [] -> None
+    [match, ..] -> {
+      case  match.submatches {
+        [Some(d), ..] -> Some(d)
+        _ -> None
+      }   
+    }
+  }
+}
+
+pub fn drop_start_substring(s: String, sub: String) -> String {
+  case string.starts_with(s, sub) {
+    True -> string.drop_start(s, string.length(sub))
+    False -> s
+  }
+}
+
+pub fn drop_end_substring(s: String, sub: String) -> String {
+  case string.starts_with(s, sub) {
+    True -> string.drop_end(s, string.length(sub))
+    False -> s
+  }
 }
 
 pub fn latex_delimiter_pairs_list(
