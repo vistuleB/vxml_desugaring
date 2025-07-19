@@ -40,19 +40,19 @@ pub fn take_digits(s: String) -> Option(String) {
   }
 }
 
-pub fn drop_start_substring(s: String, sub: String) -> String {
-  case string.starts_with(s, sub) {
-    True -> string.drop_start(s, string.length(sub))
-    False -> s
-  }
-}
+// pub fn drop_start_substring(s: String, sub: String) -> String {
+//   case string.starts_with(s, sub) {
+//     True -> string.drop_start(s, string.length(sub))
+//     False -> s
+//   }
+// }
 
-pub fn drop_end_substring(s: String, sub: String) -> String {
-  case string.starts_with(s, sub) {
-    True -> string.drop_end(s, string.length(sub))
-    False -> s
-  }
-}
+// pub fn drop_end_substring(s: String, sub: String) -> String {
+//   case string.starts_with(s, sub) {
+//     True -> string.drop_end(s, string.length(sub))
+//     False -> s
+//   }
+// }
 
 pub fn latex_delimiter_pairs_list(
 ) -> List(LatexDelimiterPair) {
@@ -1174,7 +1174,10 @@ pub fn encode_ending_spaces_in_last_node(vxmls: List(VXML)) -> List(VXML) {
 pub fn t_start_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
   let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
-  T(blame, [BlamedContent(blame_first, text <> content_first), ..other_lines])
+  T(
+    blame,
+    [BlamedContent(blame_first, text <> content_first), ..other_lines]
+  )
 }
 
 pub fn t_end_insert_text(node: VXML, text: String) {
@@ -1194,8 +1197,14 @@ pub fn list_start_insert_text(
   text: String,
 ) -> List(VXML) {
   case vxmls {
-    [T(_, _) as first, ..rest] -> [t_start_insert_text(first, text), ..rest]
-    _ -> [T(blame, [BlamedContent(blame, text)]), ..vxmls]
+    [
+      T(_, _) as first, ..rest
+    ] -> [
+      t_start_insert_text(first, text), ..rest
+    ]
+    _ -> [
+      T(blame, [BlamedContent(blame, text)]), ..vxmls
+    ]
   }
 }
 

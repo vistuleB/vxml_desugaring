@@ -82,7 +82,6 @@ fn split_pair_fold_for_delimiter_pair(
         dl.fold_tags_into_text([#(tag, replacement)])
       ]
     }
-
     False -> {
       let #(ind_regex1, tag1, replacement1) = all_stuff_for_latex_delimiter_singleton(d1)
       let #(ind_regex2, tag2, replacement2) = all_stuff_for_latex_delimiter_singleton(d2)
@@ -93,6 +92,43 @@ fn split_pair_fold_for_delimiter_pair(
       ]
     }
   }
+}
+
+pub fn create_mathblock_elements(
+  display_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
+) -> List(Desugarer) {
+  let #(display_math_delimiters, display_math_default_delimeters) = display_math_delimiters
+  let normalization = [
+    dl.rename(#("MathBlock", "UserDefinedMathBlock")),
+    dl.normalize_math_delimiters_inside(#(["UserDefinedMathBlock"], DoubleDollar))
+  ]
+  let de_normalization = [
+    dl.rename(#("UserDefinedMathBlock", "MathBlock")),
+  ]
+  let display_math_pipe =
+    list.map(
+      display_math_delimiters,
+      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock", "UserDefinedMathBlock"])
+    )
+    |> list.flatten
+  let #(a, b) = opening_and_closing_string_for_pair(display_math_default_delimeters)
+  let reinserting_delims_pipe = [
+    dl.insert_bookend_text([#("MathBlock", a, b)]),
+    // dl.insert_bookend_tags([
+    //   #("MathBlock", "MathBlockOpening", "MathBlockClosing"),
+    // ]),
+    // dl.fold_tags_into_text([
+    //   #("MathBlockOpening", a),
+    //   #("MathBlockClosing", b),
+    // ]),
+  ]
+  [
+    normalization,
+    display_math_pipe,
+    reinserting_delims_pipe,
+    de_normalization,
+  ]
+  |> list.flatten
 }
 
 pub fn create_mathblock_and_math_elements(
@@ -129,18 +165,20 @@ pub fn create_mathblock_and_math_elements(
   let #(c, d) = opening_and_closing_string_for_pair(inline_math_default_delimeters)
 
   let reinserting_delims_pipe = [
-    dl.insert_bookend_tags([
-      #("MathBlock", "MathBlockOpening", "MathBlockClosing"),
-      #("Math", "MathOpening", "MathClosing"),
-    ]),
-    dl.fold_tags_into_text([
-      #("MathBlockOpening", a),
-      #("MathBlockClosing", b),
-      #("MathOpening", c),
-      #("MathClosing", d),
-    ]),
+    dl.insert_bookend_text([#("MathBlock", a, b)]),
+    dl.insert_bookend_text([#("Math", c, d)]),
+    // dl.insert_bookend_tags([
+    //   #("MathBlock", "MathBlockOpening", "MathBlockClosing"),
+    //   #("Math", "MathOpening", "MathClosing"),
+    // ]),
+    // dl.fold_tags_into_text([
+    //   #("MathBlockOpening", a),
+    //   #("MathBlockClosing", b),
+    //   #("MathOpening", c),
+    //   #("MathClosing", d),
+    // ]),
   ]
-
+  
   [
     normalization,
     display_math_pipe,

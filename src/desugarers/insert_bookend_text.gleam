@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
@@ -12,7 +11,7 @@ fn nodemap(
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(_, tag, _, _) -> {
-      case list.find(inner, fn(pair) { pair |> pair.first == tag }) {
+      case list.find(inner, fn(pair) { pair.0 == tag }) {
         Error(Nil) -> Ok(vxml)
         Ok(#(_, #(start_text, end_text))) -> {
           vxml
@@ -42,9 +41,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String))
-//       ↖      ↖       ↖
-//       tag    start   end
-//              text    text
+//       ↖       ↖       ↖
+//       tag     start   end
+//               text    text
 
 type InnerParam =
   List(#(String, #(String, String)))
