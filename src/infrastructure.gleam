@@ -859,6 +859,7 @@ pub fn split_lines(
   |> list.map(fn(l) {
     l.content
     |> string.split(on: splitter)
+    // |> list.filter(fn(content) { !string.is_empty(content)})
     |> list.map(BlamedContent(blame, _))
   })
 }
