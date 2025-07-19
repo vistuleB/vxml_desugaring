@@ -850,17 +850,33 @@ pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
   }
 }
 
+pub fn debug_lines(
+  lines: List(BlamedContent),
+  announcer: String,
+) -> Nil {
+  io.print(announcer <> ":" <> string.repeat(" ", 15 - string.length(announcer)))
+  list.index_map(
+    lines,
+    fn(line, i) {
+      case i > 0 {
+        True -> io.print(string.repeat(" ", 16))
+        False -> Nil
+      }
+      io.println("\"" <> line.content <> "\"")
+    }
+  )
+  Nil
+}
+
 pub fn split_lines(
   lines: List(BlamedContent),
   splitter: String,
 ) -> List(List(BlamedContent)) {
-  let blame = blame_us("split_lines")
   lines
   |> list.map(fn(l) {
     l.content
     |> string.split(on: splitter)
-    // |> list.filter(fn(content) { !string.is_empty(content)})
-    |> list.map(BlamedContent(blame, _))
+    |> list.map(BlamedContent(l.blame, _))
   })
 }
 
