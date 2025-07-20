@@ -436,62 +436,40 @@ pub type ThreePossibilities(f, g, h) {
   C3(h)
 }
 
-fn pipeline_overview(pipes: List(Desugarer)) {
-  let number_columns = 4
-  let name_columns = 70
+fn print_pipeline(desugarers: List(Desugarer)) {
+  let none_param = "--"
   let max_param_cols = 40
-  let separator = ""
-  let none_param = ""
 
-  io.println("ur pipeline is:\n")
-
-  io.println(
-    "#."
-    <> string.repeat(" ", number_columns - 2)
-    <> separator
-    <> " NAME"
-    <> string.repeat(" ", name_columns - 5)
-    <> separator
-    <> " PARAM"
-  )
-
-  io.println(
-    string.repeat("-", 2 + number_columns + name_columns + 20)
-  )
-
-  list.index_map(
-    pipes,
-    fn (pipe, i) {
-      let param = case pipe.stringified_param {
-        None -> none_param
-        Some(thing) -> thing
-      }
-      let name = pipe.name
-      let num = ins(i + 1) <> "."
-      let num_spaces = number_columns - string.length(num)
-      let name_spaces = name_columns - {1 + string.length(name)}
-      let param = case string.length(param) > max_param_cols {
-        False -> param
-        True -> {
-          let excess = string.length(param) - max_param_cols
-          string.drop_end(param, excess + 3) <> "..."
+  let lines = 
+    desugarers
+    |> list.index_map(
+      fn(d, i) {
+        let param = case d.stringified_param {
+          None -> none_param
+          Some(thing) -> thing
         }
+        let param = case string.length(param) > max_param_cols {
+          False -> param
+          True -> {
+            let excess = string.length(param) - max_param_cols
+            string.drop_end(param, excess + 3) <> "..."
+          }
+        }
+        #(ins(i + 1) <> ".", d.name, param)
       }
-      io.println(
-        num
-        <> string.repeat(" ", num_spaces)
-        <> separator
-        <> " "
-        <> name
-        <> string.repeat(" ", name_spaces)
-        <> separator
-        <> " "
-        <> param
-      )
-    }
-  )
+    )
 
-  io.println("")
+  let #(col1, col2, col3) = star_block.three_column_maxes(lines)
+  let width = 3 + 2 + col1 + 2 + 2 + col2 + 2 + 2 + col3 + 2  
+  io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
+
+  star_block.three_column_table(
+    lines,
+    "#.",
+    "name",
+    "param",
+    3
+  )
 }
 
 // *************
@@ -507,7 +485,7 @@ pub fn run_renderer(
 
   let parameters = sanitize_output_dir(parameters)
 
-  pipeline_overview(renderer.pipeline)
+  print_pipeline(renderer.pipeline)
 
   io.println("-- assembling blamed lines (" <> parameters.input_dir <> ")")
 
@@ -1062,15 +1040,15 @@ pub fn cli_usage() {
   io.println("      --debug-assembled-input <name1> <name2> ...")
   io.println("         -> print assembled blamed lines before parsing")
   io.println("      --debug-pipeline <name1> <name2> ...")
-  io.println("         -> print output of pipes with given names")
+  io.println("         -> print output of desugarers with given names")
   io.println("      --debug-pipeline-<x>-<y>")
-  io.println("         -> print output of pipes number x up to y")
+  io.println("         -> print output of desugarers number x up to y")
   io.println("      --debug-pipeline-<x>")
   io.println("         -> print output of pipe number x")
   io.println("      --debug-pipeline-last")
   io.println("         -> print output of last pipe")
   io.println("      --debug-pipeline-0-0")
-  io.println("         -> print output of all pipes")
+  io.println("         -> print output of all desugarers")
   io.println("      --debug-fragments-wly <local_path1> <local_path2> ...")
   io.println(
     "         -> print blamed lines of fragments associated to local paths",

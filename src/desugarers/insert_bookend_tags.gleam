@@ -24,7 +24,7 @@ fn nodemap(
               children,
               [V(blame, end_tag, [], [])],
             ]
-              |> list.flatten,
+            |> list.flatten,
           ))
         }
       }
