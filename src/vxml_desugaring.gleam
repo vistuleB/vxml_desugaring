@@ -21,7 +21,7 @@ fn test_pipeline() -> List(Desugarer) {
 }
 
 fn test_renderer() {
-  // 1. read command-line arguments into CommandLineAmendments value
+  // 1. construct CommandLineAmendments from command line arguments
   use amendments <- infra.on_error_on_ok(
     vr.process_command_line_arguments(argv.load().arguments, []),
     fn(e) {
@@ -32,7 +32,7 @@ fn test_renderer() {
   )
 
   // 2. early exit on '--help' option (vr.process_command_line_arguments
-  // will already ave printed the cli_usage() message)
+  // will already have printed the cli_usage() message, no need to re-print)
   use <- infra.on_true_on_false(
     amendments.help,
     io.println("test_renderer exiting on '--help' option"),
