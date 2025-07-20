@@ -85,6 +85,7 @@ pub fn three_column_table(
 ) -> Nil {
   let #(max_col1, max_col2, max_col3) = three_column_maxes(lines)
   let col1_padding = 1
+  let col3_padding = 1
   let header_left = spaces(indentation) <> "|-"
   let left = spaces(indentation) <> "| "
 
@@ -101,16 +102,16 @@ pub fn three_column_table(
       }
       <> "| "
       <> triple.2
-      <> spaces(max_col3 - string.length(triple.2) + 2)
+      <> spaces(max_col3 - string.length(triple.2) + col3_padding)
       <> "|"
     )
   }
 
-  io.println(header_left <> dashes(max_col1 + col1_padding) <> "|-" <> dashes(max_col2 + 2) <> "|-" <> dashes(max_col3 + 2) <> "|")
+  io.println(header_left <> dashes(max_col1 + col1_padding) <> "|-" <> dashes(max_col2 + 2) <> "|-" <> dashes(max_col3 + col3_padding) <> "|")
   one_line(#(col1, col2, col3), 0)
-  io.println(header_left <> dashes(max_col1 + col1_padding) <> "|-" <> dashes(max_col2 + 2) <> "|-" <> dashes(max_col3 + 2) <> "|")
+  io.println(header_left <> dashes(max_col1 + col1_padding) <> "|-" <> dashes(max_col2 + 2) <> "|-" <> dashes(max_col3 + col3_padding) <> "|")
   list.index_map(lines, one_line)
-  io.println(header_left <> dashes(max_col1 + col1_padding) <> "|-" <> dashes(max_col2 + 2) <> "|-" <> dashes(max_col3 + 2) <> "|")
+  io.println(header_left <> dashes(max_col1 + col1_padding) <> "|-" <> dashes(max_col2 + 2) <> "|-" <> dashes(max_col3 + col3_padding) <> "|")
 }
 
 // ************************

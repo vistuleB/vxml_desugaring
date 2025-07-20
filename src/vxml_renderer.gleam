@@ -459,16 +459,16 @@ fn print_pipeline(desugarers: List(Desugarer)) {
       }
     )
 
-  let #(col1, col2, col3) = star_block.three_column_maxes(lines)
-  let width = 3 + 2 + col1 + 2 + 2 + col2 + 2 + 2 + col3 + 2  
-  io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
+  // let #(col1, col2, col3) = star_block.three_column_maxes(lines)
+  // let width = 3 + 2 + col1 + 1 + 2 + col2 + 2 + 2 + col3 + 1  
+  // io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
 
   star_block.three_column_table(
     lines,
     "#.",
     "name",
     "param",
-    3
+    3,
   )
 }
 
