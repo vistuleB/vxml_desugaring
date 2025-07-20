@@ -33,6 +33,12 @@ pub type BlamedLinesAssemblerDebugOptions {
   )
 }
 
+pub fn default_blamed_lines_assembler(
+  spotlight_paths: List(String)
+) -> BlamedLinesAssembler(wp.AssemblyError) {
+  wp.assemble_blamed_lines_advanced_mode(_, spotlight_paths)
+}
+
 // *************
 // SOURCE PARSER(c)                                // 'c' is parser error type
 // List(BlamedLines) -> parsed source
@@ -54,55 +60,48 @@ pub type SourceParserDebugOptions {
 // ******************************
 
 pub fn default_writerly_source_parser(
-  lines: List(BlamedLine),
   spotlight_args: List(#(String, String, String)),
-) -> Result(VXML, RendererError(a, String, c, d, e)) {
-  use writerlys <- result.try(
-    wp.parse_blamed_lines(lines)
-    |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
-  )
+) -> SourceParser(String) {
+  fn (lines) {
+    use writerlys <- result.try(
+      wp.parse_blamed_lines(lines)
+      |> result.map_error(fn(e) { ins(e) }),
+    )
 
-  use vxml <- result.try(
-    wp.writerlys_to_vxmls(writerlys)
-    |> infra.get_root
-    |> result.map_error(SourceParserError),
-  )
+    use vxml <- result.try(
+      wp.writerlys_to_vxmls(writerlys)
+      |> infra.get_root
+    )
 
-  use filtered_vxml <- result.try(
-    filter_nodes_by_attributes(spotlight_args).transform(vxml)
-    |> result.map_error(fn(e) { SourceParserError(ins(e)) }),
-  )
+    use filtered_vxml <- result.try(
+      filter_nodes_by_attributes(spotlight_args).transform(vxml)
+      |> result.map_error(fn(e) { ins(e) }),
+    )
 
-  Ok(filtered_vxml)
+    Ok(filtered_vxml)
+  }
 }
 
 pub fn default_html_source_parser(
-  lines: List(BlamedLine),
   spotlight_args: List(#(String, String, String)),
-) -> Result(VXML, RendererError(a, String, b, c, d)) {
-  let path = bl.first_blame_filename(lines) |> result.unwrap("")
-  let s = string.trim(bl.blamed_lines_to_string(lines))
-
-  use nonempty_string <- result.try(
-    case s {
-      "" -> Error(SourceParserError("empty content"))
-      _ -> Ok(s)
-    }
-  )
-
-  use vxml <- result.try(
-    nonempty_string
-    |> vp.xmlm_based_html_parser(path)
-    |> result.map_error(fn(e) {
-      case e {
-        vp.XMLMIOError(s) -> SourceParserError(s)
-        vp.XMLMParseError(s) -> SourceParserError(s)
+) -> SourceParser(String) {
+  fn (lines) {
+    let path = bl.first_blame_filename(lines) |> result.unwrap("")
+    let s = string.trim(bl.blamed_lines_to_string(lines))
+    use nonempty_string <- result.try(
+      case s {
+        "" -> Error("empty content")
+        _ -> Ok(s)
       }
-    }),
-  )
-
-  filter_nodes_by_attributes(spotlight_args).transform(vxml)
-  |> result.map_error(fn(e: infra.DesugaringError) { SourceParserError(e.message) })
+    )
+    use vxml <- result.try(
+      nonempty_string
+      |> vp.xmlm_based_html_parser(path)
+      |> result.map_error(fn(e) { ins(e) })
+    )
+    filter_nodes_by_attributes(spotlight_args).transform(vxml)
+    |> result.map_error(fn(e) { ins(e) })
+  }
 }
 
 // *************
@@ -138,15 +137,19 @@ pub type SplitterDebugOptions(d) {
 }
 
 // ************************
-// stub (empty) splitter
+// stub splitter
 // ************************
 
-pub fn empty_splitter(
-  vxml: VXML,
+/// emits 1 fragment whose 'path' is the tag
+/// of the VXML root concatenated with a provided
+/// suffix, e.g., "<> Book" -> "Book.html"
+pub fn stub_splitter(
   suffix: String,
-) -> Result(List(#(String, VXML, Nil)), Nil) {
-  let assert V(_, tag, _, _) = vxml
-  Ok([#(tag <> suffix, vxml, Nil)])
+) -> Splitter(Nil, Nil) {
+  fn (root) {
+    let assert V(_, tag, _, _) = root
+    Ok([#(tag <> suffix, root, Nil)])
+  }
 }
 
 // *************
@@ -445,6 +448,7 @@ fn print_pipeline(desugarers: List(Desugarer)) {
   // let #(col1, col2, col3) = star_block.three_column_maxes(lines)
   // let width = 3 + 2 + col1 + 2 + 2 + col2 + 2 + 2 + col3 + 2  
   // io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
+  io.println("-- the renderer pipeline:")
 
   star_block.three_column_table(
     lines,
@@ -828,7 +832,7 @@ pub fn double_dash_keys(
 
 pub type CommandLineAmendments {
   CommandLineAmendments(
-    info: Bool,
+    help: Bool,
     input_dir: Option(String),
     output_dir: Option(String),
     debug_assembled_input: Bool,
@@ -839,8 +843,8 @@ pub type CommandLineAmendments {
     debug_blamed_lines_fragments_local_paths: Option(List(String)),
     debug_printed_string_fragments_local_paths: Option(List(String)),
     debug_prettified_string_fragments_local_paths: Option(List(String)),
-    spotlight_args: List(#(String, String, String)),
-    spotlight_args_files: List(String),
+    spotlight_key_values: List(#(String, String, String)),
+    spotlight_paths: List(String),
     prettier: Option(Bool),
     user_args: Dict(String, List(String)),
   )
@@ -852,7 +856,7 @@ pub type CommandLineAmendments {
 
 pub fn empty_command_line_amendments() -> CommandLineAmendments {
   CommandLineAmendments(
-    info: False,
+    help: False,
     input_dir: None,
     output_dir: None,
     debug_assembled_input: False,
@@ -863,8 +867,8 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     debug_blamed_lines_fragments_local_paths: None,
     debug_printed_string_fragments_local_paths: None,
     debug_prettified_string_fragments_local_paths: None,
-    spotlight_args: [],
-    spotlight_args_files: [],
+    spotlight_key_values: [],
+    spotlight_paths: [],
     prettier: None,
     user_args: dict.from_list([]),
   )
@@ -952,9 +956,9 @@ fn amend_spotlight_args(
 ) -> CommandLineAmendments {
   CommandLineAmendments(
     ..amendments,
-    spotlight_args: list.append(amendments.spotlight_args, args),
-    spotlight_args_files: list.append(
-      amendments.spotlight_args_files,
+    spotlight_key_values: list.append(amendments.spotlight_key_values, args),
+    spotlight_paths: list.append(
+      amendments.spotlight_paths,
       args
         |> list.map(fn(a) {
           let #(path, _, _) = a
@@ -967,9 +971,10 @@ fn amend_spotlight_args(
 pub fn cli_usage() {
   let margin = "   "
   io.println("")
-  io.println("You can mix and match the following command line options:")
+  // io.println("You can mix and match the following command line options:")
+  io.println("Renderer options:")
   io.println("")
-  io.println(margin <> "--info | --help")
+  io.println(margin <> "--help")
   io.println(margin <> "  -> print this message")
   io.println("")
   io.println(margin <> "--spotlight <subpath1> <subpath2> ...")
@@ -1001,9 +1006,6 @@ pub fn cli_usage() {
   io.println(margin <> "--debug-pipeline-last")
   io.println(margin <> "  -> print last output of pipeline")
   io.println("")
-  io.println(margin <> "--debug-pipeline-0-0")
-  io.println(margin <> "  -> print output of all desugarers")
-  io.println("")
   io.println(margin <> "--debug-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
   io.println(margin <> "  before conversion blamed lines, list no subpaths to match all")
@@ -1018,7 +1020,7 @@ pub fn cli_usage() {
   io.println("")
   io.println(margin <> "--debug-fragments-prettified <local_path1> <local_path2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "  in string form beafterfore prettifying, list no subpaths to match all")
+  io.println(margin <> "  in string form after prettifying, list no subpaths to match all")
 }
 
 pub type CommandLineError {
@@ -1062,11 +1064,11 @@ pub fn process_command_line_arguments(
     use amendments <- result.try(result)
     let #(option, values) = pair
     case option {
-      "--info" | "--help" -> {
+      "--help" -> {
         cli_usage()
         io.println("")
         case list.is_empty(values) {
-          True -> Ok(CommandLineAmendments(..amendments, info: True))
+          True -> Ok(CommandLineAmendments(..amendments, help: True))
           False -> Error(UnexpectedArgumentsToOption("option"))
         }
       }

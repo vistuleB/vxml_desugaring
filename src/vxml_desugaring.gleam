@@ -4,7 +4,6 @@ import gleam/io
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
-import writerly as wp
 import desugarer_library as dl
 import simplifile
 
@@ -22,29 +21,35 @@ fn test_pipeline() -> List(Desugarer) {
 }
 
 fn test_renderer() {
+  // 1. read command-line arguments into CommandLineAmendments value
   use amendments <- infra.on_error_on_ok(
     vr.process_command_line_arguments(argv.load().arguments, []),
     fn(e) {
-      io.println("\ncommand line error: " <> ins(e) <> "\n")
+      io.println("")
+      io.println("cli error: " <> ins(e))
       vr.cli_usage()
     },
   )
 
+  // 2. early exit on '--help' option (vr.process_command_line_arguments
+  // will already ave printed the cli_usage() message)
   use <- infra.on_true_on_false(
-    amendments.info,
-    Nil,
+    amendments.help,
+    io.println("test_renderer exiting on '--help' option"),
   )
 
+  // 3. construct vr.Renderer
   let renderer =
     vr.Renderer(
-      assembler: wp.assemble_blamed_lines_advanced_mode(_, amendments.spotlight_args_files),
-      source_parser: vr.default_writerly_source_parser(_, amendments.spotlight_args),
+      assembler: vr.default_blamed_lines_assembler(amendments.spotlight_paths),
+      source_parser: vr.default_writerly_source_parser(amendments.spotlight_key_values),
       pipeline: test_pipeline(),
-      splitter: vr.empty_splitter(_, ".tsx"),
+      splitter: vr.stub_splitter(".tsx"),
       emitter: vr.stub_jsx_emitter,
       prettifier: vr.default_prettier_prettifier,
     )
 
+  // 4. construct vr.RendererParameters
   let parameters =
     vr.RendererParameters(
       input_dir: "test/content/__parent.emu",
@@ -53,17 +58,13 @@ fn test_renderer() {
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
 
+  // 5. construct vr.RendererDebugOptions
   let debug_options =
     vr.default_renderer_debug_options("../renderer_artifacts")
-    |> vr.amend_renderer_debug_options_by_command_line_amendment(
-      amendments,
-      renderer.pipeline,
-    )
+    |> vr.amend_renderer_debug_options_by_command_line_amendment(amendments, renderer.pipeline)
 
-  case vr.run_renderer(renderer, parameters, debug_options) {
-    Ok(Nil) -> Nil
-    Error(error) -> io.println("\nrenderer error: " <> ins(error) <> "\n")
-  }
+  // 6. run
+  let _ = vr.run_renderer(renderer, parameters, debug_options)
 
   Nil
 }
@@ -197,8 +198,16 @@ pub fn desugarer_library_generator() -> Nil {
 
 pub fn main() {
   case argv.load().arguments {
-    ["--test-desugarers", ..names] -> run_desugarer_tests(names)
-    ["--generate-library"] -> desugarer_library_generator()
-    _ -> test_renderer()
+    ["--test-desugarers", ..names] -> {
+      run_desugarer_tests(names)
+    }
+    ["--generate-library"] -> {
+      desugarer_library_generator()
+    }
+    _ -> {
+      io.println("")
+      io.println("No local command line options given. Will run the test renderer.")
+      test_renderer()
+    }
   }
 }
