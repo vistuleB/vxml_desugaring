@@ -33,7 +33,7 @@ pub type BlamedLinesAssemblerDebugOptions {
 
 pub fn default_blamed_lines_assembler(
   spotlight_paths: List(String)
-) -> BlamedLinesAssembler(wp.FileOrParseError) {
+) -> BlamedLinesAssembler(wp.AssemblyError) {
   wp.assemble_blamed_lines_advanced_mode(_, spotlight_paths)
 }
 
