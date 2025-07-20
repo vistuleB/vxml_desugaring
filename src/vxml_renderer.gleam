@@ -121,17 +121,36 @@ pub type PipelineDebugOptions {
 }
 
 // *************
-// SPLITTER(d, e)                                // 'd' is fragment type enum, 'e' is splitter error type
-// VXML -> List(#(String, VXML, d))              // #(local_path, vxml, fragment_type)
+// OutputFragment(d, z)                         // 'd' is fragment classifier type, 'z' is payload type
+// *************
+
+pub type OutputFragment(d, z) {
+  OutputFragment(
+    path: String,
+    payload: z,
+    classifier: d,
+  )
+}
+
+pub type GhostOfOutputFragment(d) {
+  GhostOfOutputFragment(
+    path: String,
+    classifier: d,
+  )
+}
+
+// *************
+// SPLITTER(d, e)                                // 'd' is fragment classifier type, 'e' is splitter error type
+// VXML -> List(OutputFragment)                  // #(local_path, vxml, fragment_type)
 // *************
 
 pub type Splitter(d, e) =
-  fn(VXML) -> Result(List(#(String, VXML, d)), e)
+  fn(VXML) -> Result(List(OutputFragment(d, VXML)), e)
 
 pub type SplitterDebugOptions(d) {
   SplitterDebugOptions(
-    debug_print: fn(String, VXML, d) -> Bool,
-    artifact_print: fn(String, VXML, d) -> Bool,
+    debug_print: fn(OutputFragment(d, VXML)) -> Bool,
+    artifact_print: fn(OutputFragment(d, VXML)) -> Bool,
     artifact_directory: String,
   )
 }
@@ -148,22 +167,26 @@ pub fn stub_splitter(
 ) -> Splitter(Nil, Nil) {
   fn (root) {
     let assert V(_, tag, _, _) = root
-    Ok([#(tag <> suffix, root, Nil)])
+    Ok([OutputFragment(
+      path: tag <> suffix,
+      payload: root,
+      classifier: Nil,
+    )])
   }
 }
 
 // *************
-// EMITTER(d, f)                                         // where 'd' is fragment type & 'f' is emitter error type
-// #(String, VXML, d) -> #(String, List(BlamedLine), d)  // #(local_path, blamed_lines, fragment_type)
+// EMITTER(d, f)                                        // where 'd' is fragment type & 'f' is emitter error type
+// OutputFragment(d) -> #(String, List(BlamedLine), d)  // #(local_path, blamed_lines, fragment_type)
 // *************
 
 pub type Emitter(d, f) =
-  fn(#(String, VXML, d)) -> Result(#(String, List(BlamedLine), d), f)
+  fn(OutputFragment(d, VXML)) -> Result(OutputFragment(d, List(BlamedLine)), f)
 
 pub type EmitterDebugOptions(d) {
   EmitterDebugOptions(
-    debug_print: fn(String, List(BlamedLine), d) -> Bool,
-    artifact_print: fn(String, List(BlamedLine), d) -> Bool,
+    debug_print: fn(OutputFragment(d, List(BlamedLine))) -> Bool,
+    artifact_print: fn(OutputFragment(d, List(BlamedLine))) -> Bool,
     artifact_directory: String,
   )
 }
@@ -204,9 +227,8 @@ pub fn stub_html_emitter(
 }
 
 pub fn stub_jsx_emitter(
-  tuple: #(String, VXML, a),
-) -> Result(#(String, List(BlamedLine), a), b) {
-  let #(path, fragment, fragment_type) = tuple
+  fragment: OutputFragment(d, VXML),
+) -> Result(OutputFragment(d, List(BlamedLine)), b) {
   let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, 0,[]) }
   let lines =
     list.flatten([
@@ -217,7 +239,7 @@ pub fn stub_jsx_emitter(
         BlamedLine(blame_us("panel_emitter"), 2, "return ("),
         BlamedLine(blame_us("panel_emitter"), 4, "<>"),
       ],
-      vp.vxmls_to_jsx_blamed_lines(fragment |> infra.get_children, 6),
+      vp.vxmls_to_jsx_blamed_lines(fragment.payload |> infra.get_children, 6),
       [
         BlamedLine(blame_us("panel_emitter"), 4, "</>"),
         BlamedLine(blame_us("panel_emitter"), 2, ");"),
@@ -226,7 +248,7 @@ pub fn stub_jsx_emitter(
         BlamedLine(blame_us("panel_emitter"), 0, "export default OurSuperComponent;"),
       ],
     ])
-  Ok(#(path, lines, fragment_type))
+  Ok(OutputFragment(..fragment, payload: lines))
 }
 
 // *************
@@ -236,19 +258,19 @@ pub fn stub_jsx_emitter(
 // *************
 
 pub type PrinterDebugOptions(d) {
-  PrinterDebugOptions(debug_print: fn(String, d) -> Bool)
+  PrinterDebugOptions(debug_print: fn(OutputFragment(d, String)) -> Bool)
 }
 
 // *************
-// PRETTIFIER(d, h)                              // where 'd' is fragment type, 'h' is prettifier error type
-// String, #(String, d) -> Result(String, h)     // output_dir, #(local_path, fragment_type)
+// PRETTIFIER(d, h)                                          // where 'd' is fragment classifier, 'h' is prettifier error type
+// String, GhostOfOutputFragment(d) -> Result(String, h)     // output_dir, ghost_of_output_fragment
 // *************
 
 pub type Prettifier(d, h) =
-  fn(String, #(String, d)) -> Result(String, h)
+  fn(String, GhostOfOutputFragment(d)) -> Result(String, h)
 
 pub type PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(debug_print: fn(String, d) -> Bool)
+  PrettifierDebugOptions(debug_print: fn(GhostOfOutputFragment(d)) -> Bool)
 }
 
 //********************
@@ -266,11 +288,10 @@ pub fn run_prettier(in: String, path: String) -> Result(String, #(Int, String)) 
 
 pub fn default_prettier_prettifier(
   output_dir: String,
-  pair: #(String, d),
+  ghost: GhostOfOutputFragment(d),
 ) -> Result(String, #(Int, String)) {
-  let #(local_path, _) = pair
-  run_prettier(".", output_dir <> "/" <> local_path)
-  |> result.map(fn(_) { "prettified [" <> output_dir <> "/]" <> local_path })
+  run_prettier(".", output_dir <> "/" <> ghost.path)
+  |> result.map(fn(_) { "prettified [" <> output_dir <> "/]" <> ghost.path })
 }
 
 pub fn empty_prettifier(_: String, _: #(String, d)) -> Result(String, Nil) {
@@ -574,7 +595,7 @@ pub fn run_renderer(
   let prefix = "[" <> output_dir <> "/]"
   let fragments_types_and_paths_4_table = list.map(
     fragments,
-    fn(triple) {#(ins(triple.2), prefix <> triple.0)}
+    fn(fr) { #(ins(fr.classifier), prefix <> fr.path) }
   )
 
   io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments:")
@@ -582,24 +603,18 @@ pub fn run_renderer(
 
   // fragments debug printing
   fragments
-  |> list.each(fn(triple) {
-    let #(local_path, vxml, fragment_type) = triple
-    case
-      debug_options.splitter_debug_options.debug_print(
-        local_path,
-        vxml,
-        fragment_type,
-      )
+  |> list.each(fn(fr) {
+    case debug_options.splitter_debug_options.debug_print(fr)
     {
       False -> Nil
       True -> {
-        vxml
+        fr.payload
         |> vp.vxml_to_blamed_lines
         |> bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
           "("
             <> ins(list.length(renderer.pipeline))
             <> ":splitter_debug_options:"
-            <> local_path
+            <> fr.path
             <> ")",
           _,
         )
@@ -613,29 +628,21 @@ pub fn run_renderer(
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
-    |> list.map(fn(tuple) {
-      let #(_name, _, _) = tuple
-      renderer.emitter(tuple)
-    })
+    |> list.map(renderer.emitter)
 
   // blamed line fragments debug printing
   fragments
   |> list.each(fn(result) {
     case result {
       Error(_) -> Nil
-      Ok(#(local_path, blamed_lines, fragment_type)) -> {
-        case
-          debug_options.emitter_debug_options.debug_print(
-            local_path,
-            blamed_lines,
-            fragment_type,
-          )
+      Ok(fr) -> {
+        case debug_options.emitter_debug_options.debug_print(fr)
         {
           False -> Nil
           True -> {
             bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
-              "(emitter_debug_options:" <> local_path <> ")",
-              blamed_lines,
+              "(emitter_debug_options:" <> fr.path <> ")",
+              fr.payload,
             )
             |> io.println
           }
@@ -658,8 +665,8 @@ pub fn run_renderer(
           )
           Error(C1(error))
         }
-        Ok(#(local_path, lines, fragment_type)) -> {
-          Ok(#(local_path, bl.blamed_lines_to_string(lines), fragment_type))
+        Ok(fr) -> {
+          Ok(OutputFragment(..fr, payload: bl.blamed_lines_to_string(fr.payload)))
         }
       }
     })
@@ -670,21 +677,14 @@ pub fn run_renderer(
   |> list.each(fn(result) {
     case result {
       Error(_) -> Nil
-      Ok(#(local_path, content, fragment_type)) -> {
-        case
-          debug_options.printer_debug_options.debug_print(
-            local_path,
-            fragment_type,
-          )
+      Ok(fr) -> {
+        case debug_options.printer_debug_options.debug_print(fr)
         {
           False -> Nil
           True -> {
-            let header =
-              "----------------- printer_debug_options: "
-              <> local_path
-              <> " -----------------"
+            let header = "----------------- printer_debug_options: " <> fr.path <> " -----------------"
             io.println(header)
-            io.println(content)
+            io.println(fr.payload)
             io.println(star_block.dashes(string.length(header)))
             io.println("")
           }
@@ -699,16 +699,15 @@ pub fn run_renderer(
   let fragments =
     fragments
     |> list.map(fn(result) {
-      use triple <- result.try(result)
-      let #(local_path, content, fragment_type) = triple
+      use fr <- result.try(result)
       let brackets = "[" <> output_dir <> "/]"
-      case output_dir_local_path_printer(output_dir, local_path, content) {
+      case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
         Ok(Nil) -> {
           case debug_options.basic_messages {
             False -> Nil
-            True -> io.println("   wrote: " <> brackets <> local_path)
+            True -> io.println("   wrote: " <> brackets <> fr.path)
           }
-          Ok(#(local_path, fragment_type))
+          Ok(GhostOfOutputFragment(fr.path, fr.classifier))
         }
         Error(file_error) ->
           Error(C2(
@@ -716,7 +715,7 @@ pub fn run_renderer(
             <> " on path "
             <> output_dir
             <> "/"
-            <> local_path,
+            <> fr.path,
           ))
       }
     })
@@ -730,8 +729,8 @@ pub fn run_renderer(
     fragments
     |> list.map(fn(result) {
       use <- infra.on_false_on_true(prettifier, result)
-      use #(local_path, fragment_type) <- result.try(result)
-      case renderer.prettifier(output_dir, #(local_path, fragment_type)) {
+      use fr <- result.try(result)
+      case renderer.prettifier(output_dir, fr) {
         Error(e) -> Error(C3(e))
         Ok(message) -> {
           case debug_options.basic_messages && message != "" {
@@ -746,31 +745,21 @@ pub fn run_renderer(
   // prettified fragments debug printing
   fragments
   |> list.each(fn(result) {
-    use #(local_path, fragment_type) <- infra.on_error_on_ok(result, fn(_) {
-      Nil
-    })
-    case
-      debug_options.prettifier_debug_options.debug_print(
-        local_path,
-        fragment_type,
-      )
+    use fr <- infra.on_error_on_ok(result, fn(_) { Nil })
+    case debug_options.prettifier_debug_options.debug_print(fr)
     {
       False -> Nil
       True -> {
-        let path = output_dir <> "/" <> local_path
+        let path = output_dir <> "/" <> fr.path
         use file_contents <- infra.on_error_on_ok(
           simplifile.read(path),
           fn(error) {
-            io.println(
-              "\ncould not read back printed file " <> path <> ":" <> ins(error),
-            )
+            io.println("")
+            io.println("could not read back printed file " <> path <> ":" <> ins(error))
           },
         )
         io.println("")
-        let header =
-          "----------------- printer_debug_options: "
-          <> local_path
-          <> " -----------------"
+        let header = "----------------- printer_debug_options: " <> fr.path <> " -----------------"
         io.println(header)
         io.println(file_contents)
         io.println(star_block.dashes(string.length(header)))
@@ -1243,32 +1232,30 @@ pub fn db_amend_pipeline_debug_options(
 }
 
 pub fn db_amend_splitter_debug_options(
-  previous: SplitterDebugOptions(a),
+  previous: SplitterDebugOptions(d),
   amendments: CommandLineAmendments,
-) -> SplitterDebugOptions(a) {
+) -> SplitterDebugOptions(d) {
   SplitterDebugOptions(
     ..previous,
-    debug_print: fn(local_path, vxml, fragment_type) {
-      previous.debug_print(local_path, vxml, fragment_type)
-      || is_some_and_any_or_is_empty(
+    debug_print: fn(fr: OutputFragment(d, VXML)) {
+      previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_vxml_fragments_local_paths,
-        string.contains(local_path, _),
+        string.contains(fr.path, _),
       )
     },
   )
 }
 
 pub fn db_amend_emitter_debug_options(
-  previous: EmitterDebugOptions(a),
+  previous: EmitterDebugOptions(d),
   amendments: CommandLineAmendments,
-) -> EmitterDebugOptions(a) {
+) -> EmitterDebugOptions(d) {
   EmitterDebugOptions(
     ..previous,
-    debug_print: fn(local_path, lines, fragment_type) {
-      previous.debug_print(local_path, lines, fragment_type)
-      || is_some_and_any_or_is_empty(
+    debug_print: fn(fr: OutputFragment(d, List(BlamedLine))) {
+      previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_blamed_lines_fragments_local_paths,
-        string.contains(local_path, _),
+        string.contains(fr.path, _),
       )
     },
   )
@@ -1279,11 +1266,10 @@ pub fn db_amend_printed_debug_options(
   amendments: CommandLineAmendments,
 ) -> PrinterDebugOptions(d) {
   PrinterDebugOptions(
-    fn(local_path, fragment_type) {
-      previous.debug_print(local_path, fragment_type)
-      || is_some_and_any_or_is_empty(
+    fn(fr: OutputFragment(d, String)) {
+      previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_printed_string_fragments_local_paths,
-        string.contains(local_path, _),
+        string.contains(fr.path, _),
       )
     }
   )
@@ -1294,11 +1280,10 @@ pub fn db_amend_prettifier_debug_options(
   amendments: CommandLineAmendments,
 ) -> PrettifierDebugOptions(d) {
   PrettifierDebugOptions(
-    fn(local_path, fragment_type) {
-      previous.debug_print(local_path, fragment_type)
-      || is_some_and_any_or_is_empty(
+    fn(fr: GhostOfOutputFragment(d)) {
+      previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_prettified_string_fragments_local_paths,
-        string.contains(local_path, _),
+        string.contains(fr.path, _),
       )
     }
   )
@@ -1379,8 +1364,8 @@ pub fn empty_splitter_debug_options(
   artifact_directory: String,
 ) -> SplitterDebugOptions(d) {
   SplitterDebugOptions(
-    debug_print: fn(_local_path, _vxml, _fragment_type) { False },
-    artifact_print: fn(_local_path, _vxml, _fragment_type) { False },
+    debug_print: fn(_fr) { False },
+    artifact_print: fn(_fr) { False },
     artifact_directory: artifact_directory,
   )
 }
@@ -1389,18 +1374,18 @@ pub fn empty_emitter_debug_options(
   artifact_directory: String,
 ) -> EmitterDebugOptions(d) {
   EmitterDebugOptions(
-    debug_print: fn(_local_path, _lines, _fragment_type: d) { False },
-    artifact_print: fn(_local_path, _lines, _fragment_type: d) { False },
+    debug_print: fn(_fr) { False },
+    artifact_print: fn(_fr) { False },
     artifact_directory: artifact_directory,
   )
 }
 
 pub fn empty_printer_debug_options() -> PrinterDebugOptions(d) {
-  PrinterDebugOptions(debug_print: fn(_local_path, _fragment_type: d) { False })
+  PrinterDebugOptions(debug_print: fn(_fr) { False })
 }
 
 pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(debug_print: fn(_local_path, _fragment_type) { False })
+  PrettifierDebugOptions(debug_print: fn(_fr) { False })
 }
 
 pub fn default_renderer_debug_options(

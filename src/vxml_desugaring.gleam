@@ -21,7 +21,6 @@ fn test_pipeline() -> List(Desugarer) {
 }
 
 fn test_renderer() {
-  // 1. construct CommandLineAmendments from command line arguments
   use amendments <- infra.on_error_on_ok(
     vr.process_command_line_arguments(argv.load().arguments, []),
     fn(e) {
@@ -31,14 +30,11 @@ fn test_renderer() {
     },
   )
 
-  // 2. early exit on '--help' option (vr.process_command_line_arguments
-  // will already have printed the cli_usage() message, no need to re-print)
   use <- infra.on_true_on_false(
     amendments.help,
     io.println("test_renderer exiting on '--help' option"),
   )
 
-  // 3. construct vr.Renderer
   let renderer =
     vr.Renderer(
       assembler: vr.default_blamed_lines_assembler(amendments.spotlight_paths),
@@ -49,7 +45,6 @@ fn test_renderer() {
       prettifier: vr.default_prettier_prettifier,
     )
 
-  // 4. construct vr.RendererParameters
   let parameters =
     vr.RendererParameters(
       input_dir: "test/content/__parent.emu",
@@ -58,12 +53,10 @@ fn test_renderer() {
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
 
-  // 5. construct vr.RendererDebugOptions
   let debug_options =
     vr.default_renderer_debug_options("../renderer_artifacts")
     |> vr.amend_renderer_debug_options_by_command_line_amendment(amendments, renderer.pipeline)
 
-  // 6. run
   let _ = vr.run_renderer(renderer, parameters, debug_options)
 
   Nil
