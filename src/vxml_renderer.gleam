@@ -1401,7 +1401,7 @@ pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
   PrettifierDebugOptions(debug_print: fn(_local_path, _fragment_type) { False })
 }
 
-pub fn empty_renderer_debug_options(
+pub fn default_renderer_debug_options(
   artifact_directory: String,
 ) -> RendererDebugOptions(d) {
   RendererDebugOptions(

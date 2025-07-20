@@ -54,7 +54,7 @@ fn test_renderer() {
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
 
   let debug_options =
-    vr.empty_renderer_debug_options("../renderer_artifacts")
+    vr.default_renderer_debug_options("../renderer_artifacts")
     |> vr.amend_renderer_debug_options_by_command_line_amendment(
       amendments,
       renderer.pipeline,
