@@ -1,3 +1,4 @@
+import gleam/float
 import gleam/int
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
@@ -27,6 +28,50 @@ pub type LatexDelimiterPair {
   BackslashSquareBracket
 }
 
+pub type CSSUnit {
+  PX
+  REM
+  EM
+}
+
+fn css_unit_from_string(s: String) -> Option(CSSUnit) {
+  case s {
+    "px" -> Some(PX)
+    "rem" -> Some(REM)
+    "em" -> Some(EM)
+    _ -> None
+  }
+}
+
+pub fn parse_to_float(s: String) -> Result(Float, Nil) {
+  case float.parse(s), int.parse(s) {
+    Ok(number), _ -> Ok(number)
+    _, Ok(number) -> Ok(int.to_float(number))
+    _, _ -> Error(Nil)
+  }
+}
+
+pub fn parse_number_and_optional_css_unit(
+  s: String
+) -> Result(#(Float, Option(CSSUnit)), Nil) {
+  let assert Ok(digits_pattern) = regexp.from_string("^([0-9.|1.0e0-9]+)(px|rem|em)?$")
+  case regexp.scan(digits_pattern, s) {
+    [] -> Error(Nil)
+    [match, ..] -> {
+      case match.submatches {
+        [Some(digit), unit] -> {
+          let assert Ok(digit_float) = parse_to_float(digit)
+          case unit {
+            Some(unit) -> Ok(#(digit_float, css_unit_from_string(unit)))
+            None -> Ok(#(digit_float, None))
+          }
+        }
+        _ -> Error(Nil)
+      }   
+    }
+  }
+}
+
 pub fn take_digits(s: String) -> Option(String) {
   let assert Ok(digits_pattern) = regexp.from_string("^([0-9.]+)")
   case regexp.scan(digits_pattern, s) {
@@ -37,20 +82,6 @@ pub fn take_digits(s: String) -> Option(String) {
         _ -> None
       }   
     }
-  }
-}
-
-pub fn drop_start_substring(s: String, sub: String) -> String {
-  case string.starts_with(s, sub) {
-    True -> string.drop_start(s, string.length(sub))
-    False -> s
-  }
-}
-
-pub fn drop_end_substring(s: String, sub: String) -> String {
-  case string.starts_with(s, sub) {
-    True -> string.drop_end(s, string.length(sub))
-    False -> s
   }
 }
 
