@@ -208,17 +208,9 @@ pub fn stub_jsx_emitter(
   let lines =
     list.flatten([
       [
-        BlamedLine(
-          blame_us("panel_emitter"),
-          0,
-          "import Something from \"./Somewhere\";",
-        ),
+        BlamedLine(blame_us("panel_emitter"), 0, "import Something from \"./Somewhere\";"),
         BlamedLine(blame_us("panel_emitter"), 0, ""),
-        BlamedLine(
-          blame_us("panel_emitter"),
-          0,
-          "const OurSuperComponent = () => {",
-        ),
+        BlamedLine(blame_us("panel_emitter"), 0, "const OurSuperComponent = () => {"),
         BlamedLine(blame_us("panel_emitter"), 2, "return ("),
         BlamedLine(blame_us("panel_emitter"), 4, "<>"),
       ],
@@ -228,11 +220,7 @@ pub fn stub_jsx_emitter(
         BlamedLine(blame_us("panel_emitter"), 2, ");"),
         BlamedLine(blame_us("panel_emitter"), 0, "};"),
         BlamedLine(blame_us("panel_emitter"), 0, ""),
-        BlamedLine(
-          blame_us("panel_emitter"),
-          0,
-          "export default OurSuperComponent;",
-        ),
+        BlamedLine(blame_us("panel_emitter"), 0, "export default OurSuperComponent;"),
       ],
     ])
   Ok(#(path, lines, fragment_type))
@@ -340,7 +328,10 @@ pub type RendererDebugOptions(d) {
 // *************
 
 pub type RendererParameters {
-  RendererParameters(input_dir: String, output_dir: Option(String))
+  RendererParameters(
+    input_dir: String,
+    output_dir: String,
+  )
 }
 
 // *************
@@ -388,12 +379,10 @@ fn pipeline_runner(
 }
 
 pub fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
-  let output_dir = case parameters.output_dir {
-    None -> None
-    Some(string) -> Some(infra.drop_ending_slash(string))
-  }
-
-  RendererParameters(input_dir: parameters.input_dir, output_dir: output_dir)
+  RendererParameters(
+    ..parameters,
+    output_dir: infra.drop_ending_slash(parameters.output_dir)
+  )
 }
 
 pub fn output_dir_local_path_printer(
@@ -460,7 +449,7 @@ fn print_pipeline(desugarers: List(Desugarer)) {
     )
 
   // let #(col1, col2, col3) = star_block.three_column_maxes(lines)
-  // let width = 3 + 2 + col1 + 1 + 2 + col2 + 2 + 2 + col3 + 1  
+  // let width = 3 + 2 + col1 + 2 + 2 + col2 + 2 + 2 + col3 + 2  
   // io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
 
   star_block.three_column_table(
@@ -468,7 +457,7 @@ fn print_pipeline(desugarers: List(Desugarer)) {
     "#.",
     "name",
     "param",
-    3,
+    3
   )
 }
 
@@ -484,19 +473,20 @@ pub fn run_renderer(
   io.println("")
 
   let parameters = sanitize_output_dir(parameters)
+  let RendererParameters(input_dir, output_dir) = parameters
 
   print_pipeline(renderer.pipeline)
 
-  io.println("-- assembling blamed lines (" <> parameters.input_dir <> ")")
+  io.println("-- assembling blamed lines (" <> input_dir <> ")")
 
   use assembled <- infra.on_error_on_ok(
-    renderer.assembler(parameters.input_dir),
+    renderer.assembler(input_dir),
     fn(error_a) {
       case debug_options.error_messages {
         True ->
           io.println(
             "renderer.assembler error on input_dir "
-            <> parameters.input_dir
+            <> input_dir
             <> ": "
             <> ins(error_a),
           )
@@ -516,7 +506,7 @@ pub fn run_renderer(
     }
   }
 
-  io.println("-- parsing source (" <> parameters.input_dir <> ")")
+  io.println("-- parsing source (" <> input_dir <> ")")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -572,7 +562,6 @@ pub fn run_renderer(
   let s = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
   io.println(" ...ended pipeline (" <> ins(s) <> "s)")
-
   io.print("-- splitting the vxml...")
 
   // vxml fragments generation
@@ -584,52 +573,14 @@ pub fn run_renderer(
     },
   )
 
-  let output_dir_square_brackets = case parameters.output_dir {
-    None -> ""
-    Some(output_dir) -> "[" <> output_dir <> "/]"
-  }
-  
+  let prefix = "[" <> output_dir <> "/]"
   let fragments_types_and_paths_4_table = list.map(
     fragments,
-    fn(triple) {#(ins(triple.2), output_dir_square_brackets <> triple.0)}
+    fn(triple) {#(ins(triple.2), prefix <> triple.0)}
   )
 
   io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments:")
   star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 3)
-  // let #(max_length_fragment_type, max_length_local_path) = 
-  //   list.fold(
-  //     fragments_types_and_paths_4_table,
-  //     #(0, 0),
-  //     fn(acc, pair) {
-  //       #(
-  //         int.max(acc.0, string.length(pair.0)),
-  //         int.max(acc.1, string.length(pair.1))
-  //       )
-  //     }
-  //   )
-
-  // let dashes = fn(num: Int) -> String { string.repeat("-", num) }
-  // let spaces = fn(num: Int) -> String { string.repeat(" ", num) }
-
-  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
-  // io.println("   | type" <> spaces(max_length_fragment_type + 2 - 4) <> "| path" <> spaces(max_length_local_path + 2 - 4) <> "|")
-  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
-  // // list the fragments
-  // fragments_types_and_paths_4_table
-  // |> list.each(
-  //   fn(pair) {
-  //     io.println(
-  //       "   | "
-  //       <> pair.0
-  //       <> spaces(max_length_fragment_type - string.length(pair.0) + 2)
-  //       <> "| "
-  //       <> pair.1
-  //       <> spaces(max_length_local_path - string.length(pair.1) + 2)
-  //       <> "|"
-  //     )
-  //   }
-  // )
-  // io.println("   |-" <> dashes(max_length_fragment_type + 2) <> "|-" <> dashes(max_length_local_path + 2) <> "|")
 
   // fragments debug printing
   fragments
@@ -667,7 +618,6 @@ pub fn run_renderer(
     |> list.map(fn(tuple) {
       let #(_name, _, _) = tuple
       renderer.emitter(tuple)
-      // |> quick_message("   converted: " <> name <> " to blamed lines")
     })
 
   // blamed line fragments debug printing
@@ -712,7 +662,6 @@ pub fn run_renderer(
         }
         Ok(#(local_path, lines, fragment_type)) -> {
           Ok(#(local_path, bl.blamed_lines_to_string(lines), fragment_type))
-          // |> quick_message("   converted: " <> local_path <> " to string")
         }
       }
     })
@@ -754,15 +703,12 @@ pub fn run_renderer(
     |> list.map(fn(result) {
       use triple <- result.try(result)
       let #(local_path, content, fragment_type) = triple
-      use output_dir <- infra.on_none_on_some(
-        parameters.output_dir,
-        Ok(#(local_path, fragment_type)),
-      )
+      let brackets = "[" <> output_dir <> "/]"
       case output_dir_local_path_printer(output_dir, local_path, content) {
         Ok(Nil) -> {
           case debug_options.basic_messages {
             False -> Nil
-            True -> io.println("   wrote: [" <> output_dir <> "/]" <> local_path)
+            True -> io.println("   wrote: " <> brackets <> local_path)
           }
           Ok(#(local_path, fragment_type))
         }
@@ -782,7 +728,6 @@ pub fn run_renderer(
     fragments
     |> list.map(fn(result) {
       use #(local_path, fragment_type) <- result.try(result)
-      use output_dir <- infra.on_none_on_some(parameters.output_dir, result)
       case renderer.prettifier(output_dir, #(local_path, fragment_type)) {
         Error(e) -> Error(C3(e))
         Ok(message) -> {
@@ -801,7 +746,6 @@ pub fn run_renderer(
     use #(local_path, fragment_type) <- infra.on_error_on_ok(result, fn(_) {
       Nil
     })
-    use output_dir <- infra.on_none_on_some(parameters.output_dir, Nil)
     case
       debug_options.prettifier_debug_options.debug_print(
         local_path,
@@ -1218,12 +1162,12 @@ fn pr_amend_input_dir(
 }
 
 fn pr_amend_output_dir(
-  output_dir: Option(String),
+  output_dir: String,
   amendments: CommandLineAmendments,
-) -> Option(String) {
-  case amendments.input_dir {
+) -> String {
+  case amendments.output_dir {
     None -> output_dir
-    Some(other) -> Some(other)
+    Some(other) -> other
   }
 }
 

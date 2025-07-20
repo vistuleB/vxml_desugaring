@@ -1,7 +1,6 @@
 import gleam/list
 import argv
 import gleam/io
-import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
@@ -50,7 +49,7 @@ fn test_renderer() {
   let parameters =
     vr.RendererParameters(
       input_dir: "test/content/__parent.emu",
-      output_dir: Some("test/output"),
+      output_dir: "test/output",
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
 
