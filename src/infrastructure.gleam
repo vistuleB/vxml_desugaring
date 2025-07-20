@@ -909,14 +909,14 @@ fn split_lines_internal(
               BlamedContent(first.blame, before),
               ..current_lines
             ] |> list.reverse,
-            ..previous_splits
+            ..previous_splits,
           ],
           [],
           [
             BlamedContent(first.blame, after),
-            ..rest
+            ..rest,
           ],
-          splitter
+          splitter,
         )
       }
     }
@@ -933,12 +933,6 @@ pub fn split_lines(
     lines,
     splitter,
   )
-  // lines
-  // |> list.map(fn(l) {
-  //   l.content
-  //   |> string.split(on: splitter)
-  //   |> list.map(BlamedContent(l.blame, _))
-  // })
 }
 
 pub fn lines_trim_start(
