@@ -1,4 +1,3 @@
-import gleam/int
 import gleam/list
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
@@ -14,7 +13,7 @@ fn ensure_has_id_attribute(
     Some(attr) -> #(vxml, counter, attr.value)
     None -> {
       let counter = counter + 1
-      let id = "_" <> ins(counter) <> "_" <> ins(int.random(9999))
+      let id = "_" <> ins(counter) <> "_hgi_"
       let attributes = list.append(
         vxml.attributes,
         [BlamedAttribute(vxml.blame, "id", id)]

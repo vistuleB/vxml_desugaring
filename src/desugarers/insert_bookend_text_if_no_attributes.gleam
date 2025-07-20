@@ -42,9 +42,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param =
   List(#(String, String, String))
-//       ↖      ↖       ↖
-//       tag    start   end
-//              text    text
+//       ↖       ↖       ↖
+//       tag     start   end
+//               text    text
 
 type InnerParam =
   List(#(String, #(String, String)))
