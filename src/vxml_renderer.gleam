@@ -33,7 +33,7 @@ pub type BlamedLinesAssemblerDebugOptions {
 
 pub fn default_blamed_lines_assembler(
   spotlight_paths: List(String)
-) -> BlamedLinesAssembler(wp.AssemblyError) {
+) -> BlamedLinesAssembler(wp.FileOrParseError) {
   wp.assemble_blamed_lines_advanced_mode(_, spotlight_paths)
 }
 
@@ -407,7 +407,7 @@ pub fn output_dir_local_path_printer(
 // *************
 
 pub type RendererError(a, c, e, f, h) {
-  AssemblyError(a)
+  FileOrParseError(a)
   SourceParserError(c)
   PipelineError(InSituDesugaringError)
   SplitterError(e)
@@ -484,7 +484,7 @@ pub fn run_renderer(
         <> ": "
         <> ins(error_a),
       )
-      Error(AssemblyError(error_a))
+      Error(FileOrParseError(error_a))
     },
   )
 
