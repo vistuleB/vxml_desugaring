@@ -67,16 +67,6 @@ fn get_bitmap_image_width_with_ansel(blame: Blame, path: String) -> Result(Float
 fn get_image_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   let assert [extension, ..] = string.split(path, ".") |> list.reverse
 
-  let f = case string.ends_with(path, "images/svg_ch4_ch_explanation1.svg") {
-    True -> {
-      echo get_svg_width(blame, path)
-      ""
-    }
-    False -> {
-      ""
-    }
-  }
-
   case extension {
     "svg"  -> get_svg_width(blame, path)
     _ -> get_bitmap_image_width_with_ansel(blame, path)
