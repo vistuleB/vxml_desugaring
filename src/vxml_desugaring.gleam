@@ -21,19 +21,18 @@ fn test_pipeline() -> List(Desugarer) {
   ]
 }
 
-fn cli_usage_supplementary() {
-  io.println("      --prettier")
-  io.println("         -> run npm prettier on emitted content")
-}
-
 fn test_renderer() {
   use amendments <- infra.on_error_on_ok(
-    vr.process_command_line_arguments(argv.load().arguments, ["--prettier"]),
-    fn(error) {
-      io.println("\ncommand line error: " <> ins(error) <> "\n")
+    vr.process_command_line_arguments(argv.load().arguments, []),
+    fn(e) {
+      io.println("\ncommand line error: " <> ins(e) <> "\n")
       vr.cli_usage()
-      cli_usage_supplementary()
     },
+  )
+
+  use <- infra.on_true_on_false(
+    amendments.info,
+    Nil,
   )
 
   let renderer =
@@ -43,13 +42,14 @@ fn test_renderer() {
       pipeline: test_pipeline(),
       splitter: vr.empty_splitter(_, ".tsx"),
       emitter: vr.stub_jsx_emitter,
-      prettifier: vr.guarded_prettier_prettifier(amendments.user_args),
+      prettifier: vr.default_prettier_prettifier,
     )
 
   let parameters =
     vr.RendererParameters(
       input_dir: "test/content/__parent.emu",
       output_dir: "test/output",
+      prettifier_on_by_default: False,
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
 
@@ -64,6 +64,8 @@ fn test_renderer() {
     Ok(Nil) -> Nil
     Error(error) -> io.println("\nrenderer error: " <> ins(error) <> "\n")
   }
+
+  Nil
 }
 
 fn run_desugarer_tests(names: List(String)) {
@@ -145,6 +147,8 @@ fn run_desugarer_tests(names: List(String)) {
       )
     }
   }
+
+  Nil
 }
 
 //*********************
