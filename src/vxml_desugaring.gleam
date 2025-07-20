@@ -1,3 +1,4 @@
+import shellout
 import gleam/list
 import argv
 import gleam/io
@@ -65,6 +66,16 @@ fn test_renderer() {
   // 6. run
   let _ = vr.run_renderer(renderer, parameters, debug_options)
 
+  Nil
+}
+
+fn generate_desugarer_library() {
+  let _ = shellout.command(
+    run: "generate_library.sh",
+    in: ".",
+    with: [],
+    opt: [],
+  )
   Nil
 }
 
@@ -155,6 +166,9 @@ pub fn main() {
   case argv.load().arguments {
     ["--test-desugarers", ..names] -> {
       run_desugarer_tests(names)
+    }
+    ["--generate-lib"] | ["--generate"] | ["--generate-library"] -> {
+      generate_desugarer_library()
     }
     _ -> {
       io.println("")
