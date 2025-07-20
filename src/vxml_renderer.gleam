@@ -28,8 +28,6 @@ pub type BlamedLinesAssembler(a) =
 pub type BlamedLinesAssemblerDebugOptions {
   BlamedLinesAssemblerDebugOptions(
     debug_print: Bool,
-    artifact_print: Bool,
-    artifact_directory: String,
   )
 }
 
@@ -50,8 +48,6 @@ pub type SourceParser(c) =
 pub type SourceParserDebugOptions {
   SourceParserDebugOptions(
     debug_print: Bool,
-    artifact_print: Bool,
-    artifact_directory: String,
   )
 }
 
@@ -115,8 +111,6 @@ pub type Pipeline =
 pub type PipelineDebugOptions {
   PipelineDebugOptions(
     debug_print: fn(Int, Desugarer) -> Bool,
-    artifact_print: fn(Int, Desugarer) -> Bool,
-    artifact_directory: String,
   )
 }
 
@@ -150,8 +144,6 @@ pub type Splitter(d, e) =
 pub type SplitterDebugOptions(d) {
   SplitterDebugOptions(
     debug_print: fn(OutputFragment(d, VXML)) -> Bool,
-    artifact_print: fn(OutputFragment(d, VXML)) -> Bool,
-    artifact_directory: String,
   )
 }
 
@@ -186,8 +178,6 @@ pub type Emitter(d, f) =
 pub type EmitterDebugOptions(d) {
   EmitterDebugOptions(
     debug_print: fn(OutputFragment(d, List(BlamedLine))) -> Bool,
-    artifact_print: fn(OutputFragment(d, List(BlamedLine))) -> Bool,
-    artifact_directory: String,
   )
 }
 
@@ -326,8 +316,6 @@ pub type Renderer(
 
 pub type RendererDebugOptions(d) {
   RendererDebugOptions(
-    basic_messages: Bool,
-    error_messages: Bool,
     assembler_debug_options: BlamedLinesAssemblerDebugOptions,
     source_parser_debug_options: SourceParserDebugOptions,
     pipeline_debug_options: PipelineDebugOptions,
@@ -414,16 +402,6 @@ pub fn output_dir_local_path_printer(
   simplifile.write(path, content)
 }
 
-pub fn possible_error_message(
-  debug_options: RendererDebugOptions(d),
-  message: String,
-) -> Nil {
-  case debug_options.error_messages {
-    True -> io.println(message)
-    _ -> Nil
-  }
-}
-
 // *************
 // RENDERER ERROR(a, c, e, f, h)
 // *************
@@ -434,7 +412,6 @@ pub type RendererError(a, c, e, f, h) {
   PipelineError(InSituDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
-  ArtifactPrintingError(String)
 }
 
 pub type ThreePossibilities(f, g, h) {
@@ -501,16 +478,12 @@ pub fn run_renderer(
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(input_dir),
     fn(error_a) {
-      case debug_options.error_messages {
-        True ->
-          io.println(
-            "renderer.assembler error on input_dir "
-            <> input_dir
-            <> ": "
-            <> ins(error_a),
-          )
-        _ -> Nil
-      }
+      io.println(
+        "renderer.assembler error on input_dir "
+        <> input_dir
+        <> ": "
+        <> ins(error_a),
+      )
       Error(AssemblyError(error_a))
     },
   )
@@ -530,10 +503,7 @@ pub fn run_renderer(
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
     with_on_error: fn(error: c) {
-      case debug_options.error_messages {
-        True -> io.println("renderer.source_parser error: " <> ins(error))
-        _ -> Nil
-      }
+      io.println("renderer.source_parser error: " <> ins(error))
       Error(SourceParserError(error))
     },
   )
@@ -549,30 +519,25 @@ pub fn run_renderer(
       1,
     ),
     with_on_error: fn(e: InSituDesugaringError) {
-      case debug_options.error_messages {
-        True -> {
-          let z = [
-            "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
-            "🏯🏯pipeline step:   " <> ins(e.pipeline_step),
-            "🏯🏯blame:           " <> e.blame.filename <> ":" <> ins(e.blame.line_no) <> ":" <> ins(e.blame.char_no) <> " " <> ins(e.blame.comments),
-            "🏯🏯message:         " <> e.message,
-          ]
-          let lengths = list.map(z, string.length)
-          let width = list.fold(lengths, 0, fn (acc, n) { int.max(acc, n) }) + 2
-          io.println("")
-          io.println("")
-          io.println(string.repeat("🏯", width * 6 / 11))
-          io.println(string.repeat("🏯", width * 6 / 11))
-          list.each(
-            list.zip(z, lengths),
-            fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯") }
-          )
-          io.println(string.repeat("🏯", width * 6 / 11))
-          io.println(string.repeat("🏯", width * 6 / 11))
-          io.println("")
-        }
-        False -> Nil
-      }
+      let z = [
+        "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
+        "🏯🏯pipeline step:   " <> ins(e.pipeline_step),
+        "🏯🏯blame:           " <> e.blame.filename <> ":" <> ins(e.blame.line_no) <> ":" <> ins(e.blame.char_no) <> " " <> ins(e.blame.comments),
+        "🏯🏯message:         " <> e.message,
+      ]
+      let lengths = list.map(z, string.length)
+      let width = list.fold(lengths, 0, fn (acc, n) { int.max(acc, n) }) + 2
+      io.println("")
+      io.println("")
+      io.println(string.repeat("🏯", width * 6 / 11))
+      io.println(string.repeat("🏯", width * 6 / 11))
+      list.each(
+        list.zip(z, lengths),
+        fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯") }
+      )
+      io.println(string.repeat("🏯", width * 6 / 11))
+      io.println(string.repeat("🏯", width * 6 / 11))
+      io.println("")
       Error(PipelineError(e))
     },
   )
@@ -587,7 +552,7 @@ pub fn run_renderer(
   use fragments <- infra.on_error_on_ok(
     over: renderer.splitter(desugared),
     with_on_error: fn(error: e) {
-      possible_error_message(debug_options, "splitter error: " <> ins(error))
+      io.println("splitter error: " <> ins(error))
       Error(SplitterError(error))
     },
   )
@@ -659,10 +624,7 @@ pub fn run_renderer(
     |> list.map(fn(result) {
       case result {
         Error(error) -> {
-          possible_error_message(
-            debug_options,
-            "emitting error: " <> ins(error),
-          )
+          io.println("emitting error: " <> ins(error))
           Error(C1(error))
         }
         Ok(fr) -> {
@@ -703,10 +665,7 @@ pub fn run_renderer(
       let brackets = "[" <> output_dir <> "/]"
       case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
         Ok(Nil) -> {
-          case debug_options.basic_messages {
-            False -> Nil
-            True -> io.println("   wrote: " <> brackets <> fr.path)
-          }
+          io.println("   wrote: " <> brackets <> fr.path)
           Ok(GhostOfOutputFragment(fr.path, fr.classifier))
         }
         Error(file_error) ->
@@ -733,9 +692,9 @@ pub fn run_renderer(
       case renderer.prettifier(output_dir, fr) {
         Error(e) -> Error(C3(e))
         Ok(message) -> {
-          case debug_options.basic_messages && message != "" {
-            False -> Nil
+          case message != "" {
             True -> io.println("   " <> message)
+            False -> Nil
           }
           result
         }
@@ -1204,24 +1163,22 @@ fn is_some_and_any_or_is_empty(z: Option(List(a)), f: fn(a) -> Bool) -> Bool {
 }
 
 pub fn db_amend_assembler_debug_options(
-  options: BlamedLinesAssemblerDebugOptions,
+  _options: BlamedLinesAssemblerDebugOptions,
   amendments: CommandLineAmendments,
 ) -> BlamedLinesAssemblerDebugOptions {
   BlamedLinesAssemblerDebugOptions(
-    ..options,
     debug_print: amendments.debug_assembled_input,
   )
 }
 
 pub fn db_amend_pipeline_debug_options(
-  previous: PipelineDebugOptions,
+  _previous: PipelineDebugOptions,
   amendments: CommandLineAmendments,
   pipeline: List(Desugarer),
 ) -> PipelineDebugOptions {
   let #(start, end) = amendments.debug_pipeline_range
   let names = amendments.debug_pipeline_names
   PipelineDebugOptions(
-    ..previous,
     debug_print: fn(step, desugarer: Desugarer) {
       { start == 0 && end == 0 }
       || { start <= step && step <= end }
@@ -1236,7 +1193,6 @@ pub fn db_amend_splitter_debug_options(
   amendments: CommandLineAmendments,
 ) -> SplitterDebugOptions(d) {
   SplitterDebugOptions(
-    ..previous,
     debug_print: fn(fr: OutputFragment(d, VXML)) {
       previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_vxml_fragments_local_paths,
@@ -1251,7 +1207,6 @@ pub fn db_amend_emitter_debug_options(
   amendments: CommandLineAmendments,
 ) -> EmitterDebugOptions(d) {
   EmitterDebugOptions(
-    ..previous,
     debug_print: fn(fr: OutputFragment(d, List(BlamedLine))) {
       previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_blamed_lines_fragments_local_paths,
@@ -1295,8 +1250,6 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
   pipeline: List(Desugarer),
 ) -> RendererDebugOptions(d) {
   RendererDebugOptions(
-    debug_options.basic_messages,
-    debug_options.error_messages,
     db_amend_assembler_debug_options(
       debug_options.assembler_debug_options,
       amendments,
@@ -1331,74 +1284,60 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
 //********************
 
 pub fn empty_assembler_debug_options(
-  artifact_directory: String,
 ) -> BlamedLinesAssemblerDebugOptions {
   BlamedLinesAssemblerDebugOptions(
     debug_print: False,
-    artifact_print: False,
-    artifact_directory: artifact_directory,
   )
 }
 
 pub fn empty_source_parser_debug_options(
-  artifact_directory: String,
 ) -> SourceParserDebugOptions {
   SourceParserDebugOptions(
     debug_print: False,
-    artifact_print: False,
-    artifact_directory: artifact_directory,
   )
 }
 
 pub fn empty_pipeline_debug_options(
-  artifact_directory: String,
 ) -> PipelineDebugOptions {
   PipelineDebugOptions(
     debug_print: fn(_step, _pipe) { False },
-    artifact_print: fn(_step, _pipe) { False },
-    artifact_directory: artifact_directory,
   )
 }
 
 pub fn empty_splitter_debug_options(
-  artifact_directory: String,
 ) -> SplitterDebugOptions(d) {
   SplitterDebugOptions(
     debug_print: fn(_fr) { False },
-    artifact_print: fn(_fr) { False },
-    artifact_directory: artifact_directory,
   )
 }
 
 pub fn empty_emitter_debug_options(
-  artifact_directory: String,
 ) -> EmitterDebugOptions(d) {
   EmitterDebugOptions(
     debug_print: fn(_fr) { False },
-    artifact_print: fn(_fr) { False },
-    artifact_directory: artifact_directory,
   )
 }
 
 pub fn empty_printer_debug_options() -> PrinterDebugOptions(d) {
-  PrinterDebugOptions(debug_print: fn(_fr) { False })
+  PrinterDebugOptions(
+    debug_print: fn(_fr) { False }
+  )
 }
 
 pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(debug_print: fn(_fr) { False })
+  PrettifierDebugOptions(
+    debug_print: fn(_fr) { False }
+  )
 }
 
 pub fn default_renderer_debug_options(
-  artifact_directory: String,
 ) -> RendererDebugOptions(d) {
   RendererDebugOptions(
-    basic_messages: True,
-    error_messages: True,
-    assembler_debug_options: empty_assembler_debug_options(artifact_directory),
-    source_parser_debug_options: empty_source_parser_debug_options(artifact_directory),
-    pipeline_debug_options: empty_pipeline_debug_options(artifact_directory),
-    splitter_debug_options: empty_splitter_debug_options(artifact_directory),
-    emitter_debug_options: empty_emitter_debug_options(artifact_directory),
+    assembler_debug_options: empty_assembler_debug_options(),
+    source_parser_debug_options: empty_source_parser_debug_options(),
+    pipeline_debug_options: empty_pipeline_debug_options(),
+    splitter_debug_options: empty_splitter_debug_options(),
+    emitter_debug_options: empty_emitter_debug_options(),
     printer_debug_options: empty_printer_debug_options(),
     prettifier_debug_options: empty_prettifier_debug_options(),
   )
