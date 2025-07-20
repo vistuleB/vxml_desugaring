@@ -33,7 +33,7 @@ pub type BlamedLinesAssemblerDebugOptions {
 
 pub fn default_blamed_lines_assembler(
   spotlight_paths: List(String)
-) -> BlamedLinesAssembler(wp.FileOrParseError) {
+) -> BlamedLinesAssembler(wp.AssemblyError) {
   wp.assemble_blamed_lines_advanced_mode(_, spotlight_paths)
 }
 
@@ -446,14 +446,14 @@ fn print_pipeline(desugarers: List(Desugarer)) {
   // let #(col1, col2, col3) = star_block.three_column_maxes(lines)
   // let width = 3 + 2 + col1 + 2 + 2 + col2 + 2 + 2 + col3 + 2  
   // io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
-  io.println("-- the renderer pipeline:")
+  io.println("• greetings! ur pipeline:")
 
   star_block.three_column_table(
     lines,
     "#.",
     "name",
     "param",
-    3
+    2,
   )
 }
 
@@ -473,7 +473,7 @@ pub fn run_renderer(
 
   print_pipeline(renderer.pipeline)
 
-  io.println("-- assembling blamed lines (" <> input_dir <> ")")
+  io.println("• assembling blamed lines (" <> input_dir <> ")")
 
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(input_dir),
@@ -498,7 +498,7 @@ pub fn run_renderer(
     }
   }
 
-  io.println("-- parsing source (" <> input_dir <> ")")
+  io.println("• parsing source (" <> input_dir <> ")")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -508,7 +508,7 @@ pub fn run_renderer(
     },
   )
 
-  io.print("-- starting pipeline...")
+  io.print("• starting pipeline...")
   let t0 = timestamp.system_time()
 
   use desugared <- infra.on_error_on_ok(
@@ -546,7 +546,7 @@ pub fn run_renderer(
   let s = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
   io.println(" ...ended pipeline (" <> ins(s) <> "s)")
-  io.print("-- splitting the vxml...")
+  io.print("• splitting the vxml...")
 
   // vxml fragments generation
   use fragments <- infra.on_error_on_ok(
@@ -564,7 +564,7 @@ pub fn run_renderer(
   )
 
   io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments:")
-  star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 3)
+  star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 2)
 
   // fragments debug printing
   fragments
@@ -588,7 +588,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting fragments to blamed line fragments")
+  io.println("• converting fragments to blamed line fragments")
 
   // vxml fragments -> blamed line fragments
   let fragments =
@@ -616,7 +616,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- converting blamed line fragments to string fragments")
+  io.println("• converting blamed line fragments to string fragments")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -655,7 +655,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("-- writing string fragments to files")
+  io.println("• writing string fragments to files")
 
   // printing string fragments (list.map to record errors)
   let fragments =
@@ -665,7 +665,7 @@ pub fn run_renderer(
       let brackets = "[" <> output_dir <> "/]"
       case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
         Ok(Nil) -> {
-          io.println("   wrote: " <> brackets <> fr.path)
+          io.println("  wrote: " <> brackets <> fr.path)
           Ok(GhostOfOutputFragment(fr.path, fr.classifier))
         }
         Error(file_error) ->
@@ -681,7 +681,7 @@ pub fn run_renderer(
 
   // running prettifier (list.map to record erros)
   case prettifier {
-    True -> io.println("-- prettifying")
+    True -> io.println("• prettifying")
     False -> Nil
   }
   let fragments =
@@ -693,7 +693,7 @@ pub fn run_renderer(
         Error(e) -> Error(C3(e))
         Ok(message) -> {
           case message != "" {
-            True -> io.println("   " <> message)
+            True -> io.println("  " <> message)
             False -> Nil
           }
           result
