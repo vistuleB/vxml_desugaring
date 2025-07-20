@@ -7,6 +7,11 @@ import vxml.{type VXML, BlamedAttribute, BlamedContent, V, T}
 
 type PageInfo = #(Int, Int)  // (chapter_no, sub_no)
 
+type Menu {
+  RightMenu
+  LeftMenu
+}
+
 fn get_course_homepage(document: VXML) -> String {
   case infra.v_attribute_with_key(document, "course_homepage") {
     None -> ""
@@ -40,25 +45,35 @@ fn get_prev_next_info(
 fn a_tag_with_href_and_content(
   blame: Blame,
   href: String,
+  href_id: Menu,
   content: String,
 ) -> VXML {
-  V(blame, "a", [BlamedAttribute(blame, "href", href)], [T(blame, [BlamedContent(blame, content)])])
+  V(blame,
+    "a",
+    [BlamedAttribute(blame, "href", href),
+      case href_id {
+        RightMenu -> BlamedAttribute(blame, "id", "next-chapter")
+        LeftMenu -> BlamedAttribute(blame, "id", "prev-chapter")
+      }
+    ],
+    [T(blame, [BlamedContent(blame, content)])]
+  )
 }
 
 fn info_2_link(
   blame: Blame,
   info: PageInfo,
-  direction: String
+  menu: Menu
 ) -> VXML {
   a_tag_with_href_and_content(
     blame,
     format_chapter_link(info.0, info.1),
-    case info.1, direction {
-      0, ">>" -> "Kapitel " <> ins(info.0) <> "  " <> direction
-      _, ">>" -> "Kapitel " <> ins(info.0) <> "." <> ins(info.1) <> "  " <> direction
-      0, "<<" -> direction <> " Kapitel " <> ins(info.0)
-      _, "<<" -> direction <> " Kapitel " <> ins(info.0) <> "." <> ins(info.1)
-      _, _ -> panic as "unknown direction"
+    menu,
+    case info.1, menu {
+      0, RightMenu -> "Kapitel " <> ins(info.0) <> "  " <> ">>"
+      _, RightMenu -> "Kapitel " <> ins(info.0) <> "." <> ins(info.1) <> "  " <> ">>"
+      0, LeftMenu -> "<<" <> " Kapitel " <> ins(info.0)
+      _, LeftMenu -> "<<" <> " Kapitel " <> ins(info.0) <> "." <> ins(info.1)
     }
   )
 }
@@ -67,8 +82,8 @@ fn info_2_left_menu(
   prev_info: Option(PageInfo)
 ) -> VXML {
   let blame = infra.blame_us("info_2_left_menu")
-  let index_link_option = Some(a_tag_with_href_and_content(blame, "./index.html", "Inhaltsverzeichnis"))
-  let ch_link_option = option.map(prev_info, info_2_link(blame, _, "<<"))
+  let index_link_option = Some(V(blame, "a", [BlamedAttribute(blame, "href", "./index.html")], [T(blame, [BlamedContent(blame, "Inhaltsverzeichnis")])]))
+  let ch_link_option = option.map(prev_info, info_2_link(blame, _, LeftMenu))
 
   V(
     blame,
@@ -83,8 +98,8 @@ fn info_2_right_menu(
   homepage_url: String,
 ) -> VXML {
   let blame = infra.blame_us("info_2_right_menu")
-  let course_homepage_link = Some(a_tag_with_href_and_content(blame, homepage_url, "zür Kursübersicht"))
-  let ch_link_option = option.map(next_info, info_2_link(blame, _, ">>"))
+  let course_homepage_link = Some(V(blame, "a", [BlamedAttribute(blame, "href", homepage_url)], [T(blame, [BlamedContent(blame, "zür Kursübersicht")])]))
+  let ch_link_option = option.map(next_info, info_2_link(blame, _, RightMenu))
 
   V(
     blame,

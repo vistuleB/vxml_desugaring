@@ -11,7 +11,7 @@ import infrastructure.{type EitherOr, Or, Either, type DesugaringError } as infr
 
 pub type RegexWithIndexedGroup =
   #(Regexp, Int,         Int,          String)
-//           ↖            ↖             ↖
+//          ↖            ↖             ↖
 //          index of     total num     original string
 //          splitting    groups        used to construct Regex
 //          group
@@ -20,7 +20,8 @@ pub type RegexWithIndexedGroup =
 // RegexWithIndexedGroup constructor helpers
 //********
 
-const regex_prefix_to_make_unescaped = "(?<!\\\\)(?:(?:\\\\\\\\)*)"
+// const regex_prefix_to_make_unescaped = "(?<!\\\\)(?:(?:\\\\\\\\)*)"
+const regex_prefix_to_make_unescaped = "(?<!\\\\)"
 
 fn assert_ok_regexp_from_string(s: String) -> regexp.Regexp {
   let assert Ok(re) = regexp.from_string(s)
@@ -110,7 +111,7 @@ pub fn split_string_by_regex_with_indexed_group(
   |> list.map(string.join(_, ""))
 }
 
-// Helper function to calculate character positions
+// helper function to calculate character positions
 fn calculate_char_positions(splits: List(String)) -> List(Int) {
   list.index_fold(
     splits,
@@ -130,13 +131,13 @@ fn split_line_by_regex_with_indexed_group(
 ) -> List(EitherOr(BlamedContent, Blame)) {
   let BlamedContent(blame, content) = line
   
-  // Track character position as we split
+  // track character position as we split
   let splits = split_string_by_regex_with_indexed_group(content, re)
 
-  // Create a list of character positions for each split
+  // create a list of character positions for each split
   let char_positions = calculate_char_positions(splits)
 
-  // Map each split to a BlamedContent with updated char_no
+  // map each split to a BlamedContent with updated char_no
   list.index_map(
     splits,
     fn(split, idx) {
@@ -190,9 +191,9 @@ fn replace_indexed_group_by_tag_in_nodes(
   |> list.flatten
 }
 
-pub fn unescaped_suffix_capture_all_groups(suffix: String) -> String {
-  "(" <> regex_prefix_to_make_unescaped <> ")(" <> suffix <> ")"
-}
+// pub fn unescaped_suffix_capture_all_groups(suffix: String) -> String {
+//   "(" <> regex_prefix_to_make_unescaped <> ")(" <> suffix <> ")"
+// }
 
 //********************
 // public splitters

@@ -4,7 +4,7 @@
 packages = [
   { name = "ansel", version = "1.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "snag", "vix"], otp_app = "ansel", source = "hex", outer_checksum = "F693AF973CC8F12237C6114AA4646070162714A19003398C8A54F0FE3DF98458" },
   { name = "argv", version = "1.0.2", build_tools = ["gleam"], requirements = [], otp_app = "argv", source = "hex", outer_checksum = "BA1FF0929525DEBA1CE67256E5ADF77A7CDDFE729E3E3F57A5BDCAA031DED09D" },
-  { name = "blamedlines", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], source = "local", path = "../blamedlines" },
+  { name = "blamedlines", version = "1.0.0", build_tools = ["gleam"], requirements = ["gleam_stdlib", "simplifile"], source = "local", path = "../blamedlines" },
   { name = "cc_precompiler", version = "0.1.10", build_tools = ["mix"], requirements = ["elixir_make"], otp_app = "cc_precompiler", source = "hex", outer_checksum = "F6E046254E53CD6B41C6BACD70AE728011AA82B2742A80D6E2214855C6E06B22" },
   { name = "elixir_make", version = "0.9.0", build_tools = ["mix"], requirements = [], otp_app = "elixir_make", source = "hex", outer_checksum = "DB23D4FD8B757462AD02F8AA73431A426FE6671C80B200D9710CAF3D1DD0FFDB" },
   { name = "filepath", version = "1.1.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "filepath", source = "hex", outer_checksum = "B06A9AF0BF10E51401D64B98E4B627F1D2E48C154967DA7AF4D0914780A6D40A" },

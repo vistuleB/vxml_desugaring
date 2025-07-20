@@ -6,10 +6,9 @@ import gleam/int
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugarerTransform} as infra
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, BlamedAttribute, V}
 import blamedlines.{type Blame}
 import gleam/regexp
-import shellout
 import nodemaps_2_desugarer_transforms as n2t
 import ansel/image.{read, get_width}
 
@@ -35,28 +34,28 @@ fn get_svg_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   }
 }
 
-fn get_bitmap_image_width_with_imagemagick(blame: Blame, path: String) -> Result(Float, DesugaringError) {
-  // Use ImageMagick's identify command to get image dimensions
-  // Format: identify -format "%w" image.png
-  case shellout.command(
-    run: "identify",
-    in: ".",
-    with: ["-format", "%w", path],
-    opt: []
-  ) {
-    Ok(width_str) -> {
-      let width_str = string.trim(width_str)
-      case float.parse(width_str), int.parse(width_str) {
-        Ok(width), _ -> Ok(width)
-        _, Ok(width) -> Ok(int.to_float(width))
-        _, _ -> Error(DesugaringError(blame, "Invalid width value returned by identify command: " <> width_str <> "\n file: " <> path))
-      }
-    }
-    Error(#(exit_code, error_msg)) -> {
-      Error(DesugaringError(blame, "Failed to get image width using identify command (exit code: " <> int.to_string(exit_code) <> "): " <> error_msg <> "\n file: " <> path <> "\nMake sure ImageMagick is installed"))
-    }
-  }
-}
+// fn get_bitmap_image_width_with_imagemagick(blame: Blame, path: String) -> Result(Float, DesugaringError) {
+//   // Use ImageMagick's identify command to get image dimensions
+//   // Format: identify -format "%w" image.png
+//   case shellout.command(
+//     run: "identify",
+//     in: ".",
+//     with: ["-format", "%w", path],
+//     opt: []
+//   ) {
+//     Ok(width_str) -> {
+//       let width_str = string.trim(width_str)
+//       case float.parse(width_str), int.parse(width_str) {
+//         Ok(width), _ -> Ok(width)
+//         _, Ok(width) -> Ok(int.to_float(width))
+//         _, _ -> Error(DesugaringError(blame, "Invalid width value returned by identify command: " <> width_str <> "\n file: " <> path))
+//       }
+//     }
+//     Error(#(exit_code, error_msg)) -> {
+//       Error(DesugaringError(blame, "Failed to get image width using identify command (exit code: " <> int.to_string(exit_code) <> "): " <> error_msg <> "\n file: " <> path <> "\nMake sure ImageMagick is installed"))
+//     }
+//   }
+// }
 
 fn get_bitmap_image_width_with_ansel(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   case read(path) {

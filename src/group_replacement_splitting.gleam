@@ -10,6 +10,7 @@ import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V
 pub type RegexpMatchedGroupReplacementInstructions {
   Keep
   Trash
+  DropLast
   TagReplace(String)
   TagReplaceKeepPayloadAsAttribute(String, String)
   TagReplaceKeepPayloadAsTextChild(String)
@@ -27,11 +28,13 @@ pub fn unescaped_suffix_replacement_splitter(
   tag: String,
 ) -> RegexpWithGroupReplacementInstructions {
   let assert Ok(re) = regexp.from_string(
-    indexed_regex_splitting.unescaped_suffix_capture_all_groups(suffix)
+    indexed_regex_splitting.unescaped_suffix(suffix)
   )
   RegexpWithGroupReplacementInstructions(
     re: re,
-    instructions: [TagReplace(tag), Trash],
+    instructions: [
+      TagReplace(tag),
+    ],
   )
 }
 
@@ -63,6 +66,7 @@ pub fn split_content_with_replacement(
       let node_replacement = case instruction {
         Trash -> None
         Keep -> Some(T(updated_blame, [BlamedContent(updated_blame, split)]))
+        DropLast -> Some(T(updated_blame, [BlamedContent(updated_blame, string.drop_end(split, 1))]))
         TagReplace(tag) -> Some(V(updated_blame, tag, [], []))
         TagReplaceKeepPayloadAsAttribute(tag, key) -> Some(V(
           updated_blame,

@@ -1,20 +1,14 @@
-import gleam/list
 import gleam/option
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, T, BlamedContent}
 
 fn nodemap(
   node: VXML,
 ) -> Result(List(VXML), DesugaringError) {
   case node {
-    V(_, _, _, _) -> Ok([node])
-    T(blame, lines) -> {
-      case list.length(lines) == 1 && infra.first_line(lines).content == "" {
-        True -> Ok([])
-        False -> Ok([T(blame, lines)])
-      }
-    }
+    T(_, [BlamedContent(_, "")]) -> Ok([])
+    _ -> Ok([node])
   }
 }
 

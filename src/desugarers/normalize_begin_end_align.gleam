@@ -3,17 +3,139 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type LatexDelimiterPair, DoubleDollar} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, type BlamedContent}
+import vxml.{type VXML, type BlamedContent, BlamedContent, V, T}
+
+fn do_if(f, b) {
+  case b {
+    True -> f
+    False -> fn(x){x}
+  }
+}
+
+fn split_and_insert_before_unless_allowable_ending_found(
+  lines: List(BlamedContent),
+  splitter: String,                      // this will be called with splitter == "\begin{align"
+  allowable_endings: List(String),       // this will almost always be ["$$"], but could be ["\[", "$$"] for ex
+  if_no_allowable_found_insert: String,  // will almost always be "$$"
+) -> List(BlamedContent) {
+  let blame = infra.blame_us("split_and_insert_before_unless_allowable_ending_found")
+
+  let add_prescribed_to_end_if_missing = fn(lines) {
+    let trimmed =
+      lines
+      |> list.reverse
+      |> infra.reversed_lines_trim_end
+    case list.any(
+      allowable_endings,
+      fn(x) { infra.first_line_ends_with(trimmed, x) }
+    ) {
+      True -> [
+        BlamedContent(blame, ""),
+        ..trimmed
+      ]
+      False -> [
+        BlamedContent(blame, ""),
+        BlamedContent(blame, if_no_allowable_found_insert),
+        ..trimmed
+      ]
+    }
+  }
+
+  let add_splitter_back_in = fn(lines) {
+    let assert [BlamedContent(blame, content), ..rest] = lines
+    [
+      BlamedContent(blame, splitter <> content),
+      ..rest
+    ]
+  }
+
+  let splits = infra.split_lines(lines, splitter)
+  let num_splits = list.length(splits)
+
+  list.index_map(
+    splits,
+    fn(lines, index) {
+      lines
+      |> do_if(add_splitter_back_in, index > 0)
+      |> do_if(add_prescribed_to_end_if_missing, index < num_splits - 1)
+    }
+  )
+  |> infra.last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed
+}
+
+fn split_and_insert_after_unless_allowable_beginning_found(
+  lines: List(BlamedContent),
+  splitter: String,
+  allowable_beginnings: List(String),    // this will almost always be ["$$"], but could be ["\]", "$$"] for ex
+  if_no_allowable_found_insert: String,  // this will almost always be "$$"
+) -> List(BlamedContent) {
+  let blame = infra.blame_us("split_and_insert_after_unless_allowable_beginning_found")
+
+  let add_prescribed_to_start_if_missing = fn(lines) {
+    let trimmed = infra.lines_trim_start(lines)
+    case list.any(
+      allowable_beginnings,
+      fn(x) { infra.first_line_starts_with(trimmed, x) }
+    ) {
+      True -> [
+        BlamedContent(blame, ""),
+        ..trimmed,
+      ]
+      False -> [
+        BlamedContent(blame, ""),
+        BlamedContent(blame, if_no_allowable_found_insert),
+        ..trimmed,
+      ]
+    }
+  }
+
+  let add_splitter_back_in = fn(lines) {
+    let assert [BlamedContent(blame, content), ..rest] = list.reverse(lines)
+    [
+      BlamedContent(blame, content <> splitter),
+      ..rest
+    ]
+  }
+
+  let splits = infra.split_lines(lines, splitter)
+  let num_splits = list.length(splits)
+
+  list.index_map(
+    splits,
+    fn(lines, index) {
+      lines
+      |> do_if(add_prescribed_to_start_if_missing, index > 0)
+      |> do_if(add_splitter_back_in, index < num_splits - 1)
+    }
+  )
+  |> infra.last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed
+}
 
 fn nodemap(
-  node: VXML,
-  inner: InnerParam,
+  vxml: VXML,
+  inner: InnerParam
 ) -> Result(VXML, DesugaringError) {
-  case node {
-    vxml.V(_, _, _, _) -> Ok(node)
-    vxml.T(blame, blamed_contents) -> {
-      let processed_contents = process_blamed_contents_for_align_delimiters(blamed_contents, inner.0, inner.1)
-      Ok(vxml.T(blame, processed_contents))
+  case vxml {
+    V(_, _, _, _) -> Ok(vxml)
+    T(blame, lines) -> {
+      let lines =
+        lines
+        |> split_and_insert_before_unless_allowable_ending_found(
+          "\\begin{align",
+          inner.0,
+          inner.1,
+        )
+        |> split_and_insert_after_unless_allowable_beginning_found(
+          "\\end{align}",
+          inner.2,
+          inner.3,
+        )
+        |> split_and_insert_after_unless_allowable_beginning_found(
+          "\\end{align*}",
+          inner.2,
+          inner.3,
+        )
+      Ok(T(blame, lines))
     }
   }
 }
@@ -27,199 +149,28 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   |> n2t.one_to_one_nodemap_2_desugarer_transform
 }
 
-fn process_blamed_contents_for_align_delimiters(
-  contents: List(BlamedContent),
-  s1: String,
-  s2: String
-) -> List(BlamedContent) {
-  // process each content with awareness of its neighbors
-  process_contents_with_neighbors(contents, s1, s2, [], 0)
-}
-
-fn process_contents_with_neighbors(
-  contents: List(BlamedContent),
-  s1: String,
-  s2: String,
-  acc: List(BlamedContent),
-  index: Int
-) -> List(BlamedContent) {
-  case contents {
-    [] -> list.reverse(acc)
-    [current, ..rest] -> {
-      let prev_content = case acc {
-        [prev, ..] -> prev.content
-        [] -> ""
-      }
-
-      let next_content = case rest {
-        [next, ..] -> next.content
-        [] -> ""
-      }
-
-      let processed_result = process_single_content_with_context(
-        current, s1, s2, prev_content, next_content
-      )
-
-      process_contents_with_neighbors(rest, s1, s2, list.append(list.reverse(processed_result), acc), index + 1)
-    }
-  }
-}
-
-fn process_single_content_with_context(
-  content: BlamedContent,
-  s1: String,
-  s2: String,
-  prev_content: String,
-  next_content: String
-) -> List(BlamedContent) {
-  let text = content.content
-
-  let processed_text = text
-    |> process_patterns_with_context(["\\begin{align*}", "\\begin{align}"], s1, prev_content, next_content, True)
-    |> process_patterns_with_context(["\\end{align*}", "\\end{align}"], s2, prev_content, next_content, False)
-
-  // check if delimiters need to be added as separate lines
-  check_and_add_delimiters_as_lines(content, text, processed_text, s1, s2)
-}
-
-
-
-fn check_and_add_delimiters_as_lines(
-  original_content: BlamedContent,
-  original_text: String,
-  processed_text: String,
-  s1: String,
-  s2: String
-) -> List(BlamedContent) {
-  let result = [vxml.BlamedContent(..original_content, content: processed_text)]
-
-  // check if s1 was prepended
-  case string.starts_with(processed_text, s1) && !string.starts_with(original_text, s1) {
-    True -> {
-      let without_s1 = string.drop_start(processed_text, string.length(s1))
-      let delimiter_content = vxml.BlamedContent(..original_content, content: s1)
-      let main_content = vxml.BlamedContent(..original_content, content: without_s1)
-      [delimiter_content, main_content]
-    }
-    False -> {
-      // check if s2 was appended
-      case string.ends_with(processed_text, s2) && !string.ends_with(original_text, s2) {
-        True -> {
-          let without_s2 = string.drop_end(processed_text, string.length(s2))
-          let delimiter_content = vxml.BlamedContent(..original_content, content: s2)
-          let main_content = vxml.BlamedContent(..original_content, content: without_s2)
-          [main_content, delimiter_content]
-        }
-        False -> result
-      }
-    }
-  }
-}
-
-fn process_patterns_with_context(
-  content: String,
-  patterns: List(String),
-  delimiter: String,
-  prev_content: String,
-  next_content: String,
-  is_begin: Bool
-) -> String {
-  list.fold(patterns, content, fn(acc_content, pattern) {
-    process_single_pattern_with_context(acc_content, pattern, delimiter, prev_content, next_content, is_begin)
-  })
-}
-
-fn process_single_pattern_with_context(
-  content: String,
-  pattern: String,
-  delimiter: String,
-  prev_content: String,
-  next_content: String,
-  is_begin: Bool
-) -> String {
-  case string.contains(content, pattern) {
-    False -> content
-    True -> {
-      let parts = string.split(content, pattern)
-      reconstruct_parts_with_context(parts, pattern, delimiter, prev_content, next_content, [], is_begin)
-    }
-  }
-}
-
-fn reconstruct_parts_with_context(
-  parts: List(String),
-  pattern: String,
-  delimiter: String,
-  prev_content: String,
-  next_content: String,
-  acc: List(String),
-  is_begin: Bool
-) -> String {
-  case parts {
-    [] -> string.join(list.reverse(acc), "")
-    [single] -> string.join(list.reverse([single, ..acc]), "")
-    [before, ..rest] -> {
-      let should_add_delimiter = case is_begin {
-        True -> {
-          let is_first_pattern_in_content = acc == []
-          case is_first_pattern_in_content {
-            True -> {
-              let combined = prev_content <> before
-              !ends_with_begin_pattern(string.trim_end(combined)) && !string.ends_with(string.trim_end(combined), delimiter)
-            }
-            False -> !ends_with_begin_pattern(before)
-          }
-        }
-        False -> {
-          let is_last_pattern_in_content = list.length(rest) == 1
-          case rest {
-            [after, .._more_rest] -> {
-              let combined_after = case is_last_pattern_in_content {
-                True -> after <> next_content
-                False -> after
-              }
-              let trimmed_after = string.trim_start(combined_after)
-              !starts_with_end_pattern(trimmed_after) && case is_last_pattern_in_content {
-                True -> !string.starts_with(trimmed_after, delimiter)
-                False -> True
-              }
-            }
-            [] -> {
-              let trimmed_next = string.trim_start(next_content)
-              !starts_with_end_pattern(trimmed_next) && !string.starts_with(trimmed_next, delimiter)
-            }
-          }
-        }
-      }
-
-      let new_part = case should_add_delimiter, is_begin {
-        True, True -> before <> delimiter <> pattern
-        True, False -> before <> pattern <> delimiter
-        False, _ -> before <> pattern
-      }
-
-      reconstruct_parts_with_context(rest, pattern, delimiter, prev_content, next_content, [new_part, ..acc], is_begin)
-    }
-  }
-}
-
-fn ends_with_begin_pattern(text: String) -> Bool {
-  let trimmed = string.trim_end(text)
-  string.ends_with(trimmed, "\\begin{align}") || string.ends_with(trimmed, "\\begin{align*}")
-}
-
-fn starts_with_end_pattern(text: String) -> Bool {
-  let trimmed = string.trim_start(text)
-  string.starts_with(trimmed, "\\end{align}") || string.starts_with(trimmed, "\\end{align*}")
-}
-
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.opening_and_closing_string_for_pair(param))
+  let #(allowed_starts, allowed_ends) =
+    param.1
+    |> list.map(infra.opening_and_closing_string_for_pair)
+    |> list.unzip
+  let #(prescribed_start, prescribed_end) =
+    infra.opening_and_closing_string_for_pair(param.0)
+  #(
+    allowed_starts,
+    prescribed_start,
+    allowed_ends,
+    prescribed_end,
+  )
+  |> Ok
 }
 
-type Param = LatexDelimiterPair
+type Param =
+  #(infra.LatexDelimiterPair, List(LatexDelimiterPair))
+//  prescribed_start/end        allowed_start/end
 
-type InnerParam = #(String, String)
+type InnerParam =
+  #(List(String), String, List(String), String)
 
 const name = "normalize_begin_end_align"
 const constructor = normalize_begin_end_align
@@ -252,7 +203,7 @@ pub fn normalize_begin_end_align(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: DoubleDollar,
+      param: #(DoubleDollar, [DoubleDollar]),
       source:   "
                 <> root
                   <>
@@ -275,7 +226,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ",
     ),
     infra.AssertiveTestData(
-      param: DoubleDollar,
+      param: #(DoubleDollar, [DoubleDollar]),
       source:   "
                 <> root
                   <>
@@ -298,16 +249,16 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ",
     ),
     infra.AssertiveTestData(
-      param: DoubleDollar,
+      param: #(DoubleDollar, [DoubleDollar]),
       source:   "
                 <> root
                   <>
                     \"Some text\"
-                    \"\\begin{align}\"
+                    \"$$ \"
                     \"\\begin{align}\"
                     \"x = 1\"
                     \"\\end{align}\"
-                    \"\\end{align}\"
+                    \" $$\"
                     \"More text\"
                 ",
       expected: "
@@ -316,80 +267,20 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     \"Some text\"
                     \"$$\"
                     \"\\begin{align}\"
-                    \"\\begin{align}\"
                     \"x = 1\"
-                    \"\\end{align}\"
                     \"\\end{align}\"
                     \"$$\"
                     \"More text\"
                 ",
     ),
     infra.AssertiveTestData(
-      param: DoubleDollar,
-      source:   "
-                <> root
-                  <>
-                    \"Some text\"
-                    \"\\begin{align*}\"
-                    \"\\begin{align}\"
-                    \"x = 1\"
-                    \"\\end{align}\"
-                    \"\\end{align*}\"
-                    \"More text\"
-                ",
-      expected: "
-                <> root
-                  <>
-                    \"Some text\"
-                    \"$$\"
-                    \"\\begin{align*}\"
-                    \"\\begin{align}\"
-                    \"x = 1\"
-                    \"\\end{align}\"
-                    \"\\end{align*}\"
-                    \"$$\"
-                    \"More text\"
-                ",
-    ),
-    infra.AssertiveTestData(
-      param: DoubleDollar,
-      source:   "
-                <> root
-                  <>
-                    \"Some text\"
-                    \"$$\"
-                    \"\\begin{align*}\"
-                    \"\\begin{align}\"
-                    \"x = 1\"
-                    \"\\end{align}\"
-                    \"\\end{align*}\"
-                    \"$$\"
-                    \"More text\"
-                ",
-      expected: "
-                <> root
-                  <>
-                    \"Some text\"
-                    \"$$\"
-                    \"\\begin{align*}\"
-                    \"\\begin{align}\"
-                    \"x = 1\"
-                    \"\\end{align}\"
-                    \"\\end{align*}\"
-                    \"$$\"
-                    \"More text\"
-                ",
-    ),
-    infra.AssertiveTestData(
-      param: DoubleDollar,
+      param: #(DoubleDollar, [DoubleDollar]),
       source:   "
                 <> root
                   <>
                     \"Some text\"
                     \"$$\\begin{align*}\"
-                    \"\\begin{align}\"
                     \"x = 1\"
-                    \"\\end{align}\"
                     \"\\end{align*}$$\"
                     \"More text\"
                 ",
@@ -397,11 +288,64 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <>
                     \"Some text\"
-                    \"$$\\begin{align*}\"
-                    \"\\begin{align}\"
+                    \"$$\"
+                    \"\\begin{align*}\"
+                    \"x = 1\"
+                    \"\\end{align*}\"
+                    \"$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: #(DoubleDollar, [DoubleDollar]),
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\"
+                    \"\"
+                    \"\"
+                    \"\\begin{align*}\"
                     \"x = 1\"
                     \"\\end{align}\"
+                    \"\"
+                    \"\"
+                    \"$$\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\"
+                    \"\\begin{align*}\"
+                    \"x = 1\"
+                    \"\\end{align}\"
+                    \"$$\"
+                    \"More text\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: #(DoubleDollar, [DoubleDollar]),
+      source:   "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"\\begin{align*}\"
+                    \"\\begin{align}\"
                     \"\\end{align*}$$\"
+                    \"More text\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"Some text\"
+                    \"$$\"
+                    \"\\begin{align*}\"
+                    \"$$\"
+                    \"\\begin{align}\"
+                    \"\\end{align*}\"
+                    \"$$\"
                     \"More text\"
                 ",
     ),
@@ -409,5 +353,9 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data(
+    name,
+    assertive_tests_data(),
+    constructor,
+  )
 }

@@ -774,28 +774,44 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 //* misc (children collecting, inserting, ...)
 //**************************************************************
 
-pub fn first_line(lines: List(BlamedContent)) -> BlamedContent {
-  let assert [first, ..] = lines
-  first
+fn lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
+  l1: List(BlamedContent),
+  l2: List(BlamedContent),
+) -> List(BlamedContent) {
+  let assert [first1, ..rest1] = l1
+  let assert [first2, ..rest2] = l2
+  pour(
+    rest1,
+    [
+      BlamedContent(first1.blame, first1.content <> first2.content),
+      ..rest2
+    ]
+  )
 }
 
-pub fn t_first_line(node: VXML) -> BlamedContent {
-  let assert T(_, lines) = node
-  lines |> first_line
+pub fn last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(
+  list_of_lists: List(List(BlamedContent))
+) -> List(BlamedContent) {
+  case list_of_lists {
+    [] -> panic as "this is unexpected"
+    [one] -> one
+    [next_to_last, last] -> lines_last_to_first_concatenation_where_first_lines_are_already_reversed(next_to_last, last)
+    [first, ..rest] -> lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
+      first,
+      last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(rest)
+    )
+  }
 }
 
 pub fn t_t_last_to_first_concatenation(node1: VXML, node2: VXML) -> VXML {
   let assert T(blame1, lines1) = node1
   let assert T(_, lines2) = node2
-  let assert [BlamedContent(blame_last, content_last), ..other_lines1] = lines1 |> list.reverse
-  let assert [BlamedContent(_, content_first), ..other_lines2] = lines2
   T(
     blame1,
-    list.flatten([
-      other_lines1 |> list.reverse,
-      [BlamedContent(blame_last, content_last <> content_first)],
-      other_lines2,
-    ]),
+    lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
+      lines1 |> list.reverse,
+      lines2
+    )
   )
 }
 
@@ -881,17 +897,73 @@ pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
   }
 }
 
+pub fn debug_lines_and(
+  lines: List(BlamedContent),
+  announcer: String,
+) -> List(BlamedContent) {
+  io.print(announcer <> ":" <> string.repeat(" ", 15 - string.length(announcer)))
+  list.index_map(
+    lines,
+    fn(line, i) {
+      case i > 0 {
+        True -> io.print(string.repeat(" ", 16))
+        False -> Nil
+      }
+      io.println("\"" <> line.content <> "\"")
+    }
+  )
+  lines
+}
+
+fn split_lines_internal(
+  previous_splits: List(List(BlamedContent)),
+  current_lines: List(BlamedContent),
+  remaining: List(BlamedContent),
+  splitter: String,
+) -> List(List(BlamedContent)) {
+  case remaining {
+    [] -> [
+      current_lines |> list.reverse,
+      ..previous_splits
+    ] |> list.reverse
+    [first, ..rest] -> {
+      case string.split_once(first.content, splitter) {
+        Error(_) -> split_lines_internal(
+          previous_splits,
+          [first, ..current_lines],
+          rest,
+          splitter,
+        )
+        Ok(#(before, after)) -> split_lines_internal(
+          [
+            [
+              BlamedContent(first.blame, before),
+              ..current_lines
+            ] |> list.reverse,
+            ..previous_splits,
+          ],
+          [],
+          [
+            BlamedContent(first.blame, after),
+            ..rest,
+          ],
+          splitter,
+        )
+      }
+    }
+  }
+}
+
 pub fn split_lines(
   lines: List(BlamedContent),
   splitter: String,
 ) -> List(List(BlamedContent)) {
-  let blame = blame_us("split_lines")
-  lines
-  |> list.map(fn(l) {
-    l.content
-    |> string.split(on: splitter)
-    |> list.map(BlamedContent(blame, _))
-  })
+  split_lines_internal(
+    [],
+    [],
+    lines,
+    splitter,
+  )
 }
 
 pub fn lines_trim_start(
@@ -1205,7 +1277,10 @@ pub fn encode_ending_spaces_in_last_node(vxmls: List(VXML)) -> List(VXML) {
 pub fn t_start_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
   let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
-  T(blame, [BlamedContent(blame_first, text <> content_first), ..other_lines])
+  T(
+    blame,
+    [BlamedContent(blame_first, text <> content_first), ..other_lines]
+  )
 }
 
 pub fn t_end_insert_text(node: VXML, text: String) {
@@ -1225,8 +1300,14 @@ pub fn list_start_insert_text(
   text: String,
 ) -> List(VXML) {
   case vxmls {
-    [T(_, _) as first, ..rest] -> [t_start_insert_text(first, text), ..rest]
-    _ -> [T(blame, [BlamedContent(blame, text)]), ..vxmls]
+    [
+      T(_, _) as first, ..rest
+    ] -> [
+      t_start_insert_text(first, text), ..rest
+    ]
+    _ -> [
+      T(blame, [BlamedContent(blame, text)]), ..vxmls
+    ]
   }
 }
 
