@@ -54,7 +54,7 @@ pub fn parse_to_float(s: String) -> Result(Float, Nil) {
 pub fn parse_number_and_optional_css_unit(
   s: String
 ) -> Result(#(Float, Option(CSSUnit)), Nil) {
-  let assert Ok(digits_pattern) = regexp.from_string("^([0-9.|1.0e0-9]+)(|px|rem|em)?$")
+  let assert Ok(digits_pattern) = regexp.from_string("^([-0-9.e]+)(|px|rem|em)$")
 
   case regexp.scan(digits_pattern, s) {
     [regexp.Match(_, [Some(digits), Some(unit)])] -> {

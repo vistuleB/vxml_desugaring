@@ -24,7 +24,6 @@ fn v_before_transforming_children(
               Error(DesugaringError(attr.blame, "Could not parse digits in width attribute"))
             }
           )
-
           Ok(#(node, float.max(state, width)))
         }
       }
@@ -77,10 +76,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
-//             ↖
-//           tags to include in the max width calculation
-
-type InnerParam = List(String)
+//           ↖
+//           tags to include in the 
+//           max width calculation
+type InnerParam = Param
 
 const name = "compute_max_element_width"
 const constructor = compute_max_element_width

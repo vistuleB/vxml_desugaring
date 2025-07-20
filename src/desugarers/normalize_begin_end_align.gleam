@@ -349,6 +349,45 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     \"More text\"
                 ",
     ),
+    infra.AssertiveTestData(
+      param: #(DoubleDollar, [DoubleDollar]),
+      source:   "
+                <> root
+                  <>
+                    \"A\"
+                    \"B\"
+                    \"\\begin{align}\\end{align}\"
+                    \"C\"
+                    \"D\"
+                    \"\\begin{align}\\end{align}\"
+                    \"E\"
+                    \"F\"
+                    \"\\begin{align}\\end{align}\"
+                    \"G\"
+                    \"H\"
+                ",
+      expected: "
+                <> root
+                  <>
+                    \"A\"
+                    \"B\"
+                    \"$$\"
+                    \"\\begin{align}\\end{align}\"
+                    \"$$\"
+                    \"C\"
+                    \"D\"
+                    \"$$\"
+                    \"\\begin{align}\\end{align}\"
+                    \"$$\"
+                    \"E\"
+                    \"F\"
+                    \"$$\"
+                    \"\\begin{align}\\end{align}\"
+                    \"$$\"
+                    \"G\"
+                    \"H\"
+                ",
+    ),
   ]
 }
 
