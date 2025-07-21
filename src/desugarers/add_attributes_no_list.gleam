@@ -1,44 +1,22 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
-
-fn build_blamed_attributes(
-  blame,
-  attributes: List(#(String, String)),
-) -> List(BlamedAttribute) {
-  attributes
-  |> list.map(fn(attr) {
-    BlamedAttribute(blame, attr |> pair.first, attr |> pair.second)
-  })
-}
+import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
 
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    T(_, _) -> vxml
-    V(blame, tag, old_attributes, children) -> {
-      case dict.get(inner, tag) {
-        Ok(new_attributes) -> {
-          V(
-            blame,
-            tag,
-            list.flatten([
-              old_attributes,
-              build_blamed_attributes(blame, new_attributes),
-            ]),
-            children,
-          )
-        }
-        Error(Nil) -> vxml
-      }
+    V(_, tag, attrs, _) if tag == inner.0 -> {
+      V(
+        ..vxml,
+        attributes: list.append(attrs, [inner.1]),
+      )
     }
+    _ -> vxml
   }
 }
 
@@ -51,26 +29,32 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_aggregated_dict(param))
+  #(
+    param.0,
+    BlamedAttribute(
+      infra.blame_us("add_attrs_no_list"),
+      param.1,
+      param.2,
+    )
+  )
+  |> Ok
 }
 
 type Param =
-  List(#(String, String, String))
-//       ↖       ↖       ↖
-//       tag     attr    value
+  #(String, String, String)
+//  ↖       ↖       ↖
+//  tag     attr    value
+type InnerParam = #(String, BlamedAttribute)
 
-type InnerParam =
-  Dict(String, List(#(String, String)))
-
-const name = "add_attributes"
-const constructor = add_attributes
+const name = "add_attributes_no_list"
+const constructor = add_attributes_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// adds attributes to tags
-pub fn add_attributes(param: Param) -> Desugarer {
+pub fn add_attributes_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

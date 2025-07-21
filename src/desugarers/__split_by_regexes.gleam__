@@ -9,7 +9,7 @@ type Extras =
 fn nodemap_factory(extras: Extras) -> infra.FancyOneToManyNodeMap {
   let #(regexes_and_tags, forbidden_parents) = extras
   infra.replace_regexes_by_tags_param_transform(_, regexes_and_tags)
-  |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
+  |> n2t.prevent_one_to_many_nodemap_inside(forbidden_parents)
 }
 
 fn desugarer_factory(extras: Extras) -> Desugarer {

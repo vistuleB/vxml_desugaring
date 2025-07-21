@@ -422,7 +422,7 @@ pub type ThreePossibilities(f, g, h) {
 
 fn print_pipeline(desugarers: List(Desugarer)) {
   let none_param = "--"
-  let max_param_cols = 40
+  let max_param_cols = 55
 
   let lines = 
     desugarers

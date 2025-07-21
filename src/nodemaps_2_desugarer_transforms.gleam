@@ -4,6 +4,35 @@ import vxml.{type VXML, V, T}
 import infrastructure.{type DesugarerTransform, type DesugaringError} as infra
 
 //**************************************************************
+//* OneToOneNodeMapNoError
+//**************************************************************
+
+pub type OneToOneNodeMapNoError =
+  fn(VXML) -> VXML
+
+fn one_to_one_nodemap_no_error_recursive_application(
+  node: VXML,
+  nodemap: OneToOneNodeMapNoError,
+) -> VXML {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, _, _, children) -> nodemap(V(
+      ..node,
+      children: list.map(children, one_to_one_nodemap_no_error_recursive_application(_, nodemap))
+    ))
+  }
+}
+
+pub fn one_to_one_nodemap_no_error_2_desugarer_transform(
+  nodemap: OneToOneNodeMapNoError,
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_one_nodemap_no_error_recursive_application(vxml, nodemap)
+    |> Ok
+  }
+}
+
+//**************************************************************
 //* OneToOneNodeMap
 //**************************************************************
 
@@ -641,7 +670,7 @@ pub fn prevent_node_to_node_transform_inside(
   }
 }
 
-pub fn prevent_node_to_nodes_transform_inside(
+pub fn prevent_one_to_many_nodemap_inside(
   nodemap: OneToManyNodeMap,
   forbidden_tags: List(String),
 ) -> FancyOneToManyNodeMap {

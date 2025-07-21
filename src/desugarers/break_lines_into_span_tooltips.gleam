@@ -66,7 +66,7 @@ fn nodemap(
 
 fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   nodemap(_, inner)
-  |> n2t.prevent_node_to_nodes_transform_inside(["Math", "MathBlock"])
+  |> n2t.prevent_one_to_many_nodemap_inside(["Math", "MathBlock"])
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {

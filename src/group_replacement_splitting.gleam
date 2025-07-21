@@ -1,4 +1,3 @@
-import indexed_regex_splitting
 import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{None, Some}
@@ -114,6 +113,13 @@ fn split_if_t_with_replacement_in_nodes(
 // nodemap API
 // *****************
 
+pub fn split_if_t_with_replacement_no_list_nodemap(
+  vxml: VXML,
+  rule: RegexpWithGroupReplacementInstructions,
+) -> Result(List(VXML), DesugaringError) {
+  Ok(split_if_t_with_replacement_in_nodes([vxml], rule))
+}
+
 pub fn split_if_t_with_replacement_nodemap(
   vxml: VXML,
   rules: List(RegexpWithGroupReplacementInstructions),
@@ -130,6 +136,12 @@ pub fn split_if_t_with_replacement_nodemap(
 // RegexpWithGroupReplacementInstructions constructor helpers API
 // *****************
 
+pub const regex_prefix_to_make_unescaped = "(?<!\\\\)(?:(?:\\\\\\\\)*)"
+
+pub fn unescaped_suffix(suffix: String) -> String {
+  regex_prefix_to_make_unescaped <> "(?:" <> suffix <> ")"
+}
+
 pub fn group(s: String) -> String {
   "(" <> s <> ")"
 }
@@ -140,7 +152,7 @@ pub fn unescaped_suffix_replacement_splitter(
 ) -> RegexpWithGroupReplacementInstructions {
   let assert Ok(re) =
     suffix
-    |> indexed_regex_splitting.unescaped_suffix
+    |> unescaped_suffix
     |> group
     |> regexp.from_string
 

@@ -6,8 +6,8 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
 fn accumulator(
-  opening: String,
-  closing: String,
+  opening: List(String),
+  closing: List(String),
   enclosing: String,
   already_processed: List(VXML),
   last_opening: Option(VXML),
@@ -58,7 +58,7 @@ fn accumulator(
           )
       }
     [V(_, tag, _, _) as first, ..rest] ->
-      case tag == opening, tag == closing {
+      case list.contains(opening, tag), list.contains(closing, tag) {
         False, False ->
           // *
           // treat the V-node like the T-node above
@@ -151,7 +151,10 @@ fn accumulator(
                 enclosing,
                 [
                   V(
-                    infra.get_blame(dude) |> infra.append_blame_comment("paired with " <> ins(infra.get_blame(first))),
+                    infra.get_blame(dude)
+                      |> infra.append_blame_comment(
+                        "paired with " <> ins(infra.get_blame(first)),
+                      ),
                     enclosing,
                     [],
                     after_last_opening |> list.reverse,
@@ -190,7 +193,10 @@ fn accumulator(
                 enclosing,
                 [
                   V(
-                    infra.get_blame(dude) |> infra.append_blame_comment("paired with " <> ins(infra.get_blame(first))),
+                    infra.get_blame(dude)
+                      |> infra.append_blame_comment(
+                        "paired with " <> ins(infra.get_blame(first)),
+                      ),
                     enclosing,
                     [],
                     after_last_opening |> list.reverse,
@@ -242,14 +248,15 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  #(String,    String,     String)
-//  ↖          ↖           ↖
-//  opening    closing     enclosing
-//  tag        tag         tag
+  #(List(String), List(String), String)
+//  ↖             ↖             ↖
+//  opening       closing       enclosing
+//  tags          tags          tag
+
 type InnerParam = Param
 
-const name = "pair_bookends"
-const constructor = pair_bookends
+const name = "pair_list_list_bookends"
+const constructor = pair_list_list_bookends
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -258,7 +265,7 @@ const constructor = pair_bookends
 /// pairs opening and closing bookend tags by
 /// wrapping content between them in an enclosing
 /// tag
-pub fn pair_bookends(param: Param) -> Desugarer {
+pub fn pair_list_list_bookends(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -1,61 +1,43 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, T, V}
 
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    T(_, _) -> vxml
-    V(blame, tag, old_attributes, children) -> {
-      case dict.get(inner, tag) {
-        Ok(counter_names) -> {
-          let #(unassigned_handle_attributes, other_attributes) =
-            list.partition(old_attributes, fn(attr) {
-              let assert True = attr.value == string.trim(attr.value)
-              attr.key == "handle"
-              && string.split(attr.value, " ") |> list.length == 1
-            })
+    V(blame, tag, old_attributes, children) if tag == inner.0 -> {
+      let #(
+        unassigned_handle_attributes,
+        other_attributes
+      ) = list.partition(old_attributes, fn(attr) {
+        let assert True = attr.value == string.trim(attr.value)
+        attr.key == "handle"
+        && string.split(attr.value, " ") |> list.length == 1
+      })
 
-          let handles_str =
-            unassigned_handle_attributes
-            |> list.map(fn(attr) { attr.value <> "<<" })
-            |> string.join("")
+      let handles_str =
+        unassigned_handle_attributes
+        |> list.map(fn(attr) { attr.value <> "<<" })
+        |> string.join("")
 
-          let new_attributes =
-            counter_names
-            |> list.index_map(fn(counter_name, index) {
-              case index == 0 {
-                True ->
-                  BlamedAttribute(
-                    blame,
-                    ".",
-                    counter_name <> " " <> handles_str <> "::++" <> counter_name,
-                  )
-                False ->
-                  BlamedAttribute(
-                    blame,
-                    ".",
-                    counter_name <> " " <> "::++" <> counter_name,
-                  )
-              }
-            })
+      let new_attribute = BlamedAttribute(
+        ..inner.2, 
+        value: inner.1 <> " " <> handles_str <> inner.2.value,
+      )
 
-          V(
-            blame,
-            tag,
-            list.flatten([new_attributes, other_attributes]),
-            children,
-          )
-        }
-        Error(Nil) -> vxml
-      }
+      V(
+        blame,
+        tag,
+        [new_attribute, ..other_attributes],
+        children,
+      )
     }
+    _ -> vxml
   }
 }
 
@@ -68,19 +50,25 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.aggregate_on_first(param))
+  #(
+    param.0,
+    param.1,
+    BlamedAttribute(
+      infra.blame_us("assoc_counter_no_list"),
+      ".",
+      "::++" <> param.1,
+    )
+  )
+  |> Ok
 }
 
-type Param =
-  List(#(String, String))
-//       ↖      ↖
-//       tag    counter_name
+type Param = #(String, String)
+//             ↖       ↖
+//             tag     counter_name
+type InnerParam = #(String, String, BlamedAttribute)
 
-type InnerParam =
-  Dict(String, List(String))
-
-const name = "associate_counter_by_prepending_incrementing_attribute"
-const constructor = associate_counter_by_prepending_incrementing_attribute
+const name = "associate_counter_by_prepending_incrementing_attribute_no_list"
+const constructor = associate_counter_by_prepending_incrementing_attribute_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -103,7 +91,7 @@ const constructor = associate_counter_by_prepending_incrementing_attribute
 /// handles of the attribute list of node 'tag'
 /// to the first counter being incremented in
 /// this fashion, by this desugarer.
-pub fn associate_counter_by_prepending_incrementing_attribute(
+pub fn associate_counter_by_prepending_incrementing_attribute_no_list(
   param: Param,
 ) -> Desugarer {
   Desugarer(

@@ -12,6 +12,8 @@ import gleam/regexp
 import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V,
 vxml_to_string}
 
+pub const no_list = True
+
 pub type LatexDelimiterSingleton {
   DoubleDollarSingleton
   SingleDollarSingleton

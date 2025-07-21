@@ -6,7 +6,7 @@ import nodemaps_2_desugarer_transforms as n2t
 fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
   let #(string_pairs, forbidden_parents) = inner
   infra.find_replace_in_node_transform_version(_, string_pairs)
-  |> n2t.prevent_node_to_nodes_transform_inside(forbidden_parents)
+  |> n2t.prevent_one_to_many_nodemap_inside(forbidden_parents)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {

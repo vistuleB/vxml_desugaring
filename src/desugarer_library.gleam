@@ -4,6 +4,7 @@ import desugarers/add_after_tags_but_not_last_child_tags
 import desugarers/add_attribute_to_second_of_kind
 import desugarers/add_attribute_when_child_of
 import desugarers/add_attributes
+import desugarers/add_attributes_no_list
 import desugarers/add_before_tags_but_not_before_first_of_kind
 import desugarers/add_before_tags_but_not_first_child_tags
 import desugarers/add_between_tag_and_text_node
@@ -15,6 +16,7 @@ import desugarers/append_class_to_child_if
 import desugarers/append_class_to_children_with_class
 import desugarers/append_class_to_children_with_tag
 import desugarers/associate_counter_by_prepending_incrementing_attribute
+import desugarers/associate_counter_by_prepending_incrementing_attribute_no_list
 import desugarers/auto_generate_child_if_missing_from_attribute
 import desugarers/auto_generate_child_if_missing_from_first_descendant_of_type
 import desugarers/break_lines_into_span_tooltips
@@ -36,6 +38,7 @@ import desugarers/find_replace_in_descendants_of
 import desugarers/fix_ti2_local_links
 import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
+import desugarers/fold_tags_into_text_no_list
 import desugarers/free_children
 import desugarers/generate_lbp_breadcrumbs
 import desugarers/generate_lbp_prev_next_attributes
@@ -53,6 +56,7 @@ import desugarers/identity
 import desugarers/insert_bookend_tags
 import desugarers/insert_bookend_text
 import desugarers/insert_bookend_text_if_no_attributes
+import desugarers/insert_bookend_text_no_list
 import desugarers/insert_ti2_counter_commands
 import desugarers/keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 import desugarers/merge_parent_attributes_into_child
@@ -60,6 +64,7 @@ import desugarers/normalize_begin_end_align
 import desugarers/normalize_math_delimiters_inside
 import desugarers/pair_bookends
 import desugarers/pair_double_dollars_together
+import desugarers/pair_list_list_bookends
 import desugarers/prepend_append_to_text_children_of
 import desugarers/prepend_text
 import desugarers/prepend_text_if_has_ancestor_else
@@ -85,9 +90,9 @@ import desugarers/rename_with_attributes
 import desugarers/replace_in_attribute_values
 import desugarers/replace_multiple_spaces_by_one
 import desugarers/replace_text_parent_by_text_bookends
-import desugarers/split_by_indexed_regexes
 import desugarers/split_content_by_low_level_delimiters
 import desugarers/split_with_replacement_instructions
+import desugarers/split_with_replacement_instructions_no_list
 import desugarers/strip_math_delimiters_inside
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
@@ -112,6 +117,7 @@ pub const add_after_tags_but_not_last_child_tags = add_after_tags_but_not_last_c
 pub const add_attribute_to_second_of_kind = add_attribute_to_second_of_kind.add_attribute_to_second_of_kind
 pub const add_attribute_when_child_of = add_attribute_when_child_of.add_attribute_when_child_of
 pub const add_attributes = add_attributes.add_attributes
+pub const add_attributes_no_list = add_attributes_no_list.add_attributes_no_list
 pub const add_before_tags_but_not_before_first_of_kind = add_before_tags_but_not_before_first_of_kind.add_before_tags_but_not_before_first_of_kind
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
 pub const add_between_tag_and_text_node = add_between_tag_and_text_node.add_between_tag_and_text_node
@@ -123,6 +129,7 @@ pub const append_class_to_child_if = append_class_to_child_if.append_class_to_ch
 pub const append_class_to_children_with_class = append_class_to_children_with_class.append_class_to_children_with_class
 pub const append_class_to_children_with_tag = append_class_to_children_with_tag.append_class_to_children_with_tag
 pub const associate_counter_by_prepending_incrementing_attribute = associate_counter_by_prepending_incrementing_attribute.associate_counter_by_prepending_incrementing_attribute
+pub const associate_counter_by_prepending_incrementing_attribute_no_list = associate_counter_by_prepending_incrementing_attribute_no_list.associate_counter_by_prepending_incrementing_attribute_no_list
 pub const auto_generate_child_if_missing_from_attribute = auto_generate_child_if_missing_from_attribute.auto_generate_child_if_missing_from_attribute
 pub const auto_generate_child_if_missing_from_first_descendant_of_type = auto_generate_child_if_missing_from_first_descendant_of_type.auto_generate_child_if_missing_from_first_descendant_of_type
 pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
@@ -144,6 +151,7 @@ pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_r
 pub const fix_ti2_local_links = fix_ti2_local_links.fix_ti2_local_links
 pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
+pub const fold_tags_into_text_no_list = fold_tags_into_text_no_list.fold_tags_into_text_no_list
 pub const free_children = free_children.free_children
 pub const generate_lbp_breadcrumbs = generate_lbp_breadcrumbs.generate_lbp_breadcrumbs
 pub const generate_lbp_prev_next_attributes = generate_lbp_prev_next_attributes.generate_lbp_prev_next_attributes
@@ -161,6 +169,7 @@ pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_bookend_text = insert_bookend_text.insert_bookend_text
 pub const insert_bookend_text_if_no_attributes = insert_bookend_text_if_no_attributes.insert_bookend_text_if_no_attributes
+pub const insert_bookend_text_no_list = insert_bookend_text_no_list.insert_bookend_text_no_list
 pub const insert_ti2_counter_commands = insert_ti2_counter_commands.insert_ti2_counter_commands
 pub const keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 pub const merge_parent_attributes_into_child = merge_parent_attributes_into_child.merge_parent_attributes_into_child
@@ -168,6 +177,7 @@ pub const normalize_begin_end_align = normalize_begin_end_align.normalize_begin_
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair_bookends = pair_bookends.pair_bookends
 pub const pair_double_dollars_together = pair_double_dollars_together.pair_double_dollars_together
+pub const pair_list_list_bookends = pair_list_list_bookends.pair_list_list_bookends
 pub const prepend_append_to_text_children_of = prepend_append_to_text_children_of.prepend_append_to_text_children_of
 pub const prepend_text = prepend_text.prepend_text
 pub const prepend_text_if_has_ancestor_else = prepend_text_if_has_ancestor_else.prepend_text_if_has_ancestor_else
@@ -193,9 +203,9 @@ pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const replace_in_attribute_values = replace_in_attribute_values.replace_in_attribute_values
 pub const replace_multiple_spaces_by_one = replace_multiple_spaces_by_one.replace_multiple_spaces_by_one
 pub const replace_text_parent_by_text_bookends = replace_text_parent_by_text_bookends.replace_text_parent_by_text_bookends
-pub const split_by_indexed_regexes = split_by_indexed_regexes.split_by_indexed_regexes
 pub const split_content_by_low_level_delimiters = split_content_by_low_level_delimiters.split_content_by_low_level_delimiters
 pub const split_with_replacement_instructions = split_with_replacement_instructions.split_with_replacement_instructions
+pub const split_with_replacement_instructions_no_list = split_with_replacement_instructions_no_list.split_with_replacement_instructions_no_list
 pub const strip_math_delimiters_inside = strip_math_delimiters_inside.strip_math_delimiters_inside
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
@@ -221,6 +231,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   add_attribute_to_second_of_kind.assertive_tests,
   add_attribute_when_child_of.assertive_tests,
   add_attributes.assertive_tests,
+  add_attributes_no_list.assertive_tests,
   add_before_tags_but_not_before_first_of_kind.assertive_tests,
   add_before_tags_but_not_first_child_tags.assertive_tests,
   add_between_tag_and_text_node.assertive_tests,
@@ -232,6 +243,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   append_class_to_children_with_class.assertive_tests,
   append_class_to_children_with_tag.assertive_tests,
   associate_counter_by_prepending_incrementing_attribute.assertive_tests,
+  associate_counter_by_prepending_incrementing_attribute_no_list.assertive_tests,
   auto_generate_child_if_missing_from_attribute.assertive_tests,
   auto_generate_child_if_missing_from_first_descendant_of_type.assertive_tests,
   break_lines_into_span_tooltips.assertive_tests,
@@ -253,6 +265,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   fix_ti2_local_links.assertive_tests,
   fold_tag_contents_into_text.assertive_tests,
   fold_tags_into_text.assertive_tests,
+  fold_tags_into_text_no_list.assertive_tests,
   free_children.assertive_tests,
   generate_lbp_breadcrumbs.assertive_tests,
   generate_lbp_prev_next_attributes.assertive_tests,
@@ -270,6 +283,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   insert_bookend_tags.assertive_tests,
   insert_bookend_text.assertive_tests,
   insert_bookend_text_if_no_attributes.assertive_tests,
+  insert_bookend_text_no_list.assertive_tests,
   insert_ti2_counter_commands.assertive_tests,
   keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.assertive_tests,
   merge_parent_attributes_into_child.assertive_tests,
@@ -277,6 +291,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   normalize_math_delimiters_inside.assertive_tests,
   pair_bookends.assertive_tests,
   pair_double_dollars_together.assertive_tests,
+  pair_list_list_bookends.assertive_tests,
   prepend_append_to_text_children_of.assertive_tests,
   prepend_text.assertive_tests,
   prepend_text_if_has_ancestor_else.assertive_tests,
@@ -302,9 +317,9 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   replace_in_attribute_values.assertive_tests,
   replace_multiple_spaces_by_one.assertive_tests,
   replace_text_parent_by_text_bookends.assertive_tests,
-  split_by_indexed_regexes.assertive_tests,
   split_content_by_low_level_delimiters.assertive_tests,
   split_with_replacement_instructions.assertive_tests,
+  split_with_replacement_instructions_no_list.assertive_tests,
   strip_math_delimiters_inside.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
