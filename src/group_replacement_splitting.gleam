@@ -7,7 +7,7 @@ import gleam/string
 import infrastructure.{type DesugaringError} as infra
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
-pub type RegexpMatchedGroupReplacementInstructions {
+pub type GroupReplacementInstruction {
   Keep
   Trash
   DropLast
@@ -19,22 +19,7 @@ pub type RegexpMatchedGroupReplacementInstructions {
 pub type RegexpWithGroupReplacementInstructions {
   RegexpWithGroupReplacementInstructions(
     re: Regexp,
-    instructions: List(RegexpMatchedGroupReplacementInstructions),
-  )
-}
-
-pub fn unescaped_suffix_replacement_splitter(
-  suffix: String,
-  tag: String,
-) -> RegexpWithGroupReplacementInstructions {
-  let assert Ok(re) = regexp.from_string(
-    indexed_regex_splitting.unescaped_suffix(suffix)
-  )
-  RegexpWithGroupReplacementInstructions(
-    re: re,
-    instructions: [
-      TagReplace(tag),
-    ],
+    instructions: List(GroupReplacementInstruction),
   )
 }
 
@@ -94,7 +79,7 @@ pub fn split_content_with_replacement(
   })
 }
 
-pub fn split_blamed_line_with_replacement(
+fn split_blamed_line_with_replacement(
   line: BlamedContent,
   w: RegexpWithGroupReplacementInstructions,
 ) -> List(VXML) {
@@ -125,6 +110,10 @@ fn split_if_t_with_replacement_in_nodes(
   |> list.flatten
 }
 
+// *****************
+// nodemap API
+// *****************
+
 pub fn split_if_t_with_replacement_nodemap(
   vxml: VXML,
   rules: List(RegexpWithGroupReplacementInstructions),
@@ -135,4 +124,48 @@ pub fn split_if_t_with_replacement_nodemap(
     split_if_t_with_replacement_in_nodes
   )
   |> Ok
+}
+
+// *****************
+// RegexpWithGroupReplacementInstructions constructor helpers API
+// *****************
+
+pub fn group(s: String) -> String {
+  "(" <> s <> ")"
+}
+
+pub fn unescaped_suffix_replacement_splitter(
+  suffix: String,
+  tag: String,
+) -> RegexpWithGroupReplacementInstructions {
+  let assert Ok(re) =
+    suffix
+    |> indexed_regex_splitting.unescaped_suffix
+    |> group
+    |> regexp.from_string
+
+  RegexpWithGroupReplacementInstructions(
+    re: re,
+    instructions: [
+      TagReplace(tag),
+    ],
+  )
+}
+
+pub fn for_groups(
+  pairs: List(#(String, GroupReplacementInstruction)),
+) -> RegexpWithGroupReplacementInstructions {
+  let #(re_string, instructions) =
+    list.map_fold(
+      pairs,
+      "",
+      fn (acc, p) {
+        #(acc <> group(p.0), p.1)
+      }
+    )
+  let assert Ok(re) = regexp.from_string(re_string)
+  RegexpWithGroupReplacementInstructions(
+    re: re,
+    instructions: instructions,
+  )
 }

@@ -1,13 +1,10 @@
 import indexed_regex_splitting as irs
 import gleam/list
-import gleam/pair
 import group_replacement_splitting as grs
 import infrastructure.{
   type Desugarer,
   type LatexDelimiterPair,
   type LatexDelimiterSingleton,
-  DoubleDollar,
-  SingleDollar,
   DoubleDollarSingleton,
   SingleDollarSingleton,
   BackslashOpeningParenthesis,
@@ -68,70 +65,37 @@ fn split_pair_fold_for_delimiter_pair(
   }
 }
 
-pub fn create_mathblock_elements(
-  allowed_delimiters: List(LatexDelimiterPair),
-  normative_delimiter: LatexDelimiterPair,
+pub fn create_math_or_mathblock_elements(
+  parsed: List(LatexDelimiterPair),
+  produced: LatexDelimiterPair,
+  which: String,
 ) -> List(Desugarer) {
-  let normalization = [
-    dl.normalize_math_delimiters_inside(#("MathBlock", normative_delimiter))
-  ]
-  let display_math_pipe =
-    list.map(
-      allowed_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock"])
-    )
+  let pair = infra.opening_and_closing_string_for_pair(produced)
+  let create_tags =
+    parsed
+    |> list.map(split_pair_fold_for_delimiter_pair(_, which, ["Math", "MathBlock"]))
     |> list.flatten
-  let #(a, b) = infra.opening_and_closing_string_for_pair(normative_delimiter)
-  let reinserting_delims_pipe = [
-    dl.insert_bookend_text([#("MathBlock", a, b)]),
-  ]
+
   [
-    normalization,
-    display_math_pipe,
-    reinserting_delims_pipe,
+    [dl.strip_math_delimiters_inside(which)],
+    create_tags,
+    [dl.insert_bookend_text([#(which, pair.0, pair.1)])],
   ]
   |> list.flatten
 }
 
-pub fn create_mathblock_and_math_elements(
-  display_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
-  single_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
+pub fn create_mathblock_elements(
+  parsed: List(LatexDelimiterPair),
+  produced: LatexDelimiterPair,
 ) -> List(Desugarer) {
-  let #(display_math_delimiters, display_math_default_delimeters) = display_math_delimiters
-  let #(single_math_delimiters, inline_math_default_delimeters) = single_math_delimiters
+  create_math_or_mathblock_elements(parsed, produced, "MathBlock")
+}
 
-  let normalization = [
-    dl.normalize_math_delimiters_inside(#("MathBlock", DoubleDollar))
-  ]
-
-  let display_math_pipe =
-    list.map(
-      display_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock"])
-    )
-    |> list.flatten
-
-  let inline_math_pipe =
-    list.map(
-      single_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "Math", ["Math", "MathBlock"])
-    )
-    |> list.flatten
-
-  let #(a, b) = infra.opening_and_closing_string_for_pair(display_math_default_delimeters)
-  let #(c, d) = infra.opening_and_closing_string_for_pair(inline_math_default_delimeters)
-
-  let reinserting_delims_pipe = [
-    dl.insert_bookend_text([#("MathBlock", a, b), #("Math", c, d)]),
-  ]
-  
-  [
-    normalization,
-    display_math_pipe,
-    inline_math_pipe,
-    reinserting_delims_pipe,
-  ]
-  |> list.flatten
+pub fn create_math_elements(
+  parsed: List(LatexDelimiterPair),
+  produced: LatexDelimiterPair,
+) -> List(Desugarer) {
+  create_math_or_mathblock_elements(parsed, produced, "Math")
 }
 
 //***************
@@ -144,19 +108,36 @@ pub fn symmetric_delim_splitting(
   tag: String,
   forbidden: List(String),
 ) -> List(Desugarer) {
-  let opening_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[\\s]", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
-  let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
-  let closing_ir = irs.l_m_r_1_3_indexed_regex_no_middle_par("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[\\s)\\]}]")
+  let opening_gri = grs.for_groups([
+    #("[\\s]",                                    grs.Keep),
+    #(delim_regex_form,                           grs.TagReplace("OpeningSymmetricDelim")),
+    #("[^\\s\\]})]|$",                            grs.Keep),
+  ])
+  let opening_or_closing_gri = grs.for_groups([
+    #("[^\\s]|^",                                 grs.Keep),
+    #(irs.unescaped_suffix(delim_regex_form),     grs.TagReplace("OpeningOrClosingSymmetricDelim")),
+    #("[^\\s\\]})]|$",                            grs.Keep),
+  ])
+  let closing_gri = grs.for_groups([
+    #("[^\\s\\[{(]|^",                            grs.Keep),
+    #(irs.unescaped_suffix(delim_regex_form),     grs.TagReplace("ClosingSymmetricDelim")),
+    #("[\\s\\]})]",                               grs.Keep),
+  ])
+
+  // let opening_ir = irs.l_m_r_1_3_indexed_regex("[\\s]", delim_regex_form, "[^\\s)\\]}]|$")
+  // let opening_or_closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", irs.unescaped_suffix(delim_regex_form), "[^\\s)\\]}]|$")
+  // let closing_ir = irs.l_m_r_1_3_indexed_regex("[^\\s\\[\\{]|^", irs.unescaped_suffix(delim_regex_form), "[\\s)\\]}]")
+  // [
+  //   dl.split_by_indexed_regexes(#(
+  //     [
+  //       #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
+  //       #(opening_ir, "OpeningSymmetricDelim"),
+  //       #(closing_ir, "ClosingSymmetricDelim"),
+  //     ],
+  //     forgidden,
+  //   )),
   [
-    dl.split_by_indexed_regexes(#(
-        [
-          #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"),
-          #(opening_or_closing_ir, "OpeningOrClosingSymmetricDelim"), // need second guy for this pattern: Gr_i_gorinovich (or second occurrence is shadowed by first occurrence)
-          #(opening_ir, "OpeningSymmetricDelim"),
-          #(closing_ir, "ClosingSymmetricDelim"),
-        ],
-        forbidden,
-    )),
+    dl.split_with_replacement_instructions(#([opening_or_closing_gri, opening_gri, closing_gri], forbidden)),
     dl.pair_bookends(#(
       ["OpeningSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
       ["ClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
@@ -178,21 +159,27 @@ pub fn asymmetric_delim_splitting(
   tag: String,
   forbidden: List(String),
 ) -> List(Desugarer) {
-  let opening_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[\\s]|^", opening_regex_form, "[^\\s]|$")
-  let closing_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", closing_regex_form, "[\\s]|$")
+  let opening_grs = grs.for_groups([
+    #("[\\s]|^", grs.Keep),
+    #(opening_regex_form, grs.TagReplace("OpeningAsymmetricDelim")),
+    #("[^\\s]|$", grs.Keep),
+  ])
+  let closing_grs = grs.for_groups([
+    #("[^\\s]|^", grs.Keep),
+    #(closing_regex_form, grs.TagReplace("ClosingAsymmetricDelim")),
+    #("[\\s]|$", grs.Keep),
+  ])
+
+  // let opening_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[\\s]|^", opening_regex_form, "[^\\s]|$")
+  // let closing_central_quote_indexed_regex = irs.l_m_r_1_3_indexed_regex("[^\\s]|^", closing_regex_form, "[\\s]|$")
   [
-    dl.split_by_indexed_regexes(#(
-      [
-        #(opening_central_quote_indexed_regex, "OpeningAsymmetricDelim"),
-        #(closing_central_quote_indexed_regex, "ClosingAsymmetricDelim"),
-      ],
-      forbidden,
-    )),
-    dl.pair_bookends(#(
-      ["OpeningAsymmetricDelim"],
-      ["ClosingAsymmetricDelim"],
-      tag
-    )),
+    // dl.split_by_indexed_regexes(#(
+    //   [
+    //     #(opening_central_quote_indexed_regex, "OpeningAsymmetricDelim"),
+    //     #(closing_central_quote_indexed_regex, "ClosingAsymmetricDelim"),
+    //   ],
+    dl.split_with_replacement_instructions(#([opening_grs, closing_grs], forbidden)),
+    dl.pair_bookends(#(["OpeningAsymmetricDelim"], ["ClosingAsymmetricDelim"], tag )),
     dl.fold_tags_into_text([
       #("OpeningAsymmetricDelim", opening_ordinary_form),
       #("ClosingAsymmetricDelim", closing_ordinary_form),

@@ -38,12 +38,45 @@ fn split_and_insert_before_unless_allowable_ending_found_ez_version(
   }
 
   let add_splitter_back_in = fn(lines) {
-    let assert [BlamedContent(blame, content), ..rest] = lines
+    let assert [first, ..rest] = lines
     [
-      BlamedContent(blame, splitter <> content),
+      BlamedContent(..first, content: splitter <> first.content),
       ..rest
     ]
   }
+
+  // [
+  //   "a1 b1 c1 d1",
+  //   "a2 b2 c2 \begin{align} d2",
+  //   "a3 b3 c3 d3",
+  //   "a4 b4 c4 \begin{align} d4",
+  //   "a5 b5 c5 d5",
+  //   "a6 b6 c6 d6",
+  //   "a7 b7 c7 \begin{align} d7",
+  // ]
+  // 👇
+  // splitting on '\begin{align'
+  // 👇
+  // splits = [
+  //   [
+  //     "a1 b1 c1 d1",
+  //     "a2 b2 c2 ",
+  //   ],
+  //   [
+  //     "} d2",
+  //     "a3 b3 c3 d3",
+  //     "a4 b4 c4 ",
+  //   ],
+  //   [
+  //     "} d4",
+  //     "a5 b5 c5 d5",
+  //     "a6 b6 c6 d6",
+  //     "a7 b7 c7 ",
+  //   ],
+  //   [
+  //     "} d7",
+  //   ],
+  // ]
 
   let splits = infra.split_lines(lines, splitter)
   let num_splits = list.length(splits)
@@ -82,9 +115,9 @@ fn split_and_insert_after_unless_allowable_beginning_found_ez_version(
   }
 
   let add_splitter_back_in = fn(lines) {
-    let assert [BlamedContent(blame, content), ..rest] = list.reverse(lines)
+    let assert [first, ..rest] = lines |> list.reverse
     [
-      BlamedContent(blame, content <> splitter),
+      BlamedContent(..first, content: first.content <> splitter),
       ..rest
     ] |> list.reverse
   }

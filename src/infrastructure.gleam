@@ -1918,7 +1918,6 @@ pub fn run_and_announce_results(
 ) -> Int {
   case run_assertive_test(test_group.name, tst) {
     Ok(Nil) -> {
-      // io.println("✅ test " <> ins(number) <> " of " <> ins(total) <> " passed")
       io.print("✅")
       0
     }
