@@ -1,5 +1,6 @@
 import indexed_regex_splitting as irs
 import gleam/list
+import gleam/pair
 import group_replacement_splitting as grs
 import infrastructure.{
   type Desugarer,
@@ -9,42 +10,25 @@ import infrastructure.{
   SingleDollar,
   DoubleDollarSingleton,
   SingleDollarSingleton,
-  BackslashParenthesis,
   BackslashOpeningParenthesis,
   BackslashClosingParenthesis,
-  BackslashSquareBracket,
   BackslashOpeningSquareBracket,
-  BackslashClosingSquareBracket
-}
+  BackslashClosingSquareBracket,
+} as infra
 import desugarer_library as dl
 
 //******************
 // math delimiter stuff
 //******************
 
-fn opening_and_closing_singletons_for_pair(
+fn closing_equals_opening(
   pair: LatexDelimiterPair
-) -> #(LatexDelimiterSingleton, LatexDelimiterSingleton) {
-  case pair {
-    DoubleDollar -> #(DoubleDollarSingleton, DoubleDollarSingleton)
-    SingleDollar -> #(SingleDollarSingleton, SingleDollarSingleton)
-    BackslashParenthesis -> #(BackslashOpeningParenthesis, BackslashClosingParenthesis)
-    BackslashSquareBracket -> #(BackslashOpeningSquareBracket, BackslashClosingSquareBracket)
-  }
+) -> Bool {
+  let z = infra.opening_and_closing_singletons_for_pair(pair)
+  z.0 == z.1
 }
 
-fn opening_and_closing_string_for_pair(
-  pair: LatexDelimiterPair
-) -> #(String, String) {
-  case pair {
-    DoubleDollar -> #("$$", "$$")
-    SingleDollar -> #("$", "$")
-    BackslashParenthesis -> #("\\(", "\\)")
-    BackslashSquareBracket -> #("\\[", "\\]")
-  }
-}
-
-fn all_stuff_for_latex_delimiter_singleton(
+fn split_pair_fold_data(
   which: LatexDelimiterSingleton
 ) -> #(grs.RegexpWithGroupReplacementInstructions, String, String) {
   case which {
@@ -57,36 +41,26 @@ fn all_stuff_for_latex_delimiter_singleton(
   }
 }
 
-fn closing_equals_opening(
-  pair: LatexDelimiterPair
-) -> Bool {
-  case pair {
-    DoubleDollar -> True
-    SingleDollar -> True
-    _ -> False
-  }
-}
-
 fn split_pair_fold_for_delimiter_pair(
   pair: LatexDelimiterPair,
   wrapper: String,
   forbidden: List(String),
 ) -> List(Desugarer) {
-  let #(d1, d2) = opening_and_closing_singletons_for_pair(pair)
+  let #(d1, d2) = infra.opening_and_closing_singletons_for_pair(pair)
   case closing_equals_opening(pair) {
     True -> {
-      let #(ind_regex, tag, replacement) = all_stuff_for_latex_delimiter_singleton(d1)
+      let #(g, tag, original) = split_pair_fold_data(d1)
       [
-        dl.split_with_replacement_instructions(#([ind_regex], forbidden)),
+        dl.split_with_replacement_instructions(#([g], forbidden)),
         dl.pair_bookends(#([tag], [tag], wrapper)),
-        dl.fold_tags_into_text([#(tag, replacement)])
+        dl.fold_tags_into_text([#(tag, original)])
       ]
     }
     False -> {
-      let #(ind_regex1, tag1, replacement1) = all_stuff_for_latex_delimiter_singleton(d1)
-      let #(ind_regex2, tag2, replacement2) = all_stuff_for_latex_delimiter_singleton(d2)
+      let #(g1, tag1, replacement1) = split_pair_fold_data(d1)
+      let #(g2, tag2, replacement2) = split_pair_fold_data(d2)
       [
-        dl.split_with_replacement_instructions(#([ind_regex1, ind_regex2], forbidden)),
+        dl.split_with_replacement_instructions(#([g1, g2], forbidden)),
         dl.pair_bookends(#([tag1], [tag2], wrapper)),
         dl.fold_tags_into_text([#(tag1, replacement1), #(tag2, replacement2)])
       ]
@@ -95,38 +69,26 @@ fn split_pair_fold_for_delimiter_pair(
 }
 
 pub fn create_mathblock_elements(
-  display_math_delimiters: #(List(LatexDelimiterPair), LatexDelimiterPair),
+  allowed_delimiters: List(LatexDelimiterPair),
+  normative_delimiter: LatexDelimiterPair,
 ) -> List(Desugarer) {
-  let #(display_math_delimiters, display_math_default_delimeters) = display_math_delimiters
   let normalization = [
-    dl.rename(#("MathBlock", "UserDefinedMathBlock")),
-    dl.normalize_math_delimiters_inside(#(["UserDefinedMathBlock"], DoubleDollar))
-  ]
-  let de_normalization = [
-    dl.rename(#("UserDefinedMathBlock", "MathBlock")),
+    dl.normalize_math_delimiters_inside(#("MathBlock", normative_delimiter))
   ]
   let display_math_pipe =
     list.map(
-      display_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock", "UserDefinedMathBlock"])
+      allowed_delimiters,
+      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock"])
     )
     |> list.flatten
-  let #(a, b) = opening_and_closing_string_for_pair(display_math_default_delimeters)
+  let #(a, b) = infra.opening_and_closing_string_for_pair(normative_delimiter)
   let reinserting_delims_pipe = [
     dl.insert_bookend_text([#("MathBlock", a, b)]),
-    // dl.insert_bookend_tags([
-    //   #("MathBlock", "MathBlockOpening", "MathBlockClosing"),
-    // ]),
-    // dl.fold_tags_into_text([
-    //   #("MathBlockOpening", a),
-    //   #("MathBlockClosing", b),
-    // ]),
   ]
   [
     normalization,
     display_math_pipe,
     reinserting_delims_pipe,
-    de_normalization,
   ]
   |> list.flatten
 }
@@ -139,44 +101,28 @@ pub fn create_mathblock_and_math_elements(
   let #(single_math_delimiters, inline_math_default_delimeters) = single_math_delimiters
 
   let normalization = [
-    dl.rename(#("MathBlock", "UserDefinedMathBlock")),
-    dl.normalize_math_delimiters_inside(#(["UserDefinedMathBlock"], DoubleDollar))
-  ]
-
-  let de_normalization = [
-    dl.rename(#("UserDefinedMathBlock", "MathBlock")),
+    dl.normalize_math_delimiters_inside(#("MathBlock", DoubleDollar))
   ]
 
   let display_math_pipe =
     list.map(
       display_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock", "UserDefinedMathBlock"])
+      split_pair_fold_for_delimiter_pair(_, "MathBlock", ["Math", "MathBlock"])
     )
     |> list.flatten
 
   let inline_math_pipe =
     list.map(
       single_math_delimiters,
-      split_pair_fold_for_delimiter_pair(_, "Math", ["Math", "MathBlock", "UserDefinedMathBlock"])
+      split_pair_fold_for_delimiter_pair(_, "Math", ["Math", "MathBlock"])
     )
     |> list.flatten
 
-  let #(a, b) = opening_and_closing_string_for_pair(display_math_default_delimeters)
-  let #(c, d) = opening_and_closing_string_for_pair(inline_math_default_delimeters)
+  let #(a, b) = infra.opening_and_closing_string_for_pair(display_math_default_delimeters)
+  let #(c, d) = infra.opening_and_closing_string_for_pair(inline_math_default_delimeters)
 
   let reinserting_delims_pipe = [
-    dl.insert_bookend_text([#("MathBlock", a, b)]),
-    dl.insert_bookend_text([#("Math", c, d)]),
-    // dl.insert_bookend_tags([
-    //   #("MathBlock", "MathBlockOpening", "MathBlockClosing"),
-    //   #("Math", "MathOpening", "MathClosing"),
-    // ]),
-    // dl.fold_tags_into_text([
-    //   #("MathBlockOpening", a),
-    //   #("MathBlockClosing", b),
-    //   #("MathOpening", c),
-    //   #("MathClosing", d),
-    // ]),
+    dl.insert_bookend_text([#("MathBlock", a, b), #("Math", c, d)]),
   ]
   
   [
@@ -184,7 +130,6 @@ pub fn create_mathblock_and_math_elements(
     display_math_pipe,
     inline_math_pipe,
     reinserting_delims_pipe,
-    de_normalization,
   ]
   |> list.flatten
 }

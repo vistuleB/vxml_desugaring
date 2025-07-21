@@ -1,85 +1,59 @@
-import gleam/result
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError, type LatexDelimiterPair} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, T, V, BlamedContent}
 
-fn strip_delimiter_pair_if_there(
-  t_node: VXML,
-  to_strip: LatexDelimiterPair,
-) -> Result(VXML, DesugaringError) {
-  let #(opening, closing)  = infra.opening_and_closing_string_for_pair(to_strip)
-  let assert T(blame, lines) = 
-    t_node
-    |> infra.t_trim_start
-    |> infra.t_trim_end
-
-  let assert [first_line, ..] = lines
-  let assert [last_line, ..] = lines |> list.reverse
-
-  case string.starts_with(first_line.content, opening), 
-       string.ends_with(last_line.content, closing)
-  {
-    False, False -> Ok(t_node)
-    True, True -> {
-      T(blame, lines)
-      |> infra.t_drop_start(opening |> string.length)
-      |> infra.t_drop_end(closing |> string.length)
-      |> Ok
+fn remove_first_prefix_found(c: String, prefixes: List(String)) -> String {
+  case prefixes {
+    [] -> c
+    [first, ..rest] -> case string.starts_with(c, first) {
+      True -> string.drop_start(c, string.length(first))
+      False -> remove_first_prefix_found(c, rest)
     }
-    True, _ -> Error(DesugaringError(blame, "Missing closing '" <> closing <> "' delimiter"))
-    _, True -> Error(DesugaringError(blame, "Missing opening '" <> opening <> "' delimiter"))
   }
 }
 
-fn strip_all_delimiter_pairs(
-  t_node: VXML,
-) -> Result(VXML, DesugaringError) {
-  let assert T(_, _) = t_node
-  list.try_fold(infra.latex_delimiter_pairs_list(), t_node, fn(node, pair){
-    strip_delimiter_pair_if_there(node, pair)
-  })
-}
-
-fn normalize_delimiters(
-  t_node: VXML,
-  target_delimiter_to_use: LatexDelimiterPair,
-) -> Result(VXML, DesugaringError) {
-  let assert T(_, _) = t_node
-  let #(opening_delimiter, closing_delimiter) = infra.opening_and_closing_string_for_pair(target_delimiter_to_use)
-
-  use stripped_t_node <- result.try(strip_all_delimiter_pairs(t_node))
-
-  stripped_t_node 
-  |> infra.t_start_insert_text(opening_delimiter)
-  |> infra.t_end_insert_text(closing_delimiter)
-  |> Ok
-}
-
-fn assert_node_has_one_t(node: VXML) -> Result(VXML, DesugaringError) {
-  let assert V(b, _, _ , children) = node
-  case children {
-    [T(b, c)] -> Ok(T(b, c))
-    _ -> Error(DesugaringError(b, "Node should have 1 text node"))
+fn remove_first_suffix_found(c: String, suffixes: List(String)) -> String {
+  case suffixes {
+    [] -> c
+    [first, ..rest] -> case string.ends_with(c, first) {
+      True -> string.drop_end(c, string.length(first))
+      False -> remove_first_suffix_found(c, rest)
+    }
   }
+}
+
+fn normalize_t(
+  t: VXML,
+  inner: InnerParam,
+) -> VXML {
+  let assert T(blame, lines) = t
+  let lines = infra.lines_trim_start(lines)
+  let assert [first, ..rest] = lines
+  let lines = [
+    BlamedContent(..first, content: inner.2 <> remove_first_prefix_found(first.content, inner.0)),
+    ..rest
+  ]
+  let lines = infra.reversed_lines_trim_end(lines |> list.reverse)
+  let assert [first, ..rest] = lines
+  let lines = [
+    BlamedContent(..first, content: remove_first_suffix_found(first.content, inner.1) <> inner.3),
+    ..rest
+  ]
+  let lines = lines |> list.reverse
+  T(blame, lines)
 }
 
 fn nodemap(
   node: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
-  let #(tags, delimiter_pair) = inner
   case node {
-    V(b, tag, a , _) -> {
-      use <- infra.on_false_on_true(
-        list.contains(tags, tag),
-        Ok(node)
-      )
-      use t_node <- result.try(assert_node_has_one_t(node))
-      use normalized <- result.try(normalize_delimiters(t_node, delimiter_pair))
-      Ok(V(b, tag, a, [normalized]))
+    V(_, tag, _, children) if tag == inner.4 -> case children {
+      [T(_, _) as t] -> Ok(V(..node, children: [normalize_t(t, inner)]))
+      _ -> Error(DesugaringError(node.blame, "expecting unique text child in target tag"))
     }
     _ -> Ok(node)
   }
@@ -94,16 +68,35 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
+  let #(left_target, right_target) =
+    infra.opening_and_closing_string_for_pair(param.1)
+  let #(left_delims, right_delims) =
+    infra.latex_delimiter_pairs_list()
+    |> list.map(infra.opening_and_closing_string_for_pair)
+    |> list.unzip
+  let left_delims = list.filter(left_delims, fn(c) {c != left_target })
+  let right_delims = list.filter(right_delims, fn(c) {c != right_target })
+  Ok(#(
+    left_delims,    // inner.0
+    right_delims,   // inner.1
+    left_target,    // inner.2
+    right_target,   // inner.3
+    param.0,        // inner.4
+  ))
 }
 
 type Param =
-  #(List(String), LatexDelimiterPair)
-//  ↖             ↖
-//  tags          delimiter pair
-//                to use
+  #(String,     LatexDelimiterPair)
+//  ↖           ↖
+//  tag         normalizing delimiter
+//  to target   pair
 
-type InnerParam = Param
+type InnerParam =
+  #(List(String),     List(String),      String,     String,       String)
+//  ↖                 ↖                  ↖           ↖             ↖
+//  left delimiters   right delimiters   left        right         tag
+//  to remove         to remove          delimiter   delimiter     to target
+//                                       to use      to use
 
 const name = "normalize_math_delimiters_inside"
 const constructor = normalize_math_delimiters_inside
@@ -151,7 +144,34 @@ pub fn normalize_math_delimiters_inside(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  []
+  [
+    infra.AssertiveTestData(
+      param: #("MathBlock", infra.DoubleDollar),
+      source:   "
+                <> MathBlock
+                  <>
+                    \"x\"
+                ",
+      expected: "
+                <> MathBlock
+                  <>
+                    \"$$x$$\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: #("MathBlock", infra.DoubleDollar),
+      source:   "
+                <> MathBlock
+                  <>
+                    \"\\[x\\]\"
+                ",
+      expected: "
+                <> MathBlock
+                  <>
+                    \"$$x$$\"
+                ",
+    ),
+  ]
 }
 
 pub fn assertive_tests() {

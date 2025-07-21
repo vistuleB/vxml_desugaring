@@ -12,7 +12,7 @@ fn do_if(f, b) {
   }
 }
 
-fn split_and_insert_before_unless_allowable_ending_found(
+fn split_and_insert_before_unless_allowable_ending_found_ez_version(
   lines: List(BlamedContent),
   splitter: String,                      // this will be called with splitter == "\begin{align"
   allowable_endings: List(String),       // this will almost always be ["$$"], but could be ["\[", "$$"] for ex
@@ -29,15 +29,11 @@ fn split_and_insert_before_unless_allowable_ending_found(
       allowable_endings,
       fn(x) { infra.first_line_ends_with(trimmed, x) }
     ) {
-      True -> [
-        BlamedContent(blame, ""),
-        ..trimmed
-      ]
+      True -> trimmed |> list.reverse
       False -> [
-        BlamedContent(blame, ""),
         BlamedContent(blame, if_no_allowable_found_insert),
         ..trimmed
-      ]
+      ] |> list.reverse
     }
   }
 
@@ -60,10 +56,10 @@ fn split_and_insert_before_unless_allowable_ending_found(
       |> do_if(add_prescribed_to_end_if_missing, index < num_splits - 1)
     }
   )
-  |> infra.last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed
+  |> list.flatten
 }
 
-fn split_and_insert_after_unless_allowable_beginning_found(
+fn split_and_insert_after_unless_allowable_beginning_found_ez_version(
   lines: List(BlamedContent),
   splitter: String,
   allowable_beginnings: List(String),    // this will almost always be ["$$"], but could be ["\]", "$$"] for ex
@@ -77,12 +73,8 @@ fn split_and_insert_after_unless_allowable_beginning_found(
       allowable_beginnings,
       fn(x) { infra.first_line_starts_with(trimmed, x) }
     ) {
-      True -> [
-        BlamedContent(blame, ""),
-        ..trimmed,
-      ]
+      True -> trimmed
       False -> [
-        BlamedContent(blame, ""),
         BlamedContent(blame, if_no_allowable_found_insert),
         ..trimmed,
       ]
@@ -94,7 +86,7 @@ fn split_and_insert_after_unless_allowable_beginning_found(
     [
       BlamedContent(blame, content <> splitter),
       ..rest
-    ]
+    ] |> list.reverse
   }
 
   let splits = infra.split_lines(lines, splitter)
@@ -108,8 +100,111 @@ fn split_and_insert_after_unless_allowable_beginning_found(
       |> do_if(add_splitter_back_in, index < num_splits - 1)
     }
   )
-  |> infra.last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed
+  |> list.flatten
 }
+
+// ***
+// these 2 'hard version' are faster, less easy to read:
+// ***
+
+// fn split_and_insert_before_unless_allowable_ending_found(
+//   lines: List(BlamedContent),
+//   splitter: String,                      // this will be called with splitter == "\begin{align"
+//   allowable_endings: List(String),       // this will almost always be ["$$"], but could be ["\[", "$$"] for ex
+//   if_no_allowable_found_insert: String,  // will almost always be "$$"
+// ) -> List(BlamedContent) {
+//   let blame = infra.blame_us("split_and_insert_before_unless_allowable_ending_found")
+
+//   let add_prescribed_to_end_if_missing = fn(lines) {
+//     let trimmed =
+//       lines
+//       |> list.reverse
+//       |> infra.reversed_lines_trim_end
+//     case list.any(
+//       allowable_endings,
+//       fn(x) { infra.first_line_ends_with(trimmed, x) }
+//     ) {
+//       True -> [
+//         BlamedContent(blame, ""),
+//         ..trimmed
+//       ]
+//       False -> [
+//         BlamedContent(blame, ""),
+//         BlamedContent(blame, if_no_allowable_found_insert),
+//         ..trimmed
+//       ]
+//     }
+//   }
+
+//   let add_splitter_back_in = fn(lines) {
+//     let assert [BlamedContent(blame, content), ..rest] = lines
+//     [
+//       BlamedContent(blame, splitter <> content),
+//       ..rest
+//     ]
+//   }
+
+//   let splits = infra.split_lines(lines, splitter)
+//   let num_splits = list.length(splits)
+
+//   list.index_map(
+//     splits,
+//     fn(lines, index) {
+//       lines
+//       |> do_if(add_splitter_back_in, index > 0)
+//       |> do_if(add_prescribed_to_end_if_missing, index < num_splits - 1)
+//     }
+//   )
+//   |> infra.last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed
+// }
+
+// fn split_and_insert_after_unless_allowable_beginning_found(
+//   lines: List(BlamedContent),
+//   splitter: String,
+//   allowable_beginnings: List(String),    // this will almost always be ["$$"], but could be ["\]", "$$"] for ex
+//   if_no_allowable_found_insert: String,  // this will almost always be "$$"
+// ) -> List(BlamedContent) {
+//   let blame = infra.blame_us("split_and_insert_after_unless_allowable_beginning_found")
+
+//   let add_prescribed_to_start_if_missing = fn(lines) {
+//     let trimmed = infra.lines_trim_start(lines)
+//     case list.any(
+//       allowable_beginnings,
+//       fn(x) { infra.first_line_starts_with(trimmed, x) }
+//     ) {
+//       True -> [
+//         BlamedContent(blame, ""),
+//         ..trimmed,
+//       ]
+//       False -> [
+//         BlamedContent(blame, ""),
+//         BlamedContent(blame, if_no_allowable_found_insert),
+//         ..trimmed,
+//       ]
+//     }
+//   }
+
+//   let add_splitter_back_in = fn(lines) {
+//     let assert [BlamedContent(blame, content), ..rest] = list.reverse(lines)
+//     [
+//       BlamedContent(blame, content <> splitter),
+//       ..rest
+//     ]
+//   }
+
+//   let splits = infra.split_lines(lines, splitter)
+//   let num_splits = list.length(splits)
+
+//   list.index_map(
+//     splits,
+//     fn(lines, index) {
+//       lines
+//       |> do_if(add_prescribed_to_start_if_missing, index > 0)
+//       |> do_if(add_splitter_back_in, index < num_splits - 1)
+//     }
+//   )
+//   |> infra.last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed
+// }
 
 fn nodemap(
   vxml: VXML,
@@ -120,17 +215,17 @@ fn nodemap(
     T(blame, lines) -> {
       let lines =
         lines
-        |> split_and_insert_before_unless_allowable_ending_found(
+        |> split_and_insert_before_unless_allowable_ending_found_ez_version(
           "\\begin{align",
           inner.0,
           inner.1,
         )
-        |> split_and_insert_after_unless_allowable_beginning_found(
+        |> split_and_insert_after_unless_allowable_beginning_found_ez_version(
           "\\end{align}",
           inner.2,
           inner.3,
         )
-        |> split_and_insert_after_unless_allowable_beginning_found(
+        |> split_and_insert_after_unless_allowable_beginning_found_ez_version(
           "\\end{align*}",
           inner.2,
           inner.3,

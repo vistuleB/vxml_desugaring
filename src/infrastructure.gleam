@@ -81,6 +81,17 @@ pub fn opening_and_closing_string_for_pair(
   }
 }
 
+pub fn opening_and_closing_singletons_for_pair(
+  pair: LatexDelimiterPair
+) -> #(LatexDelimiterSingleton, LatexDelimiterSingleton) {
+  case pair {
+    DoubleDollar -> #(DoubleDollarSingleton, DoubleDollarSingleton)
+    SingleDollar -> #(SingleDollarSingleton, SingleDollarSingleton)
+    BackslashParenthesis -> #(BackslashOpeningParenthesis, BackslashClosingParenthesis)
+    BackslashSquareBracket -> #(BackslashOpeningSquareBracket, BackslashClosingSquareBracket)
+  }
+}
+
 pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
   case node {
     T(_, _) -> False
@@ -644,6 +655,11 @@ pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
   }
 }
 
+/// dumps the contents of 'from' "upside-down" into
+/// 'into', so that the first element of 'from' ends
+/// up buried inside the resulting list, while the last
+/// element of 'from' ends up surfaced as the first
+/// element of the result
 pub fn pour(from: List(a), into: List(a)) -> List(a) {
   case from {
     [first, ..rest] -> pour(rest, [first, ..into])
@@ -1067,15 +1083,13 @@ pub fn extract_ending_spaces_from_text(content: String) -> #(String, String) {
 }
 
 pub fn t_trim_start(node: VXML) -> VXML {
-  node
-  |> t_extract_starting_spaces()
-  |> pair.second
+  let assert T(blame, lines) = node
+  T(blame, lines_trim_start(lines))
 }
 
 pub fn t_trim_end(node: VXML) -> VXML {
-  node
-  |> t_extract_ending_spaces()
-  |> pair.second
+  let assert T(blame, lines) = node
+  T(blame, reversed_lines_trim_end(lines |> list.reverse) |> list.reverse)
 }
 
 pub fn t_super_trim_end(node: VXML) -> Option(VXML) {
