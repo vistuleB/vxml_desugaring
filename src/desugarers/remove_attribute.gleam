@@ -16,7 +16,7 @@ fn nodemap(
         blame,
         tag,
         list.filter(attributes, fn(blamed_attribute) {
-          !list.contains(inner, blamed_attribute.key)
+          blamed_attribute.key != inner
         }),
         children,
       )
@@ -36,23 +36,23 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String)
+type Param = String
 type InnerParam = Param
 
-const name = "remove_attributes"
-const constructor = remove_attributes
+const name = "remove_attribute"
+const constructor = remove_attribute
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes specified attributes from all elements
-pub fn remove_attributes(param: Param) -> Desugarer {
+/// removes specified attribute from all elements
+pub fn remove_attribute(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// removes specified attributes from all elements
+/// removes specified attribute from all elements
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

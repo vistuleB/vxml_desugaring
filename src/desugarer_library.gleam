@@ -81,6 +81,7 @@ import desugarers/rearrange_links
 import desugarers/rearrange_links_no_list
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/reinsert_math_dollar
+import desugarers/remove_attribute
 import desugarers/remove_attributes
 import desugarers/remove_attributes_for_parents
 import desugarers/remove_chapter_number_from_title
@@ -211,6 +212,7 @@ pub const rearrange_links = rearrange_links.rearrange_links
 pub const rearrange_links_no_list = rearrange_links_no_list.rearrange_links_no_list
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const reinsert_math_dollar = reinsert_math_dollar.reinsert_math_dollar
+pub const remove_attribute = remove_attribute.remove_attribute
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_attributes_for_parents = remove_attributes_for_parents.remove_attributes_for_parents
 pub const remove_chapter_number_from_title = remove_chapter_number_from_title.remove_chapter_number_from_title
@@ -342,6 +344,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   rearrange_links_no_list.assertive_tests,
   reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.assertive_tests,
   reinsert_math_dollar.assertive_tests,
+  remove_attribute.assertive_tests,
   remove_attributes.assertive_tests,
   remove_attributes_for_parents.assertive_tests,
   remove_chapter_number_from_title.assertive_tests,

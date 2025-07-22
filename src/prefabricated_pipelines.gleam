@@ -269,10 +269,8 @@ pub fn asymmetric_delim_splitting_no_list(
     dl.split_with_replacement_instructions_no_list(#(opening_grs, forbidden)),
     dl.split_with_replacement_instructions_no_list(#(closing_grs, forbidden)),
     dl.pair_bookends(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag )),
-    dl.fold_tags_into_text([
-      #("OpeningAsymmetricDelim", opening_ordinary_form),
-      #("ClosingAsymmetricDelim", closing_ordinary_form),
-    ]),
+    dl.fold_tags_into_text_no_list(#("OpeningAsymmetricDelim", opening_ordinary_form)),
+    dl.fold_tags_into_text_no_list(#("ClosingAsymmetricDelim", closing_ordinary_form)),
   ]
 }
 
