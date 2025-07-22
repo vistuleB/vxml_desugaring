@@ -2,11 +2,11 @@ import infrastructure as infra
 import desugarers/absorb_next_sibling_while
 import desugarers/absorb_next_sibling_while_no_list
 import desugarers/add_after_tags_but_not_last_child_tags
+import desugarers/add_attribute
 import desugarers/add_attribute_if_child_of
 import desugarers/add_attribute_if_child_of_no_list
 import desugarers/add_attribute_to_second_of_kind
 import desugarers/add_attributes
-import desugarers/add_attributes_no_list
 import desugarers/add_before_tags_but_not_before_first_of_kind
 import desugarers/add_before_tags_but_not_before_first_of_kind_no_list
 import desugarers/add_before_tags_but_not_first_child_tags
@@ -27,6 +27,7 @@ import desugarers/auto_generate_child_if_missing_from_attribute
 import desugarers/auto_generate_child_if_missing_from_first_descendant_of_type
 import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
+import desugarers/change_attribute_value_no_list
 import desugarers/compute_max_element_width
 import desugarers/compute_missing_images_width
 import desugarers/concatenate_tags
@@ -133,11 +134,11 @@ import desugarers/wrap_element_children
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
 pub const absorb_next_sibling_while_no_list = absorb_next_sibling_while_no_list.absorb_next_sibling_while_no_list
 pub const add_after_tags_but_not_last_child_tags = add_after_tags_but_not_last_child_tags.add_after_tags_but_not_last_child_tags
+pub const add_attribute = add_attribute.add_attribute
 pub const add_attribute_if_child_of = add_attribute_if_child_of.add_attribute_if_child_of
 pub const add_attribute_if_child_of_no_list = add_attribute_if_child_of_no_list.add_attribute_if_child_of_no_list
 pub const add_attribute_to_second_of_kind = add_attribute_to_second_of_kind.add_attribute_to_second_of_kind
 pub const add_attributes = add_attributes.add_attributes
-pub const add_attributes_no_list = add_attributes_no_list.add_attributes_no_list
 pub const add_before_tags_but_not_before_first_of_kind = add_before_tags_but_not_before_first_of_kind.add_before_tags_but_not_before_first_of_kind
 pub const add_before_tags_but_not_before_first_of_kind_no_list = add_before_tags_but_not_before_first_of_kind_no_list.add_before_tags_but_not_before_first_of_kind_no_list
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
@@ -158,6 +159,7 @@ pub const auto_generate_child_if_missing_from_attribute = auto_generate_child_if
 pub const auto_generate_child_if_missing_from_first_descendant_of_type = auto_generate_child_if_missing_from_first_descendant_of_type.auto_generate_child_if_missing_from_first_descendant_of_type
 pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
 pub const change_attribute_value = change_attribute_value.change_attribute_value
+pub const change_attribute_value_no_list = change_attribute_value_no_list.change_attribute_value_no_list
 pub const compute_max_element_width = compute_max_element_width.compute_max_element_width
 pub const compute_missing_images_width = compute_missing_images_width.compute_missing_images_width
 pub const concatenate_tags = concatenate_tags.concatenate_tags
@@ -265,11 +267,11 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
   absorb_next_sibling_while_no_list.assertive_tests,
   add_after_tags_but_not_last_child_tags.assertive_tests,
+  add_attribute.assertive_tests,
   add_attribute_if_child_of.assertive_tests,
   add_attribute_if_child_of_no_list.assertive_tests,
   add_attribute_to_second_of_kind.assertive_tests,
   add_attributes.assertive_tests,
-  add_attributes_no_list.assertive_tests,
   add_before_tags_but_not_before_first_of_kind.assertive_tests,
   add_before_tags_but_not_before_first_of_kind_no_list.assertive_tests,
   add_before_tags_but_not_first_child_tags.assertive_tests,
@@ -290,6 +292,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   auto_generate_child_if_missing_from_first_descendant_of_type.assertive_tests,
   break_lines_into_span_tooltips.assertive_tests,
   change_attribute_value.assertive_tests,
+  change_attribute_value_no_list.assertive_tests,
   compute_max_element_width.assertive_tests,
   compute_missing_images_width.assertive_tests,
   concatenate_tags.assertive_tests,

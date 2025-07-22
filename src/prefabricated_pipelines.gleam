@@ -321,8 +321,8 @@ pub fn barbaric_symmetric_delim_splitting(
 ) -> List(Desugarer) {
   let opening_or_closing_grs = grs.unescaped_suffix_replacement_splitter(delim_regex_form, "OpeningOrClosingSymmetricDelim")
   [
-    dl.split_with_replacement_instructions(#([opening_or_closing_grs], forbidden)),
-    dl.pair_list_list_bookends(#(["OpeningOrClosingSymmetricDelim"], ["OpeningOrClosingSymmetricDelim"], tag)),
-    dl.fold_tags_into_text([#("OpeningOrClosingSymmetricDelim", delim_ordinary_form)])
+    dl.split_with_replacement_instructions_no_list(#(opening_or_closing_grs, forbidden)),
+    dl.pair_bookends(#("OpeningOrClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim", tag)),
+    dl.fold_tags_into_text_no_list(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form))
   ]
 }

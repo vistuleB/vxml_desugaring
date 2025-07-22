@@ -46,15 +46,15 @@ type Param =
 //  tag     attr    value
 type InnerParam = #(String, BlamedAttribute)
 
-const name = "add_attributes_no_list"
-const constructor = add_attributes_no_list
+const name = "add_attribute"
+const constructor = add_attribute
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// adds attributes to tags
-pub fn add_attributes_no_list(param: Param) -> Desugarer {
+pub fn add_attribute(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

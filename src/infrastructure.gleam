@@ -705,7 +705,7 @@ pub fn try_map_fold(
 }
 
 //**************************************************************
-//* find replace
+//* find replace list-version
 //**************************************************************
 
 fn find_replace_in_blamed_content(
@@ -731,6 +731,20 @@ pub fn find_replace_in_t(node: VXML, list_pairs: List(#(String, String))) {
   )
 }
 
+pub fn find_replace_in_node(
+  node: VXML,
+  list_pairs: List(#(String, String)),
+) -> VXML {
+  case node {
+    T(_, _) -> find_replace_in_t(node, list_pairs)
+    _ -> node
+  }
+}
+
+//**************************************************************
+//* find replace no_list-version
+//**************************************************************
+
 pub fn find_replace_in_t_no_list(
   node: VXML,
   from: String,
@@ -753,16 +767,6 @@ pub fn find_replace_in_node_no_list(
 ) -> VXML {
   case node {
     T(_, _) -> find_replace_in_t_no_list(node, from, to)
-    _ -> node
-  }
-}
-
-pub fn find_replace_in_node(
-  node: VXML,
-  list_pairs: List(#(String, String)),
-) -> VXML {
-  case node {
-    T(_, _) -> find_replace_in_t(node, list_pairs)
     _ -> node
   }
 }
