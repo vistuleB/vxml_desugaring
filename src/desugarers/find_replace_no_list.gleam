@@ -3,38 +3,46 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
-  infra.find_replace_in_node(_, inner.0)
+fn nodemap_factory(
+  inner: InnerParam
+) -> n2t.OneToOneNoErrorNodeMap {
+  infra.find_replace_in_node_no_list(_, inner.0, inner.1)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.1)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.2)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(List(#(String, String)), List(String))
-//             ↖                        ↖
-//             from/to pairs            keep_out_of
+type Param = #(String, String, List(String))
+//             ↖       ↖       ↖
+//             from    to      keep_out_of
 type InnerParam = Param
 
-const name = "find_replace"
-const constructor = find_replace
+const name = "find_replace_no_list"
+const constructor = find_replace_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// find and replace strings with other strings
-pub fn find_replace(param: Param) -> Desugarer {
+/// find-and-replace a string with another string
+/// in text nodes, while avoiding subtrees rooted at
+/// tags appearing in the third argument to the
+/// desugarer
+pub fn find_replace_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// find and replace strings with other strings
+/// find-and-replace a string with another string
+/// in text nodes, while avoiding subtrees rooted at
+/// tags appearing in the third argument to the
+/// desugarer
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
@@ -49,7 +57,7 @@ pub fn find_replace(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: #([#("from", "to")], ["keep_out"]),
+      param: #("from", "to", ["keep_out"]),
       source:   "
                 <> root
                   <> A

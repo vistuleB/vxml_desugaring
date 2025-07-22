@@ -41,7 +41,7 @@ fn nodemap(
 }
 
 fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
-  n2t.prevent_node_to_node_transform_inside(
+  n2t.prevent_one_to_one_nodemap_inside(
     nodemap(_, inner),
     inner.1,
   )

@@ -38,35 +38,32 @@ fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
 fn nodemap(
   node: VXML,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
+) -> VXML {
   case node {
-    V(blame, tag, attributes, children) ->
-      Ok(V(blame, tag, attributes, add_in_list(children, inner)))
-    _ -> Ok(node)
+    V(_, _, _, children) -> V(..node, children: add_in_list(children, inner))
+    _ -> node
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(infra.triples_to_dict(param))
 }
 
-type Param =
-  List(#(String,               String,           List(#(String, String))))
-//       ↖                    ↖                ↖
-//       insert new element   tag name         attributes for
-//       between this tag     for new element  new element
-//       and following text node
-
-type InnerParam =
-  Dict(String, #(String, List(#(String, String))))
+type Param = List(#(String,                   String,          List(#(String, String))))
+//                  ↖                         ↖                ↖
+//                  insert new element        tag name         attributes for
+//                  between this tag          for new element  new element
+//                  and following text node
+type InnerParam = Dict(String, #(String, List(#(String, String))))
 
 const name = "add_between_tag_and_text_node"
 const constructor = add_between_tag_and_text_node

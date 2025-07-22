@@ -7,56 +7,68 @@ import vxml.{type VXML, V}
 
 fn nodemap(
   node: VXML,
+  ancestors: List(VXML),
   inner: InnerParam,
 ) -> List(VXML) {
   case node {
     V(_, tag, _, children) ->
-      case list.contains(inner, tag) {
-        False -> [node]
-        True -> children
+      case infra.use_list_pair_as_dict(inner, tag) {
+        Error(Nil) -> [node]
+        Ok(forbidden) -> {
+          let ancestor_names = list.map(ancestors, infra.get_tag)
+          case list.any(ancestor_names, list.contains(forbidden, _)) {
+            True -> children
+            False -> [node]
+          }
+        }
       }
     _ -> [node]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
-  nodemap(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNoErrorNodeMap {
+  fn(
+    vxml: VXML,
+    a: List(VXML),
+    _: List(VXML),
+    _: List(VXML),
+    _: List(VXML),
+  ) {
+    nodemap(vxml, a, inner)
+  }
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform()
+  |> n2t.fancy_one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String)
+type Param = List(#(String,        List(String)))
+//                  ↖              ↖
+//                  tag to         list of ancestor names
+//                  be unwrapped   that will cause tag to unwrap
 type InnerParam = Param
 
-const name = "unwrap"
-const constructor = unwrap
+const name = "unwrap_if_descendant_of"
+const constructor = unwrap_if_descendant_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// to 'unwrap' a tag means to replace the
-/// tag by its children (replace a V- VXML node by
-/// its children in the tree); this function unwraps
-/// tags based solely on their name, as given by a
-/// list of names of tags to unwrap
-pub fn unwrap(param: Param) -> Desugarer {
+/// unwraps tags that are the descendant of one of a
+/// stipulated list of tags
+pub fn unwrap_if_descendant_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// to 'unwrap' a tag means to replace the
-/// tag by its children (replace a V- VXML node by
-/// its children in the tree); this function unwraps
-/// tags based solely on their name, as given by a
-/// list of names of tags to unwrap
+/// unwraps tags that are the descendant of
+/// one of a stipulated list of tag names
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

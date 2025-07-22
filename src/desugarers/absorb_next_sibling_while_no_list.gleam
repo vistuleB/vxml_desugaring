@@ -1,24 +1,9 @@
-import gleam/result
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
-
-fn get_absorbing_tags(
-  vxml: VXML,
-  inner: InnerParam,
-) -> List(String) {
-  case vxml {
-    T(_, _) -> []
-    V(_, tag, _, _) -> 
-      dict.get(inner, tag)
-      |> result.map_error(fn(_){[]})
-      |> result.unwrap_both
-  }
-}
+import vxml.{type VXML, V}
 
 fn update_children(
   children: List(VXML),
@@ -26,42 +11,37 @@ fn update_children(
 ) -> List(VXML) {
   use #(first, rest) <- infra.on_error_on_ok(
     infra.first_rest(children),
-    fn(_) {[]},
+    fn(_){[]},
   )
 
-  let first_tags_to_be_absorbed = get_absorbing_tags(first, inner)
+  let first_is_absorber = infra.is_v_and_tag_equals(first, inner.0)
 
   list.fold(
     over: rest,
-    from: #(first, [], first_tags_to_be_absorbed),
+    from: #(first, first_is_absorber, []),
     with: fn(
-      state: #(VXML, List(VXML), List(String)),
+      acc: #(VXML, Bool, List(VXML)),
       incoming: VXML,
-    ) -> #(VXML, List(VXML), List(String)) {
-      let #(previous_sibling, already_bundled, tags_to_be_absorbed) = state
-      case incoming {
-        T(_, _) -> #(incoming, [previous_sibling, ..already_bundled], [])
-        V(_, incoming_tag, _, _) -> {
-          case list.contains(tags_to_be_absorbed, incoming_tag) {
-            False -> #(
-              incoming,
-              [previous_sibling, ..already_bundled],
-              get_absorbing_tags(incoming, inner),
-            )
-            True -> {
-              let assert V(_, _, _, prev_children) = previous_sibling
-              #(
-                V(..previous_sibling, children: list.append(prev_children, [incoming])),
-                already_bundled,
-                tags_to_be_absorbed,
-              )
-            }
-          }
+    ) -> #(VXML, Bool, List(VXML)) {
+      let #(prev, prev_is_absorber, already_bundled) = acc
+      case prev_is_absorber && infra.is_v_and_tag_is_one_of(incoming, inner.1) {
+        True -> {
+          let assert V(_, _, _, prev_children) = prev
+          #(
+            V(..prev, children: list.append(prev_children, [incoming])),
+            True,
+            already_bundled,
+          )
         }
+        False -> #(
+          incoming,
+          infra.is_v_and_tag_equals(incoming, inner.0),
+          [prev, ..already_bundled]
+        )
       }
     }
   )
-  |> fn (state) {[state.0, ..state.1]}
+  |> fn(acc){[acc.0, ..acc.2]}
   |> list.reverse
 }
 
@@ -86,18 +66,18 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.aggregate_on_first(param))
+  Ok(param)
 }
 
-type Param = List(#(String,        String))
-//                  ↖              ↖
-//                  tag that       tag that will
-//                  will absorb    be absorbed by
-//                  next sibling   previous sibling
-type InnerParam = Dict(String, List(String))
+type Param = #(String,        List(String))
+//             ↖              ↖
+//             tag that       tags that will
+//             will absorb    be absorbed by
+//             next sibling   previous sibling
+type InnerParam = Param
 
-const name = "absorb_next_sibling_while"
-const constructor = absorb_next_sibling_while
+const name = "absorb_next_sibling_while_no_list"
+const constructor = absorb_next_sibling_while_no_list
 
 //------------------------------------------------53
 /// if the arguments are [#("Tag1", "Child1"),
@@ -105,7 +85,7 @@ const constructor = absorb_next_sibling_while
 /// nodes to absorb all subsequent Child1 & Child2
 /// nodes, as long as they come immediately after
 /// Tag1 (in any order)
-pub fn absorb_next_sibling_while(param: Param) -> Desugarer {
+pub fn absorb_next_sibling_while_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
@@ -129,7 +109,7 @@ pub fn absorb_next_sibling_while(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [#("Absorber", "Absorbee")],
+      param: #("Absorber", ["Absorbee"]),
       source:   "
                   <> Root
                     <> Absorber
@@ -148,7 +128,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ",
     ),
     infra.AssertiveTestData(
-      param: [#("Absorber", "Absorbee")],
+      param: #("Absorber", ["Absorbee"]),
       source:   "
                 <> Root
                   <> Absorber
@@ -169,7 +149,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ",
     ),
     infra.AssertiveTestData(
-      param: [#("Absorber", "Absorbee")],
+      param: #("Absorber", ["Absorbee"]),
       source:   "
                 <> Root
                   <> Absorber

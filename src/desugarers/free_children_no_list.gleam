@@ -1,25 +1,17 @@
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
-
-fn child_must_escape(child: VXML, parent_tag: String, inner: InnerParam) -> Bool {
-  case child {
-    T(_, _) -> False
-    V(_, child_tag, _, _) -> list.contains(inner, #(child_tag, parent_tag))
-  }
-}
+import vxml.{type VXML, V}
 
 fn nodemap(
   node: VXML,
   inner: InnerParam,
 ) -> List(VXML) {
   case node {
-    V(blame, tag, attributes, children) -> {
+    V(blame, tag, attributes, children) if tag == inner.1 -> {
       children
-      |> infra.either_or_misceginator(child_must_escape(_, tag, inner))
+      |> infra.either_or_misceginator(infra.is_v_and_tag_equals(_, inner.0))
       |> infra.regroup_ors
       |> infra.map_either_ors(
         fn(either: VXML) -> VXML { either },
@@ -43,16 +35,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(#(String,      String))
-//                  ↖            ↖
-//                  tag of       ...when
-//                  child to     parent is
-//                  free from    this tag
-//                  parent
+type Param = #(String,      String)
+//             ↖            ↖
+//             tag of       ...when
+//             child to     parent is
+//             free from    this tag
+//             parent
 type InnerParam = Param
 
-const name = "free_children"
-const constructor = free_children
+const name = "free_children_no_list"
+const constructor = free_children_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -76,7 +68,7 @@ const constructor = free_children
 ///
 /// where A, B, C, D represent tags, a call to
 ///
-/// free_children([#(A, C)])
+/// free_children_no_list([#(A, C)])
 ///
 /// will for example result in the updated
 /// structure
@@ -102,7 +94,7 @@ const constructor = free_children
 /// with the original attribute values of A
 /// copied over to the newly created 'copies' of
 /// A
-pub fn free_children(param: Param) -> Desugarer {
+pub fn free_children_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
@@ -125,7 +117,7 @@ pub fn free_children(param: Param) -> Desugarer {
 ///
 /// where A, B, C, D represent tags, a call to
 ///
-/// free_children([#(A, C)])
+/// free_children_no_list([#(A, C)])
 ///
 /// will for example result in the updated
 /// structure

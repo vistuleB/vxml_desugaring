@@ -12,13 +12,13 @@ fn is_text(child: VXML) {
   }
 }
 
-fn has_unique_child_of_tag(node: VXML, tags: List(String)) -> Bool {
-  let assert V(_, _, _, children) = node
-  case children {
-    [singleton] -> infra.is_v_and_tag_is_one_of(singleton, tags)
-    _ -> False
-  }
-}
+// fn has_unique_child_of_tag(node: VXML, tags: List(String)) -> Bool {
+//   let assert V(_, _, _, children) = node
+//   case children {
+//     [singleton] -> infra.is_v_and_tag_is_one_of(singleton, tags)
+//     _ -> False
+//   }
+// }
 
 fn nodemap(
   node: VXML,
@@ -27,13 +27,7 @@ fn nodemap(
   case node {
     V(_, tag, _, children) -> {
       case list.contains(inner, tag), list.any(children, is_text) {
-        True, False -> {
-          case has_unique_child_of_tag(node, ["Math"]) {
-            True -> Nil
-            False -> vxml.debug_print_vxml("(u)", node)
-          }
-          Ok(children)
-        }
+        True, False -> Ok(children)
         _, _ -> Ok([node])
       }
     }

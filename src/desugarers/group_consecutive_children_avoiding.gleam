@@ -48,7 +48,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_node_to_node_desugarer_factory(nodemap_factory(inner))
+  n2t.early_return_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

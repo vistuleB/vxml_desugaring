@@ -1,34 +1,19 @@
-import gleam/dict.{type Dict}
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{ type VXML, BlamedContent, T, V }
+import vxml.{type VXML, V}
 
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    T(_, _) -> vxml
-    V(blame, tag, attrs, children) -> {
-      case dict.get(inner, tag) {
-        Ok(text) -> {
-          let contents = string.split(text, "\n")
-          let new_text_node =
-            T(
-              blame,
-              list.map(
-                contents,
-                fn (content) { BlamedContent(blame, content) }
-              )
-            )
-          V(blame, tag, attrs, [new_text_node, ..children])
-        }
-        Error(Nil) -> vxml
-      }
-    }
+    V(_, tag, _, _) if tag == inner ->
+      vxml
+      |> infra.v_remove_starting_empty_lines
+      |> infra.v_remove_ending_empty_lines
+    _ -> vxml
   }
 }
 
@@ -41,29 +26,38 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  infra.dict_from_list_with_desugaring_error(param)
+  Ok(param)
 }
 
-type Param = List(#(String, String))
-//                  ↖       ↖
-//                  tag     text
-type InnerParam = Dict(String, String)
+type Param = String
+type InnerParam = Param
 
-const name = "prepend_text"
-const constructor = prepend_text
+const name = "trim_empty_lines_no_list"
+const constructor = trim_empty_lines_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// prepends text to the beginning of specified tags
-pub fn prepend_text(param: Param) -> Desugarer {
+/// Removes starting empty lines from first child
+/// ending empty lines from last child of nodes with
+/// specified tag if the first and last children 
+/// happen to be T-nodes, respectively. The removal
+/// of lines may destroy a T-node, in which case the
+/// process continues with the next T-node in order,
+/// if any, so that the desugarer is idempotent.
+pub fn trim_empty_lines_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// prepends text to the beginning of
-/// specified tags
+/// Removes starting empty lines from first child
+/// ending empty lines from last child of nodes with
+/// specified tag if the first and last children 
+/// happen to be T-nodes, respectively. The removal
+/// of lines may destroy a T-node, in which case the
+/// process continues with the next T-node in order,
+/// if any, so that the desugarer is idempotent.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

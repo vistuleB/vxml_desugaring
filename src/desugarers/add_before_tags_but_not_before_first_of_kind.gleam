@@ -44,20 +44,21 @@ fn add_in_list(
 fn nodemap(
   node: VXML,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
+) -> VXML {
   case node {
     V(_, _, _, children) ->
-      Ok(V(..node, children: add_in_list([], children, inner)))
-    _ -> Ok(node)
+      V(..node, children: add_in_list([], children, inner))
+    _ -> node
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

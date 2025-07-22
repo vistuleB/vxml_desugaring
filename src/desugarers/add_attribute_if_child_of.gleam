@@ -9,22 +9,20 @@ import vxml.{type VXML, BlamedAttribute, V}
 fn nodemap(
   vxml: VXML,
   ancestors: List(VXML),
-  _: List(VXML),
-  _: List(VXML),
-  _: List(VXML),
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
-  use blame, tag, attributes, children <- infra.on_t_on_v(vxml, fn(_, _) {
-    Ok(vxml)
-  })
+) -> VXML {
+  use blame, tag, attributes, children <- infra.on_t_on_v(
+    vxml,
+    fn(_, _) {vxml}
+  )
 
-  use parent, _ <- infra.on_lazy_empty_on_nonempty(ancestors, fn() { Ok(vxml) })
+  use parent, _ <- infra.on_lazy_empty_on_nonempty(ancestors, fn() { vxml })
 
   let assert V(_, parent_tag, _, _) = parent
 
   use attributes_to_add <- infra.on_error_on_ok(
     dict.get(inner, #(tag, parent_tag)),
-    fn(_) { Ok(vxml)}
+    fn(_) { vxml }
   )
 
   let old_attribute_keys = infra.get_attribute_keys(attributes)
@@ -43,17 +41,16 @@ fn nodemap(
     )
     |> list.reverse
 
-  Ok(V(blame, tag, list.append(attributes, attributes_to_add), children))
+  V(blame, tag, list.append(attributes, attributes_to_add), children)
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
-  fn(vxml, ancestors, s1, s2, s3) {
-    nodemap(vxml, ancestors, s1, s2, s3, inner)
-  }
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNoErrorNodeMap {
+  fn(vxml, ancestors, _, _, _) { nodemap(vxml, ancestors, inner) }
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.fancy_one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -62,16 +59,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   |> infra.aggregate_on_first)
 }
 
-type Param =
-  List(#(String, String, String, String))
-//       ↖       ↖       ↖       ↖
-//       tag     parent  attr    value
+type Param = List(#(String, String, String, String))
+//                  ↖       ↖       ↖       ↖
+//                  tag     parent  attr    value
+type InnerParam = Dict(#(String, String), List(#(String, String)))
 
-type InnerParam =
-  Dict(#(String, String), List(#(String, String)))
-
-const name = "add_attribute_when_child_of"
-const constructor = add_attribute_when_child_of
+const name = "add_attribute_if_child_of"
+const constructor = add_attribute_if_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -81,7 +75,7 @@ const constructor = add_attribute_when_child_of
 /// child of another specified tag; will not 
 /// overwrite if attribute with that key already
 /// exists
-pub fn add_attribute_when_child_of(param: Param) -> Desugarer {
+pub fn add_attribute_if_child_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

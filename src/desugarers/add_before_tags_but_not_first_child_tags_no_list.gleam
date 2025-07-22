@@ -1,35 +1,25 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
+import blamedlines.{type Blame}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
-    [V(_, first_tag, _, _) as first, V(_, second_tag, _, _) as second, ..rest] -> {
-      case dict.get(inner, #(first_tag, second_tag)) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-        Ok(#(new_element_tag, new_element_attributes)) -> {
-          let blame = infra.get_blame(first)
-          [
-            first,
-            V(
-              blame,
-              new_element_tag,
-              list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-              }),
-              [],
-            ),
-            ..add_in_list([second, ..rest], inner)
-          ]
-        }
-      }
-    }
-    _ -> children
+    [first, V(_, tag, _, _) as second, ..rest] if tag == inner.0 -> [
+      first,
+      V(
+        inner.3,
+        inner.1,
+        inner.2,
+        [],
+      ),
+      ..add_in_list([second, ..rest], inner)
+    ]
+    [first, ..rest] -> [first, ..add_in_list(rest, inner)]
+    [] -> children
   }
 }
 
@@ -53,33 +43,44 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  let blame = infra.blame_us("add_before_tag_but_not_first_child_tags_no_list")
+  #(
+    param.0,
+    param.1,
+    list.map(
+      param.2,
+      fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
+    ),
+    blame,
+  )
+  |> Ok
 }
 
-type Param = List(#(#(String,          String), String,             List(#(String, String))))
-//                    ↖                ↗        ↖                   ↖
-//                    insert divs               tag name for        attributes for
-//                    between adjacent          new element         new element
-//                    siblings of these
-//                    two names
-type InnerParam = Dict(#(String, String), #(String, List(#(String, String))))
+type Param = #(String,        String,          List(#(String, String)))
+//             ↖              ↖                ↖
+//             insert divs    tag name         attributes
+//             before tags    of new element
+//             of this name
+//             (except if tag is first child)
 
-const name = "add_between_tags"
-const constructor = add_between_tags
+type InnerParam = #(String, String, List(vxml.BlamedAttribute), Blame)
+
+const name = "add_before_tags_but_not_first_child_tags_no_list"
+const constructor = add_before_tags_but_not_first_child_tags_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds new elements between adjacent tags of
-/// specified types
-pub fn add_between_tags(param: Param) -> Desugarer {
+/// adds new elements before specified tags but not 
+/// if they are the first child
+pub fn add_before_tags_but_not_first_child_tags_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// adds new elements between adjacent tags of
-/// specified types
+/// adds new elements before specified tags but not 
+/// if they are the first child
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

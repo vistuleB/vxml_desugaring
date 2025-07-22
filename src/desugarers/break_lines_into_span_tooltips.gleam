@@ -44,10 +44,10 @@ fn line_to_tooltip_span(
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   case vxml {
     T(blame, lines) -> {
-      Ok([
+      [
         V(
           blame,
           "span",
@@ -58,19 +58,19 @@ fn nodemap(
               T(blame, [BlamedContent(blame, ""), BlamedContent(blame, "")]),
             ),
         ),
-      ])
+      ]
     }
-    _ -> Ok([vxml])
+    _ -> [vxml]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap(_, inner)
-  |> n2t.prevent_one_to_many_nodemap_inside(["Math", "MathBlock"])
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(["MathBlock", "Math"])
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

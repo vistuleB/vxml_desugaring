@@ -1,14 +1,20 @@
 import infrastructure as infra
 import desugarers/absorb_next_sibling_while
+import desugarers/absorb_next_sibling_while_no_list
 import desugarers/add_after_tags_but_not_last_child_tags
+import desugarers/add_attribute_if_child_of
+import desugarers/add_attribute_if_child_of_no_list
 import desugarers/add_attribute_to_second_of_kind
-import desugarers/add_attribute_when_child_of
 import desugarers/add_attributes
 import desugarers/add_attributes_no_list
 import desugarers/add_before_tags_but_not_before_first_of_kind
+import desugarers/add_before_tags_but_not_before_first_of_kind_no_list
 import desugarers/add_before_tags_but_not_first_child_tags
+import desugarers/add_before_tags_but_not_first_child_tags_no_list
 import desugarers/add_between_tag_and_text_node
+import desugarers/add_between_tag_and_text_node_no_list
 import desugarers/add_between_tags
+import desugarers/add_between_tags_no_list
 import desugarers/add_spacer_divs_after
 import desugarers/add_spacer_divs_before
 import desugarers/add_spacer_divs_between
@@ -35,11 +41,13 @@ import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
 import desugarers/find_replace
 import desugarers/find_replace_in_descendants_of
+import desugarers/find_replace_no_list
 import desugarers/fix_ti2_local_links
 import desugarers/fold_tag_contents_into_text
 import desugarers/fold_tags_into_text
 import desugarers/fold_tags_into_text_no_list
 import desugarers/free_children
+import desugarers/free_children_no_list
 import desugarers/generate_lbp_breadcrumbs
 import desugarers/generate_lbp_prev_next_attributes
 import desugarers/generate_lbp_sections_breadcrumbs
@@ -68,23 +76,25 @@ import desugarers/pair_list_list_bookends
 import desugarers/prepend_append_to_text_children_of
 import desugarers/prepend_text
 import desugarers/prepend_text_if_has_ancestor_else
+import desugarers/prepend_text_no_list
 import desugarers/rearrange_links
+import desugarers/rearrange_links_no_list
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/reinsert_math_dollar
 import desugarers/remove_attributes
 import desugarers/remove_attributes_for_parents
 import desugarers/remove_chapter_number_from_title
+import desugarers/remove_empty
 import desugarers/remove_empty_lines
-import desugarers/remove_empty_tags
+import desugarers/remove_empty_no_list
 import desugarers/remove_outside_subtrees
-import desugarers/remove_starting_and_ending_empty_lines
-import desugarers/remove_starting_and_ending_spaces
 import desugarers/remove_tag
 import desugarers/remove_text_nodes_with_singleton_empty_line
 import desugarers/rename
 import desugarers/rename_attributes
 import desugarers/rename_attributes_by_function
-import desugarers/rename_when_child_of
+import desugarers/rename_if_child_of
+import desugarers/rename_if_child_of_no_list
 import desugarers/rename_with_appended_attributes_and_prepended_text
 import desugarers/rename_with_attributes
 import desugarers/replace_in_attribute_values
@@ -96,32 +106,45 @@ import desugarers/split_with_replacement_instructions_no_list
 import desugarers/strip_math_delimiters_inside
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
+import desugarers/trim
+import desugarers/trim_empty_lines
+import desugarers/trim_empty_lines_no_list
+import desugarers/trim_no_list
 import desugarers/trim_spaces_around_newlines
 import desugarers/unwrap
+import desugarers/unwrap_if_descendant_of
+import desugarers/unwrap_if_descendant_of_no_list
+import desugarers/unwrap_if_no_child_satisfies
+import desugarers/unwrap_if_no_child_satisfies_no_list
+import desugarers/unwrap_no_list
 import desugarers/unwrap_tag_when_child_of_tag
 import desugarers/unwrap_tag_when_parent_of_tag
 import desugarers/unwrap_tags_if_attributes_match
 import desugarers/unwrap_tags_if_no_attributes
-import desugarers/unwrap_tags_when_no_child_meets_condition
 import desugarers/unwrap_tags_with_no_text_child
 import desugarers/unwrap_tags_with_no_text_descendant
 import desugarers/unwrap_when_child_of
-import desugarers/unwrap_when_descendant_of
 import desugarers/unwrap_when_zero_or_one_children
 import desugarers/wrap_adjacent_non_whitespace_text_with
 import desugarers/wrap_children_before_in
 import desugarers/wrap_element_children
 
 pub const absorb_next_sibling_while = absorb_next_sibling_while.absorb_next_sibling_while
+pub const absorb_next_sibling_while_no_list = absorb_next_sibling_while_no_list.absorb_next_sibling_while_no_list
 pub const add_after_tags_but_not_last_child_tags = add_after_tags_but_not_last_child_tags.add_after_tags_but_not_last_child_tags
+pub const add_attribute_if_child_of = add_attribute_if_child_of.add_attribute_if_child_of
+pub const add_attribute_if_child_of_no_list = add_attribute_if_child_of_no_list.add_attribute_if_child_of_no_list
 pub const add_attribute_to_second_of_kind = add_attribute_to_second_of_kind.add_attribute_to_second_of_kind
-pub const add_attribute_when_child_of = add_attribute_when_child_of.add_attribute_when_child_of
 pub const add_attributes = add_attributes.add_attributes
 pub const add_attributes_no_list = add_attributes_no_list.add_attributes_no_list
 pub const add_before_tags_but_not_before_first_of_kind = add_before_tags_but_not_before_first_of_kind.add_before_tags_but_not_before_first_of_kind
+pub const add_before_tags_but_not_before_first_of_kind_no_list = add_before_tags_but_not_before_first_of_kind_no_list.add_before_tags_but_not_before_first_of_kind_no_list
 pub const add_before_tags_but_not_first_child_tags = add_before_tags_but_not_first_child_tags.add_before_tags_but_not_first_child_tags
+pub const add_before_tags_but_not_first_child_tags_no_list = add_before_tags_but_not_first_child_tags_no_list.add_before_tags_but_not_first_child_tags_no_list
 pub const add_between_tag_and_text_node = add_between_tag_and_text_node.add_between_tag_and_text_node
+pub const add_between_tag_and_text_node_no_list = add_between_tag_and_text_node_no_list.add_between_tag_and_text_node_no_list
 pub const add_between_tags = add_between_tags.add_between_tags
+pub const add_between_tags_no_list = add_between_tags_no_list.add_between_tags_no_list
 pub const add_spacer_divs_after = add_spacer_divs_after.add_spacer_divs_after
 pub const add_spacer_divs_before = add_spacer_divs_before.add_spacer_divs_before
 pub const add_spacer_divs_between = add_spacer_divs_between.add_spacer_divs_between
@@ -148,11 +171,13 @@ pub const extract_starting_and_ending_spaces = extract_starting_and_ending_space
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
 pub const find_replace = find_replace.find_replace
 pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_replace_in_descendants_of
+pub const find_replace_no_list = find_replace_no_list.find_replace_no_list
 pub const fix_ti2_local_links = fix_ti2_local_links.fix_ti2_local_links
 pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
 pub const fold_tags_into_text = fold_tags_into_text.fold_tags_into_text
 pub const fold_tags_into_text_no_list = fold_tags_into_text_no_list.fold_tags_into_text_no_list
 pub const free_children = free_children.free_children
+pub const free_children_no_list = free_children_no_list.free_children_no_list
 pub const generate_lbp_breadcrumbs = generate_lbp_breadcrumbs.generate_lbp_breadcrumbs
 pub const generate_lbp_prev_next_attributes = generate_lbp_prev_next_attributes.generate_lbp_prev_next_attributes
 pub const generate_lbp_sections_breadcrumbs = generate_lbp_sections_breadcrumbs.generate_lbp_sections_breadcrumbs
@@ -181,23 +206,25 @@ pub const pair_list_list_bookends = pair_list_list_bookends.pair_list_list_booke
 pub const prepend_append_to_text_children_of = prepend_append_to_text_children_of.prepend_append_to_text_children_of
 pub const prepend_text = prepend_text.prepend_text
 pub const prepend_text_if_has_ancestor_else = prepend_text_if_has_ancestor_else.prepend_text_if_has_ancestor_else
+pub const prepend_text_no_list = prepend_text_no_list.prepend_text_no_list
 pub const rearrange_links = rearrange_links.rearrange_links
+pub const rearrange_links_no_list = rearrange_links_no_list.rearrange_links_no_list
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const reinsert_math_dollar = reinsert_math_dollar.reinsert_math_dollar
 pub const remove_attributes = remove_attributes.remove_attributes
 pub const remove_attributes_for_parents = remove_attributes_for_parents.remove_attributes_for_parents
 pub const remove_chapter_number_from_title = remove_chapter_number_from_title.remove_chapter_number_from_title
+pub const remove_empty = remove_empty.remove_empty
 pub const remove_empty_lines = remove_empty_lines.remove_empty_lines
-pub const remove_empty_tags = remove_empty_tags.remove_empty_tags
+pub const remove_empty_no_list = remove_empty_no_list.remove_empty_no_list
 pub const remove_outside_subtrees = remove_outside_subtrees.remove_outside_subtrees
-pub const remove_starting_and_ending_empty_lines = remove_starting_and_ending_empty_lines.remove_starting_and_ending_empty_lines
-pub const remove_starting_and_ending_spaces = remove_starting_and_ending_spaces.remove_starting_and_ending_spaces
 pub const remove_tag = remove_tag.remove_tag
 pub const remove_text_nodes_with_singleton_empty_line = remove_text_nodes_with_singleton_empty_line.remove_text_nodes_with_singleton_empty_line
 pub const rename = rename.rename
 pub const rename_attributes = rename_attributes.rename_attributes
 pub const rename_attributes_by_function = rename_attributes_by_function.rename_attributes_by_function
-pub const rename_when_child_of = rename_when_child_of.rename_when_child_of
+pub const rename_if_child_of = rename_if_child_of.rename_if_child_of
+pub const rename_if_child_of_no_list = rename_if_child_of_no_list.rename_if_child_of_no_list
 pub const rename_with_appended_attributes_and_prepended_text = rename_with_appended_attributes_and_prepended_text.rename_with_appended_attributes_and_prepended_text
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const replace_in_attribute_values = replace_in_attribute_values.replace_in_attribute_values
@@ -209,17 +236,24 @@ pub const split_with_replacement_instructions_no_list = split_with_replacement_i
 pub const strip_math_delimiters_inside = strip_math_delimiters_inside.strip_math_delimiters_inside
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
+pub const trim = trim.trim
+pub const trim_empty_lines = trim_empty_lines.trim_empty_lines
+pub const trim_empty_lines_no_list = trim_empty_lines_no_list.trim_empty_lines_no_list
+pub const trim_no_list = trim_no_list.trim_no_list
 pub const trim_spaces_around_newlines = trim_spaces_around_newlines.trim_spaces_around_newlines
 pub const unwrap = unwrap.unwrap
+pub const unwrap_if_descendant_of = unwrap_if_descendant_of.unwrap_if_descendant_of
+pub const unwrap_if_descendant_of_no_list = unwrap_if_descendant_of_no_list.unwrap_if_descendant_of_no_list
+pub const unwrap_if_no_child_satisfies = unwrap_if_no_child_satisfies.unwrap_if_no_child_satisfies
+pub const unwrap_if_no_child_satisfies_no_list = unwrap_if_no_child_satisfies_no_list.unwrap_if_no_child_satisfies_no_list
+pub const unwrap_no_list = unwrap_no_list.unwrap_no_list
 pub const unwrap_tag_when_child_of_tag = unwrap_tag_when_child_of_tag.unwrap_tag_when_child_of_tag
 pub const unwrap_tag_when_parent_of_tag = unwrap_tag_when_parent_of_tag.unwrap_tag_when_parent_of_tag
 pub const unwrap_tags_if_attributes_match = unwrap_tags_if_attributes_match.unwrap_tags_if_attributes_match
 pub const unwrap_tags_if_no_attributes = unwrap_tags_if_no_attributes.unwrap_tags_if_no_attributes
-pub const unwrap_tags_when_no_child_meets_condition = unwrap_tags_when_no_child_meets_condition.unwrap_tags_when_no_child_meets_condition
 pub const unwrap_tags_with_no_text_child = unwrap_tags_with_no_text_child.unwrap_tags_with_no_text_child
 pub const unwrap_tags_with_no_text_descendant = unwrap_tags_with_no_text_descendant.unwrap_tags_with_no_text_descendant
 pub const unwrap_when_child_of = unwrap_when_child_of.unwrap_when_child_of
-pub const unwrap_when_descendant_of = unwrap_when_descendant_of.unwrap_when_descendant_of
 pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.unwrap_when_zero_or_one_children
 pub const wrap_adjacent_non_whitespace_text_with = wrap_adjacent_non_whitespace_text_with.wrap_adjacent_non_whitespace_text_with
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
@@ -227,15 +261,21 @@ pub const wrap_element_children = wrap_element_children.wrap_element_children
 
 pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_next_sibling_while.assertive_tests,
+  absorb_next_sibling_while_no_list.assertive_tests,
   add_after_tags_but_not_last_child_tags.assertive_tests,
+  add_attribute_if_child_of.assertive_tests,
+  add_attribute_if_child_of_no_list.assertive_tests,
   add_attribute_to_second_of_kind.assertive_tests,
-  add_attribute_when_child_of.assertive_tests,
   add_attributes.assertive_tests,
   add_attributes_no_list.assertive_tests,
   add_before_tags_but_not_before_first_of_kind.assertive_tests,
+  add_before_tags_but_not_before_first_of_kind_no_list.assertive_tests,
   add_before_tags_but_not_first_child_tags.assertive_tests,
+  add_before_tags_but_not_first_child_tags_no_list.assertive_tests,
   add_between_tag_and_text_node.assertive_tests,
+  add_between_tag_and_text_node_no_list.assertive_tests,
   add_between_tags.assertive_tests,
+  add_between_tags_no_list.assertive_tests,
   add_spacer_divs_after.assertive_tests,
   add_spacer_divs_before.assertive_tests,
   add_spacer_divs_between.assertive_tests,
@@ -262,11 +302,13 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   filter_nodes_by_attributes.assertive_tests,
   find_replace.assertive_tests,
   find_replace_in_descendants_of.assertive_tests,
+  find_replace_no_list.assertive_tests,
   fix_ti2_local_links.assertive_tests,
   fold_tag_contents_into_text.assertive_tests,
   fold_tags_into_text.assertive_tests,
   fold_tags_into_text_no_list.assertive_tests,
   free_children.assertive_tests,
+  free_children_no_list.assertive_tests,
   generate_lbp_breadcrumbs.assertive_tests,
   generate_lbp_prev_next_attributes.assertive_tests,
   generate_lbp_sections_breadcrumbs.assertive_tests,
@@ -295,23 +337,25 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   prepend_append_to_text_children_of.assertive_tests,
   prepend_text.assertive_tests,
   prepend_text_if_has_ancestor_else.assertive_tests,
+  prepend_text_no_list.assertive_tests,
   rearrange_links.assertive_tests,
+  rearrange_links_no_list.assertive_tests,
   reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.assertive_tests,
   reinsert_math_dollar.assertive_tests,
   remove_attributes.assertive_tests,
   remove_attributes_for_parents.assertive_tests,
   remove_chapter_number_from_title.assertive_tests,
+  remove_empty.assertive_tests,
   remove_empty_lines.assertive_tests,
-  remove_empty_tags.assertive_tests,
+  remove_empty_no_list.assertive_tests,
   remove_outside_subtrees.assertive_tests,
-  remove_starting_and_ending_empty_lines.assertive_tests,
-  remove_starting_and_ending_spaces.assertive_tests,
   remove_tag.assertive_tests,
   remove_text_nodes_with_singleton_empty_line.assertive_tests,
   rename.assertive_tests,
   rename_attributes.assertive_tests,
   rename_attributes_by_function.assertive_tests,
-  rename_when_child_of.assertive_tests,
+  rename_if_child_of.assertive_tests,
+  rename_if_child_of_no_list.assertive_tests,
   rename_with_appended_attributes_and_prepended_text.assertive_tests,
   rename_with_attributes.assertive_tests,
   replace_in_attribute_values.assertive_tests,
@@ -323,17 +367,24 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   strip_math_delimiters_inside.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
+  trim.assertive_tests,
+  trim_empty_lines.assertive_tests,
+  trim_empty_lines_no_list.assertive_tests,
+  trim_no_list.assertive_tests,
   trim_spaces_around_newlines.assertive_tests,
   unwrap.assertive_tests,
+  unwrap_if_descendant_of.assertive_tests,
+  unwrap_if_descendant_of_no_list.assertive_tests,
+  unwrap_if_no_child_satisfies.assertive_tests,
+  unwrap_if_no_child_satisfies_no_list.assertive_tests,
+  unwrap_no_list.assertive_tests,
   unwrap_tag_when_child_of_tag.assertive_tests,
   unwrap_tag_when_parent_of_tag.assertive_tests,
   unwrap_tags_if_attributes_match.assertive_tests,
   unwrap_tags_if_no_attributes.assertive_tests,
-  unwrap_tags_when_no_child_meets_condition.assertive_tests,
   unwrap_tags_with_no_text_child.assertive_tests,
   unwrap_tags_with_no_text_descendant.assertive_tests,
   unwrap_when_child_of.assertive_tests,
-  unwrap_when_descendant_of.assertive_tests,
   unwrap_when_zero_or_one_children.assertive_tests,
   wrap_adjacent_non_whitespace_text_with.assertive_tests,
   wrap_children_before_in.assertive_tests,

@@ -1,55 +1,50 @@
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T}
+import vxml.{type VXML, V}
 
 fn nodemap(
-  vxml: VXML,
-) -> Result(VXML, DesugaringError) {
-  case vxml {
-    T(_, _) ->
-      vxml
-      |> infra.trim_ending_spaces_except_last_line
-      |> infra.trim_starting_spaces_except_first_line
-      |> Ok
-    _ -> Ok(vxml)
+  node: VXML,
+  inner: InnerParam,
+) -> List(VXML) {
+  case node {
+    V(_, tag, _, []) if tag == inner -> []
+    _ -> [node]
   }
 }
 
-fn nodemap_factory() -> n2t.OneToOneNodeMap {
-  nodemap
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
+  nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  nodemap_factory()
-  |> n2t.one_to_one_nodemap_2_desugarer_transform_with_forbidden(inner)
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String) // forbidden tags
+type Param = String
 type InnerParam = Param
 
-const name = "trim_spaces_around_newlines"
-const constructor = trim_spaces_around_newlines
+const name = "remove_empty_no_list"
+const constructor = remove_empty_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// trims spaces around newlines in text nodes
-/// outside of subtrees rooted at tags given by the
-/// param argument
-pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
+/// removes nodes of the given tag that have no
+/// children
+pub fn remove_empty_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
-/// trims spaces around newlines in text nodes
-/// outside of subtrees rooted at tags given by the
-/// param argument
+/// removes nodes of the given tag that have no
+/// children
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

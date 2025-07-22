@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/string
-import infrastructure.{type DesugaringError} as infra
+import infrastructure as infra
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 pub type GroupReplacementInstruction {
@@ -71,11 +71,8 @@ pub fn split_content_with_replacement(
   )
 
   results
-  |> list.filter(option.is_some)
-  |> list.map(fn(opt) {
-    let assert Some(node) = opt
-    node
-  })
+  |> option.values
+  |> infra.last_to_first_concatenation
 }
 
 fn split_blamed_line_with_replacement(
@@ -116,20 +113,19 @@ fn split_if_t_with_replacement_in_nodes(
 pub fn split_if_t_with_replacement_no_list_nodemap(
   vxml: VXML,
   rule: RegexpWithGroupReplacementInstructions,
-) -> Result(List(VXML), DesugaringError) {
-  Ok(split_if_t_with_replacement_in_nodes([vxml], rule))
+) -> List(VXML) {
+  split_if_t_with_replacement_in_nodes([vxml], rule)
 }
 
 pub fn split_if_t_with_replacement_nodemap(
   vxml: VXML,
   rules: List(RegexpWithGroupReplacementInstructions),
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   list.fold(
     rules,
     [vxml],
-    split_if_t_with_replacement_in_nodes
+    split_if_t_with_replacement_in_nodes,
   )
-  |> Ok
 }
 
 // *****************

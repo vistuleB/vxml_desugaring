@@ -3,7 +3,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, T, V}
+import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, V}
 
 fn nodemap(
   vxml: VXML,
@@ -41,12 +41,12 @@ fn nodemap(
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMapNoError {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_no_error_2_desugarer_transform(nodemap_factory(inner))
+  n2t.one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

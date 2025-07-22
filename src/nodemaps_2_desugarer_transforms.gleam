@@ -4,30 +4,61 @@ import vxml.{type VXML, V, T}
 import infrastructure.{type DesugarerTransform, type DesugaringError} as infra
 
 //**************************************************************
-//* OneToOneNodeMapNoError
+//* OneToOneNoErrorNodeMap
 //**************************************************************
 
-pub type OneToOneNodeMapNoError =
+pub type OneToOneNoErrorNodeMap =
   fn(VXML) -> VXML
 
-fn one_to_one_nodemap_no_error_recursive_application(
+// *** without forbidden ***
+
+fn one_to_one_no_error_nodemap_recursive_application(
   node: VXML,
-  nodemap: OneToOneNodeMapNoError,
+  nodemap: OneToOneNoErrorNodeMap,
 ) -> VXML {
   case node {
     T(_, _) -> nodemap(node)
     V(_, _, _, children) -> nodemap(V(
       ..node,
-      children: list.map(children, one_to_one_nodemap_no_error_recursive_application(_, nodemap))
+      children: list.map(children, one_to_one_no_error_nodemap_recursive_application(_, nodemap))
     ))
   }
 }
 
-pub fn one_to_one_nodemap_no_error_2_desugarer_transform(
-  nodemap: OneToOneNodeMapNoError,
+pub fn one_to_one_no_error_nodemap_2_desugarer_transform(
+  nodemap: OneToOneNoErrorNodeMap,
 ) -> DesugarerTransform {
   fn (vxml) {
-    one_to_one_nodemap_no_error_recursive_application(vxml, nodemap)
+    one_to_one_no_error_nodemap_recursive_application(vxml, nodemap)
+    |> Ok
+  }
+}
+
+// *** with forbidden ***
+
+fn one_to_one_no_error_nodemap_recursive_application_with_forbidden(
+  node: VXML,
+  nodemap: OneToOneNoErrorNodeMap,
+  forbidden: List(String),
+) -> VXML {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, tag, _, children) -> case list.contains(forbidden, tag) {
+      True -> node
+      False -> nodemap(V(
+        ..node,
+        children: list.map(children, one_to_one_no_error_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
+      ))
+    }
+  }
+}
+
+pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(
+  nodemap: OneToOneNoErrorNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_one_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> Ok
   }
 }
@@ -38,6 +69,8 @@ pub fn one_to_one_nodemap_no_error_2_desugarer_transform(
 
 pub type OneToOneNodeMap =
   fn(VXML) -> Result(VXML, DesugaringError)
+
+// *** without forbidden ***
 
 fn one_to_one_nodemap_recursive_application(
   node: VXML,
@@ -62,12 +95,110 @@ pub fn one_to_one_nodemap_2_desugarer_transform(
   one_to_one_nodemap_recursive_application(_, nodemap)
 }
 
+// *** with forbidden ***
+
+fn one_to_one_nodemap_recursive_application_with_forbidden(
+  node: VXML,
+  nodemap: OneToOneNodeMap,
+  forbidden: List(String),
+) -> Result(VXML, DesugaringError) {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, tag, _, children) -> case list.contains(forbidden, tag) {
+      True -> Ok(node)
+      False -> {
+        use children <- result.try(
+          children
+          |> list.map(one_to_one_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
+          |> result.all
+        )
+        nodemap(V(..node, children: children))
+      }
+    }
+  }
+}
+
+pub fn one_to_one_nodemap_2_desugarer_transform_with_forbidden(
+  nodemap: OneToOneNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  one_to_one_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden)
+}
+
+//**************************************************************
+//* OneToManyNoErrorNodeMap
+//**************************************************************
+
+pub type OneToManyNoErrorNodeMap =
+  fn(VXML) -> List(VXML)
+
+// *** without forbidden ***
+
+fn one_to_many_no_error_nodemap_recursive_application(
+  node: VXML,
+  nodemap: OneToManyNoErrorNodeMap,
+) -> List(VXML) {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, _, _, children) -> {
+      let children =
+        children
+        |> list.map(one_to_many_no_error_nodemap_recursive_application(_, nodemap))
+        |> list.flatten
+      nodemap(V(..node, children: children))
+    }
+  }
+}
+
+pub fn one_to_many_no_error_nodemap_2_desugarer_transform(
+  nodemap: OneToManyNoErrorNodeMap,
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_many_no_error_nodemap_recursive_application(vxml, nodemap)
+    |> infra.get_root_with_desugaring_error
+  }
+}
+
+// *** with forbidden ***
+
+fn one_to_many_no_error_nodemap_recursive_application_with_forbidden(
+  node: VXML,
+  nodemap: OneToManyNoErrorNodeMap,
+  forbidden: List(String),
+) -> List(VXML) {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, tag, _, children) -> case list.contains(forbidden, tag) {
+      True -> [node]
+      False -> {
+        let children =
+          children
+          |> list.map(one_to_many_no_error_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
+          |> list.flatten
+        nodemap(V(..node, children: children))
+      }
+    }
+  }
+}
+
+pub fn one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(
+  nodemap: OneToManyNoErrorNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_many_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
+    |> infra.get_root_with_desugaring_error
+  }
+}
+
 //**************************************************************
 //* OneToManyNodeMap
 //**************************************************************
 
 pub type OneToManyNodeMap =
   fn(VXML) -> Result(List(VXML), DesugaringError)
+
+// *** without forbidden ***
 
 fn one_to_many_nodemap_recursive_application(
   node: VXML,
@@ -95,8 +226,102 @@ pub fn one_to_many_nodemap_2_desugarer_transform(
   }
 }
 
+// *** with forbidden ***
+
+fn one_to_many_nodemap_recursive_application_with_forbidden(
+  node: VXML,
+  nodemap: OneToManyNodeMap,
+  forbidden: List(String),
+) -> Result(List(VXML), DesugaringError) {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, tag, _, children) -> case list.contains(forbidden, tag) {
+      True -> Ok([node])
+      False -> {
+        use children <- result.try(
+          children
+          |> list.try_map(one_to_many_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
+          |> result.map(list.flatten)
+        )
+        nodemap(V(..node, children: children))
+      }
+    }
+  }
+}
+
+pub fn one_to_many_nodemap_2_desugarer_transform_with_forbidden(
+  nodemap: OneToManyNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_many_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
+    |> result.try(infra.get_root_with_desugaring_error)
+  }
+}
+
 //**************************************************************
-//* FancyOneToManyNodeMap
+//* FancyOneToOneNoErrorNodeMap
+//**************************************************************
+
+pub type FancyOneToOneNoErrorNodeMap =
+  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) -> VXML
+
+fn fancy_one_to_one_no_error_nodemap_recursive_application(
+  node: VXML,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  nodemap: FancyOneToOneNoErrorNodeMap,
+) -> VXML {
+  case node {
+    T(_, _) ->
+      nodemap(
+        node,
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+      )
+    V(blame, tag, attrs, children) -> {
+      let children_ancestors = [node, ..ancestors]
+      let children =
+        list.fold(
+          children,
+          #([], [], list.drop(children, 1)),
+          fn(acc, child) {
+            let mapped_child =
+              fancy_one_to_one_no_error_nodemap_recursive_application(child, children_ancestors, acc.0, acc.1, acc.2, nodemap)
+            #(
+              [child, ..acc.0],
+              [mapped_child, ..acc.1],
+              list.drop(acc.2, 1),
+            )
+          }
+        )
+        |> fn(acc) {acc.1 |> list.reverse}
+      nodemap(
+        V(blame, tag, attrs, children),
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+      )
+    }
+  }
+}
+
+pub fn fancy_one_to_one_no_error_nodemap_2_desugarer_transform(
+  nodemap: FancyOneToOneNoErrorNodeMap,
+) -> DesugarerTransform {
+  fn (vxml) {
+    fancy_one_to_one_no_error_nodemap_recursive_application(vxml, [], [], [], [], nodemap)
+    |> Ok
+  }
+}
+
+//**************************************************************
+//* FancyOneToOneNodeMap
 //**************************************************************
 
 pub type FancyOneToOneNodeMap =
@@ -156,6 +381,82 @@ pub fn fancy_one_to_one_nodemap_2_desugarer_transform(
   nodemap: FancyOneToOneNodeMap,
 ) -> DesugarerTransform {
   fancy_one_to_one_nodemap_recursive_application(_, [], [], [], [], nodemap)
+}
+
+//**********************************************************************
+//* FancyOneToManyNoErrorNodeMap
+//**********************************************************************
+
+pub type FancyOneToManyNoErrorNodeMap =
+  fn(VXML, List(VXML), List(VXML), List(VXML), List(VXML)) ->
+    List(VXML)
+
+fn fancy_one_to_many_no_error_nodemap_recursive_application(
+  node: VXML,
+  ancestors: List(VXML),
+  previous_siblings_before_mapping: List(VXML),
+  previous_siblings_after_mapping: List(VXML),
+  following_siblings_before_mapping: List(VXML),
+  nodemap: FancyOneToManyNoErrorNodeMap,
+) -> List(VXML) {
+  case node {
+    T(_, _) ->
+      nodemap(
+        node,
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+      )
+    V(_, _, _, children) -> {
+      let children_ancestors = [node, ..ancestors]
+      let children =
+        list.fold(
+          children,
+          #([], [], list.drop(children, 1)),
+          fn(acc, child) {
+            let shat_children = 
+              fancy_one_to_many_no_error_nodemap_recursive_application(
+                child,
+                children_ancestors,
+                acc.0,
+                acc.1,
+                acc.2,
+                nodemap
+              )
+            #(
+              [child, ..acc.0],
+              infra.pour(shat_children, acc.1),
+              list.drop(acc.2, 1),
+            )
+          }
+        )
+        |> fn(acc) {acc.1 |> list.reverse}
+      nodemap(
+        V(..node, children: children),
+        ancestors,
+        previous_siblings_before_mapping,
+        previous_siblings_after_mapping,
+        following_siblings_before_mapping,
+      )
+    }
+  }
+}
+
+pub fn fancy_one_to_many_no_error_nodemap_2_desugarer_transform(
+  nodemap: FancyOneToManyNoErrorNodeMap,
+) -> DesugarerTransform {
+  fn(root: VXML) {
+    fancy_one_to_many_no_error_nodemap_recursive_application(
+      root,
+      [],
+      [],
+      [],
+      [],
+      nodemap
+    )
+    |> infra.get_root_with_desugaring_error
+  }
 }
 
 //**********************************************************************
@@ -633,7 +934,7 @@ fn early_return_one_to_one_nodemap_recursive_application(
   }
 }
 
-pub fn early_return_node_to_node_desugarer_factory(
+pub fn early_return_one_to_one_nodemap_2_desugarer_transform(
   nodemap: EarlyReturnOneToOneNodeMap,
 ) -> DesugarerTransform {
   early_return_one_to_one_nodemap_recursive_application(_, [], nodemap)
@@ -643,48 +944,62 @@ pub fn early_return_node_to_node_desugarer_factory(
 //* misc: turn OneToOneNodeMap into parent-avoiding fancy transform                               *
 //**********************************************************************
 
-pub fn list_intersection(l1: List(a), l2: List(a)) -> Bool {
-  list.any(l1, list.contains(l2, _))
-}
+// pub fn prevent_one_to_one_no_error_nodemap_inside(
+//   nodemap: OneToOneNoErrorNodeMap,
+//   forbidden_tags: List(String),
+// ) -> OneToOneNoErrorNodeMap {
+//   fn(
+//     node: VXML,
+//   ) -> VXML {
+//     case infra.is_v_and_tag_is_one_of(node, forbidden_tags) {
+//       False -> nodemap(node)
+//       True -> node
+//     }
+//   }
+// }
 
-pub fn prevent_node_to_node_transform_inside(
-  nodemap: OneToOneNodeMap,
-  forbidden_tags: List(String),
-) -> FancyOneToOneNodeMap {
-  fn(
-    node: VXML,
-    ancestors: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-  ) -> Result(VXML, DesugaringError) {
-    let node_is_forbidden_tag = case node {
-      T(_, _) -> False
-      V(_, tag, _, _) -> list.contains(forbidden_tags, tag)
-    }
-    case node_is_forbidden_tag  || list_intersection(ancestors|> list.map(infra.get_tag), forbidden_tags)
-    {
-      False -> nodemap(node)
-      True -> Ok(node)
-    }
-  }
-}
+// pub fn prevent_one_to_one_nodemap_inside(
+//   nodemap: OneToOneNodeMap,
+//   forbidden_tags: List(String),
+// ) -> OneToOneNodeMap {
+//   fn(
+//     node: VXML,
+//   ) -> Result(VXML, DesugaringError) {
+//     case infra.is_v_and_tag_is_one_of(node, forbidden_tags) {
+//       True -> Ok(node)
+//       False -> nodemap(node)
+//     }
+//   }
+// }
 
-pub fn prevent_one_to_many_nodemap_inside(
-  nodemap: OneToManyNodeMap,
-  forbidden_tags: List(String),
-) -> FancyOneToManyNodeMap {
-  fn(
-    node: VXML,
-    ancestors: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-    _: List(VXML),
-  ) -> Result(List(VXML), DesugaringError) {
-    case list_intersection(ancestors|> list.map(infra.get_tag), forbidden_tags)
-    {
-      False -> nodemap(node)
-      True -> Ok([node])
-    }
-  }
-}
+// pub fn prevent_one_to_many_nodemap_inside(
+//   nodemap: OneToManyNodeMap,
+//   forbidden_tags: List(String),
+// ) -> OneToManyNodeMap {
+//   fn(
+//     node: VXML,
+//   ) -> Result(List(VXML), DesugaringError) {
+//     case infra.is_v_and_tag_is_one_of(node, forbidden_tags) {
+//       True -> {
+//         Ok([node])
+//       }
+//       False -> {
+//         nodemap(node)
+//       }
+//     }
+//   }
+// }
+
+// pub fn prevent_one_to_many_no_error_nodemap_inside(
+//   nodemap: OneToManyNoErrorNodeMap,
+//   forbidden_tags: List(String),
+// ) -> OneToManyNoErrorNodeMap {
+//   fn(
+//     node: VXML
+//   ) -> List(VXML) {
+//     case infra.is_v_and_tag_is_one_of(node, forbidden_tags) {
+//       True -> [node]
+//       False -> nodemap(node)
+//     }
+//   }
+// }

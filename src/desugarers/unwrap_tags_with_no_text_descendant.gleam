@@ -33,20 +33,8 @@ fn nodemap(
   case node {
     V(_, tag, _, children) -> {
       case list.contains(inner, tag), list.any(children, is_text_or_has_text_descendant) {
-        True, False -> {
-          case has_unique_child_of_tag(node, ["Math"]) {
-            False -> Nil
-            True -> vxml.debug_print_vxml("(u)", node)
-          }
-          Ok(children)
-        }
-        _, _ -> {
-          case has_unique_child_of_tag(node, ["Math"]) {
-            True -> vxml.debug_print_vxml("(u)", node)
-            False -> Nil
-          }
-          Ok([node])
-        }
+        True, False -> Ok(children)
+        _, _ -> Ok([node])
       }
     }
     _ -> Ok([node])

@@ -641,8 +641,15 @@ pub fn either_or_misceginator(
 
 pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
   case l {
-    [] -> Error(Nil)
     [first, ..rest] -> Ok(#(first, rest))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn first_second_rest(l: List(a)) -> Result(#(a, a, List(a)), Nil) {
+  case l {
+    [first, second, ..rest] -> Ok(#(first, second, rest))
+    _ -> Error(Nil)
   }
 }
 
@@ -724,6 +731,32 @@ pub fn find_replace_in_t(node: VXML, list_pairs: List(#(String, String))) {
   )
 }
 
+pub fn find_replace_in_t_no_list(
+  node: VXML,
+  from: String,
+  to: String,
+) -> VXML {
+  let assert T(blame, contents) = node
+  T(
+    blame,
+    list.map(
+      contents,
+      fn(bc){BlamedContent(bc.blame, string.replace(bc.content, from, to))}
+    )
+  )
+}
+
+pub fn find_replace_in_node_no_list(
+  node: VXML,
+  from: String,
+  to: String,
+) -> VXML {
+  case node {
+    T(_, _) -> find_replace_in_t_no_list(node, from, to)
+    _ -> node
+  }
+}
+
 pub fn find_replace_in_node(
   node: VXML,
   list_pairs: List(#(String, String)),
@@ -732,13 +765,6 @@ pub fn find_replace_in_node(
     T(_, _) -> find_replace_in_t(node, list_pairs)
     _ -> node
   }
-}
-
-pub fn find_replace_in_node_transform_version(
-  node: VXML,
-  list_pairs: List(#(String, String)),
-) -> Result(List(VXML), DesugaringError) {
-  [find_replace_in_node(node, list_pairs)] |> Ok
 }
 
 //**************************************************************
@@ -884,12 +910,12 @@ pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
   )
 }
 
-pub fn remove_lines_while_empty(l: List(BlamedContent)) -> List(BlamedContent) {
+pub fn lines_remove_starting_empty_lines(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
     [] -> []
     [first, ..rest] ->
       case first.content {
-        "" -> remove_lines_while_empty(rest)
+        "" -> lines_remove_starting_empty_lines(rest)
         _ -> l
       }
   }
@@ -1022,7 +1048,7 @@ pub fn first_line_ends_with(
 
 pub fn t_remove_starting_empty_lines(vxml: VXML) -> Option(VXML) {
   let assert T(blame, lines) = vxml
-  let lines = remove_lines_while_empty(lines)
+  let lines = lines_remove_starting_empty_lines(lines)
   case lines {
     [] -> None
     _ -> Some(T(blame, lines))
@@ -1031,45 +1057,11 @@ pub fn t_remove_starting_empty_lines(vxml: VXML) -> Option(VXML) {
 
 pub fn t_remove_ending_empty_lines(vxml: VXML) -> Option(VXML) {
   let assert T(blame, lines) = vxml
-  let lines = remove_lines_while_empty(lines |> list.reverse) |> list.reverse
+  let lines = lines_remove_starting_empty_lines(lines |> list.reverse) |> list.reverse
   case lines {
     [] -> None
     _ -> Some(T(blame, lines))
   }
-}
-
-pub fn v_remove_starting_empty_lines(vxml: VXML) -> VXML {
-  let assert V(blame, tag, attrs, children) = vxml
-  let children = case children {
-    [T(_, _) as first, ..rest] -> {
-      case t_remove_starting_empty_lines(first) {
-        Some(guy) -> [guy, ..rest]
-        None -> rest
-      }
-    }
-    _ -> children
-  }
-  V(blame, tag, attrs, children)
-}
-
-pub fn v_remove_ending_empty_lines(vxml: VXML) -> VXML {
-  let assert V(blame, tag, attrs, children) = vxml
-  let children = case children |> list.reverse {
-    [T(_, _) as first, ..rest] -> {
-      case t_remove_ending_empty_lines(first) {
-        Some(guy) -> [guy, ..rest] |> list.reverse
-        None -> rest |> list.reverse
-      }
-    }
-    _ -> children
-  }
-  V(blame, tag, attrs, children)
-}
-
-pub fn v_remove_starting_and_ending_empty_lines(vxml: VXML) -> VXML {
-  vxml
-  |> v_remove_starting_empty_lines
-  |> v_remove_ending_empty_lines
 }
 
 pub fn extract_starting_spaces_from_text(content: String) -> #(String, String) {
@@ -1084,14 +1076,20 @@ pub fn extract_ending_spaces_from_text(content: String) -> #(String, String) {
   #(string.repeat(" ", num_spaces), new_content)
 }
 
-pub fn t_trim_start(node: VXML) -> VXML {
+pub fn t_trim_start(node: VXML) -> Option(VXML) {
   let assert T(blame, lines) = node
-  T(blame, lines_trim_start(lines))
+  case lines_trim_start(lines) {
+    [] -> None
+    lines -> Some(T(blame, lines))
+  }
 }
 
-pub fn t_trim_end(node: VXML) -> VXML {
+pub fn t_trim_end(node: VXML) -> Option(VXML) {
   let assert T(blame, lines) = node
-  T(blame, reversed_lines_trim_end(lines |> list.reverse) |> list.reverse)
+  case reversed_lines_trim_end(lines |> list.reverse) {
+    [] -> None
+    lines -> Some(T(blame, lines |> list.reverse))
+  }
 }
 
 pub fn t_super_trim_end(node: VXML) -> Option(VXML) {
@@ -1195,6 +1193,58 @@ pub fn v_extract_ending_spaces(node: VXML) -> #(Option(VXML), VXML) {
       }
     }
     _ -> #(None, node)
+  }
+}
+
+pub fn v_trim_start(node: VXML) -> VXML {
+  let assert V(_, _, _, children) = node
+  case children {
+    [T(_, _) as first, ..rest] -> {
+      case t_trim_start(first) {
+        None -> v_trim_start(V(..node, children: rest))
+        Some(guy) -> V(..node, children: [guy, ..rest])
+      }
+    }
+    _ -> node
+  }
+}
+
+pub fn v_trim_end(node: VXML) -> VXML {
+  let assert V(_, _, _, children) = node
+  case children |> list.reverse {
+    [T(_, _) as first, ..rest] -> {
+      case t_trim_end(first) {
+        None -> v_trim_end(V(..node, children: rest |> list.reverse))
+        Some(guy) -> V(..node, children: [guy, ..rest] |> list.reverse)
+      }
+    }
+    _ -> node
+  }
+}
+
+pub fn v_remove_starting_empty_lines(node: VXML) -> VXML {
+  let assert V(_, _, _, children) = node
+  case children {
+    [T(_, _) as first, ..rest] -> {
+      case t_remove_starting_empty_lines(first) {
+        None -> v_remove_starting_empty_lines(V(..node, children: rest))
+        Some(guy) -> V(..node, children: [guy, ..rest])
+      }
+    }
+    _ -> node
+  }
+}
+
+pub fn v_remove_ending_empty_lines(node: VXML) -> VXML {
+  let assert V(_, _, _, children) = node
+  case children |> list.reverse {
+    [T(_, _) as first, ..rest] -> {
+      case t_remove_ending_empty_lines(first) {
+        None -> v_remove_ending_empty_lines(V(..node, children: rest |> list.reverse))
+        Some(guy) -> V(..node, children: [guy, ..rest] |> list.reverse)
+      }
+    }
+    _ -> node
   }
 }
 
@@ -1516,14 +1566,14 @@ pub fn tag_equals(vxml: VXML, tag: String) -> Bool {
 pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
   case vxml {
     T(_, _) -> False
-    V(_, _, _, _) -> vxml.tag == tag
+    V(_, t, _, _) -> t == tag
   }
 }
 
 pub fn is_v_and_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
   case vxml {
     T(_, _) -> False
-    V(_, _, _, _) -> list.contains(tags, vxml.tag)
+    V(_, tag, _, _) -> list.contains(tags, tag)
   }
 }
 

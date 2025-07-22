@@ -245,6 +245,37 @@ pub fn symmetric_delim_splitting(
   ]
 }
 
+pub fn asymmetric_delim_splitting_no_list(
+  opening_regex_form: String,
+  closing_regex_form: String,
+  opening_ordinary_form: String,
+  closing_ordinary_form: String,
+  tag: String,
+  forbidden: List(String),
+) -> List(Desugarer) {
+  let opening_grs = grs.for_groups([
+    #("[\\s]|^", grs.Keep),
+    #(opening_regex_form, grs.TagReplace("OpeningAsymmetricDelim")),
+    #("[^\\s]|$", grs.Keep),
+  ])
+
+  let closing_grs = grs.for_groups([
+    #("[^\\s]|^", grs.Keep),
+    #(closing_regex_form, grs.TagReplace("ClosingAsymmetricDelim")),
+    #("[\\s]|$", grs.Keep),
+  ])
+
+  [
+    dl.split_with_replacement_instructions_no_list(#(opening_grs, forbidden)),
+    dl.split_with_replacement_instructions_no_list(#(closing_grs, forbidden)),
+    dl.pair_bookends(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag )),
+    dl.fold_tags_into_text([
+      #("OpeningAsymmetricDelim", opening_ordinary_form),
+      #("ClosingAsymmetricDelim", closing_ordinary_form),
+    ]),
+  ]
+}
+
 pub fn asymmetric_delim_splitting(
   opening_regex_form: String,
   closing_regex_form: String,
@@ -253,6 +284,11 @@ pub fn asymmetric_delim_splitting(
   tag: String,
   forbidden: List(String),
 ) -> List(Desugarer) {
+  use <- infra.on_lazy_true_on_false(
+    infra.no_list,
+    fn() { asymmetric_delim_splitting_no_list(opening_regex_form, closing_regex_form, opening_ordinary_form, closing_ordinary_form, tag, forbidden) }
+  )
+
   let opening_grs = grs.for_groups([
     #("[\\s]|^", grs.Keep),
     #(opening_regex_form, grs.TagReplace("OpeningAsymmetricDelim")),

@@ -1,62 +1,60 @@
 import gleam/list
 import gleam/option
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
-
-fn is_empty(child: VXML) {
-  case child {
-    T(_, lines) -> list.all(lines, fn(x) { string.is_empty(x.content) })
-    _ -> False
-  }
-}
+import vxml.{type VXML, V}
 
 fn nodemap(
   node: VXML,
   inner: InnerParam,
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   case node {
-    V(_, tag, _, children) -> {
-      case list.contains(inner, tag), list.all(children, is_empty) {
-        True, True -> Ok([])
-        _, _ -> Ok([node])
-      }
+    V(_, tag, _, children) -> case list.contains(inner.0, tag) && !list.any(children, inner.1) {
+      True -> children
+      False -> [node]
     }
-    _ -> Ok([node])
+    _ -> [node]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String)
+type Param = #(List(String), fn(VXML) -> Bool)
+//             ↖             ↖
+//             tags to       condition
+//             unwrap
+type InnerParam = Param
 
-type InnerParam = List(String)
-
-const name = "remove_empty_tags"
-const constructor = remove_empty_tags
+const name = "unwrap_if_no_child_satisfies"
+const constructor = unwrap_if_no_child_satisfies
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes empty elements that contain only empty text nodes
-pub fn remove_empty_tags(param: Param) -> Desugarer {
+/// for a specified list of tag strings, unwraps
+/// nodes with tags from the list if the node does
+/// not have any child meeting the boolean condition
+pub fn unwrap_if_no_child_satisfies(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.None,
+    option.Some(ins(param)),
     "
-/// removes empty elements that contain only empty text nodes
+/// for a specified list of tag strings, unwraps
+/// nodes with tags from the list if the node does
+/// not have any child meeting the boolean condition
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

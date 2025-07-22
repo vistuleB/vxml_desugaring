@@ -1,55 +1,62 @@
 import gleam/option
+import gleam/list
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T}
+import vxml.{ type VXML, BlamedContent, T, V }
 
 fn nodemap(
   vxml: VXML,
-) -> Result(VXML, DesugaringError) {
+  inner: InnerParam,
+) -> VXML {
   case vxml {
-    T(_, _) ->
-      vxml
-      |> infra.trim_ending_spaces_except_last_line
-      |> infra.trim_starting_spaces_except_first_line
-      |> Ok
-    _ -> Ok(vxml)
+    V(_, tag, _, children) if tag == inner.0 -> V(..vxml, children: [inner.1, ..children])
+    _ -> vxml
   }
 }
 
-fn nodemap_factory() -> n2t.OneToOneNodeMap {
-  nodemap
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  nodemap_factory()
-  |> n2t.one_to_one_nodemap_2_desugarer_transform_with_forbidden(inner)
+  n2t.one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
+  let blame = infra.blame_us("prepend_text_no_list")
+  #(
+    param.0,
+    T(
+      blame,
+      param.1
+      |> string.split("\n")
+      |> list.map(BlamedContent(blame, _))
+    )
+  )
+  |> Ok
 }
 
-type Param = List(String) // forbidden tags
-type InnerParam = Param
+type Param = #(String, String)
+//             ↖       ↖
+//             tag     text
+type InnerParam = #(String, VXML)
 
-const name = "trim_spaces_around_newlines"
-const constructor = trim_spaces_around_newlines
+const name = "prepend_text_no_list"
+const constructor = prepend_text_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// trims spaces around newlines in text nodes
-/// outside of subtrees rooted at tags given by the
-/// param argument
-pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
+/// prepends text to the beginning of specified tags
+pub fn prepend_text_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.None,
+    option.Some(ins(param)),
     "
-/// trims spaces around newlines in text nodes
-/// outside of subtrees rooted at tags given by the
-/// param argument
+/// prepends text to the beginning of
+/// specified tags
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

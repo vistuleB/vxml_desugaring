@@ -1,43 +1,67 @@
+import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import group_replacement_splitting as grs
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type VXML, V}
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
-  grs.split_if_t_with_replacement_nodemap(_, inner.0)
+fn rename_child_if_right_tag(
+  child: VXML,
+  inner: InnerParam,
+) -> VXML {
+  case child {
+    V(_, tag, _, _) if tag == inner.0 -> V(..child, tag: inner.1)
+    _ -> child
+  }
+}
+
+fn nodemap(
+  vxml: VXML,
+  inner: InnerParam,
+) -> VXML {
+  case vxml {
+    V(_, tag, _, children) if tag == inner.2 -> {    
+      let children = list.map(children, rename_child_if_right_tag(_, inner))
+      V(..vxml, children: children)
+    }
+    _ -> vxml
+  }
+}
+
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.1)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(List(grs.RegexpWithGroupReplacementInstructions), List(String))
-//            ↖                                                   ↖
-//            replacement_instructions                            forbidden_parents
-type InnerParam = Param
+type Param = #(String,    String,    String)
+//             ↖          ↖          ↖
+//             old_name   new_name   parent
+type InnerParam = #(String, String, String)
 
-const name = "split_with_replacement_instructions"
-const constructor = split_with_replacement_instructions
+const name = "rename_if_child_of_no_list"
+const constructor = rename_if_child_of_no_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// splits text nodes by regexp with group-by-group
-/// replacement instructions
-pub fn split_with_replacement_instructions(param: Param) -> Desugarer {
+/// renames tags when they appear as children of a
+/// specified parent tag
+pub fn rename_if_child_of_no_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// splits text nodes by regexp with group-by-group
-/// replacement instructions
+/// renames tags when they appear as children of a
+/// specified parent tag
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

@@ -4,15 +4,13 @@ import group_replacement_splitting as grs
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 
-fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
-  let #(replacement_instructions, forbidden_parents) = inner
-  grs.split_if_t_with_replacement_no_list_nodemap(_, replacement_instructions)
-  |> n2t.prevent_one_to_many_nodemap_inside(forbidden_parents)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
+  grs.split_if_t_with_replacement_no_list_nodemap(_, inner.0)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.fancy_one_to_many_nodemap_2_desugarer_transform
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.1)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

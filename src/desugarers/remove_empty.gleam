@@ -1,35 +1,30 @@
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, V}
 
 fn nodemap(
-  vxml: VXML,
+  node: VXML,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
-  case vxml {
-    T(_, _) -> Ok(vxml)
-    V(_, tag, _, _) -> {
+) -> List(VXML) {
+  case node {
+    V(_, tag, _, []) ->
       case list.contains(inner, tag) {
-        True -> {
-          let #(_, vxml) = vxml |> infra.v_extract_starting_spaces
-          let #(_, vxml) = vxml |> infra.v_extract_ending_spaces
-          Ok(vxml)
-        }
-        False -> Ok(vxml)
+        True -> []
+        _ -> [node]
       }
-    }
+    _ -> [node]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -37,23 +32,24 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
+type InnerParam = List(String)
 
-type InnerParam = Param
-
-const name = "remove_starting_and_ending_spaces"
-const constructor = remove_starting_and_ending_spaces
+const name = "remove_empty"
+const constructor = remove_empty
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes starting and ending spaces from specified tags
-pub fn remove_starting_and_ending_spaces(param: Param) -> Desugarer {
+/// removes nodes who have no children and whose tag
+/// belongs to the given list
+pub fn remove_empty(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.None,
     "
-/// removes starting and ending spaces from specified tags
+/// removes nodes who have no children and whose tag
+/// belongs to the given list
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
