@@ -194,7 +194,7 @@ fn construct_right_menu(document: VXML) -> VXML {
       [ V(
           blame,
           "a",
-          [BlamedAttribute(blame, "href", format_chapter_link(1, 0))],
+          [BlamedAttribute(blame, "href", format_chapter_link(1, 0)), BlamedAttribute(blame, "id", "next-chapter")],
           [T(blame, [BlamedContent(blame, "1. " <> first_chapter_title <> " >>")])]
         )
       ]
