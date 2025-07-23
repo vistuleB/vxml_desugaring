@@ -82,14 +82,15 @@ fn info_2_left_menu(
   prev_info: Option(PageInfo)
 ) -> VXML {
   let blame = infra.blame_us("info_2_left_menu")
-  let index_link_option = Some(V(blame, "a", [BlamedAttribute(blame, "href", "./index.html")], [T(blame, [BlamedContent(blame, "Inhaltsverzeichnis")])]))
+  let index_link = V(blame, "a", [BlamedAttribute(blame, "href", "./index.html")], [T(blame, [BlamedContent(blame, "Inhaltsverzeichnis")])])
+  let index_link_with_prev_chapter_id = V(blame, "a", [BlamedAttribute(blame, "href", "./index.html"),  BlamedAttribute(blame, "id", "prev-chapter")], [T(blame, [BlamedContent(blame, "Inhaltsverzeichnis")])])
   let ch_link_option = option.map(prev_info, info_2_link(blame, _, LeftMenu))
 
   V(
     blame,
     "LeftMenu",
     [BlamedAttribute(blame, "class", "menu-left")],
-    option.values([index_link_option, ch_link_option]),
+    infra.on_some_on_none(ch_link_option, fn(ch_link) { [index_link, ch_link] }, fn() { [index_link_with_prev_chapter_id] })
   )
 }
 
