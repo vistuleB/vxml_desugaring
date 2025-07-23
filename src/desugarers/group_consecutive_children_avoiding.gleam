@@ -14,18 +14,20 @@ fn is_forbidden(elem: VXML, forbidden: List(String)) {
 
 fn nodemap(
   vxml: VXML,
-  _: List(VXML),
   inner: InnerParam,
-) -> Result(#(VXML, n2t.TrafficLight), DesugaringError) {
+) -> VXML {
   let #(wrapper_tag, forbidden_to_include, forbidden_to_enter) = inner
   case vxml {
-    T(_, _) -> Ok(#(vxml, n2t.Red))
+    T(_, _) -> vxml
     V(blame, tag, attrs, children) -> {
       use <- infra.on_true_on_false(
         list.contains(forbidden_to_enter, tag),
-        Ok(#(vxml, n2t.Red))
+        vxml
       )
-      use <- infra.on_true_on_false(tag == wrapper_tag, Ok(#(vxml, n2t.Green)))
+      use <- infra.on_true_on_false(
+        tag == wrapper_tag, 
+        vxml,
+      )
       let children =
         children
         |> infra.either_or_misceginator(is_forbidden(_, forbidden_to_include))
@@ -38,17 +40,17 @@ fn nodemap(
             consecutive_siblings,
           )
         })
-      Ok(#(V(blame, tag, attrs, children), n2t.Green))
+      V(blame, tag, attrs, children)
     }
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNodeMap {
-  fn(vxml, ancestors) { nodemap(vxml, ancestors, inner) }
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(nodemap_factory(inner), inner.2)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

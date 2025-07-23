@@ -906,36 +906,36 @@ pub fn one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
 //* EarlyReturn land... renaming not yet done...
 //**************************************************************
 
-pub type TrafficLight {
-  Green
-  Red
-}
+// pub type TrafficLight {
+//   Green
+//   Red
+// }
 
-pub type EarlyReturnOneToOneNodeMap =
-  fn(VXML, List(VXML)) -> Result(#(VXML, TrafficLight), DesugaringError)
+// pub type EarlyReturnOneToOneNodeMap =
+//   fn(VXML, List(VXML)) -> Result(#(VXML, TrafficLight), DesugaringError)
 
-fn early_return_one_to_one_nodemap_recursive_application(
-  node: VXML,
-  ancestors: List(VXML),
-  nodemap: EarlyReturnOneToOneNodeMap,
-) -> Result(VXML, DesugaringError) {
-  use #(node, color) <- result.try(nodemap(node, ancestors))
-  case node, color {
-    _, Red -> Ok(node)
-    T(_, _), _ -> Ok(node)
-    V(_, _, _, children), Green -> {
-      let children_ancestors = [node, ..ancestors]
-      use children <- result.try(
-        children
-        |> list.try_map(early_return_one_to_one_nodemap_recursive_application(_, children_ancestors, nodemap))
-      )
-      Ok(V(..node, children: children))
-    }
-  }
-}
+// fn early_return_one_to_one_nodemap_recursive_application(
+//   node: VXML,
+//   ancestors: List(VXML),
+//   nodemap: EarlyReturnOneToOneNodeMap,
+// ) -> Result(VXML, DesugaringError) {
+//   use #(node, color) <- result.try(nodemap(node, ancestors))
+//   case node, color {
+//     _, Red -> Ok(node)
+//     T(_, _), _ -> Ok(node)
+//     V(_, _, _, children), Green -> {
+//       let children_ancestors = [node, ..ancestors]
+//       use children <- result.try(
+//         children
+//         |> list.try_map(early_return_one_to_one_nodemap_recursive_application(_, children_ancestors, nodemap))
+//       )
+//       Ok(V(..node, children: children))
+//     }
+//   }
+// }
 
-pub fn early_return_one_to_one_nodemap_2_desugarer_transform(
-  nodemap: EarlyReturnOneToOneNodeMap,
-) -> DesugarerTransform {
-  early_return_one_to_one_nodemap_recursive_application(_, [], nodemap)
-}
+// pub fn early_return_one_to_one_nodemap_2_desugarer_transform(
+//   nodemap: EarlyReturnOneToOneNodeMap,
+// ) -> DesugarerTransform {
+//   early_return_one_to_one_nodemap_recursive_application(_, [], nodemap)
+// }
