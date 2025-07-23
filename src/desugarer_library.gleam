@@ -108,6 +108,7 @@ import desugarers/split_with_replacement_instructions_no_list
 import desugarers/strip_math_delimiters_inside
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
+import desugarers/timer
 import desugarers/trim
 import desugarers/trim_empty_lines
 import desugarers/trim_empty_lines_no_list
@@ -240,6 +241,7 @@ pub const split_with_replacement_instructions_no_list = split_with_replacement_i
 pub const strip_math_delimiters_inside = strip_math_delimiters_inside.strip_math_delimiters_inside
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
+pub const timer = timer.timer
 pub const trim = trim.trim
 pub const trim_empty_lines = trim_empty_lines.trim_empty_lines
 pub const trim_empty_lines_no_list = trim_empty_lines_no_list.trim_empty_lines_no_list
@@ -373,6 +375,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   strip_math_delimiters_inside.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
+  timer.assertive_tests,
   trim.assertive_tests,
   trim_empty_lines.assertive_tests,
   trim_empty_lines_no_list.assertive_tests,

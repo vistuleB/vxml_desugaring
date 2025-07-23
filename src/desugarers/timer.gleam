@@ -25,22 +25,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "identity"
-const constructor =  identity
+const name = "timer"
+const constructor =  timer
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// idempotent desugarer that leaves the VXML 
-/// unchanged and that never generates an error
-pub fn identity() -> Desugarer {
+/// desugarer that does nothing but is named 'timer',
+/// for use in timing the desugaring pipeline
+pub fn timer() -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
-/// idempotent desugarer that leaves the VXML 
-/// unchanged and that never generates an error
+/// desugarer that does nothing but is named 'timer',
+/// for use in timing the desugaring pipeline
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }

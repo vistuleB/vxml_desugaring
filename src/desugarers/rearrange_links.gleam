@@ -56,7 +56,7 @@ fn end_node(blame: Blame) {
 }
 
 fn deatomize_vxmls(
-  children: List(VXML),
+  vxmls: List(VXML),
   accumulated_contents: List(vxml.BlamedContent),
   accumulated_nodes: List(VXML)
 ) -> List(VXML) {
@@ -67,7 +67,7 @@ fn deatomize_vxmls(
     }
   }
 
-  case children {
+  case vxmls {
     [] -> {
       let assert True = list.is_empty(accumulated_contents)
       accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation

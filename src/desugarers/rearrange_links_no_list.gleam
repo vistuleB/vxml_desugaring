@@ -413,11 +413,14 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
       || infra.is_v_and_tag_equals(v, "InChapterLink")
     })
   {
-    True ->
+    True -> {
+      // io.println("atomizing " <> ins(list.length(children)) <> " list of children")
+      // vxml.debug_print_vxmls("hey", children)
       children
       |> list.map(atomize_if_t_or_a_with_single_t_child)
       |> list.flatten
       |> Ok
+    }
     False -> Error(Nil)
   }
 }

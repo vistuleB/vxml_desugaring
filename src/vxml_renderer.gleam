@@ -15,7 +15,7 @@ import shellout
 import simplifile
 import vxml.{type VXML, V} as vp
 import writerly as wp
-import gleam/time/timestamp
+import gleam/time/timestamp.{type Timestamp}
 
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
@@ -342,44 +342,49 @@ pub type RendererParameters {
 // RENDERER IN-HOUSE HELPER FUNCTIONS
 // *************
 
-fn pipeline_runner(
+fn execute_pipeline(
   vxml: VXML,
-  pipeline: List(Desugarer),
+  desugarers: List(Desugarer),
   pipeline_debug_options: PipelineDebugOptions,
-  step: Int,
-) -> Result(VXML, InSituDesugaringError) {
-  case pipeline {
-    [] -> Ok(vxml)
-
-    [pipe, ..rest] -> {
-      case pipeline_debug_options.debug_print(step, pipe) {
+) -> Result(#(VXML, List(#(Int, Timestamp))), InSituDesugaringError) {
+  desugarers
+  |> list.try_fold(
+    #(vxml, 1, []),
+    fn(acc, desugarer) {
+      let #(vxml, step, times) = acc
+      case pipeline_debug_options.debug_print(step, desugarer) {
         False -> Nil
         True ->
           star_block.desugarer_description_star_block(
-            pipe,
+            desugarer,
             step,
           )
           |> io.print
       }
-  
-      case pipe.transform(vxml) {
+
+      case desugarer.transform(vxml) {
         Ok(vxml) -> {
-          case pipeline_debug_options.debug_print(step, pipe) {
+          let times = case desugarer.name == "timer" {
+            True -> [#(step, timestamp.system_time()), ..times]
+            False -> times
+          }
+          case pipeline_debug_options.debug_print(step, desugarer) {
             False -> Nil
             True -> vp.debug_print_vxml("(" <> ins(step) <> ")", vxml)
           }
-          pipeline_runner(vxml, rest, pipeline_debug_options, step + 1)
+          Ok(#(vxml, step + 1, times))
         }
 
         Error(error) -> Error(InSituDesugaringError(
-          desugarer: pipe,
+          desugarer: desugarer,
           pipeline_step: step,
           blame: error.blame, 
           message: error.message,
         ))
       }
     }
-  }
+  )
+  |> result.map(fn(acc){#(acc.0, acc.2)})
 }
 
 pub fn sanitize_output_dir(
@@ -511,12 +516,11 @@ pub fn run_renderer(
   io.print("• starting pipeline...")
   let t0 = timestamp.system_time()
 
-  use desugared <- infra.on_error_on_ok(
-    over: pipeline_runner(
+  use #(desugared, times) <- infra.on_error_on_ok(
+    over: execute_pipeline(
       parsed,
       renderer.pipeline,
       debug_options.pipeline_debug_options,
-      1,
     ),
     with_on_error: fn(e: InSituDesugaringError) {
       let z = [
@@ -543,9 +547,31 @@ pub fn run_renderer(
   )
 
   let t1 = timestamp.system_time()
-  let s = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
+  let seconds = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
-  io.println(" ...ended pipeline (" <> ins(s) <> "s)")
+  io.println(" ...ended pipeline (" <> ins(seconds) <> "s)")
+
+  echo times
+
+  case list.length(times) > 0 {
+    False -> Nil
+    True -> {
+      let times = [#(list.length(renderer.pipeline), t1), ..times]
+      list.fold(
+        times |> list.reverse,
+        #(0, t0),
+        fn (acc, next) {
+          let #(step0, t0) = acc
+          let #(step1, t1) = next
+          let seconds = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(3)
+          io.println("  steps " <> ins(step0) <> " to " <> ins(step1) <> ": " <> ins(seconds) <> "s")
+          next
+        }
+      )
+      Nil
+    }
+  }
+
   io.print("• splitting the vxml...")
 
   // vxml fragments generation
