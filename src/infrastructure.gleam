@@ -152,13 +152,6 @@ pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
   T(blame, list.reverse([last_line, ..updated_rest]))
 }
 
-pub fn is_singleton(z: List(a)) -> Bool {
-  case z {
-    [_] -> True
-    _ -> False
-  }
-}
-
 pub fn on_false_on_true(
   over condition: Bool,
   with_on_false f1: b,
@@ -309,16 +302,6 @@ pub fn on_t_on_v_no_deconstruct(
   }
 }
 
-pub fn on_v_identity_on_t(
-  node: VXML,
-  f2: fn(Blame, List(BlamedContent)) -> VXML,
-) -> VXML {
-  case node {
-    V(_, _, _, _) -> node
-    T(blame, blamed_contents) -> f2(blame, blamed_contents)
-  }
-}
-
 pub fn io_debug_digests(vxmls: List(VXML), announce: String) -> List(VXML) {
   io.print(announce <> ": ")
   list.each(vxmls, fn(vxml) { io.print(digest(vxml)) })
@@ -397,14 +380,6 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
   }
 }
 
-pub fn contains_tag(vxmls: List(VXML), tag: String) -> Bool {
-  vxmls |> list.any(is_tag(_, tag))
-}
-
-pub fn contains_one_of_tags(vxmls: List(VXML), tags: List(String)) -> Bool {
-  tags |> list.any(contains_tag(vxmls, _))
-}
-
 //**************************************************************
 //* dictionary-building functions
 //**************************************************************
@@ -443,21 +418,6 @@ pub fn quadruples_to_pairs_pairs(
     let #(a, b, c, d) = quad
     #(#(a, b), #(c, d))
   })
-}
-
-pub fn triples_first(l: #(a, b, c)) -> a {
-  let #(a, _, _) = l
-  a
-}
-
-pub fn triples_second(l: #(a, b, c)) -> b {
-  let #(_, b, _) = l
-  b
-}
-
-pub fn triples_third(l: #(a, b, c)) -> c {
-  let #(_, _, c) = l
-  c
 }
 
 pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
@@ -1756,13 +1716,6 @@ pub fn valid_tag(tag: String) -> Bool {
   !string.is_empty(tag) &&
   !string.contains(tag, " ") &&
   !string.contains(tag, ".") &&
-  !string.contains(tag, "\n") &&
-  !string.contains(tag, "\t")
-}
-
-pub fn valid_attribute_key(tag: String) -> Bool {
-  !string.is_empty(tag) &&
-  !string.contains(tag, " ") &&
   !string.contains(tag, "\n") &&
   !string.contains(tag, "\t")
 }
