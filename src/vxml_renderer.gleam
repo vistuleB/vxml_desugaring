@@ -551,8 +551,6 @@ pub fn run_renderer(
 
   io.println(" ...ended pipeline (" <> ins(seconds) <> "s)")
 
-  echo times
-
   case list.length(times) > 0 {
     False -> Nil
     True -> {
@@ -980,6 +978,10 @@ pub fn cli_usage() {
   io.println(margin <> "--debug-pipeline-last")
   io.println(margin <> "  -> print last output of pipeline")
   io.println("")
+  io.println(margin <> "--debug-pipeline-")
+  io.println(margin <> "  -> an ignored option that useful to keep '--debug-pipeline-'")
+  io.println(margin <> "  -> close at hand on the command line")
+  io.println("")
   io.println(margin <> "--debug-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
   io.println(margin <> "  before conversion blamed lines, list no subpaths to match all")
@@ -1102,8 +1104,7 @@ pub fn process_command_line_arguments(
       _ -> {
         case string.starts_with(option, "--debug-pipeline-") {
           True -> {
-            let suffix =
-              string.drop_start(option, string.length("--debug-pipeline-"))
+            let suffix = string.drop_start(option, string.length("--debug-pipeline-"))
             let pieces = string.split(suffix, "-")
             case list.length(pieces) {
               2 -> {
@@ -1127,7 +1128,10 @@ pub fn process_command_line_arguments(
                       |> amend_debug_pipeline_range(debug_start, debug_start),
                     )
                   }
-                  _ -> Error(BadDebugPipelineRange(option))
+                  _ -> case suffix {
+                    "" -> Ok(amendments)
+                    _ -> Error(BadDebugPipelineRange(option))
+                  }
                 }
               }
               _ -> Error(BadDebugPipelineRange(option))

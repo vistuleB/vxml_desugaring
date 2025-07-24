@@ -1,7 +1,7 @@
 import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
-import gleam/option.{Some, None}
+import gleam/option.{type Option, Some, None}
 import gleam/result
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
@@ -9,12 +9,17 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 
 type HandlesDict =
-  Dict(String, #(String,     String,     String))
-//     ↖         ↖           ↖           ↖
-//     handle    local path  element id  string value
-//     name      of page     on page     of handle
+  Dict(String, #(String,       String,     String))
+//     ↖         ↖             ↖           ↖
+//     handle    string value  handle id   page path
+//     name      of handle     on page     for handle
 
-type State = #(HandlesDict, String)
+type State {
+  State(
+    handles: HandlesDict,
+    path: Option(String),
+  )
+}
 
 fn convert_handles_to_attributes(
   handles: HandlesDict,
@@ -24,11 +29,11 @@ fn convert_handles_to_attributes(
     dict.keys(handles),
     dict.values(handles),
     fn (key, values) {
-      let #(id, filename, value) = values
+      let #(value, id, filename) = values
       BlamedAttribute(
         blame: blame,
         key: "handle",
-        value: key <> " | " <> id <> " | " <> filename <> " | " <> value,
+        value: key <> "|" <> value <> "|" <> id <> "|" <> filename,
       )
     }
   )
@@ -49,38 +54,77 @@ fn check_handle_already_defined(
   }
 }
 
-fn get_handles_from_attributes(
-  attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), List(#(String, String, String))) {
-  let #(handle_attributes, filtered_attributes) =
-    attributes
-    |> list.partition(fn(att) {att.key == "handle"})
-
-  let extracted_handles =
-    handle_attributes
-    |> list.map(fn(att) {
-      let assert [handle_name, id, value] = string.split(att.value, " | ")
-      #(handle_name, id, value)
-    })
-
-  #(filtered_attributes, extracted_handles)
+type HandleBlamedAttributeInfo {
+  HandleBlamedAttributeInfo(
+    handle_name: String,
+    id: String,
+    value: String,
+    blame: Blame,
+  )
 }
 
-fn update_local_path(
-  node: VXML,
-  param: InnerParam,
-  local_path: String,
-) -> Result(String, DesugaringError) {
-  let assert V(_, _, _, _) = node
+fn extract_handles_blamed_attribute_infos(
+  attributes: List(BlamedAttribute),
+) -> #(List(BlamedAttribute), List(HandleBlamedAttributeInfo)) {
+  let #(handle_attributes, other_attributes) =
+    attributes
+    |> list.partition(fn(att){att.key == "handle"})
 
-  case infra.use_list_pair_as_dict(param, node.tag) {
-    Ok(att_key) -> {
-      case infra.v_attribute_with_key(node, att_key) {
-        Some(BlamedAttribute(_, _, value)) -> Ok(value)
-        None -> Error(DesugaringError(node.blame, "attribute " <> att_key <> " not found for node " <> node.tag))
+  let infos =
+    handle_attributes
+    |> list.map(fn(att) {
+      let assert [handle_name, value, id] = string.split(att.value, "|")
+      HandleBlamedAttributeInfo(
+        handle_name: handle_name,
+        id: id,
+        value: value,
+        blame: att.blame,
+      )
+    })
+
+  #(other_attributes, infos)
+}
+
+fn update_handles(
+  state: State,
+  handle_infos: List(HandleBlamedAttributeInfo),
+  inner: InnerParam,
+) -> Result(State, DesugaringError) {
+  use first, _ <- infra.on_empty_on_nonempty(
+    handle_infos,
+    Ok(state),
+  )
+
+  use path <- infra.on_lazy_none_on_some(
+    state.path,
+    fn(){ Error(DesugaringError(first.blame, "no '" <> inner <> "' attribute found leading up to to handle '" <> first.handle_name <> "'")) },
+  )
+
+  use handles <- result.try(
+    handle_infos
+    |> list.try_fold(
+      state.handles,
+      fn(acc, info) {
+        use _ <- result.try(
+          check_handle_already_defined(info.handle_name, acc, info.blame)
+        )
+        Ok(dict.insert(acc, info.handle_name, #(info.value, info.id, path)))
       }
-    }
-    Error(_) -> Ok(local_path)
+    )
+  )
+
+  Ok(State(..state, handles: handles))
+}
+
+fn update_path(
+  state: State,
+  node: VXML,
+  inner: InnerParam,
+) -> State {
+  let assert V(_, _, _, _) = node
+  case infra.v_attribute_with_key(node, inner) {
+    Some(BlamedAttribute(_, _, value)) -> State(..state, path: Some(value))
+    None -> state
   }
 }
 
@@ -97,34 +141,28 @@ fn v_before_transforming_children(
   inner: InnerParam,
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(b, t, attributes, c) = vxml
-  let #(handles, local_path) = state
-  use local_path <- result.try(update_local_path(vxml, inner, local_path))
-  let #(attributes, extracted_handles) = get_handles_from_attributes(attributes)
-
-  use handles <- result.try(
-    list.try_fold(extracted_handles, handles, fn(acc, handle) {
-      let #(handle_name, id, handle_value) = handle
-      use _ <- result.try(check_handle_already_defined(handle_name, acc, b))
-      Ok(dict.insert(acc, handle_name, #(id, local_path, handle_value)))
-    }),
-  )
-
-  Ok(#(V(b, t, attributes, c), #(handles, local_path)))
+  let #(attributes, handle_infos) = extract_handles_blamed_attribute_infos(attributes)
+  let state = update_path(state, vxml, inner)
+  use state <- result.try(update_handles(state, handle_infos, inner))
+  Ok(#(V(b, t, attributes, c), state))
 }
 
 fn v_after_transforming_children(
   vxml: VXML,
   ancestors: List(VXML),
-  state: State,
+  original_state: State,
+  latest_state: State,
 ) -> Result(#(VXML, State), DesugaringError) {
-  let assert V(b, _, _, _) = vxml
-  let #(handles, _) = state
-
+  let state = State(latest_state.handles, original_state.path)
   case list.is_empty(ancestors) {
     False -> Ok(#(vxml, state))
     True -> {
-      let handles_as_attributes = convert_handles_to_attributes(handles)
-      let grand_wrapper = V(b, "GrandWrapper", handles_as_attributes, [vxml])
+      let grand_wrapper = V(
+        infra.blame_us("handles_generate_dictionary"),
+        "GrandWrapper",
+        convert_handles_to_attributes(state.handles),
+        [vxml],
+      )
       Ok(#(grand_wrapper, state))
     }
   }
@@ -135,8 +173,8 @@ fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneBeforeAndAfterStateful
     v_before_transforming_children: fn(vxml, _, _, _, _, state) {
       v_before_transforming_children(vxml, state, inner)
     },
-    v_after_transforming_children: fn(vxml, ancestors, _, _, _, _, state) {
-      v_after_transforming_children(vxml, ancestors, state)
+    v_after_transforming_children: fn(vxml, ancestors, _, _, _, original_state, latest_state) {
+      v_after_transforming_children(vxml, ancestors, original_state, latest_state)
     },
     t_nodemap: fn(vxml, _, _, _, _, state) {
       t_transform(vxml, state)
@@ -147,7 +185,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneBeforeAndAfterStateful
 fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
   n2t.fancy_one_to_one_before_and_after_stateful_nodemap_2_desugarer_transform(
     nodemap_factory(inner),
-    #(dict.new(), "")
+    State(dict.new(), None)
   )
 }
 
@@ -155,13 +193,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String,     String))
-//       ↖           ↖
-//       tags to     key of attribute
-//       get local   holding the
-//       path from   local path
-
+type Param = String
+//           ↖
+//           key of attribute
+//           holding the
 type InnerParam = Param
 
 const name = "handles_generate_dictionary"
@@ -248,7 +283,7 @@ pub fn handles_generate_dictionary(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [#("ChapterChapter", "local_path")],
+      param: "local_path",
       source:   "
                 <> root
                   <> ChapterChapter
@@ -256,13 +291,13 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     <>
                       \"some text\"
                     <> Math
-                      handle=fluescence | _23-super-id | AA
+                      handle=super-name|AA|_23-super-id
                       <>
                         \"$x^2 + b^2$\"
                 ",
       expected: "
                 <> GrandWrapper
-                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  handle=super-name|AA|_23-super-id|./ch1.html
                   <> root
                     <> ChapterChapter
                       local_path=./ch1.html

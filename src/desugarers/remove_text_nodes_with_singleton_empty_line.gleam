@@ -5,19 +5,20 @@ import vxml.{type VXML, T, BlamedContent}
 
 fn nodemap(
   node: VXML,
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   case node {
-    T(_, [BlamedContent(_, "")]) -> Ok([])
-    _ -> Ok([node])
+    T(_, [BlamedContent(_, "")]) -> []
+    _ -> [node]
   }
 }
 
-fn nodemap_factory(_: InnerParam) -> n2t.OneToManyNodeMap {
+fn nodemap_factory(_: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

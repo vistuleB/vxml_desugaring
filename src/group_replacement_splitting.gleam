@@ -2,7 +2,7 @@ import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp.{type Regexp}
-import gleam/string
+import gleam/string.{inspect as ins}
 import infrastructure as infra
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
@@ -10,16 +10,23 @@ pub type GroupReplacementInstruction {
   Keep
   Trash
   DropLast
-  TagReplace(String)
-  TagReplaceKeepPayloadAsAttribute(String, String)
-  TagReplaceKeepPayloadAsTextChild(String)
+  Tag(String)
+  TagWithAttribute(String, String)
+  TagWithTextChild(String)
 }
 
 pub type RegexpWithGroupReplacementInstructions {
   RegexpWithGroupReplacementInstructions(
     re: Regexp,
+    from: String,
     instructions: List(GroupReplacementInstruction),
   )
+}
+
+pub fn human_inspect(
+  gri: RegexpWithGroupReplacementInstructions
+) -> String {
+  ins(gri.instructions) <> " " <> gri.from
 }
 
 pub fn split_content_with_replacement(
@@ -51,14 +58,14 @@ pub fn split_content_with_replacement(
         Trash -> None
         Keep -> Some(T(updated_blame, [BlamedContent(updated_blame, split)]))
         DropLast -> Some(T(updated_blame, [BlamedContent(updated_blame, string.drop_end(split, 1))]))
-        TagReplace(tag) -> Some(V(updated_blame, tag, [], []))
-        TagReplaceKeepPayloadAsAttribute(tag, key) -> Some(V(
+        Tag(tag) -> Some(V(updated_blame, tag, [], []))
+        TagWithAttribute(tag, key) -> Some(V(
           updated_blame,
           tag,
           [BlamedAttribute(updated_blame, key, split)],
           [],
         ))
-        TagReplaceKeepPayloadAsTextChild(tag) -> Some(V(
+        TagWithTextChild(tag) -> Some(V(
           updated_blame,
           tag,
           [],
@@ -146,17 +153,17 @@ pub fn unescaped_suffix_replacement_splitter(
   suffix: String,
   tag: String,
 ) -> RegexpWithGroupReplacementInstructions {
-  let assert Ok(re) =
+  let string = 
     suffix
     |> unescaped_suffix
     |> group
-    |> regexp.from_string
+
+  let assert Ok(re) = string |> regexp.from_string
 
   RegexpWithGroupReplacementInstructions(
     re: re,
-    instructions: [
-      TagReplace(tag),
-    ],
+    from: string,
+    instructions: [Tag(tag)],
   )
 }
 
@@ -174,6 +181,7 @@ pub fn for_groups(
   let assert Ok(re) = regexp.from_string(re_string)
   RegexpWithGroupReplacementInstructions(
     re: re,
+    from: re_string,
     instructions: instructions,
   )
 }

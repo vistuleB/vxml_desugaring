@@ -9,16 +9,15 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
-type HandleInstances =
-  Dict(String, #(String,     String,     String))
-//     ↖         ↖           ↖           ↖
-//     handle    local path  element id  string value
-//     name      of page     on page     of handle
+type HandlesDict =
+  Dict(String, #(String,   String,   String))
+//     ↖         ↖         ↖         ↖
+//     handle    value     id        path
 
 type State {
   State(
-    handles: HandleInstances,
-    local_path: Option(String),
+    handles: HandlesDict,
+    path: Option(String),
   )
 }
 
@@ -32,34 +31,26 @@ fn hyperlink_constructor(
     blame: Blame,
     state: State,
     inner: InnerParam,
-) {
+) -> Result(VXML, DesugaringError) {
+  use path <- infra.on_lazy_none_on_some(
+    state.path,
+    fn(){Error(DesugaringError(blame, "handle occurrence when local path is not defined"))},
+  )
   let #(id, target_path, value) = handle
-  let assert Some(local_path) = state.local_path
-  let #(
-    _, _, 
-    #(in_page_link_tag, in_page_link_classes),
-    #(out_of_page_link_tag, out_of_page_link_classes)
-  ) = inner
-
-  let #(tag, classes) = case target_path == local_path {
-    True -> #(in_page_link_tag, in_page_link_classes |> string.join(" "))
-    False -> #(out_of_page_link_tag, out_of_page_link_classes |> string.join(" "))
+  let #(tag, attrs) = case target_path == path {
+    True -> #(inner.1, inner.3)
+    False -> #(inner.2, inner.4)
   }
-
-  V(
+  let attrs = [
+    BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+    ..attrs
+  ]
+  Ok(V(
     blame,
     tag, 
-    case classes {
-      "" -> [
-        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
-      ]
-      _ -> [
-        BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
-        BlamedAttribute(blame, "class", classes),
-      ]
-    },
+    attrs,
     [T(blame, [BlamedContent(blame, value)])],
-  )
+  ))
 }
 
 fn hyperlink_maybe(
@@ -69,7 +60,7 @@ fn hyperlink_maybe(
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case dict.get(state.handles, handle_name) {
-    Ok(triple) -> Ok(hyperlink_constructor(triple, blame, state, inner))
+    Ok(triple) -> hyperlink_constructor(triple, blame, state, inner)
     _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
   }
 }
@@ -160,42 +151,48 @@ fn process_blamed_contents(
 
 fn get_handles_instances_from_grand_wrapper(
   attributes: List(BlamedAttribute),
-) -> HandleInstances {
+) -> HandlesDict {
   attributes
   |> list.fold(
     dict.new(),
     fn(acc, att) {
-      let assert [handle_name, id, filename, value] = att.value |> string.split(" | ")
-      dict.insert(acc, handle_name, #(id, filename, value))
+      let assert [handle_name, value, id, path] = att.value |> string.split("|")
+      dict.insert(acc, handle_name, #(value, id, path))
     }
   )
+}
+
+fn update_handles(
+  state: State,
+  vxml: VXML,
+) {
+  let assert V(_, tag, attributes, _) = vxml
+  case tag == "GrandWrapper" {
+    True -> State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))
+    False -> state
+  }
+}
+
+fn update_path(
+  state: State,
+  vxml: VXML,
+  inner: InnerParam,
+) -> State {
+  let assert V(_, _, _, _) = vxml
+  case infra.v_attribute_with_key(vxml, inner.0) {
+    Some(BlamedAttribute(_, _, value)) -> State(..state, path: Some(value))
+    None -> state
+  }
 }
 
 fn v_before_transform(
   vxml: VXML,
   state: State,
-  inner: InnerParam
+  inner: InnerParam,
 ) -> Result(#(VXML, State), DesugaringError) {
-  let assert V(_, tag, attributes, _) = vxml
-  let #(path_tags, path_key, _, _) = inner
-
-  use <- infra.on_lazy_true_on_false(
-    tag == "GrandWrapper",
-    fn(){
-      Ok(#(vxml, State(..state, handles: get_handles_instances_from_grand_wrapper(attributes))))
-    }
-  )
-
-  use <- infra.on_lazy_true_on_false(
-    list.contains(path_tags, tag),
-    fn() {
-      case infra.v_attribute_with_key(vxml, path_key) {
-        None -> Error(DesugaringError(vxml.blame, "'" <> tag <> "' node missing '" <> path_key <> "' attribute"))
-        Some(blamed_attribute) -> Ok(#(vxml, State(..state, local_path: Some(blamed_attribute.value))))
-      }
-    }
-  )
-
+  let state = state
+    |> update_path(vxml, inner)
+    |> update_handles(vxml)
   Ok(#(vxml, state))
 }
 
@@ -244,19 +241,24 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
+  let blame = infra.blame_us("handles_substitute")
+  #(
+    param.0,
+    param.1,
+    param.2,
+    param.3 |> infra.string_pairs_2_blamed_attributes(blame),
+    param.4 |> infra.string_pairs_2_blamed_attributes(blame),
+  )
+  |> Ok
 }
 
-type Param =
-   #(
-    List(String),            // tags that can have handle path value
-    String,                  // handle path attribute key
-    #(String, List(String)), // in-page link element tag / classes
-    #(String, List(String)), // outer-page link element tag / classes
-   )
-
-
-type InnerParam = Param
+type Param = #(String,            String,                 String,                List(#(String, String)),   List(#(String, String)))
+//             ↖                  ↖                       ↖                      ↖                          ↖
+//             attribute key      tag to use              tag to use             additional key-value       additional key-value
+//             to update the      when handle path        when handle path       pairs for former case      pairs for latter case
+//             local path         equals local path       !equals local path     
+//                                at point of insertion   at point of insertion  
+type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAttribute))
 
 const name = "handles_substitute"
 const constructor = handles_substitute
@@ -267,7 +269,7 @@ const constructor = handles_substitute
 //------------------------------------------------53
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
-/// the form handle=handle_name | id | path | value
+/// the form handle=handle_name|value|id|path
 /// and with a unique child being the root of the 
 /// original document.
 /// 
@@ -308,7 +310,7 @@ pub fn handles_substitute(param: Param) -> Desugarer {
     "
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of
-/// the form handle=handle_name | id | path | value
+/// the form handle=handle_name|value|id|path
 /// and with a unique child being the root of the 
 /// original document.
 /// 
@@ -357,14 +359,15 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
       param:    #(
-                  ["Chapter", "Bootcamp"],
-                  "path", #("InChapterLink",
-                  ["handle-in-chapter-link"]),
-                  #("a", ["handle-out-chapter-link"])
+                  "path",
+                  "InChapterLink",
+                  "a",
+                  [#("class", "handle-in-chapter-link")],
+                  [#("class", "handle-out-chapter-link")],
                 ),
       source:   "
                 <> GrandWrapper
-                  handle=fluescence | _23-super-id | ./ch1.html | AA
+                  handle=fluescence|_23-super-id|./ch1.html|AA
                   <> root
                     <> Chapter
                       path=./ch1.html
@@ -394,15 +397,16 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
     ),
      infra.AssertiveTestData(
       param:    #(
-                  ["Page"],
                   "testerpath",
-                  #("inLink", []),
-                  #("outLink", [])
+                  "inLink",
+                  "outLink",
+                  [#("class", "handle-in-link-class")],
+                  [#("class", "handle-out-link-class")],
                 ),
       source:   "
                 <> GrandWrapper
-                  handle=fluescence | _23-super-id | ./ch1.html | AA
-                  handle=out | _24-super-id | ./ch1.html | AA
+                  handle=fluescence|_23-super-id|./ch1.html|AA
+                  handle=out|_24-super-id|./ch1.html|AA
                   <> root
                     <> Page
                       testerpath=./ch1.html
@@ -424,6 +428,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                       \"some text with \"
                     <> inLink
                       href=./ch1.html?id=_23-super-id
+                      class=handle-in-link-class
                       <>
                         \"AA\"
                     <>
@@ -437,6 +442,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                       \"this is \"
                     <> outLink
                       href=./ch1.html?id=_24-super-id
+                      class=handle-out-link-class
                       <>
                         \"AA\"
                     <>

@@ -1,34 +1,25 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
+import blamedlines.{type Blame}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
-    [first, V(blame, tag, _, _) as second, ..rest] -> {
-      case dict.get(inner, tag) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-        Ok(#(new_element_tag, new_element_attributes)) -> {
-          [
-            first,
-            V(
-              blame,
-              new_element_tag,
-              list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-              }),
-              [],
-            ),
-            ..add_in_list([second, ..rest], inner)
-          ]
-        }
-      }
-    }
-    _ -> children
+    [first, V(_, tag, _, _) as second, ..rest] if tag == inner.0 -> [
+      first,
+      V(
+        inner.3,
+        inner.1,
+        inner.2,
+        [],
+      ),
+      ..add_in_list([second, ..rest], inner)
+    ]
+    [first, ..rest] -> [first, ..add_in_list(rest, inner)]
+    [] -> children
   }
 }
 
@@ -52,17 +43,26 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  let blame = infra.blame_us("add_before_tag_but_not_first_child_tags_no_list")
+  #(
+    param.0,
+    param.1,
+    list.map(
+      param.2,
+      fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
+    ),
+    blame,
+  )
+  |> Ok
 }
 
-type Param = List(#(String,        String,          List(#(String, String))))
-//                  ↖              ↖                ↖
-//                  insert divs    tag name         attributes
-//                  before tags    of new element
-//                  of this name
-//                  (except if tag is first child)
-
-type InnerParam = Dict(String, #(String, List(#(String, String))))
+type Param = #(String,        String,          List(#(String, String)))
+//             ↖              ↖                ↖
+//             insert divs    tag name         attributes
+//             before tags    of new element
+//             of this name
+//             (except if tag is first child)
+type InnerParam = #(String, String, List(vxml.BlamedAttribute), Blame)
 
 const name = "add_before_tags_but_not_first_child_tags"
 const constructor = add_before_tags_but_not_first_child_tags

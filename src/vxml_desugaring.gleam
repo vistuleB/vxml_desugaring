@@ -10,11 +10,9 @@ import desugarer_library as dl
 fn test_pipeline() -> List(Desugarer) {
   [
     dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
-    dl.insert_bookend_text_if_no_attributes([
-      #("i", "_", "_"),
-      #("b", "*", "*"),
-      #("strong", "*", "*") ,
-    ]),
+    dl.prepend_append_text(#("i", "_", "_")),
+    dl.prepend_append_text(#("b", "*", "*")),
+    dl.prepend_append_text(#("strong", "*", "*")),
     dl.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
     dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]

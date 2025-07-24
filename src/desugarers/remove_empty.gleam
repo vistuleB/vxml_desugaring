@@ -1,4 +1,3 @@
-import gleam/list
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
@@ -9,11 +8,7 @@ fn nodemap(
   inner: InnerParam,
 ) -> List(VXML) {
   case node {
-    V(_, tag, _, []) ->
-      case list.contains(inner, tag) {
-        True -> []
-        _ -> [node]
-      }
+    V(_, tag, _, []) if tag == inner -> []
     _ -> [node]
   }
 }
@@ -31,8 +26,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String)
-type InnerParam = List(String)
+type Param = String
+type InnerParam = Param
 
 const name = "remove_empty"
 const constructor = remove_empty
@@ -41,15 +36,15 @@ const constructor = remove_empty
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes nodes who have no children and whose tag
-/// belongs to the given list
+/// removes nodes of the given tag that have no
+/// children
 pub fn remove_empty(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
-/// removes nodes who have no children and whose tag
-/// belongs to the given list
+/// removes nodes of the given tag that have no
+/// children
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

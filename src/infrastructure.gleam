@@ -67,6 +67,16 @@ pub fn parse_number_and_optional_css_unit(
   }
 }
 
+pub fn latex_inline_delimiter_pairs_list(
+) -> List(LatexDelimiterPair) {
+  [SingleDollar, BackslashParenthesis]
+}
+
+pub fn latex_display_delimiter_pairs_list(
+) -> List(LatexDelimiterPair) {
+  [DoubleDollar, BackslashSquareBracket]
+}
+
 pub fn latex_delimiter_pairs_list(
 ) -> List(LatexDelimiterPair) {
   [DoubleDollar, SingleDollar, BackslashParenthesis, BackslashSquareBracket]
@@ -1755,6 +1765,30 @@ pub fn valid_attribute_key(tag: String) -> Bool {
   !string.contains(tag, " ") &&
   !string.contains(tag, "\n") &&
   !string.contains(tag, "\t")
+}
+
+pub fn normalize_spaces(
+  s: String
+) -> String {
+  s
+  |> string.split(" ")
+  |> list.filter(fn(x){!string.is_empty(x)})
+  |> string.join(" ")
+}
+
+pub fn string_pair_2_blamed_attribute(
+  pair: #(String, String),
+  blame: Blame,
+) {
+  BlamedAttribute(blame, pair.0, pair.1)
+}
+
+pub fn string_pairs_2_blamed_attributes(
+  pairs: List(#(String, String)),
+  blame: Blame,
+) {
+  pairs
+  |> list.map(string_pair_2_blamed_attribute(_, blame))
 }
 
 pub fn append_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {

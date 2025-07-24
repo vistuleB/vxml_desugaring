@@ -1,7 +1,5 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
@@ -9,26 +7,22 @@ import vxml.{type VXML, BlamedAttribute, T, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
-    [V(_, first_tag, _, _) as first, T(_, _) as second, ..rest] -> {
-      case dict.get(inner, first_tag) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-        Ok(#(new_element_tag, new_element_attributes)) -> {
-          let blame = infra.get_blame(first)
-          [
-            first,
-            V(
-              blame,
-              new_element_tag,
-              list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-              }),
-              [],
-            ),
-            second,
-            ..add_in_list(rest, inner)
-          ]
-        }
-      }
+    [
+      V(_, first_tag, _, _) as first,
+      T(_, _) as second, 
+      ..rest
+    ] if first_tag == inner.0 -> {
+      [
+        first,
+        V(
+          infra.blame_us("add_between_tag_&_text"),
+          inner.1,
+          inner.2,
+          [],
+        ),
+        second,
+        ..add_in_list(rest, inner)
+      ]
     }
     [first, ..rest] -> [first, ..add_in_list(rest, inner)]
     [] -> []
@@ -55,15 +49,24 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  let blame = infra.blame_us("add_between_tag...no_list")
+  #(
+    param.0,
+    param.1,
+    list.map(
+      param.2,
+      fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
+    )
+  )
+  |> Ok
 }
 
-type Param = List(#(String,                   String,          List(#(String, String))))
-//                  ↖                         ↖                ↖
-//                  insert new element        tag name         attributes for
-//                  between this tag          for new element  new element
-//                  and following text node
-type InnerParam = Dict(String, #(String, List(#(String, String))))
+type Param = #(String,                   String,          List(#(String, String)))
+//             ↖                         ↖                ↖
+//             insert new element        tag name         attributes for
+//             between this tag          for new element  new element
+//             and following text node
+type InnerParam = #(String, String, List(vxml.BlamedAttribute))
 
 const name = "add_between_tag_and_text_node"
 const constructor = add_between_tag_and_text_node

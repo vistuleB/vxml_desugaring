@@ -1,4 +1,3 @@
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
@@ -10,15 +9,10 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    V(_, tag, _, _) -> {
-      case list.contains(inner, tag) {
-        True ->
-          vxml
-          |> infra.v_remove_starting_empty_lines
-          |> infra.v_remove_ending_empty_lines
-        False -> vxml
-      }
-    }
+    V(_, tag, _, _) if tag == inner ->
+      vxml
+      |> infra.v_remove_starting_empty_lines
+      |> infra.v_remove_ending_empty_lines
     _ -> vxml
   }
 }
@@ -35,7 +29,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String)
+type Param = String
 type InnerParam = Param
 
 const name = "trim_empty_lines"
@@ -47,12 +41,11 @@ const constructor = trim_empty_lines
 //------------------------------------------------53
 /// Removes starting empty lines from first child
 /// ending empty lines from last child of nodes with
-/// the specified tags if the first and last 
-/// children happen to be T-nodes, respectively. The
-/// removal of lines may destroy a T-node, in which
-/// case the process continues with the next T-node
-/// in order, if any, so that the desugarer is
-/// idempotent.
+/// specified tag if the first and last children 
+/// happen to be T-nodes, respectively. The removal
+/// of lines may destroy a T-node, in which case the
+/// process continues with the next T-node in order,
+/// if any, so that the desugarer is idempotent.
 pub fn trim_empty_lines(param: Param) -> Desugarer {
   Desugarer(
     name,
@@ -60,12 +53,11 @@ pub fn trim_empty_lines(param: Param) -> Desugarer {
     "
 /// Removes starting empty lines from first child
 /// ending empty lines from last child of nodes with
-/// the specified tags if the first and last 
-/// children happen to be T-nodes, respectively. The
-/// removal of lines may destroy a T-node, in which
-/// case the process continues with the next T-node
-/// in order, if any, so that the desugarer is
-/// idempotent.
+/// specified tag if the first and last children 
+/// happen to be T-nodes, respectively. The removal
+/// of lines may destroy a T-node, in which case the
+/// process continues with the next T-node in order,
+/// if any, so that the desugarer is idempotent.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
