@@ -5,15 +5,14 @@ import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, BlamedAttribute, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
-    [V(_, first_tag, _, _) as first, T(_, _) as second, ..rest] -> {
-      case dict.get(inner, first_tag) {
+    [first, V(blame, tag, _, _) as second, ..rest] -> {
+      case dict.get(inner, tag) {
         Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
         Ok(#(new_element_tag, new_element_attributes)) -> {
-          let blame = infra.get_blame(first)
           [
             first,
             V(
@@ -24,14 +23,12 @@ fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
               }),
               [],
             ),
-            second,
-            ..add_in_list(rest, inner)
+            ..add_in_list([second, ..rest], inner)
           ]
         }
       }
     }
-    [first, ..rest] -> [first, ..add_in_list(rest, inner)]
-    [] -> []
+    _ -> children
   }
 }
 
@@ -58,29 +55,30 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(infra.triples_to_dict(param))
 }
 
-type Param = List(#(String,                   String,          List(#(String, String))))
-//                  ↖                         ↖                ↖
-//                  insert new element        tag name         attributes for
-//                  between this tag          for new element  new element
-//                  and following text node
+type Param = List(#(String,        String,          List(#(String, String))))
+//                  ↖              ↖                ↖
+//                  insert divs    tag name         attributes
+//                  before tags    of new element
+//                  of this name
+//                  (except if tag is first child)
 type InnerParam = Dict(String, #(String, List(#(String, String))))
 
-const name = "add_between_tag_and_text_node_depr"
-const constructor = add_between_tag_and_text_node_depr
+const name = "add_before_but_before_not_first_child__batch"
+const constructor = add_before_but_before_not_first_child__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds new elements between specified tags and 
-/// following text nodes
-pub fn add_between_tag_and_text_node_depr(param: Param) -> Desugarer {
+/// adds new elements before specified tags but not 
+/// if they are the first child
+pub fn add_before_but_before_not_first_child__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// adds new elements between specified tags and 
-/// following text nodes
+/// adds new elements before specified tags but not 
+/// if they are the first child
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

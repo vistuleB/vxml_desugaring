@@ -69,31 +69,33 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   |> Ok
 }
 
-type Param = #(String,        String,          List(#(String, String)))
-//             ↖              ↖                ↖
-//             insert divs    tag name         attributes
-//             before tags    of new element
-//             of this name
-//             (except if it's the first occurrence of the same kind)
+type Param = #(String,         String,          List(#(String, String)))
+//             ↖               ↖                ↖
+//             insert          tag name         attributes
+//             before tags     of new
+//             of this name    element
 type InnerParam = #(String, String, List(BlamedAttribute), Blame)
 
-const name = "add_before_tags_but_not_before_first_of_kind"
-const constructor = add_before_tags_but_not_before_first_of_kind
+const name = "add_before_but_not_before_first_of_kind"
+const constructor = add_before_but_not_before_first_of_kind
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-
-/// adds new elements before specified tags but
-/// not before the first occurrence of the same kind
-pub fn add_before_tags_but_not_before_first_of_kind(param: Param) -> Desugarer {
+/// adds a specified tag before each occurrence of
+/// some specified other tag, except when the latter
+/// tag is occurring for the first time with respect
+/// to the current group of siblings
+pub fn add_before_but_not_before_first_of_kind(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// adds new elements before specified tags but
-/// not before the first occurrence of the same kind
+/// adds a specified tag before each occurrence of
+/// some specified other tag, except when the latter
+/// tag is occurring for the first time with respect
+/// to the current group of siblings
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

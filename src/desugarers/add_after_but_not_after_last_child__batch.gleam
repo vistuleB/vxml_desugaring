@@ -50,39 +50,37 @@ fn transform_children(
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
+) -> VXML {
   case vxml {
     V(_, _, _, _) -> 
-      Ok(V(..vxml, children: transform_children(vxml.children, inner)))
-    _ -> Ok(vxml)
+      V(..vxml, children: transform_children(vxml.children, inner))
+    _ -> vxml
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(infra.triples_to_dict(param))
 }
 
-type Param =
-  List(#(String,        String,          List(#(String, String))))
-//       ↖              ↖                ↖
-//       insert after   tag name         attributes
-//       tag of this    of new element
-//       name (except
-//       if last child)
+type Param = List(#(String,        String,          List(#(String, String))))
+//                  ↖              ↖                ↖
+//                  insert after   tag name         attributes
+//                  tag of this    of new element
+//                  name (except
+//                  if last child)
+type InnerParam = Dict(String, #(String, List(#(String, String))))
 
-type InnerParam =
-  Dict(String, #(String, List(#(String, String))))
-
-const name = "add_after_tags_but_not_last_child_tags"
-const constructor =  add_after_tags_but_not_last_child_tags
+const name = "add_after_but_not_if_last_child__batch"
+const constructor =  add_after_but_not_if_last_child__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -90,7 +88,7 @@ const constructor =  add_after_tags_but_not_last_child_tags
 //------------------------------------------------53
 /// adds new elements after specified tags but not 
 /// if they are the last child
-pub fn add_after_tags_but_not_last_child_tags(param: Param) -> Desugarer {
+pub fn add_after_but_not_if_last_child__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

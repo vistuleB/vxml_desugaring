@@ -52,7 +52,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("add_between_tags")
+  let blame = infra.blame_us("add_between")
   #(
     param.0,
     param.1,
@@ -61,7 +61,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       param.3,
       fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
     ),
-    infra.blame_us("add_between_tags"),
+    infra.blame_us("add_between"),
   )
   |> Ok
 }
@@ -74,8 +74,8 @@ type Param = #(String,          String, String,         List(#(String, String)))
 //             two names
 type InnerParam = #(String, String, String, List(BlamedAttribute), Blame)
 
-const name = "add_between_tags"
-const constructor = add_between_tags
+const name = "add_between"
+const constructor = add_between
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -83,7 +83,7 @@ const constructor = add_between_tags
 //------------------------------------------------53
 /// adds new elements between adjacent tags of
 /// specified types
-pub fn add_between_tags(param: Param) -> Desugarer {
+pub fn add_between(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
