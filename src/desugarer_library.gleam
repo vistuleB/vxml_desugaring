@@ -41,6 +41,7 @@ import desugarers/counters_substitute_and_assign_handles
 import desugarers/cut_paste_attribute_from_first_child_to_self
 import desugarers/cut_paste_attribute_from_self_to_child
 import desugarers/cut_paste_attribute_from_self_to_child_outside
+import desugarers/detokenize_all
 import desugarers/encode_spaces_in_first_and_last_child
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
@@ -112,6 +113,7 @@ import desugarers/strip_text_at_start_and_end
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
 import desugarers/timer
+import desugarers/tokenize_text_children
 import desugarers/trim
 import desugarers/trim_depr
 import desugarers/trim_empty_lines
@@ -176,6 +178,7 @@ pub const counters_substitute_and_assign_handles = counters_substitute_and_assig
 pub const cut_paste_attribute_from_first_child_to_self = cut_paste_attribute_from_first_child_to_self.cut_paste_attribute_from_first_child_to_self
 pub const cut_paste_attribute_from_self_to_child = cut_paste_attribute_from_self_to_child.cut_paste_attribute_from_self_to_child
 pub const cut_paste_attribute_from_self_to_child_outside = cut_paste_attribute_from_self_to_child_outside.cut_paste_attribute_from_self_to_child_outside
+pub const detokenize_all = detokenize_all.detokenize_all
 pub const encode_spaces_in_first_and_last_child = encode_spaces_in_first_and_last_child.encode_spaces_in_first_and_last_child
 pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
@@ -247,6 +250,7 @@ pub const strip_text_at_start_and_end = strip_text_at_start_and_end.strip_text_a
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
 pub const timer = timer.timer
+pub const tokenize_text_children = tokenize_text_children.tokenize_text_children
 pub const trim = trim.trim
 pub const trim_depr = trim_depr.trim_depr
 pub const trim_empty_lines = trim_empty_lines.trim_empty_lines
@@ -312,6 +316,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   cut_paste_attribute_from_first_child_to_self.assertive_tests,
   cut_paste_attribute_from_self_to_child.assertive_tests,
   cut_paste_attribute_from_self_to_child_outside.assertive_tests,
+  detokenize_all.assertive_tests,
   encode_spaces_in_first_and_last_child.assertive_tests,
   extract_starting_and_ending_spaces.assertive_tests,
   filter_nodes_by_attributes.assertive_tests,
@@ -383,6 +388,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
   timer.assertive_tests,
+  tokenize_text_children.assertive_tests,
   trim.assertive_tests,
   trim_depr.assertive_tests,
   trim_empty_lines.assertive_tests,
