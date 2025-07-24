@@ -11,17 +11,10 @@ fn nodemap(
   inner: InnerParam,
 ) -> List(VXML) {
   case node {
-    V(_, tag, _, children) ->
-      case infra.use_list_pair_as_dict(inner, tag) {
-        Error(Nil) -> [node]
-        Ok(forbidden) -> {
-          let ancestor_names = list.map(ancestors, infra.get_tag)
-          case list.any(ancestor_names, list.contains(forbidden, _)) {
-            True -> children
-            False -> [node]
-          }
-        }
-      }
+    V(_, tag, _, children) if tag == inner.0 -> case list.any(inner.1, fn(b) {list.any(ancestors, fn(a) { infra.tag_equals(a, b)})}) {
+      True -> children
+      False -> [node]
+    }
     _ -> [node]
   }
 }
@@ -29,12 +22,12 @@ fn nodemap(
 fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNoErrorNodeMap {
   fn(
     vxml: VXML,
-    a: List(VXML),
+    ancestors: List(VXML),
     _: List(VXML),
     _: List(VXML),
     _: List(VXML),
   ) {
-    nodemap(vxml, a, inner)
+    nodemap(vxml, ancestors, inner)
   }
 }
 
@@ -47,10 +40,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(#(String,        List(String)))
-//                  ↖              ↖
-//                  tag to         list of ancestor names
-//                  be unwrapped   that will cause tag to unwrap
+type Param = #(String,        List(String))
+//             ↖              ↖
+//             tag to         list of ancestor names
+//             be unwrapped   that should cause tag to unwrap
 type InnerParam = Param
 
 const name = "unwrap_if_descendant_of"
@@ -60,15 +53,15 @@ const constructor = unwrap_if_descendant_of
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// unwraps tags that are the descendant of one of a
-/// stipulated list of tags
+/// unwraps a given tag when it is the descendant of
+/// one of a stipulated list of tags
 pub fn unwrap_if_descendant_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// unwraps tags that are the descendant of
-/// one of a stipulated list of tag names
+/// unwraps a given tag when it is the descendant of
+/// one of a stipulated list of tags
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

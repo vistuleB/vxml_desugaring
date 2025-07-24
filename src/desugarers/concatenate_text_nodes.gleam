@@ -5,21 +5,22 @@ import vxml.{type VXML, V}
 
 fn nodemap(
   node: VXML,
-) -> Result(VXML, DesugaringError) {
+) -> VXML {
   case node {
     V(_, _, _, children) ->
-      Ok(V(..node, children: infra.plain_concatenation_in_list(children)))
-    _ ->
-      Ok(node)
+      V(..node, children: infra.plain_concatenation_in_list(children))
+    _ -> 
+      node
   }
 }
 
-fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

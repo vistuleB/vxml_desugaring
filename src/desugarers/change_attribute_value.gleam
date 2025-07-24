@@ -13,8 +13,8 @@ fn update_attribute(
   attr: BlamedAttribute,
   inner: InnerParam,
 ) -> BlamedAttribute {
-  case list.find(inner, fn(x) {x.0 == attr.key}) {
-    Ok(#(_, replacement)) -> BlamedAttribute(..attr, value: replace_value(attr.value, replacement))
+  case inner.0 == attr.key {
+    True -> BlamedAttribute(..attr, value: replace_value(attr.value, inner.1))
     _ -> attr
   }
 }
@@ -42,16 +42,14 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String,         String))
-//       ↖               ↖
-//       attribute key   replacement of attribute value string
-//                       "()" can be used to echo the current value
-//                       ex:
-//                         current value: image/img.png
-//                         replacement: /()
-//                         result: /image/img.png
-
+type Param = #(String,         String)
+//             ↖               ↖
+//             attribute key   replacement of attribute value string
+//                             "()" can be used to echo the current value
+//                             ex:
+//                               current value: image/img.png
+//                               replacement: /()
+//                               result: /image/img.png
 type InnerParam = Param
 
 const name = "change_attribute_value"

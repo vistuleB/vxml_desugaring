@@ -1,37 +1,30 @@
-import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, V}
+
+fn rename_child_if_right_tag(
+  child: VXML,
+  inner: InnerParam,
+) -> VXML {
+  case child {
+    V(_, tag, _, _) if tag == inner.0 -> V(..child, tag: inner.1)
+    _ -> child
+  }
+}
 
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    T(_, _) -> vxml
-    V(blame, tag, attrs, children) -> {
-
-      use inner_dict <- infra.on_error_on_ok(
-        dict.get(inner, tag),
-        fn(_) { vxml },
-      )
-    
-      let new_children =
-        list.map(children, fn(child) {
-          use child_blame, child_tag, child_attrs, grandchildren <- infra.on_t_on_v(child, fn(_, _){
-            child
-          })
-          case dict.get(inner_dict, child_tag) {
-            Error(Nil) -> child
-            Ok(new_name) -> V(child_blame, new_name, child_attrs, grandchildren)
-          }
-        })
-
-      V(blame, tag, attrs, new_children)
+    V(_, tag, _, children) if tag == inner.2 -> {    
+      let children = list.map(children, rename_child_if_right_tag(_, inner))
+      V(..vxml, children: children)
     }
+    _ -> vxml
   }
 }
 
@@ -45,39 +38,13 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  list.fold(
-    param,
-    dict.from_list([]),
-    fn(
-      acc: Dict(String, Dict(String, String)),
-      incoming: #(String, String, String),
-    ) {
-      let #(old_name, new_name, parent_name) = incoming
-      case dict.get(acc, parent_name) {
-        Error(Nil) -> {
-          dict.insert(
-            acc,
-            parent_name,
-            dict.from_list([#(old_name, new_name)]),
-          )
-        }
-        Ok(existing_dict) -> {
-          dict.insert(
-            acc,
-            parent_name,
-            dict.insert(existing_dict, old_name, new_name),
-          )
-        }
-      }
-    }
-  )
-  |> Ok
+  Ok(param)
 }
 
-type Param = List(#(String,    String,    String))
-//                  ↖          ↖          ↖
-//                  old_name   new_name   parent
-type InnerParam = Dict(String, Dict(String, String))
+type Param = #(String,    String,    String)
+//             ↖          ↖          ↖
+//             old_name   new_name   parent
+type InnerParam = #(String, String, String)
 
 const name = "rename_if_child_of"
 const constructor = rename_if_child_of

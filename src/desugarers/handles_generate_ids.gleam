@@ -1,7 +1,8 @@
 import gleam/list
+import gleam/result
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
@@ -35,8 +36,8 @@ fn nodemap(
         attributes
         |> list.filter(fn(att) { string.starts_with(att.key, "handle")})
 
-      use <- infra.on_true_on_false(
-        list.is_empty(handle_attributes),
+      use _, _ <- infra.on_empty_on_nonempty(
+        handle_attributes,
         Ok(#(node, counter)),
       )
 
@@ -49,23 +50,30 @@ fn nodemap(
       let assert True = id != ""
       let assert True = id == string.trim(id)
 
-      let attributes =
+      use attributes <- result.try(
         attributes
-        |> list.map(
+        |> list.try_map(
           fn(att) {
-            case string.starts_with(att.key, "handle") {
-              False -> att
+            case att.key == "handle" {
+              False -> Ok(att)
               True -> {
-                // use an empty handle_value if not there:
-                let #(handle_name, handle_value) = case string.split_once(att.value, " ") {
-                  Ok(#(first, second)) -> #(first, second)
-                  Error(_) -> #(att.value, "")
-                }
-                BlamedAttribute(..att, value: handle_name <> " | " <> id <> " | " <> handle_value)
+                use #(handle_name, handle_value) <- result.try(
+                    case string.split_once(att.value |> infra.normalize_spaces, " ") {
+                    Ok(#(first, second)) -> {
+                      case string.contains(first, "|") || string.contains(second, "|") {
+                        True -> Error(DesugaringError(att.blame, "handle value contains splitting charachter '|'"))
+                        False -> Ok(#(first, second))
+                      }
+                    }
+                    Error(_) -> Ok(#(att.value, ""))
+                  }
+                )
+                Ok(BlamedAttribute(..att, value: handle_name <> "|" <> handle_value <> "|" <> id))
               }
             }
           }
         )
+      )
 
       Ok(#(V(..node, attributes: attributes), counter))
     }
@@ -94,55 +102,51 @@ const constructor = handles_generate_ids
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// Generates a unique ID and filters attributes to
-/// find any that start with "handle" in which their
-/// values are expected to be in the format 
-/// ```
-/// ...=handle_name handle_value
-/// ```
-/// It does the following two things:
-/// 1- Processes these "handle" attributes values 
-/// by:
-///  . Splitting their values on space
-///  . Reformatting them to include the  generated
-///    ID in the format:
-///      handle_name | id | handle_value
-///    or just
-///      value | id 
-///    if the value is not splitable,
-///  
-/// 2- Add id attribute to the node
-///    ( usefull for html href link ?id=x )
+/// For each node that has an attribute of key
+/// 'handle':
 /// 
-/// Returns a new V node with the transformed
-/// attributes
+/// 1. generates a unique id attribute added to the 
+///    node, if not already present 
+/// 
+/// 2. parses each 'handle' attribute value in the
+///    form
+/// ```
+/// handle=handle_name [handle_value]
+/// ```
+///    where the handle_value string is an optional 
+///    string separated from handle_name that may or
+///    may not be present, and replaces this key-value
+///    pair with
+/// ```
+/// handle=handle_name|handle_value|id
+/// ```
+///    while using the empty string for 'handle_value',
+///    if not present
 pub fn handles_generate_ids() -> Desugarer {
   Desugarer(
     name,
     option.None,
     "
-/// Generates a unique ID and filters attributes to
-/// find any that start with \"handle\" in which their
-/// values are expected to be in the format 
-/// ```
-/// ...=handle_name handle_value
-/// ```
-/// It does the following two things:
-/// 1- Processes these \"handle\" attributes values 
-/// by:
-///  . Splitting their values on space
-///  . Reformatting them to include the  generated
-///    ID in the format:
-///      handle_name | id | handle_value
-///    or just
-///      value | id 
-///    if the value is not splitable,
-///  
-/// 2- Add id attribute to the node
-///    ( usefull for html href link ?id=x )
+/// For each node that has an attribute of key
+/// 'handle':
 /// 
-/// Returns a new V node with the transformed
-/// attributes
+/// 1. generates a unique id attribute added to the 
+///    node, if not already present 
+/// 
+/// 2. parses each 'handle' attribute value in the
+///    form
+/// ```
+/// handle=handle_name [handle_value]
+/// ```
+///    where the handle_value string is an optional 
+///    string separated from handle_name that may or
+///    may not be present, and replaces this key-value
+///    pair with
+/// ```
+/// handle=handle_name|handle_value|id
+/// ```
+///    while using the empty string for 'handle_value',
+///    if not present
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }

@@ -63,6 +63,39 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(
   }
 }
 
+// *** with forbidden, self_first ***
+
+fn one_to_one_no_error_nodemap_recursive_application_with_forbidden_self_first(
+  node: VXML,
+  nodemap: OneToOneNoErrorNodeMap,
+  forbidden: List(String),
+) -> VXML {
+  case node {
+    T(_, _) -> nodemap(node)
+    V(_, tag, _, _) -> case list.contains(forbidden, tag) {
+      True -> node
+      False -> {
+        let assert V(_, _, _, children) as node = nodemap(node)
+        let children = list.map(
+          children,
+          one_to_one_no_error_nodemap_recursive_application_with_forbidden_self_first(_, nodemap, forbidden)
+        )
+        V(..node, children: children)
+      }
+    }
+  }
+}
+
+pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden_self_first(
+  nodemap: OneToOneNoErrorNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  fn (vxml) {
+    one_to_one_no_error_nodemap_recursive_application_with_forbidden_self_first(vxml, nodemap, forbidden)
+    |> Ok
+  }
+}
+
 //**************************************************************
 //* OneToOneNodeMap
 //**************************************************************
@@ -903,39 +936,162 @@ pub fn one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
 }
 
 //**************************************************************
-//* EarlyReturn land... renaming not yet done...
+//* EarlyReturnOneToOneNoErrorNodeMap
 //**************************************************************
 
-// pub type TrafficLight {
-//   Green
-//   Red
-// }
+pub type TrafficLight {
+  Continue
+  GoBack
+}
 
-// pub type EarlyReturnOneToOneNodeMap =
-//   fn(VXML, List(VXML)) -> Result(#(VXML, TrafficLight), DesugaringError)
+pub type EarlyReturnOneToOneNoErrorNodeMap =
+  fn(VXML) -> #(VXML, TrafficLight)
 
-// fn early_return_one_to_one_nodemap_recursive_application(
-//   node: VXML,
-//   ancestors: List(VXML),
-//   nodemap: EarlyReturnOneToOneNodeMap,
-// ) -> Result(VXML, DesugaringError) {
-//   use #(node, color) <- result.try(nodemap(node, ancestors))
-//   case node, color {
-//     _, Red -> Ok(node)
-//     T(_, _), _ -> Ok(node)
-//     V(_, _, _, children), Green -> {
-//       let children_ancestors = [node, ..ancestors]
-//       use children <- result.try(
-//         children
-//         |> list.try_map(early_return_one_to_one_nodemap_recursive_application(_, children_ancestors, nodemap))
-//       )
-//       Ok(V(..node, children: children))
-//     }
-//   }
-// }
+// *** without forbidden ***
 
-// pub fn early_return_one_to_one_nodemap_2_desugarer_transform(
-//   nodemap: EarlyReturnOneToOneNodeMap,
-// ) -> DesugarerTransform {
-//   early_return_one_to_one_nodemap_recursive_application(_, [], nodemap)
-// }
+fn early_return_one_to_one_no_error_nodemap_recursive_application(
+  node: VXML,
+  nodemap: EarlyReturnOneToOneNoErrorNodeMap,
+) -> VXML {
+  let #(node, signal) = nodemap(node)
+  case node, signal {
+    V(_, _, _, children), Continue -> {
+      let children =
+        children
+        |> list.map(
+          early_return_one_to_one_no_error_nodemap_recursive_application(_, nodemap)
+        )
+      V(..node, children: children)
+    }
+    _, _ -> node
+  }
+}
+
+pub fn early_return_one_to_one_no_error_nodemap_2_desugarer_transform(
+  nodemap: EarlyReturnOneToOneNoErrorNodeMap,
+) -> DesugarerTransform {
+  fn (vxml) {
+    early_return_one_to_one_no_error_nodemap_recursive_application(vxml, nodemap)
+    |> Ok
+  }
+}
+
+// *** with forbidden ***
+
+fn early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden(
+  node: VXML,
+  nodemap: EarlyReturnOneToOneNoErrorNodeMap,
+  forbidden: List(String),
+) -> VXML {
+  use <- infra.on_true_on_false(
+    infra.is_v_and_tag_is_one_of(node, forbidden),
+    node,
+  )
+  let #(node, signal) = nodemap(node)  
+  case node, signal {
+    V(_, _, _, children), Continue -> {
+      let children =
+        children
+        |> list.map(
+          early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden)
+        )
+      V(..node, children: children)
+    }
+    _, _ -> node
+  }
+}
+
+pub fn early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(
+  nodemap: EarlyReturnOneToOneNoErrorNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  fn (vxml) {
+    early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
+    |> Ok
+  }
+}
+
+//**************************************************************
+//* EarlyReturnOneToManyNoErrorNodeMap
+//**************************************************************
+
+pub type EarlyReturnOneToManyNoErrorNodeMap =
+  fn(VXML) -> #(List(VXML), TrafficLight)
+
+// *** without forbidden ***
+
+fn early_return_one_to_many_no_error_nodemap_recursive_application(
+  node: VXML,
+  nodemap: EarlyReturnOneToManyNoErrorNodeMap,
+) -> List(VXML) {
+  let #(nodes, signal) = nodemap(node)
+  case nodes, signal {
+    _, GoBack -> nodes
+    [], Continue -> nodes
+    [T(_, _)], Continue -> nodes
+    [V(_, _, _, children) as node], Continue -> {
+      let children =
+        children
+        |> list.map(early_return_one_to_many_no_error_nodemap_recursive_application(_, nodemap))
+        |> list.flatten
+      [V(..node, children: children)]
+    }
+    _, Continue -> {
+      // right now we don't like to see EarlyReturn nodemap
+      // replacing itself by > 1 node and asking
+      // us to continue at child level ()
+      panic as "EarlyReturn recursive_application asked to Continue after node spit itself"
+    }
+  }
+}
+
+pub fn early_return_one_to_many_no_error_nodemap_2_desugarer_transform(
+  nodemap: EarlyReturnOneToManyNoErrorNodeMap,
+) -> DesugarerTransform {
+  fn (vxml) {
+    early_return_one_to_many_no_error_nodemap_recursive_application(vxml, nodemap)
+    |> infra.get_root_with_desugaring_error
+  }
+}
+
+// *** with forbidden ***
+
+fn early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidden(
+  node: VXML,
+  nodemap: EarlyReturnOneToManyNoErrorNodeMap,
+  forbidden: List(String),
+) -> List(VXML) {
+  use <- infra.on_true_on_false(
+    infra.is_v_and_tag_is_one_of(node, forbidden),
+    [node],
+  )
+  let #(nodes, signal) = nodemap(node)
+  case nodes, signal {
+    _, GoBack -> nodes
+    [], Continue -> nodes
+    [T(_, _)], Continue -> nodes
+    [V(_, _, _, children) as node], Continue -> {
+      let children =
+        children
+        |> list.map(early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
+        |> list.flatten
+      [V(..node, children: children)]
+    }
+    _, Continue -> {
+      // right now we're not super in love with EarlyReturn (or more 
+      // generally self_first) nodemap replacing itself by > 1 node 
+      // and asking us to continue at child level
+      panic as "EarlyReturn recursive_application asked to Continue after node spit itself"
+    }
+  }
+}
+
+pub fn early_return_one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(
+  nodemap: EarlyReturnOneToManyNoErrorNodeMap,
+  forbidden: List(String),
+) -> DesugarerTransform {
+  fn (vxml) {
+    early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
+    |> infra.get_root_with_desugaring_error
+  }
+}

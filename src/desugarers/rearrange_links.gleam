@@ -56,7 +56,7 @@ fn end_node(blame: Blame) {
 }
 
 fn deatomize_vxmls(
-  vxmls: List(VXML),
+  children: List(VXML),
   accumulated_contents: List(vxml.BlamedContent),
   accumulated_nodes: List(VXML)
 ) -> List(VXML) {
@@ -67,7 +67,7 @@ fn deatomize_vxmls(
     }
   }
 
-  case vxmls {
+  case children {
     [] -> {
       let assert True = list.is_empty(accumulated_contents)
       accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
@@ -122,7 +122,10 @@ fn deatomize_vxmls(
           deatomize_vxmls(rest, [], [first, ..accumulated_nodes])
         }
 
-        _ -> panic as "should not happen"
+        _ -> {
+          vxml.debug_print_vxmls("children", children) 
+          panic as "should not happen"
+        }
       }
     }
   }
@@ -365,10 +368,9 @@ fn match_until_end_internal(
 
 fn match_until_end(
   atomized: List(VXML),
-  patterns: #(LinkPattern, LinkPattern),
+  inner: InnerParam,
 ) -> List(VXML) {
-  let #(pattern1, pattern2) = patterns
-  match_until_end_internal(atomized, pattern1, pattern2, [])
+  match_until_end_internal(atomized, inner.0, inner.1, [])
 }
 
 fn atomize_text_node(vxml: VXML) -> List(VXML) {
@@ -414,11 +416,14 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
       || infra.is_v_and_tag_equals(v, "InChapterLink")
     })
   {
-    True ->
+    True -> {
+      // io.println("atomizing " <> ins(list.length(children)) <> " list of children")
+      // vxml.debug_print_vxmls("hey", children)
       children
       |> list.map(atomize_if_t_or_a_with_single_t_child)
       |> list.flatten
       |> Ok
+    }
     False -> Error(Nil)
   }
 }
@@ -663,7 +668,7 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
 
 fn nodemap(
   vxml: VXML,
-  param: InnerParam,
+  inner: InnerParam,
 ) -> VXML {
   case vxml {
     V(b, tag, attributes, children) -> {
@@ -671,11 +676,8 @@ fn nodemap(
         over: atomize_maybe(children),
         with_on_error: fn(_) { vxml },
       )
-      list.fold(
-        param,
-        atomized,
-        match_until_end,
-      )
+      atomized
+      |> match_until_end(inner) 
       |> deatomize_vxmls([], [])
       |> V(b, tag, attributes, _)
     }
@@ -692,43 +694,37 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  param
-  |> list.try_map(fn(string_pair) {
-    let #(s1, s2) = string_pair
-    use #(pattern1, pattern2) <- result.try(string_pair_to_link_pattern_pair(string_pair))
+  use #(pattern1, pattern2) <- result.try(string_pair_to_link_pattern_pair(param))
 
-    use unique_href_vars <- result.try(
-      collect_unique_href_vars(pattern1)
-      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of href variable: " <> ins(var) ) })
-    )
+  use unique_href_vars <- result.try(
+    collect_unique_href_vars(pattern1)
+    |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> param.0 <>" has duplicate declaration of href variable: " <> ins(var) ) })
+  )
 
-    use unique_content_vars <- result.try(
-      collect_unique_content_vars(pattern1)
-      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> s1 <>" has duplicate declaration of content variable: " <> ins(var)) })
-    )
+  use unique_content_vars <- result.try(
+    collect_unique_content_vars(pattern1)
+    |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> param.0 <>" has duplicate declaration of content variable: " <> ins(var)) })
+  )
 
-    use _ <- result.try(
-      check_each_href_var_is_sourced(pattern2, unique_href_vars)
-      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced href variable: " <> ins(var)) })
-    )
+  use _ <- result.try(
+    check_each_href_var_is_sourced(pattern2, unique_href_vars)
+    |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> param.1 <> " has a declaration of unsourced href variable: " <> ins(var)) })
+  )
 
-    use _ <- result.try(
-      check_each_content_var_is_sourced(pattern2, unique_content_vars)
-      |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> s2 <> " has a declaration of unsourced content variable: " <> ins(var)) })
-    )
+  use _ <- result.try(
+    check_each_content_var_is_sourced(pattern2, unique_content_vars)
+    |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> param.1 <> " has a declaration of unsourced content variable: " <> ins(var)) })
+  )
 
-    Ok(#(pattern1, pattern2))
-  })
+  Ok(#(pattern1, pattern2))
 }
 
-type Param =
-  List(#(String, String))
-//       ↖       ↖
-//       source  target
-//       pattern pattern
+type Param = #(String,   String)
+//             ↖         ↖
+//             source    target
+//             pattern   pattern
 
-type InnerParam =
-  List(#(LinkPattern, LinkPattern))
+type InnerParam = #(LinkPattern, LinkPattern)
 
 const name = "rearrange_links"
 const constructor = rearrange_links

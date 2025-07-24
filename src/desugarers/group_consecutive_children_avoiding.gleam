@@ -1,9 +1,10 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import blamedlines.{type Blame}
 
 fn is_forbidden(elem: VXML, forbidden: List(String)) {
   case elem {
@@ -16,31 +17,25 @@ fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> VXML {
-  let #(wrapper_tag, forbidden_to_include, forbidden_to_enter) = inner
   case vxml {
     T(_, _) -> vxml
-    V(blame, tag, attrs, children) -> {
-      use <- infra.on_true_on_false(
-        list.contains(forbidden_to_enter, tag),
-        vxml
-      )
-      use <- infra.on_true_on_false(
-        tag == wrapper_tag, 
-        vxml,
-      )
+    V(_, _, _, children) -> {
       let children =
         children
-        |> infra.either_or_misceginator(is_forbidden(_, forbidden_to_include))
+        |> infra.either_or_misceginator(is_forbidden(_, inner.1))
         |> infra.regroup_ors_no_empty_lists
-        |> infra.map_either_ors(fn(elem) { elem }, fn(consecutive_siblings) {
-          V(
-            consecutive_siblings |> infra.assert_get_first_blame,
-            wrapper_tag,
-            [],
-            consecutive_siblings,
-          )
-        })
-      V(blame, tag, attrs, children)
+        |> infra.map_either_ors(
+          fn(x){x},
+          fn(consecutive_siblings) {
+            V(
+              inner.3, // Blame
+              inner.0, // wrapper tag
+              [],
+              consecutive_siblings,
+            )
+          }
+        )
+      V(..vxml, children: children)
     }
   }
 }
@@ -50,22 +45,23 @@ fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(nodemap_factory(inner), inner.2)
+  nodemap_factory(inner)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden_self_first(inner.2)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
+  case list.contains(param.2, param.0) {
+    True -> Ok(#(param.0, param.1, param.2, infra.blame_us("group_consecutive")))
+    False -> Error(DesugaringError(infra.no_blame, "the wrapper must be included either in the list of things not to be contained in in order to avoid infinite recursion"))
+  }
 }
 
-type Param =
-  #(String, List(String), List(String))
-//  ↖       ↖             ↖
-//  name    do not        do not
-//  of      wrap          even
-//  wrapper these         enter
-//  tag                   these subtrees
-
-type InnerParam = Param
+type Param = #(String,   List(String), List(String))
+//             ↖         ↖             ↖
+//             wrapper   do not        stay outside
+//                       wrap          these subtrees
+//                       these
+type InnerParam = #(String, List(String), List(String), Blame)
 
 const name = "group_consecutive_children_avoiding"
 const constructor = group_consecutive_children_avoiding
@@ -115,7 +111,7 @@ pub fn group_consecutive_children_avoiding(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: #("wrapper", ["A", "B"], ["B", "C"]),
+      param: #("wrapper", ["A", "B"], ["B", "C", "wrapper"]),
       source:   "
                 <> root
                   <> x
