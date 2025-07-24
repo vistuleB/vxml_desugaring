@@ -1,64 +1,55 @@
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, GoBack, Continue} as n2t
-import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
+import nodemaps_2_desugarer_transforms as n2t
+import vxml.{type VXML, V}
 
 fn nodemap(
-  vxml: VXML,
+  node: VXML,
   inner: InnerParam,
-) -> #(VXML, TrafficLight) {
-  case vxml {
-    V(_, tag, attrs, _) if tag == inner.0 -> {
-      #(
-        V(..vxml, attributes: list.append(attrs, [inner.1])),
-        GoBack,
-      )
-    }
-    _ -> #(vxml, Continue)
+) -> List(VXML) {
+  case node {
+    V(_, tag, _, []) ->
+      case list.contains(inner, tag) {
+        True -> []
+        _ -> [node]
+      }
+    _ -> [node]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  #(
-    param.0,
-    BlamedAttribute(
-      infra.blame_us("append_attribute"),
-      param.1,
-      param.2,
-    )
-  )
-  |> Ok
+  Ok(param)
 }
 
-type Param = #(String, String, String)
-//             ↖       ↖       ↖
-//             tag     attr    value
-type InnerParam = #(String, BlamedAttribute)
+type Param = List(String)
+type InnerParam = List(String)
 
-const name = "append_attribute"
-const constructor = append_attribute
+const name = "delete_if_empty__batch"
+const constructor = delete_if_empty__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds attributes to tags
-pub fn append_attribute(param: Param) -> Desugarer {
+/// deletes nodes that have no children for tose 
+/// tags in the given list
+pub fn delete_if_empty__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.None,
     "
-/// adds attributes to tags
+/// deletes nodes that have no children for tose 
+/// tags in the given list
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

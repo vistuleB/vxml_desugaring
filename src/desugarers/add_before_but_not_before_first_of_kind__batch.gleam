@@ -4,7 +4,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, V}
 
 fn add_in_list(
   previous_tags: List(String),
@@ -13,31 +13,20 @@ fn add_in_list(
 ) -> List(VXML) {
   case upcoming {
     [] -> []
-    [T(_, _) as first, ..rest] -> [first, ..add_in_list(previous_tags, rest, inner)]
     [V(_, tag, _, _) as first, ..rest] -> {
       case dict.get(inner, tag) {
         Error(_) -> [first, ..add_in_list(previous_tags, rest, inner)]
-        Ok(tag_and_attributes) -> {
+        Ok(v) -> {
           case list.contains(previous_tags, tag) {
-            False -> [first, ..add_in_list([tag, ..previous_tags], rest, inner)]
-            True -> {
-              let blame = infra.blame_us("add_before_tags_but_not_before_first_of_kind_depr")
-              let new_node = V(
-                blame,
-                tag_and_attributes.0,
-                list.map(tag_and_attributes.1, fn(kv) { BlamedAttribute(blame, kv.0, kv.1)}),
-                [],
-              )
-              [
-                new_node,
-                first,
-                ..add_in_list(previous_tags, rest, inner),
-              ]
-            }
+            False ->
+              [first, ..add_in_list([tag, ..previous_tags], rest, inner)]
+            True ->
+              [v, first, ..add_in_list(previous_tags, rest, inner)]
           }
         }
       }
     }
+    [first, ..rest] -> [first, ..add_in_list(previous_tags, rest, inner)]
   }
 }
 
@@ -62,7 +51,20 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  param
+  |> list.map(
+    fn(p) {
+      #(
+        p.0,
+        infra.blame_tag_attrs_2_v(
+          "add_before_but_not_before_first_child__batch",
+          p.1,
+          p.2,
+        )
+      )
+    }
+  )
+  |> infra.dict_from_list_with_desugaring_error
 }
 
 type Param = List(#(String,        String,          List(#(String, String))))
@@ -71,7 +73,7 @@ type Param = List(#(String,        String,          List(#(String, String))))
 //                  before tags    of new element
 //                  of this name
 //                  (except if it's the first occurrence of the same kind)
-type InnerParam = Dict(String, #(String, List(#(String, String))))
+type InnerParam = Dict(String, VXML)
 
 const name = "add_before_but_not_before_first_of_kind__batch"
 const constructor = add_before_but_not_before_first_of_kind__batch

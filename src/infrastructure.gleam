@@ -380,6 +380,21 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
   }
 }
 
+pub fn blame_tag_attrs_2_v(
+  blamestring: String,
+  tag: String,
+  attrs: List(#(String, String)),
+) -> VXML {
+  let blame = blame_us(blamestring)
+  let attrs = list.map(attrs, fn(pair) { BlamedAttribute(blame, pair.0, pair.1) })
+  V(
+    blame,
+    tag,
+    attrs,
+    [],
+  )
+}
+
 //**************************************************************
 //* dictionary-building functions
 //**************************************************************

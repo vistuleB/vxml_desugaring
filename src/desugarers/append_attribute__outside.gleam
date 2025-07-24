@@ -25,40 +25,50 @@ fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.2)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
     BlamedAttribute(
-      infra.blame_us("append_attribute"),
+      infra.blame_us("add_attrs_no_list"),
       param.1,
       param.2,
-    )
+    ),
+    param.3,
   )
   |> Ok
 }
 
-type Param = #(String, String, String)
-//             ↖       ↖       ↖
-//             tag     attr    value
-type InnerParam = #(String, BlamedAttribute)
+type Param = #(String, String, String, List(String))
+//             ↖       ↖       ↖       ↖
+//             tag     attr    value   ...outside of
+//                                     subtrees rooted
+//                                     at these tags
+type InnerParam = #(String, BlamedAttribute, List(String))
 
-const name = "append_attribute"
-const constructor = append_attribute
+const name = "append_attribute__outside"
+const constructor = append_attribute__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds attributes to tags
-pub fn append_attribute(param: Param) -> Desugarer {
+/// add a specific key-value pair to all tags of a
+/// given name and early-return after tag is added,
+/// while not entering subtrees specified by the 
+/// last argument to the desugarer
+pub fn append_attribute__outside(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// adds attributes to tags
+/// add a specific key-value pair to all tags of a
+/// given name and early-return after tag is added,
+/// while not entering subtrees specified by the 
+/// last argument to the desugarer
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

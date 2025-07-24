@@ -1,64 +1,43 @@
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
+import group_replacement_splitting as grs
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, GoBack, Continue} as n2t
-import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
+import nodemaps_2_desugarer_transforms as n2t
 
-fn nodemap(
-  vxml: VXML,
-  inner: InnerParam,
-) -> #(VXML, TrafficLight) {
-  case vxml {
-    V(_, tag, attrs, _) if tag == inner.0 -> {
-      #(
-        V(..vxml, attributes: list.append(attrs, [inner.1])),
-        GoBack,
-      )
-    }
-    _ -> #(vxml, Continue)
-  }
-}
-
-fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
-  nodemap(_, inner)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
+  grs.split_if_t_with_replacement_nodemap(_, inner.0)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.1)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  #(
-    param.0,
-    BlamedAttribute(
-      infra.blame_us("append_attribute"),
-      param.1,
-      param.2,
-    )
-  )
-  |> Ok
+  Ok(param)
 }
 
-type Param = #(String, String, String)
-//             ↖       ↖       ↖
-//             tag     attr    value
-type InnerParam = #(String, BlamedAttribute)
+type Param = #(List(grs.RegexpWithGroupReplacementInstructions), List(String))
+//            ↖                                                  ↖
+//            replacement_instructions                           forbidden_parents
+type InnerParam = Param
 
-const name = "append_attribute"
-const constructor = append_attribute
+const name = "regex_split_and_replace__batch__outside"
+const constructor = regex_split_and_replace__batch__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds attributes to tags
-pub fn append_attribute(param: Param) -> Desugarer {
+/// splits text nodes by regexp with group-by-group
+/// replacement instructions
+pub fn regex_split_and_replace__batch__outside(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     "
-/// adds attributes to tags
+/// splits text nodes by regexp with group-by-group
+/// replacement instructions
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

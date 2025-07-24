@@ -1,25 +1,19 @@
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
-import blamedlines.{type Blame}
+import vxml.{type VXML, V}
 
-fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
-  case children {
-    [first, V(_, tag, _, _) as second, ..rest] if tag == inner.0 -> [
-      first,
-      V(
-        inner.3,
-        inner.1,
-        inner.2,
-        [],
-      ),
-      ..add_in_list([second, ..rest], inner)
-    ]
-    [first, ..rest] -> [first, ..add_in_list(rest, inner)]
-    [] -> children
+fn add_in_list(
+  vxmls: List(VXML),
+  inner: InnerParam,
+) -> List(VXML) {
+  case vxmls {
+    [first, V(_, tag, _, _) as second, ..rest] if tag == inner.0 ->
+      [first, inner.1, ..add_in_list([second, ..rest], inner)]
+    [first, second, ..rest] ->
+      [first, ..add_in_list([second, ..rest], inner)]
+    _ -> vxmls
   }
 }
 
@@ -28,7 +22,8 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case node {
-    V(_, _, _, children) -> V(..node, children: add_in_list(children, inner))
+    V(_, _, _, children) ->
+      V(..node, children: add_in_list(children, inner))
     _ -> node
   }
 }
@@ -43,17 +38,12 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("add_before_tag_but_not_first_child_tags_no_list")
-  #(
-    param.0,
+  let v = infra.blame_tag_attrs_2_v(
+    "add_before_but_not_before_first_child",
     param.1,
-    list.map(
-      param.2,
-      fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
-    ),
-    blame,
+    param.2,
   )
-  |> Ok
+  Ok(#(param.0, v))
 }
 
 type Param = #(String,        String,          List(#(String, String)))
@@ -62,7 +52,7 @@ type Param = #(String,        String,          List(#(String, String)))
 //             before tags    of new element
 //             of this name
 //             (except if tag is first child)
-type InnerParam = #(String, String, List(vxml.BlamedAttribute), Blame)
+type InnerParam = #(String, VXML)
 
 const name = "add_before_but_not_before_first_child"
 const constructor = add_before_but_not_before_first_child

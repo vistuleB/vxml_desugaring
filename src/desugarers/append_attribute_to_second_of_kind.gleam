@@ -33,10 +33,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String, String, String)
-//  ↖       ↖       ↖
-//  tag     key     value
+type Param = #(String, String, String)
+//             ↖       ↖       ↖
+//             tag     key     value
 
 type InnerParam = Param
 

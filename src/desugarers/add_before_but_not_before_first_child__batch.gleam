@@ -1,34 +1,27 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, V}
 
-fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
-  case children {
-    [first, V(blame, tag, _, _) as second, ..rest] -> {
+fn add_in_list(
+  vxmls: List(VXML),
+  inner: InnerParam
+) -> List(VXML) {
+  case vxmls {
+    [first, V(_, tag, _, _) as second, ..rest] -> {
       case dict.get(inner, tag) {
-        Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-        Ok(#(new_element_tag, new_element_attributes)) -> {
-          [
-            first,
-            V(
-              blame,
-              new_element_tag,
-              list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-              }),
-              [],
-            ),
-            ..add_in_list([second, ..rest], inner)
-          ]
-        }
+        Error(Nil) ->
+          [first, ..add_in_list([second, ..rest], inner)]
+        Ok(v) ->
+          [first, v, ..add_in_list([second, ..rest], inner)]
       }
     }
-    _ -> children
+    [first, second, ..rest] ->
+      [first, ..add_in_list([second, ..rest], inner)]
+    _ -> vxmls
   }
 }
 
@@ -37,7 +30,8 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case node {
-    V(_, _, _, children) -> V(..node, children: add_in_list(children, inner))
+    V(_, _, _, children) ->
+      V(..node, children: add_in_list(children, inner))
     _ -> node
   }
 }
@@ -52,7 +46,20 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  param
+  |> list.map(
+    fn(p) {
+      #(
+        p.0,
+        infra.blame_tag_attrs_2_v(
+          "add_before_but_not_before_first_child__batch",
+          p.1,
+          p.2,
+        )
+      )
+    }
+  )
+  |> infra.dict_from_list_with_desugaring_error
 }
 
 type Param = List(#(String,        String,          List(#(String, String))))
@@ -61,10 +68,10 @@ type Param = List(#(String,        String,          List(#(String, String))))
 //                  before tags    of new element
 //                  of this name
 //                  (except if tag is first child)
-type InnerParam = Dict(String, #(String, List(#(String, String))))
+type InnerParam = Dict(String, VXML)
 
-const name = "add_before_but_before_not_first_child__batch"
-const constructor = add_before_but_before_not_first_child__batch
+const name = "add_before_but_not_before_first_child__batch"
+const constructor = add_before_but_not_before_first_child__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -72,7 +79,7 @@ const constructor = add_before_but_before_not_first_child__batch
 //------------------------------------------------53
 /// adds new elements before specified tags but not 
 /// if they are the first child
-pub fn add_before_but_before_not_first_child__batch(param: Param) -> Desugarer {
+pub fn add_before_but_not_before_first_child__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

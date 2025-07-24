@@ -64,8 +64,8 @@ type Param = List(#(String, String, String, String))
 //                  tag     parent  attr    value
 type InnerParam = Dict(#(String, String), List(#(String, String)))
 
-const name = "append_attribute_if_child_of_depr"
-const constructor = append_attribute_if_child_of_depr
+const name = "append_attribute_if_child_of__batch"
+const constructor = append_attribute_if_child_of__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -75,7 +75,7 @@ const constructor = append_attribute_if_child_of_depr
 /// child of another specified tag; will not 
 /// overwrite if attribute with that key already
 /// exists
-pub fn append_attribute_if_child_of_depr(param: Param) -> Desugarer {
+pub fn append_attribute_if_child_of__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

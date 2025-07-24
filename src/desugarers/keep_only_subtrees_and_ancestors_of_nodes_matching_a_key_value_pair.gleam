@@ -1,4 +1,4 @@
-import desugarers/remove_outside_subtrees.{remove_outside_subtrees}
+import desugarers/delete_outside_subtrees.{delete_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -53,7 +53,7 @@ pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> fn(vxml) { Ok(vxml) }
-        _ -> remove_outside_subtrees(matches_a_key_value_pair(_, inner)).transform
+        _ -> delete_outside_subtrees(matches_a_key_value_pair(_, inner)).transform
       }
     }
   )

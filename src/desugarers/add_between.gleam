@@ -1,10 +1,8 @@
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, V}
-import blamedlines.{type Blame}
+import vxml.{type VXML, V}
 
 fn add_in_list(
   children: List(VXML),
@@ -18,12 +16,7 @@ fn add_in_list(
     ] if first_tag == inner.0 && second_tag == inner.1 -> {
       [
         first,
-        V(
-          inner.4,
-          inner.2,
-          inner.3,
-          [],
-        ),
+        inner.2,
         ..add_in_list([second, ..rest], inner),
       ]
     }
@@ -37,7 +30,8 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case node {
-    V(_, _, _, children) -> V(..node, children: add_in_list(children, inner))
+    V(_, _, _, children) ->
+      V(..node, children: add_in_list(children, inner))
     _ -> node
   }
 }
@@ -52,16 +46,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("add_between")
   #(
     param.0,
     param.1,
-    param.2,
-    list.map(
+    infra.blame_tag_attrs_2_v(
+      "add_between",
+      param.2,
       param.3,
-      fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
     ),
-    infra.blame_us("add_between"),
   )
   |> Ok
 }
@@ -72,7 +64,7 @@ type Param = #(String,          String, String,         List(#(String, String)))
 //             between adjacent         new element     new element
 //             siblings of these
 //             two names
-type InnerParam = #(String, String, String, List(BlamedAttribute), Blame)
+type InnerParam = #(String, String, VXML)
 
 const name = "add_between"
 const constructor = add_between

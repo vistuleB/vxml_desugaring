@@ -4,47 +4,25 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V, T}
+import vxml.{type VXML, V}
 
-fn add_before_2nd_or_above(
+fn add_in_list(
   vxmls: List(VXML),
   inner: InnerParam,
 ) -> List(VXML) {
   case vxmls {
-    [first, V(blame, tag, _, _) as second, ..rest] -> {
+    [V(_, tag, _, _) as first, second, ..rest] -> {
       case dict.get(inner, tag) {
-        Error(Nil) -> [
-          first, 
-        ..add_before_2nd_or_above([second, ..rest], inner)
-        ]
-        Ok(#(new_element_tag, new_element_attributes)) -> [
-          first,
-          V(
-            infra.blame_us("add_after_tags_but_not_last_child"),
-            new_element_tag,
-            list.map(new_element_attributes, fn(pair) {BlamedAttribute(blame, pair.0, pair.1)}),
-            [],
-          ),
-          ..add_before_2nd_or_above([second, ..rest], inner)
-        ]
+        Error(Nil) ->
+          [first, ..add_in_list([second, ..rest], inner)]
+        Ok(v) -> 
+          [first, v, ..add_in_list([second, ..rest], inner)]
       }
     }
-    [first, T(_, _) as second, ..rest] -> [
-      first,
-      ..add_before_2nd_or_above([second, ..rest], inner)
-    ]
+    [first, second, ..rest] ->
+      [first, ..add_in_list([second, ..rest], inner)]
     _ -> vxmls
   }
-}
-
-fn transform_children(
-  children: List(VXML),
-  inner: InnerParam,
-) -> List(VXML) {
-  children
-  |> list.reverse
-  |> add_before_2nd_or_above(inner)
-  |> list.reverse
 }
 
 fn nodemap(
@@ -52,8 +30,8 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    V(_, _, _, _) -> 
-      V(..vxml, children: transform_children(vxml.children, inner))
+    V(_, _, _, children) -> 
+      V(..vxml, children: add_in_list(children, inner))
     _ -> vxml
   }
 }
@@ -68,7 +46,20 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  param
+  |> list.map(
+    fn(triple) { 
+      #(
+        triple.0,
+        infra.blame_tag_attrs_2_v(
+          "add_after_but_not_after_last_child__batch",
+          triple.1,
+          triple.2,
+        )
+      )
+    }
+  )
+  |> infra.dict_from_list_with_desugaring_error
 }
 
 type Param = List(#(String,        String,          List(#(String, String))))
@@ -77,10 +68,10 @@ type Param = List(#(String,        String,          List(#(String, String))))
 //                  tag of this    of new element
 //                  name (except
 //                  if last child)
-type InnerParam = Dict(String, #(String, List(#(String, String))))
+type InnerParam = Dict(String, VXML)
 
-const name = "add_after_but_not_if_last_child__batch"
-const constructor =  add_after_but_not_if_last_child__batch
+const name = "add_after_but_not_after_last_child__batch"
+const constructor = add_after_but_not_after_last_child__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -88,7 +79,7 @@ const constructor =  add_after_but_not_if_last_child__batch
 //------------------------------------------------53
 /// adds new elements after specified tags but not 
 /// if they are the last child
-pub fn add_after_but_not_if_last_child__batch(param: Param) -> Desugarer {
+pub fn add_after_but_not_after_last_child__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
@@ -107,8 +98,7 @@ pub fn add_after_but_not_if_last_child__batch(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  [
-  ]
+  []
 }
 
 pub fn assertive_tests() {

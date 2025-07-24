@@ -1,33 +1,17 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, T, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
     [V(_, first_tag, _, _) as first, T(_, _) as second, ..rest] -> {
       case dict.get(inner, first_tag) {
         Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
-        Ok(#(new_element_tag, new_element_attributes)) -> {
-          let blame = infra.get_blame(first)
-          [
-            first,
-            V(
-              blame,
-              new_element_tag,
-              list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
-              }),
-              [],
-            ),
-            second,
-            ..add_in_list(rest, inner)
-          ]
-        }
+        Ok(v) -> [first, v, second, ..add_in_list(rest, inner)]
       }
     }
     [first, ..rest] -> [first, ..add_in_list(rest, inner)]
@@ -55,7 +39,20 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  param
+  |> list.map(
+    fn(p) {
+      #(
+        p.0,
+        infra.blame_tag_attrs_2_v(
+          "add_between_tag_and_text_node__batch",
+          p.1,
+          p.2,
+        )
+      )
+    }
+  )
+  |> infra.dict_from_list_with_desugaring_error
 }
 
 type Param = List(#(String,                   String,          List(#(String, String))))
@@ -63,7 +60,7 @@ type Param = List(#(String,                   String,          List(#(String, St
 //                  insert new element        tag name         attributes for
 //                  between this tag          for new element  new element
 //                  and following text node
-type InnerParam = Dict(String, #(String, List(#(String, String))))
+type InnerParam = Dict(String, VXML)
 
 const name = "add_between_tag_and_text_node__batch"
 const constructor = add_between_tag_and_text_node__batch

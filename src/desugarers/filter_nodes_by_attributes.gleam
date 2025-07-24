@@ -1,4 +1,4 @@
-import desugarers/remove_outside_subtrees.{remove_outside_subtrees}
+import desugarers/delete_outside_subtrees.{delete_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -60,7 +60,7 @@ pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> fn(vxml) { Ok(vxml) }
-        _ -> remove_outside_subtrees(matches_a_selector(_, inner)).transform
+        _ -> delete_outside_subtrees(matches_a_selector(_, inner)).transform
       }
     }
   )

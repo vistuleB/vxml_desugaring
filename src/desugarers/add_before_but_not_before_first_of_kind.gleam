@@ -1,10 +1,8 @@
-import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, V}
-import blamedlines.{type Blame}
+import vxml.{type VXML, V}
 
 fn add_in_list(
   seen_da_tag_yet: Bool,
@@ -12,25 +10,15 @@ fn add_in_list(
   inner: InnerParam,
 ) -> List(VXML) {
   case upcoming {
+    [] -> []
     [V(_, tag, _, _) as first, ..rest] if tag == inner.0 -> {
       case seen_da_tag_yet {
-        False -> [
-          first,
-          ..add_in_list(True, rest, inner)
-        ]
-        True -> [
-          V(
-            inner.3,
-            inner.1,
-            inner.2,
-            [],
-          ),
-          first,
-          ..add_in_list(True, rest, inner),
-        ]
+        True ->
+          [inner.1, first, ..add_in_list(True, rest, inner)]
+        False ->
+          [first, ..add_in_list(True, rest, inner)]
       }
     }
-    [] -> []
     [first, ..rest] -> [first, ..add_in_list(seen_da_tag_yet, rest, inner)]
   }
 }
@@ -56,15 +44,13 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("add_before...first_of_kind_no_list")
   #(
     param.0,
-    param.1,
-    list.map(
+    infra.blame_tag_attrs_2_v(
+      "add_before_but_not_before_first_of_kind",
+      param.1,
       param.2,
-      fn(pair) { BlamedAttribute(blame, pair.0, pair.1) }
-    ),
-    blame,
+    )
   )
   |> Ok
 }
@@ -74,7 +60,7 @@ type Param = #(String,         String,          List(#(String, String)))
 //             insert          tag name         attributes
 //             before tags     of new
 //             of this name    element
-type InnerParam = #(String, String, List(BlamedAttribute), Blame)
+type InnerParam = #(String, VXML)
 
 const name = "add_before_but_not_before_first_of_kind"
 const constructor = add_before_but_not_before_first_of_kind
