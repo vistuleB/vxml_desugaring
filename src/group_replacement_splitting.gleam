@@ -117,14 +117,7 @@ fn split_if_t_with_replacement_in_nodes(
 // nodemap API
 // *****************
 
-pub fn split_if_t_with_replacement_no_list_nodemap(
-  vxml: VXML,
-  rule: RegexpWithGroupReplacementInstructions,
-) -> List(VXML) {
-  split_if_t_with_replacement_in_nodes([vxml], rule)
-}
-
-pub fn split_if_t_with_replacement_nodemap(
+pub fn split_if_t_with_replacement_nodemap__batch(
   vxml: VXML,
   rules: List(RegexpWithGroupReplacementInstructions),
 ) -> List(VXML) {
@@ -133,6 +126,13 @@ pub fn split_if_t_with_replacement_nodemap(
     [vxml],
     split_if_t_with_replacement_in_nodes,
   )
+}
+
+pub fn split_if_t_with_replacement_nodemap(
+  vxml: VXML,
+  rule: RegexpWithGroupReplacementInstructions,
+) -> List(VXML) {
+  split_if_t_with_replacement_in_nodes([vxml], rule)
 }
 
 // *****************

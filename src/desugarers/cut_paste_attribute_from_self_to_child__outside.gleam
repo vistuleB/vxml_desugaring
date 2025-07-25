@@ -43,18 +43,18 @@ fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
     nodemap(_, inner)
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.3)
+  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(outside)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String, String, String,     List(String))
-//             ↖       ↖       ↖           ↖
-//             parent  child   attribute   outside these subtrees
+type Param = #(String, String, String)
+//             ↖       ↖       ↖        
+//             parent  child   attribute
 type InnerParam = Param
 
 const name = "cut_paste_attribute_from_self_to_child__outside"
@@ -73,10 +73,11 @@ const constructor = cut_paste_attribute_from_self_to_child__outside
 /// 
 /// Returns early after encountering a node of tag
 /// 'parent_tag'.
-pub fn cut_paste_attribute_from_self_to_child__outside(param: Param) -> Desugarer {
+pub fn cut_paste_attribute_from_self_to_child__outside(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.Some(ins(outside)),
     "
 /// For all nodes with a given 'parent_tag',
 /// removes all attributes of a given key. If the 
@@ -90,7 +91,7 @@ pub fn cut_paste_attribute_from_self_to_child__outside(param: Param) -> Desugare
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
+      Ok(inner) -> transform_factory(inner, outside)
     }
   )
 }
@@ -98,10 +99,10 @@ pub fn cut_paste_attribute_from_self_to_child__outside(param: Param) -> Desugare
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataWithOutside(Param)) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_with_outside(name, assertive_tests_data(), constructor)
 }

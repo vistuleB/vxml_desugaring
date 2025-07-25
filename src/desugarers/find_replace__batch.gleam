@@ -33,6 +33,7 @@ pub fn find_replace__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// find and replace strings with other strings
     ",

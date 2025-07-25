@@ -72,6 +72,7 @@ pub fn append_attribute_if_child_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds an attribute-pair to a tag when it is the
 /// child of another specified tag; will not 

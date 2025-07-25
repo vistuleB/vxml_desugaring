@@ -123,6 +123,7 @@ pub fn prepend_append_to_text_children_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// prepends and appends text to all text children
 /// of specified tags

@@ -42,6 +42,7 @@ pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// filters by identifying nodes whose attributes
 /// match at least one of the given #(key, value)
@@ -53,7 +54,7 @@ pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> fn(vxml) { Ok(vxml) }
-        _ -> delete_outside_subtrees(matches_a_key_value_pair(_, inner)).transform
+        _ -> delete_outside_subtrees(#(matches_a_key_value_pair(_, inner), "")).transform
       }
     }
   )

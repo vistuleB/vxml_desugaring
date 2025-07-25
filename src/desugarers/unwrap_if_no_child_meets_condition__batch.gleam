@@ -51,6 +51,7 @@ pub fn unwrap_if_no_child_meets_condition__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// for a specified list of tag strings, unwraps
 /// nodes with tags from the list if the node does

@@ -62,6 +62,7 @@ pub fn delete_attribute_of__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// for all pairs #(tag_name, key_name) deletes the
 /// attribute of key key_name for all tags of tag

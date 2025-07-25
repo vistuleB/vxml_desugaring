@@ -52,6 +52,7 @@ pub fn rename(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// renames one tag
     ",

@@ -67,6 +67,7 @@ pub fn rename_with_attributes(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// renames tags and adds attributes to them
     ",

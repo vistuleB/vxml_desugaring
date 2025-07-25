@@ -26,7 +26,8 @@ fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -55,6 +56,7 @@ pub fn trim__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Removes starting spaces from first and ending
 /// spaces from last child of nodes with specified

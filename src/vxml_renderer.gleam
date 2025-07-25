@@ -428,6 +428,7 @@ pub type ThreePossibilities(f, g, h) {
 fn print_pipeline(desugarers: List(Desugarer)) {
   let none_param = "--"
   let max_param_cols = 55
+  let max_outside_cols = 55
 
   let lines = 
     desugarers
@@ -444,7 +445,18 @@ fn print_pipeline(desugarers: List(Desugarer)) {
             string.drop_end(param, excess + 3) <> "..."
           }
         }
-        #(ins(i + 1) <> ".", d.name, param)
+        let outside = case d.stringified_outside {
+          None -> none_param
+          Some(thing) -> thing
+        }
+        let outside = case string.length(outside) > max_outside_cols {
+          False -> outside
+          True -> {
+            let excess = string.length(outside) - max_outside_cols
+            string.drop_end(outside, excess + 3) <> "..."
+          }
+        }
+        #(ins(i + 1) <> ".", d.name, param, outside)
       }
     )
 
@@ -453,11 +465,11 @@ fn print_pipeline(desugarers: List(Desugarer)) {
   // io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
   io.println("• greetings! ur pipeline:")
 
-  star_block.three_column_table(
-    lines,
-    "#.",
-    "name",
-    "param",
+  star_block.four_column_table(
+    [
+      #("#.", "name", "param", "outside"),
+      ..lines,
+    ],
     2,
   )
 }

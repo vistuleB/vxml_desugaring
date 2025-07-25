@@ -77,6 +77,7 @@ pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Moves an attribute with key `key` from the first
 /// child of a node with tag `parent_tag` to the 

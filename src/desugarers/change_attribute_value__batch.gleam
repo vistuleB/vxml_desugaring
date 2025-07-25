@@ -72,6 +72,7 @@ pub fn change_attribute_value__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Used for changing the value of an attribute.
 /// Takes an attribute key and a replacement string 

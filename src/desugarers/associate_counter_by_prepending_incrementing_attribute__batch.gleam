@@ -108,6 +108,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute__batch(
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// For each #(tag, counter_name) pair in the 
 /// parameter list, this desugarer adds an 

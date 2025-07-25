@@ -435,6 +435,14 @@ pub fn quadruples_to_pairs_pairs(
   })
 }
 
+pub fn quad_drop_3rd(t: #(a, b, c, d)) -> #(a, b, d) {
+  #(t.0, t.1, t.3)
+}
+
+pub fn quad_drop_4th(t: #(a, b, c, d)) -> #(a, b, c) {
+  #(t.0, t.1, t.2)
+}
+
 pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
   l
   |> list.map(fn(t) {#(t.0, #(t.1, t.2))})
@@ -1865,6 +1873,13 @@ pub type AssertiveTestError {
   NonMatchingDesugarerName(String)
 }
 
+pub type AssertiveTestDataNoParam {
+  AssertiveTestDataNoParam(
+    source: String,
+    expected: String,
+  )
+}
+
 pub type AssertiveTestData(a) {
   AssertiveTestData(
     param: a,
@@ -1873,9 +1888,26 @@ pub type AssertiveTestData(a) {
   )
 }
 
+pub type AssertiveTestDataNoParamWithOutside {
+  AssertiveTestDataNoParamWithOutside(
+    outside: List(String),
+    source: String,
+    expected: String,
+  )
+}
+
+pub type AssertiveTestDataWithOutside(a) {
+  AssertiveTestDataWithOutside(
+    param: a,
+    outside: List(String),
+    source: String,
+    expected: String,
+  )
+}
+
 pub type AssertiveTest {
   AssertiveTest(
-    pipe: fn() -> Desugarer,
+    desugarer_factory: fn() -> Desugarer,
     source: String,   // VXML String
     expected: String, // VXML String
   )
@@ -1901,27 +1933,21 @@ fn remove_minimum_indent(s: String) -> String {
   lines |> list.map(fn(line) { line |> string.drop_start(minimum_indent) }) |> string.join("\n")
 }
 
-pub fn assertive_test_data_2_assertive_test(
-  data: AssertiveTestData(param),
-  pipe_factory: fn(param) -> Desugarer,
-) -> AssertiveTest {
-  AssertiveTest(
-    pipe: fn() { pipe_factory(data.param) },
-    source: data.source |> remove_minimum_indent,
-    expected: data.expected |> remove_minimum_indent
-  )
-}
-
-pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)), pipe: fn(a) -> Desugarer) -> AssertiveTests {
+pub fn assertive_tests_from_data_no_param(
+  name: String,
+  datas: List(AssertiveTestDataNoParam),
+  constructor: fn() -> Desugarer,
+) -> AssertiveTests {
   AssertiveTests(
     name: name,
     tests: fn() -> List(AssertiveTest) {
-      data
-      |> list.map(
-        fn(assertive_test_data) {
-          assertive_test_data_2_assertive_test(
-            assertive_test_data,
-            pipe,
+      list.map(
+        datas,
+        fn(data) {
+          AssertiveTest(
+            desugarer_factory: constructor,
+            source: data.source |> remove_minimum_indent,
+            expected: data.expected |> remove_minimum_indent
           )
         }
       )
@@ -1929,30 +1955,92 @@ pub fn assertive_tests_from_data(name: String, data: List(AssertiveTestData(a)),
   )
 }
 
-pub fn assertive_tests_from_data_nil_param(name: String, data: List(AssertiveTestData(a)), pipe: fn() -> Desugarer) -> AssertiveTests {
-  assertive_tests_from_data(name, data, fn(_) { pipe() })
+pub fn assertive_tests_from_data(
+  name: String,
+  datas: List(AssertiveTestData(a)),
+  constructor: fn(a) -> Desugarer,
+) -> AssertiveTests {
+  AssertiveTests(
+    name: name,
+    tests: fn() -> List(AssertiveTest) {
+      list.map(
+        datas,
+        fn(data) {
+          AssertiveTest(
+            desugarer_factory: fn() { constructor(data.param) },
+            source: data.source |> remove_minimum_indent,
+            expected: data.expected |> remove_minimum_indent
+          )
+        }
+      )
+    }
+  )
+}
+
+pub fn assertive_tests_from_data_no_param_with_outside(
+  name: String,
+  datas: List(AssertiveTestDataNoParamWithOutside),
+  constructor: fn(List(String)) -> Desugarer,
+) -> AssertiveTests {
+  AssertiveTests(
+    name: name,
+    tests: fn() -> List(AssertiveTest) {
+      list.map(
+        datas,
+        fn(data) {
+          AssertiveTest(
+            desugarer_factory: fn() { constructor(data.outside) },
+            source: data.source |> remove_minimum_indent,
+            expected: data.expected |> remove_minimum_indent
+          )
+        }
+      )
+    }
+  )
+}
+
+pub fn assertive_tests_from_data_with_outside(
+  name: String,
+  datas: List(AssertiveTestDataWithOutside(a)),
+  constructor: fn(a, List(String)) -> Desugarer,
+) -> AssertiveTests {
+  AssertiveTests(
+    name: name,
+    tests: fn() -> List(AssertiveTest) {
+      list.map(
+        datas,
+        fn(data) {
+          AssertiveTest(
+            desugarer_factory: fn() { constructor(data.param, data.outside) },
+            source: data.source |> remove_minimum_indent,
+            expected: data.expected |> remove_minimum_indent
+          )
+        }
+      )
+    }
+  )
 }
 
 pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
-  let pipe = tst.pipe()
+  let desugarer = tst.desugarer_factory()
 
   use <- on_true_on_false(
-    name != pipe.name,
-    Error(NonMatchingDesugarerName(pipe.name)),
+    name != desugarer.name,
+    Error(NonMatchingDesugarerName(desugarer.name)),
   )
 
   use input <- result.try(
-    vxml.unique_root_parse_string(tst.source, "test " <> pipe.name, False)
+    vxml.unique_root_parse_string(tst.source, "test " <> desugarer.name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
   use expected <- result.try(
-    vxml.unique_root_parse_string(tst.expected, "test " <> pipe.name, False)
+    vxml.unique_root_parse_string(tst.expected, "test " <> desugarer.name, False)
     |> result.map_error(fn(e) { VXMLParseError(e) })
   )
 
   use output <- result.try(
-    pipe.transform(input)
+    desugarer.transform(input)
     |> result.map_error(fn(e) { TestDesugaringError(e) })
   )
 
@@ -1960,7 +2048,7 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     True -> Ok(Nil)
     False -> Error(
       AssertiveTestError(
-        pipe.name,
+        desugarer.name,
         vxml.debug_vxml_to_string("(obtained) ", output),
         vxml.debug_vxml_to_string("(expected) ", expected),
       )
@@ -2033,6 +2121,7 @@ pub type Desugarer {
   Desugarer(
     name: String,
     stringified_param: Option(String),
+    stringified_outside: Option(String),
     docs: String,
     transform: DesugarerTransform,
   )

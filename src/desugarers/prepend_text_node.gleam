@@ -67,6 +67,7 @@ pub fn prepend_text_node(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Given arguments
 /// ```

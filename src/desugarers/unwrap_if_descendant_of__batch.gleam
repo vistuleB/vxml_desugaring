@@ -66,6 +66,7 @@ pub fn unwrap_if_descendant_of__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps tags that are the descendant of
 /// one of a stipulated list of tag names

@@ -50,6 +50,7 @@ pub fn unwrap_when_zero_or_one_children(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps based on tag name if node
 /// has zero or one children

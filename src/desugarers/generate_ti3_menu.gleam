@@ -231,7 +231,8 @@ const constructor = generate_ti3_menu
 pub fn generate_ti3_menu() -> Desugarer {
   Desugarer(
     name,
-    None,
+    option.None,
+    option.None,
     "
 /// generate ti3 Menu navigation with left and right
 /// menus containing previous/next chapter links,
@@ -248,10 +249,10 @@ pub fn generate_ti3_menu() -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

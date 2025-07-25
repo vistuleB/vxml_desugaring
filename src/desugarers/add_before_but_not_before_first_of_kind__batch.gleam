@@ -89,6 +89,7 @@ pub fn add_before_but_not_before_first_of_kind__batch(param: Param) -> Desugarer
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds new elements before specified tags but
 /// not before the first occurrence of the same kind

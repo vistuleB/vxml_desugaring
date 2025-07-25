@@ -70,6 +70,7 @@ pub fn unwrap_tags_with_no_text_descendant(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// for a specified list of tag strings, unwraps
 /// nodes with tags from the list if the node does

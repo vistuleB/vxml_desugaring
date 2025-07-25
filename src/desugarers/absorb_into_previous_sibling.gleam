@@ -64,6 +64,7 @@ pub fn absorb_into_previous_sibling(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
     ",
     case param_to_inner_param(param) {

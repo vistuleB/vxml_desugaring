@@ -72,6 +72,7 @@ pub fn append_attribute__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds attributes to tags
     ",

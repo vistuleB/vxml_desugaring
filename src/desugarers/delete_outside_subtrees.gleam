@@ -38,11 +38,16 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
+  Ok(param.0)
 }
 
-type Param = fn(VXML) -> Bool
-type InnerParam = Param
+type Param = #(fn(VXML) -> Bool,      String)
+//             ↖                      ↖
+//             a node is saved        description of
+//             iff one of its         the condition function
+//             ancestors fulfills     
+//             this condition
+type InnerParam = fn(VXML) -> Bool
 
 const name = "delete_outside_subtrees"
 const constructor = delete_outside_subtrees
@@ -56,6 +61,7 @@ const constructor = delete_outside_subtrees
 pub fn delete_outside_subtrees(param: Param) -> Desugarer {
   Desugarer(
     name,
+    option.Some(param.1),
     option.None,
     "
 /// removes nodes that are outside subtrees matching
@@ -74,7 +80,7 @@ pub fn delete_outside_subtrees(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: infra.is_v_and_tag_equals(_, "keep_this"),
+      param: #(infra.is_v_and_tag_equals(_, "keep_this"), "is_v_and_tag_equals(_, \"keep_this\")"),
       source:   "
                 <> R
                   <>

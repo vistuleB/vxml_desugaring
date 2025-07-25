@@ -67,6 +67,7 @@ pub fn unwrap_tags_if_attributes_match(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps tags if all specified attributes match
     ",

@@ -89,6 +89,7 @@ pub fn surround_elements_by(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// surrounds specified elements with above and below tags
 /// the three tuple elements:

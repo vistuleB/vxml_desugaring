@@ -58,6 +58,7 @@ pub fn replace_multiple_spaces_by_one() -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// replaces multiple consecutive spaces with a single space
     ",
@@ -71,10 +72,10 @@ pub fn replace_multiple_spaces_by_one() -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

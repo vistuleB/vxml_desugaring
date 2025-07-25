@@ -75,6 +75,7 @@ pub fn add_between_tag_and_text_node__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds new elements between specified tags and 
 /// following text nodes

@@ -93,6 +93,7 @@ pub fn compute_max_element_width(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// compute max element width
     ",

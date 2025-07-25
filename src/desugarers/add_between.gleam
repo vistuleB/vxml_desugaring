@@ -79,6 +79,7 @@ pub fn add_between(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds new elements between adjacent tags of
 /// specified types

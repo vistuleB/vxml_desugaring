@@ -62,6 +62,7 @@ pub fn find_replace_in_descendants_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// find and replace strings in text nodes that are
 /// descendants of specified ancestor tags

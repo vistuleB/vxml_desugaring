@@ -171,6 +171,7 @@ pub fn generate_lbp_table_of_contents(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// generates the LBP table of contents while
 /// admitting custom values for the root tag name

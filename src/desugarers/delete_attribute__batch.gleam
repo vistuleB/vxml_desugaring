@@ -49,6 +49,7 @@ pub fn delete_attribute__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// removes specified attributes from all elements
     ",

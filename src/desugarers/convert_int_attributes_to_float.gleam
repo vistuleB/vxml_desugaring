@@ -91,6 +91,7 @@ pub fn convert_int_attributes_to_float(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// converts int to float for all attributes keys
 /// that match one of the entries in 'param', per

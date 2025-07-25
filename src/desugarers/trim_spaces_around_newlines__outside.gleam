@@ -20,20 +20,20 @@ fn nodemap_factory() -> n2t.OneToOneNodeMap {
   nodemap
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(outside: List(String)) -> DesugarerTransform {
   nodemap_factory()
-  |> n2t.one_to_one_nodemap_2_desugarer_transform_with_forbidden(inner)
+  |> n2t.one_to_one_nodemap_2_desugarer_transform_with_forbidden(outside)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = List(String) // forbidden tags
-type InnerParam = Param
+type Param = Nil
+type InnerParam = Nil
 
-const name = "trim_spaces_around_newlines"
-const constructor = trim_spaces_around_newlines
+const name = "trim_spaces_around_newlines__outside"
+const constructor = trim_spaces_around_newlines__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -42,18 +42,19 @@ const constructor = trim_spaces_around_newlines
 /// trims spaces around newlines in text nodes
 /// outside of subtrees rooted at tags given by the
 /// param argument
-pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
+pub fn trim_spaces_around_newlines__outside(outside: List(String)) -> Desugarer {
   Desugarer(
     name,
+    option.None,
     option.None,
     "
 /// trims spaces around newlines in text nodes
 /// outside of subtrees rooted at tags given by the
 /// param argument
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
+      Ok(_) -> transform_factory(outside)
     }
   )
 }
@@ -61,10 +62,10 @@ pub fn trim_spaces_around_newlines(param: Param) -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParamWithOutside) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param_with_outside(name, assertive_tests_data(), constructor)
 }

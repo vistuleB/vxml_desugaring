@@ -202,6 +202,7 @@ pub fn generate_ti2_table_of_contents_html(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// generates HTML table of contents for TI2 content
 /// with sections

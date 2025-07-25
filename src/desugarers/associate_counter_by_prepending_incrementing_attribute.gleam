@@ -105,6 +105,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute(
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Given arguments
 /// ```

@@ -110,6 +110,7 @@ pub fn reinsert_math_dollar(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// reinserts dollar delimiters into Math and
 /// MathBlock elements

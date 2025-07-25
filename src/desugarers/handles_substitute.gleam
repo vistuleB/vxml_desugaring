@@ -307,6 +307,7 @@ pub fn handles_substitute(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Expects a document with root 'GrandWrapper' 
 /// whose attributes comprise of key-value pairs of

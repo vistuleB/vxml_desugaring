@@ -50,6 +50,7 @@ pub fn reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node(par
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// reassigns text node blame to the blame of the
 /// first nonempty line in the text node

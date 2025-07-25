@@ -47,7 +47,7 @@ fn split_pair_fold_for_delimiter_pair_no_list(
     True -> {
       let #(g, tag, original) = split_pair_fold_data(d1)
       [
-        dl.regex_split_and_replace__outside(#(g, forbidden)),
+        dl.regex_split_and_replace__outside(g, forbidden),
         dl.pair(#(tag, tag, wrapper)),
         dl.fold_tag_into_text(#(tag, original))
       ]
@@ -56,8 +56,8 @@ fn split_pair_fold_for_delimiter_pair_no_list(
       let #(g1, tag1, replacement1) = split_pair_fold_data(d1)
       let #(g2, tag2, replacement2) = split_pair_fold_data(d2)
       [
-        dl.regex_split_and_replace__outside(#(g1, forbidden)),
-        dl.regex_split_and_replace__outside(#(g2, forbidden)),
+        dl.regex_split_and_replace__outside(g1, forbidden),
+        dl.regex_split_and_replace__outside(g2, forbidden),
         dl.pair(#(tag1, tag2, wrapper)),
         dl.fold_tag_into_text(#(tag1, replacement1)),
         dl.fold_tag_into_text(#(tag2, replacement2)),
@@ -83,16 +83,16 @@ fn split_pair_fold_for_delimiter_pair(
     True -> {
       let #(g, tag, original) = split_pair_fold_data(d1)
       [
-        dl.regex_split_and_replace__batch__outside(#([g], forbidden)),
+        dl.regex_split_and_replace__outside(g, forbidden),
         dl.pair(#(tag, tag, wrapper)),
-        dl.fold_tag_into_text__batch([#(tag, original)])
+        dl.fold_tag_into_text(#(tag, original))
       ]
     }
     False -> {
       let #(g1, tag1, replacement1) = split_pair_fold_data(d1)
       let #(g2, tag2, replacement2) = split_pair_fold_data(d2)
       [
-        dl.regex_split_and_replace__batch__outside(#([g1, g2], forbidden)),
+        dl.regex_split_and_replace__batch__outside([g1, g2], forbidden),
         dl.pair(#(tag1, tag2, wrapper)),
         dl.fold_tag_into_text__batch([#(tag1, replacement1), #(tag2, replacement2)])
       ]
@@ -201,9 +201,9 @@ pub fn symmetric_delim_splitting_no_list(
 
   [
     dl.identity(),
-    dl.regex_split_and_replace__outside(#(opening_or_closing_grs, forbidden)),
-    dl.regex_split_and_replace__outside(#(opening_grs, forbidden)),
-    dl.regex_split_and_replace__outside(#(closing_grs, forbidden)),
+    dl.regex_split_and_replace__outside(opening_or_closing_grs, forbidden),
+    dl.regex_split_and_replace__outside(opening_grs, forbidden),
+    dl.regex_split_and_replace__outside(closing_grs, forbidden),
     dl.pair_list_list(#(
       ["OpeningSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
       ["ClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
@@ -245,7 +245,7 @@ pub fn symmetric_delim_splitting(
   ])
 
   [
-    dl.regex_split_and_replace__batch__outside(#([opening_or_closing_grs, opening_grs, closing_grs], forbidden)),
+    dl.regex_split_and_replace__batch__outside([opening_or_closing_grs, opening_grs, closing_grs], forbidden),
     dl.pair_list_list(#(
       ["OpeningSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
       ["ClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
@@ -280,8 +280,8 @@ pub fn asymmetric_delim_splitting_no_list(
   ])
 
   [
-    dl.regex_split_and_replace__outside(#(opening_grs, forbidden)),
-    dl.regex_split_and_replace__outside(#(closing_grs, forbidden)),
+    dl.regex_split_and_replace__outside(opening_grs, forbidden),
+    dl.regex_split_and_replace__outside(closing_grs, forbidden),
     dl.pair(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag)),
     dl.fold_tag_into_text(#("OpeningAsymmetricDelim", opening_ordinary_form)),
     dl.fold_tag_into_text(#("ClosingAsymmetricDelim", closing_ordinary_form)),
@@ -314,7 +314,7 @@ pub fn asymmetric_delim_splitting(
   ])
 
   [
-    dl.regex_split_and_replace__batch__outside(#([opening_grs, closing_grs], forbidden)),
+    dl.regex_split_and_replace__batch__outside([opening_grs, closing_grs], forbidden),
     dl.pair(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag )),
     dl.fold_tag_into_text__batch([
       #("OpeningAsymmetricDelim", opening_ordinary_form),
@@ -335,7 +335,7 @@ pub fn barbaric_symmetric_delim_splitting(
 ) -> List(Desugarer) {
   let opening_or_closing_grs = grs.unescaped_suffix_replacement_splitter(delim_regex_form, "OpeningOrClosingSymmetricDelim")
   [
-    dl.regex_split_and_replace__outside(#(opening_or_closing_grs, forbidden)),
+    dl.regex_split_and_replace__outside(opening_or_closing_grs, forbidden),
     dl.pair(#("OpeningOrClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim", tag)),
     dl.fold_tag_into_text(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form))
   ]

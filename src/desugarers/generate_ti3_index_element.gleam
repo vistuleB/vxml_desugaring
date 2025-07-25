@@ -293,6 +293,7 @@ pub fn generate_ti3_index_element() -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// Generate ti3 Index element
     ",
@@ -306,10 +307,10 @@ pub fn generate_ti3_index_element() -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

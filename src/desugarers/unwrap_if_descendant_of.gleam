@@ -59,6 +59,7 @@ pub fn unwrap_if_descendant_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps a given tag when it is the descendant of
 /// one of a stipulated list of tags

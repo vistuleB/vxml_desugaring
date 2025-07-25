@@ -57,6 +57,7 @@ pub fn concatenate_tags(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// concatenates adjacent tags with the same name
     ",

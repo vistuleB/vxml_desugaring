@@ -77,6 +77,7 @@ pub fn append_class_to_children_with_tag(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// appends a class to children with a specific tag
 /// when they are children of a specified parent tag.

@@ -84,6 +84,7 @@ pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Given arguments
 /// ```

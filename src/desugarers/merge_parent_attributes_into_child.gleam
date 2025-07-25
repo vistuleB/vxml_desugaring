@@ -139,6 +139,7 @@ pub fn merge_parent_attributes_into_child(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// merges parent attributes into child elements for
 /// specified parent-child tag pairs

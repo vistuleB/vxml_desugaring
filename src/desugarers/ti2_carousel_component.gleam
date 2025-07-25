@@ -76,6 +76,7 @@ pub fn ti2_carousel_component(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(Nil)),
+    option.None,
     "
 /// converts Bootstrap carousel components to custom
 /// Carousel components

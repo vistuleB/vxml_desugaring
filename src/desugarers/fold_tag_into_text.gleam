@@ -403,6 +403,7 @@ pub fn fold_tag_into_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// seemingly replaces specified tags by specified
 /// strings that are glued to surrounding text nodes

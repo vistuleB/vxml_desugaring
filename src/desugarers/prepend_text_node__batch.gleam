@@ -61,6 +61,7 @@ pub fn prepend_text_node__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// prepends text to the beginning of specified tags
     ",

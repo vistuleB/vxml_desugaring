@@ -78,6 +78,7 @@ pub fn append_class_to_children_with_class(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// checks all children of a given parent tag for
 /// existence of a specific class value and if found,

@@ -1,7 +1,6 @@
 import blamedlines.{type Blame}
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V, T, BlamedContent}
@@ -106,14 +105,15 @@ const constructor = detokenize_all
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// 
-pub fn detokenize_all(param: Param) -> Desugarer {
+pub fn detokenize_all() -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.None,
+    option.None,
     "
 /// 
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -123,10 +123,9 @@ pub fn detokenize_all(param: Param) -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   [
-    infra.AssertiveTestData(
-      param: Nil,
+    infra.AssertiveTestDataNoParam(
       source: "
             <> testing
               <> bb
@@ -162,5 +161,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

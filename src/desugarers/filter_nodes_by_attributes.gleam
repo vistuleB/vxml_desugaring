@@ -47,6 +47,7 @@ pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// filters by identifying nodes whose
 /// blame.filename contain the extra.path as a 
@@ -60,7 +61,7 @@ pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> fn(vxml) { Ok(vxml) }
-        _ -> delete_outside_subtrees(matches_a_selector(_, inner)).transform
+        _ -> delete_outside_subtrees(#(matches_a_selector(_, inner), "")).transform
       }
     }
   )

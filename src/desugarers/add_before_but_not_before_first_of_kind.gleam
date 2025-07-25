@@ -77,6 +77,7 @@ pub fn add_before_but_not_before_first_of_kind(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds a specified tag before each occurrence of
 /// some specified other tag, except when the latter

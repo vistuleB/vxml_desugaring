@@ -62,6 +62,7 @@ pub fn insert_bookend_text_if_no_attributes(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// inserts bookend text at the beginning and end of
 /// specified tags that have no attributes

@@ -313,6 +313,7 @@ pub fn normalize_begin_end_align(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 
 /// adds delimiters around \\begin{align} and

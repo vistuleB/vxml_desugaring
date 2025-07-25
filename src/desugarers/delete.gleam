@@ -47,6 +47,7 @@ pub fn delete(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// removes tags entirely (tag and children)
     ",

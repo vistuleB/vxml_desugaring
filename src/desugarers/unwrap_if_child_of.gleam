@@ -71,6 +71,7 @@ pub fn unwrap_if_child_of(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwrap nodes based on parent-child
 /// relationships

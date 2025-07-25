@@ -69,6 +69,7 @@ pub fn insert_bookend_tags(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// inserts bookend tags at the beginning and end of
 /// specified tags

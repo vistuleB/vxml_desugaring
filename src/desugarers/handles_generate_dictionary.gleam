@@ -239,6 +239,7 @@ pub fn handles_generate_dictionary(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// Looks for `handle` attributes in the V nodes
 /// that are expected to be in form

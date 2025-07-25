@@ -741,6 +741,7 @@ pub fn rearrange_links(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// matches appearance of first String while 
 /// considering (x) as a variable and replaces it 

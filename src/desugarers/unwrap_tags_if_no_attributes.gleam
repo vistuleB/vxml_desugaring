@@ -49,6 +49,7 @@ pub fn unwrap_tags_if_no_attributes(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps specified tags if they have no attributes
     ",

@@ -86,6 +86,7 @@ pub fn auto_generate_child_if_missing_from_attribute(param: Param) -> Desugarer 
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Given arguments
 /// ```

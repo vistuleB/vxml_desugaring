@@ -57,6 +57,7 @@ pub fn encode_spaces_in_first_and_last_child(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// encodes spaces in first and last child of
 /// specified tags

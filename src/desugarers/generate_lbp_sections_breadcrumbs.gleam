@@ -180,6 +180,7 @@ pub fn generate_lbp_sections_breadcrumbs(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "...",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

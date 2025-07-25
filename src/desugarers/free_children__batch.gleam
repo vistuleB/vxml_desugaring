@@ -106,6 +106,7 @@ pub fn free_children__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// given a parent-child structure of the form
 ///

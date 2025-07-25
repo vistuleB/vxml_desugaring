@@ -77,6 +77,7 @@ pub fn cut_paste_attribute_from_self_to_child(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// For all nodes with a given 'parent_tag',
 /// removes all attributes of a given key. If the 

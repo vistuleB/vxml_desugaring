@@ -165,6 +165,7 @@ pub fn generate_lbp_breadcrumbs() -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "...",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
@@ -176,10 +177,10 @@ pub fn generate_lbp_breadcrumbs() -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_nil_param(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

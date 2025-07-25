@@ -42,6 +42,7 @@ pub fn delete_if_empty(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// deletes childless nodes of the given tag
     ",

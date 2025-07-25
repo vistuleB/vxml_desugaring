@@ -69,6 +69,7 @@ pub fn rename_with_appended_attributes_and_prepended_text(param: Param) -> Desug
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// renames tags while adding attributes and
 /// prepending a new text node as the first child

@@ -43,15 +43,16 @@ const constructor = correct_parsed_html_tags
 //------------------------------------------------53
 /// corrects parsed HTML tags by removing 
 /// surrounding angle brackets
-pub fn correct_parsed_html_tags(param: Param) -> Desugarer {
+pub fn correct_parsed_html_tags() -> Desugarer {
   Desugarer(
     name,
+    option.None,
     option.None,
     "
 /// corrects parsed HTML tags by removing
 /// surrounding angle brackets
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
     }
@@ -61,10 +62,10 @@ pub fn correct_parsed_html_tags(param: Param) -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

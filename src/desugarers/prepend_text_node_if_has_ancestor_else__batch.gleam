@@ -76,6 +76,7 @@ pub fn prepend_text_node_if_has_ancestor_else__batch(param: Param) -> Desugarer 
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// prepend one of two specified text fragments to
 /// nodes of a certain tag depending on wether the 

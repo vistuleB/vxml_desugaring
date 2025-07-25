@@ -127,6 +127,7 @@ pub fn strip_math_delimiters_inside(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Strips all Latex delimiters inside a targeted
 /// tag name. If called with tag \"MathBlock\", for

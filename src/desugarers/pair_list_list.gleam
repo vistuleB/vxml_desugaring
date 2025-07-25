@@ -270,6 +270,7 @@ pub fn pair_list_list(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// pairs opening and closing bookend tags by
 /// wrapping content between them in an enclosing

@@ -68,7 +68,7 @@ import desugarers/generate_ti2_table_of_contents
 import desugarers/generate_ti2_table_of_contents_html
 import desugarers/generate_ti3_index_element
 import desugarers/generate_ti3_menu
-import desugarers/group_consecutive_children_avoiding
+import desugarers/group_consecutive_children__outside
 import desugarers/handles_generate_dictionary
 import desugarers/handles_generate_ids
 import desugarers/handles_substitute
@@ -115,7 +115,7 @@ import desugarers/trim
 import desugarers/trim__batch
 import desugarers/trim_empty_lines
 import desugarers/trim_empty_lines__batch
-import desugarers/trim_spaces_around_newlines
+import desugarers/trim_spaces_around_newlines__outside
 import desugarers/unwrap
 import desugarers/unwrap__batch
 import desugarers/unwrap_if_child_of
@@ -131,7 +131,7 @@ import desugarers/unwrap_tags_with_no_text_descendant
 import desugarers/unwrap_when_zero_or_one_children
 import desugarers/wrap_adjacent_non_whitespace_text_with
 import desugarers/wrap_children_before_in
-import desugarers/wrap_element_children
+import desugarers/wrap_each_child
 
 pub const absorb_into_previous_sibling = absorb_into_previous_sibling.absorb_into_previous_sibling
 pub const add_after_but_not_after_last_child__batch = add_after_but_not_after_last_child__batch.add_after_but_not_after_last_child__batch
@@ -202,7 +202,7 @@ pub const generate_ti2_table_of_contents = generate_ti2_table_of_contents.genera
 pub const generate_ti2_table_of_contents_html = generate_ti2_table_of_contents_html.generate_ti2_table_of_contents_html
 pub const generate_ti3_index_element = generate_ti3_index_element.generate_ti3_index_element
 pub const generate_ti3_menu = generate_ti3_menu.generate_ti3_menu
-pub const group_consecutive_children_avoiding = group_consecutive_children_avoiding.group_consecutive_children_avoiding
+pub const group_consecutive_children__outside = group_consecutive_children__outside.group_consecutive_children__outside
 pub const handles_generate_dictionary = handles_generate_dictionary.handles_generate_dictionary
 pub const handles_generate_ids = handles_generate_ids.handles_generate_ids
 pub const handles_substitute = handles_substitute.handles_substitute
@@ -249,7 +249,7 @@ pub const trim = trim.trim
 pub const trim__batch = trim__batch.trim__batch
 pub const trim_empty_lines = trim_empty_lines.trim_empty_lines
 pub const trim_empty_lines__batch = trim_empty_lines__batch.trim_empty_lines__batch
-pub const trim_spaces_around_newlines = trim_spaces_around_newlines.trim_spaces_around_newlines
+pub const trim_spaces_around_newlines__outside = trim_spaces_around_newlines__outside.trim_spaces_around_newlines__outside
 pub const unwrap = unwrap.unwrap
 pub const unwrap__batch = unwrap__batch.unwrap__batch
 pub const unwrap_if_child_of = unwrap_if_child_of.unwrap_if_child_of
@@ -265,7 +265,7 @@ pub const unwrap_tags_with_no_text_descendant = unwrap_tags_with_no_text_descend
 pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.unwrap_when_zero_or_one_children
 pub const wrap_adjacent_non_whitespace_text_with = wrap_adjacent_non_whitespace_text_with.wrap_adjacent_non_whitespace_text_with
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
-pub const wrap_element_children = wrap_element_children.wrap_element_children
+pub const wrap_each_child = wrap_each_child.wrap_each_child
 
 pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_into_previous_sibling.assertive_tests,
@@ -337,7 +337,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   generate_ti2_table_of_contents_html.assertive_tests,
   generate_ti3_index_element.assertive_tests,
   generate_ti3_menu.assertive_tests,
-  group_consecutive_children_avoiding.assertive_tests,
+  group_consecutive_children__outside.assertive_tests,
   handles_generate_dictionary.assertive_tests,
   handles_generate_ids.assertive_tests,
   handles_substitute.assertive_tests,
@@ -384,7 +384,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   trim__batch.assertive_tests,
   trim_empty_lines.assertive_tests,
   trim_empty_lines__batch.assertive_tests,
-  trim_spaces_around_newlines.assertive_tests,
+  trim_spaces_around_newlines__outside.assertive_tests,
   unwrap.assertive_tests,
   unwrap__batch.assertive_tests,
   unwrap_if_child_of.assertive_tests,
@@ -400,5 +400,5 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   unwrap_when_zero_or_one_children.assertive_tests,
   wrap_adjacent_non_whitespace_text_with.assertive_tests,
   wrap_children_before_in.assertive_tests,
-  wrap_element_children.assertive_tests,
+  wrap_each_child.assertive_tests,
 ]

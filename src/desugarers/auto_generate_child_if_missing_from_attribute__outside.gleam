@@ -47,19 +47,19 @@ fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.3)
+  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(outside)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String, String, String,     List(String))
-//             ↖       ↖       ↖           ↖
-//             parent  child   attribute   stay outside of
-//             tag     tag                 these subtrees
+type Param = #(String, String, String)
+//             ↖       ↖       ↖        
+//             parent  child   attribute
+//             tag     tag              
 type InnerParam = Param
 
 const name = "auto_generate_child_if_missing_from_attribute__outside"
@@ -84,10 +84,11 @@ const constructor = auto_generate_child_if_missing_from_attribute__outside
 /// 
 /// Stays outside of trees rooted at tags in last
 /// argument given to function.
-pub fn auto_generate_child_if_missing_from_attribute__outside(param: Param) -> Desugarer {
+pub fn auto_generate_child_if_missing_from_attribute__outside(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.Some(ins(outside)),
     "
 /// Given first 3 arguments
 /// ```
@@ -107,7 +108,7 @@ pub fn auto_generate_child_if_missing_from_attribute__outside(param: Param) -> D
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
+      Ok(inner) -> transform_factory(inner, outside)
     }
   )
 }
@@ -115,10 +116,10 @@ pub fn auto_generate_child_if_missing_from_attribute__outside(param: Param) -> D
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataWithOutside(Param)) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_with_outside(name, assertive_tests_data(), constructor)
 }

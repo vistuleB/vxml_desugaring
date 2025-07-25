@@ -57,6 +57,7 @@ pub fn append_attribute(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds attributes to tags
     ",

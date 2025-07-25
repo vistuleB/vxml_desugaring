@@ -98,6 +98,7 @@ pub fn break_lines_into_span_tooltips(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// breaks lines into span tooltips with location
 /// information

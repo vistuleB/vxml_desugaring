@@ -47,6 +47,7 @@ pub fn delete_if_empty__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// deletes nodes that have no children for tose 
 /// tags in the given list

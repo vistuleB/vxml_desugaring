@@ -83,6 +83,7 @@ pub fn add_after_but_not_after_last_child__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds new elements after specified tags but not 
 /// if they are the last child

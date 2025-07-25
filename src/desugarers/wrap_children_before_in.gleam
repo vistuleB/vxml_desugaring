@@ -1,17 +1,21 @@
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms as n2t
+import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue, GoBack } as n2t
 import vxml.{type VXML, V}
 
-fn children_before(children: List(VXML), before_tag: String, acc: List(VXML)) -> #(List(VXML), List(VXML)) {
+fn children_up_to_not_including(
+  children: List(VXML),
+  stop_tag: String,
+  acc: List(VXML),
+) -> #(List(VXML), List(VXML)) {
   case children {
     [] -> #([], [])
     [first, ..rest] -> {
       case first {
-        V(_, tag, _, _) if tag == before_tag -> #(acc, children)
+        V(_, tag, _, _) if tag == stop_tag -> #(acc, children)
         _ -> {
-          let #(acc, rest) = children_before(rest, before_tag, acc)
+          let #(acc, rest) = children_up_to_not_including(rest, stop_tag, acc)
           #([first, ..acc], rest)
         }
       }
@@ -22,38 +26,34 @@ fn children_before(children: List(VXML), before_tag: String, acc: List(VXML)) ->
 fn nodemap(
   node: VXML,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
-  let #(parent_tag, stop_tag, wrapper_tag) = inner
+) -> #(VXML, TrafficLight) {
   case node {
-    V(b, tag, att, children) if tag == parent_tag -> {
-        let #(before, after) = children_before(children, stop_tag, [])
-        let children = [
-          V(b, wrapper_tag, [], before),
-          ..after,
-        ]
-        Ok(V(b, tag, att, children))
+    V(blame, tag, _, children) if tag == inner.0 -> {
+        let #(before, after) = children_up_to_not_including(children, inner.2, [])
+        let children = [V(blame, inner.1, [], before), ..after]
+        #(V(..node, children: children), GoBack)
     }
-    _ -> Ok(node)
+    _ -> #(node, Continue)
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String, String, String)
-//            ↖       ↖       ↖
-//            parent  stop    wrapper
-//            tag     tag     tag
-
+type Param = #(String,  String,  String)
+//             ↖        ↖        ↖
+//             parent   wrapper  stop
+//             tag      tag      tag
 type InnerParam = Param
 
 const name = "wrap_children_before_in"
@@ -63,15 +63,28 @@ const constructor = wrap_children_before_in
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// Wraps children of a node that appear 
-/// before a certain child
+/// For a specified parent tag, wraps all children
+/// from the first up to but not including the first
+/// child with a specified "stop tag" into a given
+/// wrapper tag.
+/// 
+/// Will create an empty wrapper in case the stop
+/// tag is immediately encountered, or there are no
+/// children.
 pub fn wrap_children_before_in(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
-/// Wraps children of a node that appear 
-/// before a certain child
+/// For a specified parent tag, wraps all children
+/// from the first up to but not including the first
+/// child with a specified \"stop tag\" into a given
+/// wrapper tag.
+/// 
+/// Will create an empty wrapper in case the stop
+/// tag is immediately encountered, or there are no
+/// children.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

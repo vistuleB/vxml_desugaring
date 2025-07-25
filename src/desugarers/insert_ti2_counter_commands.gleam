@@ -147,6 +147,7 @@ pub fn insert_ti2_counter_commands(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// inserts TI2 counter commands into text nodes of specified elements
 /// # Param:

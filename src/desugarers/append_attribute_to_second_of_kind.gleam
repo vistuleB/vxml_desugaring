@@ -46,7 +46,6 @@ const constructor = append_attribute_to_second_of_kind
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-
 /// Adds the specified attribute-value pair to nodes
 /// with the given tag name when the previous
 /// sibling is also a node with the same tag name
@@ -54,6 +53,7 @@ pub fn append_attribute_to_second_of_kind(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Adds the specified attribute-value pair to nodes
 /// with the given tag name when the previous

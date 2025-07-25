@@ -120,6 +120,7 @@ pub fn normalize_math_delimiters_inside(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// adds flexiblilty to user's custom
 /// mathblock element

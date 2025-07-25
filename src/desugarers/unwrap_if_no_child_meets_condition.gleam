@@ -50,6 +50,7 @@ pub fn unwrap_if_no_child_meets_condition(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps nodes of a specified tag if none of its
 /// children meet a boolean condition

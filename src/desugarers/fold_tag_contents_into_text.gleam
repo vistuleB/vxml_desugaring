@@ -397,6 +397,7 @@ pub fn fold_tag_contents_into_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// seemingly replaces specified tags by their 
 /// contents (like 'unwrap'), but with the first/last

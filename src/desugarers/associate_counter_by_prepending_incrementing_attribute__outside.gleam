@@ -47,9 +47,9 @@ fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(inner.3)
+  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(outside)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -61,17 +61,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       ".",
       "::++" <> param.1,
     ),
-    param.2,
   )
   |> Ok
 }
 
-type Param = #(String, String,         List(String))
-//             ↖       ↖               ↖
-//             tag     counter_name    outside of
-//                                     subtrees rooted
-//                                     at these nodes
-type InnerParam = #(String, String, BlamedAttribute, List(String))
+type Param = #(String, String)
+//             ↖       ↖           
+//             tag     counter_name
+//                                 
+//                                 
+type InnerParam = #(String, String, BlamedAttribute)
 
 const name = "associate_counter_by_prepending_incrementing_attribute__outside"
 const constructor = associate_counter_by_prepending_incrementing_attribute__outside
@@ -104,10 +103,12 @@ const constructor = associate_counter_by_prepending_incrementing_attribute__outs
 /// Early-Returns from 'tag_name' nodes.
 pub fn associate_counter_by_prepending_incrementing_attribute__outside(
   param: Param,
+  outside: List(String),
 ) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.Some(ins(outside)),
     "
 /// Given arguments
 /// ```
@@ -134,7 +135,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute__outside(
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
+      Ok(inner) -> transform_factory(inner, outside)
     },
   )
 }
@@ -142,10 +143,10 @@ pub fn associate_counter_by_prepending_incrementing_attribute__outside(
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataWithOutside(Param)) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_with_outside(name, assertive_tests_data(), constructor)
 }

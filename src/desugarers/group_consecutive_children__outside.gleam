@@ -28,7 +28,7 @@ fn nodemap(
           fn(x){x},
           fn(consecutive_siblings) {
             V(
-              inner.3, // Blame
+              inner.2, // Blame
               inner.0, // wrapper tag
               [],
               consecutive_siblings,
@@ -44,27 +44,28 @@ fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden_self_first(inner.2)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden_self_first(outside)
 }
 
-fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  case list.contains(param.2, param.0) {
-    True -> Ok(#(param.0, param.1, param.2, infra.blame_us("group_consecutive")))
+fn param_to_inner_param(param: Param, outside: List(String)) -> Result(InnerParam, DesugaringError) {
+  let blame = infra.blame_us("group_consecutive_cildren")
+  case list.contains(outside, param.0) {
+    True -> Ok(#(param.0, param.1, blame))
     False -> Error(DesugaringError(infra.no_blame, "the wrapper must be included either in the list of things not to be contained in in order to avoid infinite recursion"))
   }
 }
 
-type Param = #(String,   List(String), List(String))
-//             ↖         ↖             ↖
-//             wrapper   do not        stay outside
-//                       wrap          these subtrees
+type Param = #(String,   List(String))
+//             ↖         ↖           
+//             wrapper   do not      
+//                       wrap        
 //                       these
-type InnerParam = #(String, List(String), List(String), Blame)
+type InnerParam = #(String, List(String), Blame)
 
-const name = "group_consecutive_children_avoiding"
-const constructor = group_consecutive_children_avoiding
+const name = "group_consecutive_children__outside"
+const constructor = group_consecutive_children__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -81,10 +82,11 @@ const constructor = group_consecutive_children_avoiding
 /// dont_wrap_these with a wrapper_tag node, while 
 /// not processing subtrees rooted at nodes of tag 
 /// dont_enter_here untouched; see tests
-pub fn group_consecutive_children_avoiding(param: Param) -> Desugarer {
+pub fn group_consecutive_children__outside(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.Some(ins(outside)),
     "
 /// when called with params
 /// 
@@ -98,9 +100,9 @@ pub fn group_consecutive_children_avoiding(param: Param) -> Desugarer {
 /// not processing subtrees rooted at nodes of tag 
 /// dont_enter_here untouched; see tests
     ",
-    case param_to_inner_param(param) {
+    case param_to_inner_param(param, outside) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
+      Ok(inner) -> transform_factory(inner, outside)
     }
   )
 }
@@ -108,10 +110,11 @@ pub fn group_consecutive_children_avoiding(param: Param) -> Desugarer {
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataWithOutside(Param)) {
   [
-    infra.AssertiveTestData(
-      param: #("wrapper", ["A", "B"], ["B", "C", "wrapper"]),
+    infra.AssertiveTestDataWithOutside(
+      param: #("wrapper", ["A", "B"]),
+      outside: ["B", "C", "wrapper"],
       source:   "
                 <> root
                   <> x
@@ -145,5 +148,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_with_outside(name, assertive_tests_data(), constructor)
 }

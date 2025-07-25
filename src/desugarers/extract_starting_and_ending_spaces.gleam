@@ -48,6 +48,7 @@ pub fn extract_starting_and_ending_spaces(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// extracts starting and ending spaces from
 /// specified tags into separate text nodes

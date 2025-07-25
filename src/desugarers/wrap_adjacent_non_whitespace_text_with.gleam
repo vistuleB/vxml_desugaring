@@ -1,5 +1,6 @@
 import gleam/list
 import gleam/option
+import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
@@ -108,9 +109,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String,      String)
-//             ↖            ↖
-//             tag to       wrapper tag
+type Param = #(String,     String)
+//             ↖           ↖
+//             tag to      wrapper tag
 //             be wrapped
 type InnerParam = Param
 
@@ -156,6 +157,7 @@ const constructor = wrap_adjacent_non_whitespace_text_with
 pub fn wrap_adjacent_non_whitespace_text_with(param: Param) -> Desugarer {
   Desugarer(
     name,
+    option.Some(ins(param)),
     option.None,
     "
 /// Globs all non-whitespace characters surrounding

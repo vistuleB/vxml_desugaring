@@ -58,6 +58,7 @@ pub fn prepend_append_text__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// inserts text at the beginning and end of
 /// specified tags

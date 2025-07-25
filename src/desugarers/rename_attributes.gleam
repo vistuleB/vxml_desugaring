@@ -55,6 +55,7 @@ pub fn rename_attributes(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// renames attribute keys
     ",

@@ -64,6 +64,7 @@ pub fn unwrap_tag_when_parent_of_tag(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps parent tag when it contains specified child tag
     ",

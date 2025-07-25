@@ -62,6 +62,7 @@ pub fn unwrap_tags_with_no_text_child(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// unwraps tags that contain no text children
     ",

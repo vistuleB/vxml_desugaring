@@ -51,6 +51,7 @@ pub fn unwrap__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// to 'unwrap' a tag means to replace the
 /// tag by its children (replace a V- VXML node by

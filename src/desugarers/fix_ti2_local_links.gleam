@@ -69,6 +69,7 @@ pub fn fix_ti2_local_links(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// fixes local links in TI2 content by converting
 /// relative paths to absolute URLs

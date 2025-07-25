@@ -60,6 +60,7 @@ pub fn replace_in_attribute_values(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// performs exact match find-replace in every
 /// attribute value of every node using the

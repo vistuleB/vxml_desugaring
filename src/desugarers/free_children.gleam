@@ -98,6 +98,7 @@ pub fn free_children(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// given a parent-child structure of the form
 ///

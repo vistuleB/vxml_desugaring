@@ -92,6 +92,7 @@ pub fn rename_if_child_of__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// renames tags when they appear as children of a
 /// specified parent tag

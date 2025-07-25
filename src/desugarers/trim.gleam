@@ -54,6 +54,7 @@ pub fn trim(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
+    option.None,
     "
 /// Removes starting spaces from first and ending
 /// spaces from last child of nodes with specified

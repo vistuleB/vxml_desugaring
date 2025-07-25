@@ -50,6 +50,7 @@ pub fn rename_attributes_by_function(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
+    option.None,
     "
 /// renames attribute keys using a provided
 /// transformation function
