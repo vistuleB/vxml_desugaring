@@ -443,6 +443,14 @@ pub fn quad_drop_4th(t: #(a, b, c, d)) -> #(a, b, c) {
   #(t.0, t.1, t.2)
 }
 
+pub fn triple_drop_2nd(t: #(a, b, c)) -> #(a, c) {
+  #(t.0, t.2)
+}
+
+pub fn triple_drop_3rd(t: #(a, b, c)) -> #(a, b) {
+  #(t.0, t.1)
+}
+
 pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
   l
   |> list.map(fn(t) {#(t.0, #(t.1, t.2))})
