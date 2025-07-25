@@ -29,8 +29,8 @@ fn nodemap(
 ) -> #(VXML, TrafficLight) {
   case node {
     V(blame, tag, _, children) if tag == inner.0 -> {
-        let #(before, after) = children_up_to_not_including(children, inner.2, [])
-        let children = [V(blame, inner.1, [], before), ..after]
+        let #(before, after) = children_up_to_not_including(children, inner.1, [])
+        let children = [V(blame, inner.2, [], before), ..after]
         #(V(..node, children: children), GoBack)
     }
     _ -> #(node, Continue)
@@ -52,7 +52,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param = #(String,  String,  String)
 //             ↖        ↖        ↖
-//             parent   wrapper  stop
+//             parent   stop     wrapper
 //             tag      tag      tag
 type InnerParam = Param
 
