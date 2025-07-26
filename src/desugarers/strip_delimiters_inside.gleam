@@ -76,8 +76,8 @@ type Param = #(String,    List(String),    List(String))
 //           to target    remove at start  remove at end
 type InnerParam = Param
 
-const name = "strip_text_at_start_and_end"
-const constructor = strip_text_at_start_and_end
+const name = "strip_delimiters_inside"
+const constructor = strip_delimiters_inside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -110,7 +110,7 @@ const constructor = strip_text_at_start_and_end
 ///     "x"
 /// ```
 /// .
-pub fn strip_text_at_start_and_end(param: Param) -> Desugarer {
+pub fn strip_delimiters_inside(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

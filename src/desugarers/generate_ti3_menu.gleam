@@ -1,9 +1,19 @@
-import blamedlines.{type Blame}
+import blamedlines.{Blame}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
-import vxml.{type VXML, BlamedAttribute, BlamedContent, V, T}
+import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V, T}
+
+const our_blame = Blame("generate_ti3_menu", 0, 0, [])
+
+fn an_attribute(key: String, value: String) -> BlamedAttribute {
+  BlamedAttribute(our_blame, key, value)
+}
+
+fn a_1_line_text_node(content: String) -> VXML {
+  T(our_blame, [BlamedContent(our_blame, content)])
+}
 
 type PageInfo = #(Int, Int)  // (chapter_no, sub_no)
 
@@ -26,101 +36,115 @@ fn format_chapter_link(chapter_no: Int, sub_no: Int) -> String {
 fn get_prev_next_info(
   current_chapter: Int,
   current_sub: Int,
-  all_pages: List(PageInfo),
+  page_infos: List(PageInfo),
 ) -> #(Option(PageInfo), Option(PageInfo)) {
   let idx = infra.index_of(
-    all_pages,
+    page_infos,
     #(current_chapter, current_sub),
   )
   use <- infra.on_lazy_true_on_false(
     idx < 0,
-    fn(){ panic as "#(current_chapter, current_sub) not found in all_pages" }
+    fn(){ panic as "#(current_chapter, current_sub) not found in page_infos" }
   )
   #(
-    infra.get_at(all_pages, idx - 1) |> option.from_result,
-    infra.get_at(all_pages, idx + 1) |> option.from_result,
+    infra.get_at(page_infos, idx - 1) |> option.from_result,
+    infra.get_at(page_infos, idx + 1) |> option.from_result,
   )
 }
 
 fn a_tag_with_href_and_content(
-  blame: Blame,
   href: String,
-  href_id: Menu,
   content: String,
 ) -> VXML {
-  V(blame,
+  V(
+    our_blame,
     "a",
-    [BlamedAttribute(blame, "href", href),
-      case href_id {
-        RightMenu -> BlamedAttribute(blame, "id", "next-chapter")
-        LeftMenu -> BlamedAttribute(blame, "id", "prev-chapter")
-      }
-    ],
-    [T(blame, [BlamedContent(blame, content)])]
+    [an_attribute("href", href)],
+    [a_1_line_text_node(content)],
   )
 }
 
 fn info_2_link(
-  blame: Blame,
   info: PageInfo,
   menu: Menu
 ) -> VXML {
-  a_tag_with_href_and_content(
-    blame,
-    format_chapter_link(info.0, info.1),
-    menu,
-    case info.1, menu {
+  let href = format_chapter_link(info.0, info.1)
+
+  let content = case info.1, menu {
       0, RightMenu -> "Kapitel " <> ins(info.0) <> "  " <> ">>"
       _, RightMenu -> "Kapitel " <> ins(info.0) <> "." <> ins(info.1) <> "  " <> ">>"
       0, LeftMenu -> "<<" <> " Kapitel " <> ins(info.0)
       _, LeftMenu -> "<<" <> " Kapitel " <> ins(info.0) <> "." <> ins(info.1)
     }
-  )
+
+  let id_attribute = case menu {
+    LeftMenu -> an_attribute("id", "prev-chapter")
+    RightMenu -> an_attribute("id", "next-chapter")
+  }
+
+  a_tag_with_href_and_content(href, content)
+  |> infra.prepend_attribute(id_attribute)
 }
 
 fn info_2_left_menu(
   prev_info: Option(PageInfo)
 ) -> VXML {
-  let blame = infra.blame_us("info_2_left_menu")
-  let index_link = V(blame, "a", [BlamedAttribute(blame, "href", "./index.html")], [T(blame, [BlamedContent(blame, "Inhaltsverzeichnis")])])
-  let index_link_with_prev_chapter_id = V(blame, "a", [BlamedAttribute(blame, "href", "./index.html"),  BlamedAttribute(blame, "id", "prev-chapter")], [T(blame, [BlamedContent(blame, "Inhaltsverzeichnis")])])
-  let ch_link_option = option.map(prev_info, info_2_link(blame, _, LeftMenu))
+  let index_link =
+    a_tag_with_href_and_content("./index.html", "Inhaltsverzeichnis")
+
+  let index_link = case prev_info {
+    None -> index_link |> infra.prepend_attribute(an_attribute("id", "prev-chapter"))
+    Some(_) -> index_link
+  }
+
+  let ch_link_option = prev_info |> option.map(info_2_link(_, LeftMenu))
 
   V(
-    blame,
+    our_blame,
     "LeftMenu",
-    [BlamedAttribute(blame, "class", "menu-left")],
-    infra.on_some_on_none(ch_link_option, fn(ch_link) { [index_link, ch_link] }, fn() { [index_link_with_prev_chapter_id] })
+    [
+      an_attribute("class", "left-menu"),
+    ],
+    option.values([
+      Some(index_link),
+      ch_link_option,
+    ]),
   )
 }
 
 fn info_2_right_menu(
-  next_info: Option(PageInfo),
+  prev_info: Option(PageInfo),
   homepage_url: String,
 ) -> VXML {
-  let blame = infra.blame_us("info_2_right_menu")
-  let course_homepage_link = Some(V(blame, "a", [BlamedAttribute(blame, "href", homepage_url)], [T(blame, [BlamedContent(blame, "zür Kursübersicht")])]))
-  let ch_link_option = option.map(next_info, info_2_link(blame, _, RightMenu))
+  let course_homepage_link =
+    a_tag_with_href_and_content(homepage_url, "zür Kursübersicht")
+
+  let ch_link_option = prev_info |> option.map(info_2_link(_, RightMenu))
 
   V(
-    blame,
+    our_blame,
     "RightMenu",
-    [BlamedAttribute(blame, "class", "menu-right")],
-    option.values([course_homepage_link, ch_link_option]),
+    [
+      an_attribute("class", "right-menu"),
+    ],
+    option.values([
+      Some(course_homepage_link),
+      ch_link_option,
+    ])
   )
 }
 
 fn infos_2_menu(
-  infos: #(Option(PageInfo), Option(PageInfo)),
+  prev_next_info: #(Option(PageInfo), Option(PageInfo)),
   homepage_url: String,
 ) -> VXML {
   V(
-    infra.blame_us("infos_2_menu"),
+    our_blame,
     "Menu",
     [],
     [
-      info_2_left_menu(infos.0),
-      info_2_right_menu(infos.1, homepage_url),
+      info_2_left_menu(prev_next_info.0),
+      info_2_right_menu(prev_next_info.1, homepage_url),
     ]
   )
 }
@@ -129,32 +153,36 @@ fn prepend_menu_element(
   node: VXML,
   chapter_no: Int,
   sub_no: Int,
-  all_pages: List(PageInfo),
+  page_infos: List(PageInfo),
   homepage_url: String,
 ) -> VXML {
   let menu = infos_2_menu(
-    get_prev_next_info(chapter_no, sub_no, all_pages),
+    get_prev_next_info(chapter_no, sub_no, page_infos),
     homepage_url,
   )
   infra.prepend_child(node, menu)
 }
 
-fn process_chapters(
+fn prepend_menu_element_in_chapter_and_subchapters(
   chapter: VXML,
   chapter_no: Int,
-  all_pages: List(PageInfo),
+  page_infos: List(PageInfo),
   homepage_url: String,
 ) -> VXML {
-  let chapter = prepend_menu_element(chapter, chapter_no, 0, all_pages, homepage_url)
+  let chapter =
+    chapter
+    |> prepend_menu_element(chapter_no, 0, page_infos, homepage_url)
+
   let assert V(_, _, _, children) = chapter
+
   let #(_, children) = list.map_fold(
     children,
     0,
     fn (acc, child) {
       case child {
-        V(_, tag, _, _) if tag == "Sub" -> #(
+        V(_, "Sub", _, _) -> #(
           acc + 1,
-          prepend_menu_element(child, chapter_no, acc + 1, all_pages, homepage_url)
+          prepend_menu_element(child, chapter_no, acc + 1, page_infos, homepage_url)
         )
         _ -> #(
           acc,
@@ -163,10 +191,11 @@ fn process_chapters(
       }
     }
   )
+
   V(..chapter, children: children)
 }
 
-fn build_page_infos(root: VXML) -> List(PageInfo) {
+fn collect_all_page_infos(root: VXML) -> List(PageInfo) {
   let chapters = infra.children_with_tag(root, "Chapter")
   list.index_fold(
     chapters,
@@ -186,7 +215,7 @@ fn build_page_infos(root: VXML) -> List(PageInfo) {
 fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   let assert V(_, "Document", _, children) = root
   let homepage_url = get_course_homepage(root)
-  let all_pages = build_page_infos(root)
+  let page_infos = collect_all_page_infos(root)
   let #(_, children) = list.map_fold(
     children,
     0,
@@ -194,7 +223,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
       case child {
         V(_, tag, _, _) if tag == "Chapter" -> #(
           acc + 1,
-          process_chapters(child, acc + 1, all_pages, homepage_url)
+          prepend_menu_element_in_chapter_and_subchapters(child, acc + 1, page_infos, homepage_url)
         )
         _ -> #(
           acc,

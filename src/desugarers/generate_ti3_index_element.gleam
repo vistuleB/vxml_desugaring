@@ -31,7 +31,6 @@ fn chapters_number_title(root: VXML) -> List(#(VXML, ChapterNo, ChapterTitle)) {
   root
   |> infra.index_children_with_tag("Chapter")
   |> list.map(fn(tup: #(VXML, Int)) {
-    // increment index by 1 so it starts from 1 instead of 0
     #(tup.0, tup.1 + 1, extract_chapter_title(tup.0))
   })
 }
@@ -51,8 +50,6 @@ fn extract_subchapter_title(chapter: VXML) -> List(#(SubChapterNo, SubchapterTit
           |> string.join("")
         })
         |> result.unwrap("No subchapter title")
-
-      // increment index by 1 so it starts from 1 instead of 0
       #(sub.1 + 1, subchapter_title)
   })
 }
@@ -194,8 +191,13 @@ fn construct_right_menu(document: VXML) -> VXML {
       [ V(
           blame,
           "a",
-          [BlamedAttribute(blame, "href", format_chapter_link(1, 0))],
-          [T(blame, [BlamedContent(blame, "1. " <> first_chapter_title <> " >>")])]
+          [
+            BlamedAttribute(blame, "id", "next-chapter"),
+            BlamedAttribute(blame, "href", format_chapter_link(1, 0)),
+          ],
+          [
+            T(blame, [BlamedContent(blame, "1. " <> first_chapter_title <> " >>")]),
+          ]
         )
       ]
     )

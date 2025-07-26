@@ -8,41 +8,17 @@ import gleam/pair
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import gleam/regexp
 import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V,
 vxml_to_string}
 
-pub const no_list = True
-
-pub type LatexDelimiterSingleton {
-  DoubleDollarSingleton
-  SingleDollarSingleton
-  BackslashOpeningParenthesis
-  BackslashClosingParenthesis
-  BackslashOpeningSquareBracket
-  BackslashClosingSquareBracket
-}
-
-pub type LatexDelimiterPair {
-  DoubleDollar
-  SingleDollar
-  BackslashParenthesis
-  BackslashSquareBracket
-}
+//**************************************************************
+//* css-unit parsing
+//**************************************************************
 
 pub type CSSUnit {
   PX
   REM
   EM
-}
-
-fn css_unit_from_string(s: String) -> Option(CSSUnit) {
-  case s {
-    "px" -> Some(PX)
-    "rem" -> Some(REM)
-    "em" -> Some(EM)
-    _ -> None
-  }
 }
 
 pub fn parse_to_float(s: String) -> Result(Float, Nil) {
@@ -53,18 +29,72 @@ pub fn parse_to_float(s: String) -> Result(Float, Nil) {
   }
 }
 
+fn extract_css_unit(s: String) -> #(String, Option(CSSUnit)) {
+  use <- on_true_on_false(
+    string.ends_with(s, "rem"),
+    #(string.drop_end(s, 3), Some(REM)),
+  )
+  use <- on_true_on_false(
+    string.ends_with(s, "em"),
+    #(string.drop_end(s, 2), Some(EM)),
+  )
+  use <- on_true_on_false(
+    string.ends_with(s, "px"),
+    #(string.drop_end(s, 2), Some(PX)),
+  )
+  #(s, None)
+}
+
 pub fn parse_number_and_optional_css_unit(
   s: String
 ) -> Result(#(Float, Option(CSSUnit)), Nil) {
-  let assert Ok(digits_pattern) = regexp.from_string("^([-0-9.e]+)(|px|rem|em)$")
+  let #(before_unit, unit) = extract_css_unit(s)
+  use number <- result.try(parse_to_float(before_unit))
+  Ok(#(number, unit))
+}
 
-  case regexp.scan(digits_pattern, s) {
-    [regexp.Match(_, [Some(digits), Some(unit)])] -> {
-      let assert Ok(number) = parse_to_float(digits)
-      Ok(#(number, css_unit_from_string(unit)))
-    }
-    _ -> Error(Nil)
-  }
+// old way (with regex):
+
+// fn css_unit_from_string(s: String) -> Option(CSSUnit) {
+//   case s {
+//     "px" -> Some(PX)
+//     "rem" -> Some(REM)
+//     "em" -> Some(EM)
+//     _ -> None
+//   }
+// }
+
+// pub fn parse_number_and_optional_css_unit(
+//   s: String
+// ) -> Result(#(Float, Option(CSSUnit)), Nil) {
+//   let assert Ok(digits_pattern) = regexp.from_string("^([-0-9.e]+)(|px|rem|em)$")
+//   case regexp.scan(digits_pattern, s) {
+//     [regexp.Match(_, [Some(digits), Some(unit)])] -> {
+//       let assert Ok(number) = parse_to_float(digits)
+//       Ok(#(number, css_unit_from_string(unit)))
+//     }
+//     _ -> Error(Nil)
+//   }
+// }
+
+//**************************************************************
+//* LatexDelimiterPair, LatexDelimiterSingleton
+//**************************************************************
+
+pub type LatexDelimiterPair {
+  DoubleDollar
+  SingleDollar
+  BackslashParenthesis
+  BackslashSquareBracket
+}
+
+pub type LatexDelimiterSingleton {
+  DoubleDollarSingleton
+  SingleDollarSingleton
+  BackslashOpeningParenthesis
+  BackslashClosingParenthesis
+  BackslashOpeningSquareBracket
+  BackslashClosingSquareBracket
 }
 
 pub fn latex_inline_delimiter_pairs_list(
@@ -104,53 +134,9 @@ pub fn opening_and_closing_singletons_for_pair(
   }
 }
 
-pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
-  case node {
-    T(_, _) -> False
-    V(_, tag, _, _) -> list.contains(tags, tag)
-  }
-}
-
-pub fn list_set(ze_list: List(a), index: Int, element: a) -> List(a) {
-  let assert True = 0 <= index && index <= list.length(ze_list)
-  let prefix = list.take(ze_list, index)
-  let suffix = list.drop(ze_list, index + 1)
-  [
-    prefix,
-    [element],
-    suffix,
-  ] |> list.flatten
-}
-
-pub fn get_at(ze_list: List(a), index: Int) -> Result(a, Nil) {
-  case index >= list.length(ze_list) || index < 0 {
-    True -> Error(Nil)
-    False -> list.drop(ze_list, index) |> list.first
-  }
-}
-
-pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
-  let assert T(blame, lines) = vxml
-  let assert [first_line, ..rest] = lines
-  let updated_rest =
-    rest
-    |> list.map(fn(line) {
-      BlamedContent(..line, content: string.trim_start(line.content))
-    })
-
-  T(blame, [first_line, ..updated_rest])
-}
-
-pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
-  let assert T(blame, lines) = vxml
-  let assert [last_line, ..rest] = lines |> list.reverse()
-  let updated_rest =
-    rest
-    |> list.map(fn(line) {
-      BlamedContent(..line, content: string.trim_end(line.content))
-    })
-  T(blame, list.reverse([last_line, ..updated_rest]))
-}
+//**************************************************************
+//* list utilities
+//**************************************************************
 
 pub fn on_false_on_true(
   over condition: Bool,
@@ -396,7 +382,145 @@ pub fn blame_tag_attrs_2_v(
 }
 
 //**************************************************************
-//* dictionary-building functions
+//* list utilities
+//**************************************************************
+
+pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
+  case l {
+    [first, ..rest] -> Ok(#(first, rest))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn first_second_rest(l: List(a)) -> Result(#(a, a, List(a)), Nil) {
+  case l {
+    [first, second, ..rest] -> Ok(#(first, second, rest))
+    _ -> Error(Nil)
+  }
+}
+
+pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
+  case l {
+    [] -> Error(Nil)
+    [last] -> Ok(#([], last))
+    [first, ..rest] -> {
+      let assert Ok(#(head, last)) = head_last(rest)
+      Ok(#([first, ..head], last))
+    }
+  }
+}
+
+/// dumps the contents of 'from' "upside-down" into
+/// 'into', so that the first element of 'from' ends
+/// up buried inside the resulting list, while the last
+/// element of 'from' ends up surfaced as the first
+/// element of the result
+pub fn pour(from: List(a), into: List(a)) -> List(a) {
+  case from {
+    [first, ..rest] -> pour(rest, [first, ..into])
+    [] -> into
+  }
+}
+
+pub fn index_map_fold(
+  list: List(a),
+  initial_acc: b,
+  f: fn(b, a, Int) -> #(b, c),
+) -> #(b, List(c)) {
+  list.index_fold(list, #(initial_acc, []), fn(acc, item, index) {
+    let #(current_acc, results) = acc
+    let #(new_acc, result) = f(current_acc, item, index)
+    #(new_acc, [result, ..results])
+  })
+  |> pair.map_second(list.reverse)
+}
+
+pub fn try_map_fold(
+  over ze_list: List(q),
+  from state: a,
+  with f: fn(a, q) -> Result(#(q, a), c)
+) -> Result(#(List(q), a), c) {
+  case ze_list {
+    [] -> Ok(#([], state))
+    [first, ..rest] -> {
+      use #(mapped_first, state) <- result.try(f(state, first))
+      use #(mapped_rest, state) <- result.try(try_map_fold(rest, state, f))
+      Ok(#([mapped_first, ..mapped_rest], state))
+    }
+  }
+}
+
+pub fn list_set(ze_list: List(a), index: Int, element: a) -> List(a) {
+  let assert True = 0 <= index && index <= list.length(ze_list)
+  let prefix = list.take(ze_list, index)
+  let suffix = list.drop(ze_list, index + 1)
+  [
+    prefix,
+    [element],
+    suffix,
+  ] |> list.flatten
+}
+
+pub fn get_at(ze_list: List(a), index: Int) -> Result(a, Nil) {
+  case index >= list.length(ze_list) || index < 0 {
+    True -> Error(Nil)
+    False -> list.drop(ze_list, index) |> list.first
+  }
+}
+
+//**************************************************************
+//* tuple manipulation
+//**************************************************************
+
+pub fn quad_to_pair_pair(
+  t: #(a, b, c, d)
+) -> #(#(a, b), #(c, d)) {
+  #(#(t.0, t.1), #(t.2, t.3))
+}
+
+pub fn quad_drop_3rd(t: #(a, b, c, d)) -> #(a, b, d) {
+  #(t.0, t.1, t.3)
+}
+
+pub fn quad_drop_4th(t: #(a, b, c, d)) -> #(a, b, c) {
+  #(t.0, t.1, t.2)
+}
+
+pub fn triple_drop_2nd(t: #(a, b, c)) -> #(a, c) {
+  #(t.0, t.2)
+}
+
+pub fn triple_drop_3rd(t: #(a, b, c)) -> #(a, b) {
+  #(t.0, t.1)
+}
+
+pub fn triple_to_pair(t: #(a, b, c)) -> #(a, #(b, c)) {
+  #(t.0, #(t.1, t.2))
+}
+
+pub fn quad_to_pair(t: #(a, b, c, d)) -> #(a, #(b, c, d)) {
+  #(t.0, #(t.1, t.2, t.3))
+}
+
+pub fn quads_to_pair_pairs(
+  l: List(#(a, b, c, d)),
+) -> List(#(#(a, b), #(c, d))) {
+  l
+  |> list.map(quad_to_pair_pair)
+}
+
+pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
+  l
+  |> list.map(triple_to_pair)
+}
+
+pub fn quads_to_pairs(l: List(#(a, b, c, d))) -> List(#(a, #(b, c, d))) {
+  l
+  |> list.map(quad_to_pair)
+}
+
+//**************************************************************
+//* dictionary-building utilities
 //**************************************************************
 
 pub fn validate_unique_keys(
@@ -425,42 +549,15 @@ pub fn aggregate_on_first(l: List(#(a, b))) -> Dict(a, List(b)) {
   })
 }
 
-pub fn quadruples_to_pairs_pairs(
-  l: List(#(a, b, c, d)),
-) -> List(#(#(a, b), #(c, d))) {
-  l
-  |> list.map(fn(quad) {
-    let #(a, b, c, d) = quad
-    #(#(a, b), #(c, d))
-  })
-}
-
-pub fn quad_drop_3rd(t: #(a, b, c, d)) -> #(a, b, d) {
-  #(t.0, t.1, t.3)
-}
-
-pub fn quad_drop_4th(t: #(a, b, c, d)) -> #(a, b, c) {
-  #(t.0, t.1, t.2)
-}
-
-pub fn triple_drop_2nd(t: #(a, b, c)) -> #(a, c) {
-  #(t.0, t.2)
-}
-
-pub fn triple_drop_3rd(t: #(a, b, c)) -> #(a, b) {
-  #(t.0, t.1)
-}
-
-pub fn triples_to_pairs(l: List(#(a, b, c))) -> List(#(a, #(b, c))) {
-  l
-  |> list.map(fn(t) {#(t.0, #(t.1, t.2))})
-}
-
-pub fn quads_to_pairs(l: List(#(a, b, c, d))) -> List(#(a, #(b, c, d))) {
-  l
-  |> list.map(fn(quad) {
-    #(quad.0, #(quad.1, quad.2, quad.3))
-  })
+pub fn use_list_pair_as_dict(
+  list_pairs: List(#(a, b)),
+  key: a,
+) -> Result(b, Nil) {
+  case list_pairs {
+    [] -> Error(Nil)
+    [#(alice, bob), ..] if alice == key -> Ok(bob)
+    [_, ..rest] -> use_list_pair_as_dict(rest, key)
+  }
 }
 
 pub fn triples_to_dict(l: List(#(a, b, c))) -> Dict(a, #(b, c)) {
@@ -475,19 +572,8 @@ pub fn triples_to_aggregated_dict(l: List(#(a, b, c))) -> Dict(a, List(#(b, c)))
   |> aggregate_on_first
 }
 
-pub fn use_list_pair_as_dict(
-  list_pairs: List(#(a, b)),
-  key: a
-) -> Result(b, Nil) {
-  case list_pairs {
-    [] -> Error(Nil)
-    [#(alice, bob), ..] if alice == key -> Ok(bob)
-    [_, ..rest] -> use_list_pair_as_dict(rest, key)
-  }
-}
-
 //**************************************************************
-//* either-or functions
+//* EitherOr
 //**************************************************************
 
 pub type EitherOr(a, b) {
@@ -638,71 +724,6 @@ pub fn either_or_misceginator(
       False -> Or(thing)
     }
   })
-}
-
-pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
-  case l {
-    [first, ..rest] -> Ok(#(first, rest))
-    _ -> Error(Nil)
-  }
-}
-
-pub fn first_second_rest(l: List(a)) -> Result(#(a, a, List(a)), Nil) {
-  case l {
-    [first, second, ..rest] -> Ok(#(first, second, rest))
-    _ -> Error(Nil)
-  }
-}
-
-pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
-  case l {
-    [] -> Error(Nil)
-    [last] -> Ok(#([], last))
-    [first, ..rest] -> {
-      let assert Ok(#(head, last)) = head_last(rest)
-      Ok(#([first, ..head], last))
-    }
-  }
-}
-
-/// dumps the contents of 'from' "upside-down" into
-/// 'into', so that the first element of 'from' ends
-/// up buried inside the resulting list, while the last
-/// element of 'from' ends up surfaced as the first
-/// element of the result
-pub fn pour(from: List(a), into: List(a)) -> List(a) {
-  case from {
-    [first, ..rest] -> pour(rest, [first, ..into])
-    [] -> into
-  }
-}
-
-pub fn index_map_fold(
-  list: List(a),
-  initial_acc: b,
-  f: fn(b, a, Int) -> #(b, c),
-) -> #(b, List(c)) {
-  list.index_fold(list, #(initial_acc, []), fn(acc, item, index) {
-    let #(current_acc, results) = acc
-    let #(new_acc, result) = f(current_acc, item, index)
-    #(new_acc, [result, ..results])
-  })
-  |> pair.map_second(list.reverse)
-}
-
-pub fn try_map_fold(
-  over ze_list: List(q),
-  from state: a,
-  with f: fn(a, q) -> Result(#(q, a), c)
-) -> Result(#(List(q), a), c) {
-  case ze_list {
-    [] -> Ok(#([], state))
-    [first, ..rest] -> {
-      use #(mapped_first, state) <- result.try(f(state, first))
-      use #(mapped_rest, state) <- result.try(try_map_fold(rest, state, f))
-      Ok(#([mapped_first, ..mapped_rest], state))
-    }
-  }
 }
 
 //**************************************************************
@@ -993,6 +1014,29 @@ pub fn split_lines(
     lines,
     splitter,
   )
+}
+
+pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
+  let assert T(blame, lines) = vxml
+  let assert [first_line, ..rest] = lines
+  let updated_rest =
+    rest
+    |> list.map(fn(line) {
+      BlamedContent(..line, content: string.trim_start(line.content))
+    })
+
+  T(blame, [first_line, ..updated_rest])
+}
+
+pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
+  let assert T(blame, lines) = vxml
+  let assert [last_line, ..rest] = lines |> list.reverse()
+  let updated_rest =
+    rest
+    |> list.map(fn(line) {
+      BlamedContent(..line, content: string.trim_end(line.content))
+    })
+  T(blame, list.reverse([last_line, ..updated_rest]))
 }
 
 pub fn lines_trim_start(
@@ -1566,6 +1610,13 @@ pub fn get_children(vxml: VXML) -> List(VXML) {
 pub fn tag_equals(vxml: VXML, tag: String) -> Bool {
   let assert V(_, v_tag, _, _) = vxml
   v_tag == tag
+}
+
+pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
+  case node {
+    T(_, _) -> False
+    V(_, tag, _, _) -> list.contains(tags, tag)
+  }
 }
 
 pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {

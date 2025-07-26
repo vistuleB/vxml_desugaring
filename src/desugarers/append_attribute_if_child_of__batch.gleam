@@ -54,9 +54,10 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param
-  |> infra.quadruples_to_pairs_pairs
-  |> infra.aggregate_on_first)
+  param
+  |> infra.quads_to_pair_pairs
+  |> infra.aggregate_on_first
+  |> Ok
 }
 
 type Param = List(#(String, String, String, String))

@@ -17,6 +17,16 @@ import desugarer_library as dl
 // math delimiter stuff
 //******************
 
+fn all_left_right_delims_for(which: String) -> #(List(String), List(String)) {
+  case which {
+    "MathBlock" -> infra.latex_display_delimiter_pairs_list()
+    "Math" -> infra.latex_inline_delimiter_pairs_list()
+    _ -> panic as "was expecting 'Math' or 'MathBlock'"
+  }
+  |> list.map(infra.opening_and_closing_string_for_pair)
+  |> list.unzip
+}
+
 fn closing_equals_opening(
   pair: LatexDelimiterPair
 ) -> Bool {
@@ -37,7 +47,7 @@ fn split_pair_fold_data(
   }
 }
 
-fn split_pair_fold_for_delimiter_pair_no_list(
+fn split_pair_fold_for_delimiter_pair(
   pair: LatexDelimiterPair,
   wrapper: String,
   forbidden: List(String),
@@ -66,91 +76,21 @@ fn split_pair_fold_for_delimiter_pair_no_list(
   }
 }
 
-fn split_pair_fold_for_delimiter_pair(
-  pair: LatexDelimiterPair,
-  wrapper: String,
-  forbidden: List(String),
-) -> List(Desugarer) {
-  use <- infra.on_lazy_true_on_false(
-    infra.no_list,
-    fn() {
-      split_pair_fold_for_delimiter_pair_no_list(pair, wrapper, forbidden)
-    }
-  )
-
-  let #(d1, d2) = infra.opening_and_closing_singletons_for_pair(pair)
-  case closing_equals_opening(pair) {
-    True -> {
-      let #(g, tag, original) = split_pair_fold_data(d1)
-      [
-        dl.regex_split_and_replace__outside(g, forbidden),
-        dl.pair(#(tag, tag, wrapper)),
-        dl.fold_tag_into_text(#(tag, original))
-      ]
-    }
-    False -> {
-      let #(g1, tag1, replacement1) = split_pair_fold_data(d1)
-      let #(g2, tag2, replacement2) = split_pair_fold_data(d2)
-      [
-        dl.regex_split_and_replace__batch__outside([g1, g2], forbidden),
-        dl.pair(#(tag1, tag2, wrapper)),
-        dl.fold_tag_into_text__batch([#(tag1, replacement1), #(tag2, replacement2)])
-      ]
-    }
-  }
-}
-
-pub fn create_math_or_mathblock_elements_no_list(
-  parsed: List(LatexDelimiterPair),
-  produced: LatexDelimiterPair,
-  which: String,
-) -> List(Desugarer) {
-  let pair = infra.opening_and_closing_string_for_pair(produced)
-  let create_tags =
-    parsed
-    |> list.map(split_pair_fold_for_delimiter_pair_no_list(_, which, ["Math", "MathBlock"]))
-    |> list.flatten
-
-  let #(left_delims, right_delims) =
-    case which {
-      "MathBlock" -> infra.latex_display_delimiter_pairs_list()
-      _ -> infra.latex_inline_delimiter_pairs_list()
-    }
-    |> list.map(infra.opening_and_closing_string_for_pair)
-    |> list.unzip
-
-  [
-    [dl.strip_text_at_start_and_end(#(which, left_delims, right_delims))],
-    create_tags,
-    [dl.prepend_append_text(#(which, pair.0, pair.1))],
-  ]
-  |> list.flatten
-}
-
 pub fn create_math_or_mathblock_elements(
   parsed: List(LatexDelimiterPair),
   produced: LatexDelimiterPair,
   which: String,
 ) -> List(Desugarer) {
-  use <- infra.on_lazy_true_on_false(
-    infra.no_list,
-    fn() {create_math_or_mathblock_elements_no_list(parsed, produced, which)}
-  )
-
   let pair = infra.opening_and_closing_string_for_pair(produced)
   let create_tags =
     parsed
     |> list.map(split_pair_fold_for_delimiter_pair(_, which, ["Math", "MathBlock"]))
     |> list.flatten
 
-  // let #(left_delims, right_delims) =
-  //   infra.latex_delimiter_pairs_list()
-  //   |> list.map(infra.opening_and_closing_string_for_pair)
-  //   |> list.unzip
+  let #(left_delims, right_delims) = all_left_right_delims_for(which)
 
   [
-    [dl.strip_math_delimiters_inside(which)],
-    // [dl.strip_text_at_start_and_end(#(which, left_delims, right_delims))],
+    [dl.strip_delimiters_inside(#(which, left_delims, right_delims))],
     create_tags,
     [dl.prepend_append_text(#(which, pair.0, pair.1))],
   ]
@@ -175,7 +115,7 @@ pub fn create_math_elements(
 // generic symmetric & asymmetric delim splitting
 //***************
 
-pub fn symmetric_delim_splitting_no_list(
+pub fn symmetric_delim_splitting(
   delim_regex_form: String,
   delim_ordinary_form: String,
   tag: String,
@@ -215,51 +155,7 @@ pub fn symmetric_delim_splitting_no_list(
   ]
 }
 
-pub fn symmetric_delim_splitting(
-  delim_regex_form: String,
-  delim_ordinary_form: String,
-  tag: String,
-  forbidden: List(String),
-) -> List(Desugarer) {
-  use <- infra.on_lazy_true_on_false(
-    infra.no_list,
-    fn() { symmetric_delim_splitting_no_list(delim_regex_form, delim_ordinary_form, tag, forbidden) }
-  )
-
-  let opening_grs = grs.for_groups([
-    #("[\\s]", grs.Keep),
-    #(delim_regex_form, grs.Tag("OpeningSymmetricDelim")),
-    #("[^\\s\\]})]|$", grs.Keep),
-  ])
-
-  let opening_or_closing_grs = grs.for_groups([
-    #("[^\\s]|^", grs.Keep),
-    #(grs.unescaped_suffix(delim_regex_form), grs.Tag("OpeningOrClosingSymmetricDelim")),
-    #("[^\\s\\]})]|$", grs.Keep),
-  ])
-
-  let closing_grs = grs.for_groups([
-    #("[^\\s\\[{(]|^", grs.Keep),
-    #(grs.unescaped_suffix(delim_regex_form), grs.Tag("ClosingSymmetricDelim")),
-    #("[\\s\\]})]", grs.Keep),
-  ])
-
-  [
-    dl.regex_split_and_replace__batch__outside([opening_or_closing_grs, opening_grs, closing_grs], forbidden),
-    dl.pair_list_list(#(
-      ["OpeningSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
-      ["ClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
-      tag,
-    )),
-    dl.fold_tag_into_text__batch([
-      #("OpeningSymmetricDelim", delim_ordinary_form),
-      #("ClosingSymmetricDelim", delim_ordinary_form),
-      #("OpeningOrClosingSymmetricDelim", delim_ordinary_form),
-    ]),
-  ]
-}
-
-pub fn asymmetric_delim_splitting_no_list(
+pub fn asymmetric_delim_splitting(
   opening_regex_form: String,
   closing_regex_form: String,
   opening_ordinary_form: String,
@@ -285,41 +181,6 @@ pub fn asymmetric_delim_splitting_no_list(
     dl.pair(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag)),
     dl.fold_tag_into_text(#("OpeningAsymmetricDelim", opening_ordinary_form)),
     dl.fold_tag_into_text(#("ClosingAsymmetricDelim", closing_ordinary_form)),
-  ]
-}
-
-pub fn asymmetric_delim_splitting(
-  opening_regex_form: String,
-  closing_regex_form: String,
-  opening_ordinary_form: String,
-  closing_ordinary_form: String,
-  tag: String,
-  forbidden: List(String),
-) -> List(Desugarer) {
-  use <- infra.on_lazy_true_on_false(
-    infra.no_list,
-    fn() { asymmetric_delim_splitting_no_list(opening_regex_form, closing_regex_form, opening_ordinary_form, closing_ordinary_form, tag, forbidden) }
-  )
-
-  let opening_grs = grs.for_groups([
-    #("[\\s]|^", grs.Keep),
-    #(opening_regex_form, grs.Tag("OpeningAsymmetricDelim")),
-    #("[^\\s]|$", grs.Keep),
-  ])
-
-  let closing_grs = grs.for_groups([
-    #("[^\\s]|^", grs.Keep),
-    #(closing_regex_form, grs.Tag("ClosingAsymmetricDelim")),
-    #("[\\s]|$", grs.Keep),
-  ])
-
-  [
-    dl.regex_split_and_replace__batch__outside([opening_grs, closing_grs], forbidden),
-    dl.pair(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag )),
-    dl.fold_tag_into_text__batch([
-      #("OpeningAsymmetricDelim", opening_ordinary_form),
-      #("ClosingAsymmetricDelim", closing_ordinary_form),
-    ]),
   ]
 }
 

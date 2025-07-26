@@ -105,8 +105,7 @@ import desugarers/rename_with_appended_attributes_and_prepended_text
 import desugarers/rename_with_attributes
 import desugarers/replace_in_attribute_values
 import desugarers/replace_multiple_spaces_by_one
-import desugarers/strip_math_delimiters_inside
-import desugarers/strip_text_at_start_and_end
+import desugarers/strip_delimiters_inside
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
 import desugarers/timer
@@ -239,8 +238,7 @@ pub const rename_with_appended_attributes_and_prepended_text = rename_with_appen
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const replace_in_attribute_values = replace_in_attribute_values.replace_in_attribute_values
 pub const replace_multiple_spaces_by_one = replace_multiple_spaces_by_one.replace_multiple_spaces_by_one
-pub const strip_math_delimiters_inside = strip_math_delimiters_inside.strip_math_delimiters_inside
-pub const strip_text_at_start_and_end = strip_text_at_start_and_end.strip_text_at_start_and_end
+pub const strip_delimiters_inside = strip_delimiters_inside.strip_delimiters_inside
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
 pub const timer = timer.timer
@@ -374,8 +372,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   rename_with_attributes.assertive_tests,
   replace_in_attribute_values.assertive_tests,
   replace_multiple_spaces_by_one.assertive_tests,
-  strip_math_delimiters_inside.assertive_tests,
-  strip_text_at_start_and_end.assertive_tests,
+  strip_delimiters_inside.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
   timer.assertive_tests,
