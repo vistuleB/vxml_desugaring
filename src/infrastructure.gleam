@@ -766,6 +766,7 @@ pub fn find_replace_in_node(
 //**************************************************************
 //* find replace no_list-version
 //**************************************************************
+pub const no_list = True
 
 pub fn find_replace_in_t_no_list(
   node: VXML,
