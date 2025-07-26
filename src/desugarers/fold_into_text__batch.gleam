@@ -11,7 +11,7 @@ fn turn_into_text_node(node: VXML, text: String) -> VXML {
   T(blame, [BlamedContent(blame, text)])
 }
 
-fn fold_tags_into_text_children_accumulator(
+fn accumulator(
   tags2texts: Dict(String, String),
   already_processed: List(VXML),
   optional_last_t: Option(VXML),
@@ -105,7 +105,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we make 'first' the previous t node
               // *
-              fold_tags_into_text_children_accumulator(
+              accumulator(
                 tags2texts,
                 already_processed,
                 option.Some(first),
@@ -120,7 +120,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle the v & first, add to already_processed, reset v to None
               // *
-              fold_tags_into_text_children_accumulator(
+              accumulator(
                 tags2texts,
                 already_processed,
                 option.Some(infra.t_start_insert_text(first, last_v_text)),
@@ -138,7 +138,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we pass the previous t into already_processed and make 'first' the new optional_last_t
               // *
-              fold_tags_into_text_children_accumulator(
+              accumulator(
                 tags2texts,
                 [last_t, ..already_processed],
                 option.Some(first),
@@ -153,7 +153,7 @@ fn fold_tags_into_text_children_accumulator(
               //
               // we bundle t & v & first and etc
               // *
-              fold_tags_into_text_children_accumulator(
+              accumulator(
                 tags2texts,
                 already_processed,
                 option.Some(infra.t_t_last_to_first_concatenation(
@@ -181,7 +181,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // add 'first' to already_processed
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     [first, ..already_processed],
                     option.None,
@@ -196,7 +196,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // make 'first' the optional_last_v
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     already_processed,
                     option.None,
@@ -214,7 +214,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // standalone-bundle the previous v node & add first to already processed
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     [
                       first,
@@ -233,7 +233,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // standalone-bundle the previous v node & make 'first' the optional_last_v
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     already_processed,
                     option.Some(turn_into_text_node(last_v, last_v_text)),
@@ -255,7 +255,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // add 'first' and previoux t node to already_processed
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     [first, last_t, ..already_processed],
                     option.None,
@@ -270,7 +270,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // keep the previous t node, make 'first' the optional_last_v
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     already_processed,
                     optional_last_t,
@@ -288,7 +288,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // fold t & v, put first & folder t/v into already_processed
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     [
                       first,
@@ -307,7 +307,7 @@ fn fold_tags_into_text_children_accumulator(
                   //
                   // fold t & v, put into already_processed, make v the new optional_last_v
                   // *
-                  fold_tags_into_text_children_accumulator(
+                  accumulator(
                     tags2texts,
                     already_processed,
                     option.Some(infra.t_end_insert_text(last_t, text)),
@@ -328,7 +328,7 @@ fn nodemap(
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       let new_children =
-        fold_tags_into_text_children_accumulator(
+        accumulator(
           inner,
           [],
           option.None,
@@ -358,8 +358,8 @@ type Param = List(#(String,      String))
 //                               tag to use
 type InnerParam = Dict(String, String)
 
-const name = "fold_tag_into_text__batch"
-const constructor = fold_tag_into_text__batch
+const name = "fold_into_text__batch"
+const constructor = fold_into_text__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -370,7 +370,7 @@ const constructor = fold_tag_into_text__batch
 /// (in end-of-last-line glued to beginning-of-first-line
 /// fashion), without regards for the tag's contents
 /// or attributes, that are destroyed in the process
-pub fn fold_tag_into_text__batch(param: Param) -> Desugarer {
+pub fn fold_into_text__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

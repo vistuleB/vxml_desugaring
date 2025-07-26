@@ -59,7 +59,7 @@ fn split_pair_fold_for_delimiter_pair(
       [
         dl.regex_split_and_replace__outside(g, forbidden),
         dl.pair(#(tag, tag, wrapper)),
-        dl.fold_tag_into_text(#(tag, original))
+        dl.fold_into_text(#(tag, original))
       ]
     }
     False -> {
@@ -69,8 +69,8 @@ fn split_pair_fold_for_delimiter_pair(
         dl.regex_split_and_replace__outside(g1, forbidden),
         dl.regex_split_and_replace__outside(g2, forbidden),
         dl.pair(#(tag1, tag2, wrapper)),
-        dl.fold_tag_into_text(#(tag1, replacement1)),
-        dl.fold_tag_into_text(#(tag2, replacement2)),
+        dl.fold_into_text(#(tag1, replacement1)),
+        dl.fold_into_text(#(tag2, replacement2)),
       ]
     }
   }
@@ -149,9 +149,9 @@ pub fn symmetric_delim_splitting(
       ["ClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim"],
       tag,
     )),
-    dl.fold_tag_into_text(#("OpeningSymmetricDelim", delim_ordinary_form)),
-    dl.fold_tag_into_text(#("ClosingSymmetricDelim", delim_ordinary_form)),
-    dl.fold_tag_into_text(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form)),
+    dl.fold_into_text(#("OpeningSymmetricDelim", delim_ordinary_form)),
+    dl.fold_into_text(#("ClosingSymmetricDelim", delim_ordinary_form)),
+    dl.fold_into_text(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form)),
   ]
 }
 
@@ -179,8 +179,8 @@ pub fn asymmetric_delim_splitting(
     dl.regex_split_and_replace__outside(opening_grs, forbidden),
     dl.regex_split_and_replace__outside(closing_grs, forbidden),
     dl.pair(#("OpeningAsymmetricDelim", "ClosingAsymmetricDelim", tag)),
-    dl.fold_tag_into_text(#("OpeningAsymmetricDelim", opening_ordinary_form)),
-    dl.fold_tag_into_text(#("ClosingAsymmetricDelim", closing_ordinary_form)),
+    dl.fold_into_text(#("OpeningAsymmetricDelim", opening_ordinary_form)),
+    dl.fold_into_text(#("ClosingAsymmetricDelim", closing_ordinary_form)),
   ]
 }
 
@@ -198,6 +198,6 @@ pub fn barbaric_symmetric_delim_splitting(
   [
     dl.regex_split_and_replace__outside(opening_or_closing_grs, forbidden),
     dl.pair(#("OpeningOrClosingSymmetricDelim", "OpeningOrClosingSymmetricDelim", tag)),
-    dl.fold_tag_into_text(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form))
+    dl.fold_into_text(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form))
   ]
 }

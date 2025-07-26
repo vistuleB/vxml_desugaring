@@ -3,35 +3,19 @@ import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedContent, T, V}
+import vxml.{type VXML, T, V}
 
-// fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
-//   let assert T(blame1, lines1) = node1
-//   let assert T(_, lines2) = node2
-//   let assert [BlamedContent(blame_last, content_last), ..other_lines1] =
-//     lines1 |> list.reverse
-//   let assert [BlamedContent(_, content_first), ..other_lines2] = lines2
-//   T(
-//     blame1,
-//     list.flatten([
-//       other_lines1 |> list.reverse,
-//       [BlamedContent(blame_last, content_last <> content_first)],
-//       other_lines2,
-//     ]),
-//   )
-// }
-
-fn turn_into_text_node(node: VXML, text: String) -> VXML {
-  let blame = infra.get_blame(node)
-  T(blame, [BlamedContent(blame, text)])
+fn inside_text_node(node: VXML) -> VXML {
+  let assert V(_, _, _, children) = node
+  let assert [T(_, _) as child] = children
+  child
 }
 
 fn accumulator(
-  tag_to_be_folded: String,
-  replacement_text: String,
+  inner: InnerParam,
   already_processed: List(VXML),
   optional_last_t: Option(VXML),
-  optional_last_v: Option(#(VXML, String)),
+  optional_last_v: Option(VXML),
   remaining: List(VXML),
 ) -> List(VXML) {
   // *
@@ -47,15 +31,6 @@ fn accumulator(
   // - optional_last_v is a possible previoux v-node that
   //   matched the dictionary; if it is not None, it is the
   //   immediately previous node to 'remaining'
-  //
-  // PURPOSE: this function should turn tags that appear
-  //     in the tags2texts dictionary into text fragments
-  //     that become the last/first line of the previous/next
-  //     text nodes to the tag, if any, possibly resulting
-  //     in the two text nodes on either side of the tag
-  //     becoming joined into one text node (by glued via
-  //     the tag text); if there are no adjacent text nodes,
-  //     the tag becomes a new standalone text node
   // *
   case remaining {
     [] ->
@@ -71,7 +46,7 @@ fn accumulator(
               // we reverse the list
               // *
               already_processed |> list.reverse
-            option.Some(#(last_v, last_v_text)) ->
+            option.Some(last_v) ->
               // *
               // case N01: - no following node
               //           - no previous t node
@@ -79,7 +54,7 @@ fn accumulator(
               //
               // we turn the previous v node into a standalone text node
               // *
-              [turn_into_text_node(last_v, last_v_text), ..already_processed]
+              [inside_text_node(last_v), ..already_processed]
               |> list.reverse
           }
         }
@@ -94,7 +69,7 @@ fn accumulator(
               // we add the t to already_processed, reverse the list
               // *
               [last_t, ..already_processed] |> list.reverse
-            option.Some(#(_, replacement_text)) ->
+            option.Some(last_v) ->
               // *
               // case N11: - no following node
               //           - there is a previous t node
@@ -103,7 +78,10 @@ fn accumulator(
               // we bundle the t & v, add to already_processed, reverse the list
               // *
               [
-                infra.t_end_insert_text(last_t, replacement_text),
+                infra.t_t_last_to_first_concatenation(
+                  last_t,
+                  inside_text_node(last_v),
+                ),
                 ..already_processed
               ]
               |> list.reverse
@@ -122,14 +100,13 @@ fn accumulator(
               // we make 'first' the previous t node
               // *
               accumulator(
-                tag_to_be_folded,
-                replacement_text,
+                inner,
                 already_processed,
                 option.Some(first),
                 option.None,
                 rest,
               )
-            option.Some(#(_, last_v_text)) ->
+            option.Some(last_v) ->
               // *
               // case T01: - 'first' is a Text node
               //           - no previous t node
@@ -138,10 +115,12 @@ fn accumulator(
               // we bundle the v & first, add to already_processed, reset v to None
               // *
               accumulator(
-                tag_to_be_folded,
-                replacement_text,
+                inner,
                 already_processed,
-                option.Some(infra.t_start_insert_text(first, last_v_text)),
+                option.Some(infra.t_t_last_to_first_concatenation(
+                  inside_text_node(last_v),
+                  first,
+                )),
                 option.None,
                 rest,
               )
@@ -157,14 +136,13 @@ fn accumulator(
               // we pass the previous t into already_processed and make 'first' the new optional_last_t
               // *
               accumulator(
-                tag_to_be_folded,
-                replacement_text,
+                inner,
                 [last_t, ..already_processed],
                 option.Some(first),
                 option.None,
                 rest,
               )
-            option.Some(#(_, text)) -> {
+            option.Some(last_v) -> {
               // *
               // case T11: - 'first' is a Text node
               //           - there exists a previous t node
@@ -173,12 +151,14 @@ fn accumulator(
               // we bundle t & v & first and etc
               // *
               accumulator(
-                tag_to_be_folded,
-                replacement_text,
+                inner,
                 already_processed,
                 option.Some(infra.t_t_last_to_first_concatenation(
                   last_t,
-                  infra.t_start_insert_text(first, text),
+                  infra.t_t_last_to_first_concatenation(
+                    inside_text_node(last_v),
+                    first,
+                  ),
                 )),
                 option.None,
                 rest,
@@ -192,7 +172,7 @@ fn accumulator(
         option.None -> {
           case optional_last_v {
             option.None ->
-              case tag == tag_to_be_folded {
+              case tag == inner {
                 False ->
                   // *
                   // case W00: - 'first' is non-matching V-node
@@ -202,8 +182,7 @@ fn accumulator(
                   // add 'first' to already_processed
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     [first, ..already_processed],
                     option.None,
                     option.None,
@@ -218,16 +197,15 @@ fn accumulator(
                   // make 'first' the optional_last_v
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     already_processed,
                     option.None,
-                    option.Some(#(first, replacement_text)),
+                    option.Some(first),
                     rest,
                   )
               }
-            option.Some(#(last_v, last_v_text)) ->
-              case tag == tag_to_be_folded {
+            option.Some(last_v) ->
+              case tag == inner {
                 False ->
                   // *
                   // case W01: - 'first' is non-matching V-node
@@ -237,13 +215,8 @@ fn accumulator(
                   // standalone-bundle the previous v node & add first to already processed
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
-                    [
-                      first,
-                      turn_into_text_node(last_v, last_v_text),
-                      ..already_processed
-                    ],
+                    inner,
+                    [first, inside_text_node(last_v), ..already_processed],
                     option.None,
                     option.None,
                     rest,
@@ -257,11 +230,10 @@ fn accumulator(
                   // standalone-bundle the previous v node & make 'first' the optional_last_v
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     already_processed,
-                    option.Some(turn_into_text_node(last_v, last_v_text)),
-                    option.Some(#(first, replacement_text)),
+                    option.Some(inside_text_node(last_v)),
+                    option.Some(first),
                     rest,
                   )
               }
@@ -270,7 +242,7 @@ fn accumulator(
         option.Some(last_t) ->
           case optional_last_v {
             option.None ->
-              case tag == tag_to_be_folded {
+              case tag == inner {
                 False ->
                   // *
                   // case W10: - 'first' is a non-matching V-node
@@ -280,8 +252,7 @@ fn accumulator(
                   // add 'first' and previoux t node to already_processed
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     [first, last_t, ..already_processed],
                     option.None,
                     option.None,
@@ -296,16 +267,15 @@ fn accumulator(
                   // keep the previous t node, make 'first' the optional_last_v
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     already_processed,
                     optional_last_t,
-                    option.Some(#(first, replacement_text)),
+                    option.Some(first),
                     rest,
                   )
               }
-            option.Some(#(_, last_v_text)) ->
-              case tag == tag_to_be_folded {
+            option.Some(last_v) ->
+              case tag == inner {
                 False ->
                   // *
                   // case W11: - 'first' is a non-matching V-node
@@ -315,11 +285,13 @@ fn accumulator(
                   // fold t & v, put first & folder t/v into already_processed
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     [
                       first,
-                      infra.t_end_insert_text(last_t, last_v_text),
+                      infra.t_t_last_to_first_concatenation(
+                        last_t,
+                        inside_text_node(last_v),
+                      ),
                       ..already_processed
                     ],
                     option.None,
@@ -335,11 +307,13 @@ fn accumulator(
                   // fold t & v, put into already_processed, make v the new optional_last_v
                   // *
                   accumulator(
-                    tag_to_be_folded,
-                    replacement_text,
+                    inner,
                     already_processed,
-                    option.Some(infra.t_end_insert_text(last_t, replacement_text)),
-                    option.Some(#(first, replacement_text)),
+                    option.Some(infra.t_t_last_to_first_concatenation(
+                      last_t,
+                      inside_text_node(last_v),
+                    )),
+                    option.Some(first),
                     rest,
                   )
               }
@@ -356,14 +330,7 @@ fn nodemap(
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
       let new_children =
-        accumulator(
-          inner.0,
-          inner.1,
-          [],
-          option.None,
-          option.None,
-          children,
-        )
+        accumulator(inner, [], option.None, option.None, children)
       Ok(V(blame, tag, attrs, new_children))
     }
   }
@@ -381,35 +348,32 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String,      String)
-//             ↖            ↖
-//             tag name     replacement
-//                          tag to use
+type Param = String
 type InnerParam = Param
 
-const name = "fold_tag_into_text"
-const constructor = fold_tag_into_text
+const name = "fold_contents_into_text"
+const constructor = fold_contents_into_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// seemingly replaces specified tags by specified
-/// strings that are glued to surrounding text nodes
-/// (in end-of-last-line glued to beginning-of-first-line
-/// fashion), without regards for the tag's contents
-/// or attributes, that are destroyed in the process
-pub fn fold_tag_into_text(param: Param) -> Desugarer {
+/// replaces a specified a tag by its contents (like 
+/// 'unwrap'), but with the first/last text node of
+/// the contents, if any, being folded into 
+/// surrounding text nodes (in end-of-last-line to 
+/// beginning-of-first-line fashion)
+pub fn fold_contents_into_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
     "
-/// seemingly replaces specified tags by specified
-/// strings that are glued to surrounding text nodes
-/// (in end-of-last-line glued to beginning-of-first-line
-/// fashion), without regards for the tag's contents
-/// or attributes, that are destroyed in the process
+/// replaces a specified a tag by its contents (like 
+/// 'unwrap'), but with the first/last text node of
+/// the contents, if any, being folded into 
+/// surrounding text nodes (in end-of-last-line to 
+/// beginning-of-first-line fashion)
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

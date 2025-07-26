@@ -55,9 +55,10 @@ import desugarers/find_replace__batch
 import desugarers/find_replace__outside
 import desugarers/find_replace_in_descendants_of
 import desugarers/fix_ti2_local_links
-import desugarers/fold_tag_contents_into_text
-import desugarers/fold_tag_into_text
-import desugarers/fold_tag_into_text__batch
+import desugarers/fold_contents_into_text
+import desugarers/fold_contents_into_text__batch
+import desugarers/fold_into_text
+import desugarers/fold_into_text__batch
 import desugarers/free_children
 import desugarers/free_children__batch
 import desugarers/generate_lbp_breadcrumbs
@@ -188,9 +189,10 @@ pub const find_replace__batch = find_replace__batch.find_replace__batch
 pub const find_replace__outside = find_replace__outside.find_replace__outside
 pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_replace_in_descendants_of
 pub const fix_ti2_local_links = fix_ti2_local_links.fix_ti2_local_links
-pub const fold_tag_contents_into_text = fold_tag_contents_into_text.fold_tag_contents_into_text
-pub const fold_tag_into_text = fold_tag_into_text.fold_tag_into_text
-pub const fold_tag_into_text__batch = fold_tag_into_text__batch.fold_tag_into_text__batch
+pub const fold_contents_into_text = fold_contents_into_text.fold_contents_into_text
+pub const fold_contents_into_text__batch = fold_contents_into_text__batch.fold_contents_into_text__batch
+pub const fold_into_text = fold_into_text.fold_into_text
+pub const fold_into_text__batch = fold_into_text__batch.fold_into_text__batch
 pub const free_children = free_children.free_children
 pub const free_children__batch = free_children__batch.free_children__batch
 pub const generate_lbp_breadcrumbs = generate_lbp_breadcrumbs.generate_lbp_breadcrumbs
@@ -322,9 +324,10 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   find_replace__outside.assertive_tests,
   find_replace_in_descendants_of.assertive_tests,
   fix_ti2_local_links.assertive_tests,
-  fold_tag_contents_into_text.assertive_tests,
-  fold_tag_into_text.assertive_tests,
-  fold_tag_into_text__batch.assertive_tests,
+  fold_contents_into_text.assertive_tests,
+  fold_contents_into_text__batch.assertive_tests,
+  fold_into_text.assertive_tests,
+  fold_into_text__batch.assertive_tests,
   free_children.assertive_tests,
   free_children__batch.assertive_tests,
   generate_lbp_breadcrumbs.assertive_tests,
