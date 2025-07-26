@@ -201,3 +201,14 @@ pub fn barbaric_symmetric_delim_splitting(
     dl.fold_into_text(#("OpeningOrClosingSymmetricDelim", delim_ordinary_form))
   ]
 }
+
+//***************
+// clean up after splitting
+//***************
+
+pub fn splitting_empty_lines_cleanup() -> List(Desugarer) {
+  [
+    dl.concatenate_text_nodes(),
+    dl.delete_text_nodes_with_singleton_empty_line(),
+  ]
+}
