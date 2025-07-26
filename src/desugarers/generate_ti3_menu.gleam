@@ -15,6 +15,10 @@ fn a_1_line_text_node(content: String) -> VXML {
   T(our_blame, [BlamedContent(our_blame, content)])
 }
 
+fn into_list(a: a) -> List(a) {
+  [a]
+}
+
 type PageInfo = #(Int, Int)  // (chapter_no, sub_no)
 
 type Menu {
@@ -59,8 +63,8 @@ fn a_tag_with_href_and_content(
   V(
     our_blame,
     "a",
-    [an_attribute("href", href)],
-    [a_1_line_text_node(content)],
+    an_attribute("href", href) |> into_list,
+    a_1_line_text_node(content) |> into_list,
   )
 }
 
@@ -102,9 +106,7 @@ fn info_2_left_menu(
   V(
     our_blame,
     "LeftMenu",
-    [
-      an_attribute("class", "left-menu"),
-    ],
+    an_attribute("class", "left-menu") |> into_list,
     option.values([
       Some(index_link),
       ch_link_option,
@@ -124,9 +126,7 @@ fn info_2_right_menu(
   V(
     our_blame,
     "RightMenu",
-    [
-      an_attribute("class", "right-menu"),
-    ],
+    an_attribute("class", "right-menu") |> into_list,
     option.values([
       Some(course_homepage_link),
       ch_link_option,
