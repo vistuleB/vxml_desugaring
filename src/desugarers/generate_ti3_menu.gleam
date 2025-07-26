@@ -82,8 +82,8 @@ fn info_2_link(
     }
 
   let id_attribute = case menu {
-    LeftMenu -> an_attribute("id", "prev-chapter")
-    RightMenu -> an_attribute("id", "next-chapter")
+    LeftMenu -> an_attribute("id", "prev-page")
+    RightMenu -> an_attribute("id", "next-page")
   }
 
   a_tag_with_href_and_content(href, content)
@@ -97,7 +97,7 @@ fn info_2_left_menu(
     a_tag_with_href_and_content("./index.html", "Inhaltsverzeichnis")
 
   let index_link = case prev_info {
-    None -> index_link |> infra.prepend_attribute(an_attribute("id", "prev-chapter"))
+    None -> index_link |> infra.prepend_attribute(an_attribute("id", "prev-page"))
     Some(_) -> index_link
   }
 
