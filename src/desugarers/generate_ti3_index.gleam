@@ -283,15 +283,15 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "generate_ti3_index_element"
-const constructor = generate_ti3_index_element
+const name = "generate_ti3_index"
+const constructor = generate_ti3_index
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// Generate ti3 Index element
-pub fn generate_ti3_index_element() -> Desugarer {
+pub fn generate_ti3_index() -> Desugarer {
   Desugarer(
     name,
     option.None,
