@@ -106,7 +106,7 @@ fn info_2_left_menu(
   V(
     our_blame,
     "LeftMenu",
-    an_attribute("class", "left-menu") |> into_list,
+    an_attribute("class", "menu-left") |> into_list,
     option.values([
       Some(index_link),
       ch_link_option,
@@ -126,7 +126,7 @@ fn info_2_right_menu(
   V(
     our_blame,
     "RightMenu",
-    an_attribute("class", "right-menu") |> into_list,
+    an_attribute("class", "menu-right") |> into_list,
     option.values([
       Some(course_homepage_link),
       ch_link_option,
