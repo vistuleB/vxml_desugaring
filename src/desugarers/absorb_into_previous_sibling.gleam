@@ -16,7 +16,7 @@ fn update_children(
     [T(_, _) as first, ..rest] -> update_children([previous_sibling, ..already_processed], first, rest, inner)
     [V(_, tag, _, _) as first, ..rest] -> case previous_sibling {
       T(_, _) -> update_children([previous_sibling, ..already_processed], first, rest, inner)
-      V(_, _, _, _) -> case list.contains(inner, tag) {
+      V(_, prev_tag, _, _) -> case list.contains(inner, tag) && !{ list.contains(inner, prev_tag) } {
         False -> update_children([previous_sibling, ..already_processed], first, rest, inner)
         True -> update_children(
           already_processed,
