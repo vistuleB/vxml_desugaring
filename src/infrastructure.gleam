@@ -135,7 +135,7 @@ pub fn opening_and_closing_singletons_for_pair(
 }
 
 //**************************************************************
-//* list utilities
+//* use <- utilities
 //**************************************************************
 
 pub fn on_false_on_true(
@@ -287,6 +287,10 @@ pub fn on_t_on_v_no_deconstruct(
     _ -> f2()
   }
 }
+
+//**************************************************************
+//* v-stuff
+//**************************************************************
 
 pub fn io_debug_digests(vxmls: List(VXML), announce: String) -> List(VXML) {
   io.print(announce <> ": ")
