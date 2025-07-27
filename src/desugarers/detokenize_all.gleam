@@ -19,12 +19,17 @@ fn detokenize_in_list(
 
   case children {
     [] -> {
-      let assert True = list.is_empty(accumulated_contents)
       accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
     }
 
     [first, ..rest] -> {
       case first {
+        V(blame, "__StartAtomizedT", _, _) -> {
+          let assert [] = accumulated_contents
+          let accumulated_contents = [BlamedContent(blame, "")]
+          detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
+        }
+        
         V(blame, "__OneWord", attributes, _) -> {
           let assert [BlamedAttribute(_, "val", word)] = attributes
           let accumulated_contents = append_word_to_accumlated_contents(blame, word)
@@ -43,21 +48,11 @@ fn detokenize_in_list(
           }
           detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
         }
-
-        V(blame, "__EndAtomizedT", _, _) ->
-          detokenize_in_list(rest, [], case accumulated_contents {
-            [] -> {
-              // this has been known to happen when the source
-              // contains (or starts with?) an empty
-              // <>
-              //    ""
-              // -type node
-              // (and this case should probably just return [] ?)
-              panic as "__EndAtomizedT not following text nodes"
-            }
-            _ -> [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes]
-          })
-
+        V(blame, "__EndAtomizedT", _, _) -> {
+          let accumulated_contents = append_word_to_accumlated_contents(blame, "")
+          let t = T(blame, accumulated_contents |> list.reverse)
+          detokenize_in_list(rest, [], [t, ..accumulated_nodes])
+        }
         _ -> {
           let assert True = list.is_empty(accumulated_contents)
           detokenize_in_list(rest, [], [first, ..accumulated_nodes])
@@ -155,6 +150,65 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
               <> inside
                 <>
                   \"some text\"
+      ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source: "
+            <> testing
+              <> bb
+                <> __OneWord
+                  val=first
+                <> __OneSpace
+                <> __OneSpace
+                <> __OneWord
+                  val=line
+                <> __EndAtomizedT
+      ",
+      expected: "
+            <> testing
+              <> bb
+                <> 
+                  \"first  line\"
+      ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source: "
+            <> testing
+              <> bb
+                <> __OneWord
+                  val=first
+                <> __OneSpace
+                <> __OneNewLine
+                <> __OneSpace
+                <> __OneWord
+                  val=line
+                <> __EndAtomizedT
+      ",
+      expected: "
+            <> testing
+              <> bb
+                <> 
+                  \"first \"
+                  \" line\"
+      ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source: "
+            <> testing
+              <> bb
+                <> __OneWord
+                  val=
+                <> __OneNewLine
+                <> __OneWord
+                  val=
+                <> __EndAtomizedT
+      ",
+      expected: "
+            <> testing
+              <> bb
+                <> 
+                  \"\"
+                  \"\"
       ",
     )
   ]
