@@ -10,8 +10,8 @@ fn nodemap(
 ) -> #(VXML, TrafficLight) {
   case node {
     V(blame, tag, attrs, children) if tag == inner.0 -> {
-        let wrapped_children = [V(blame, inner.1, [], children)]
-        #(V(blame, tag, attrs, wrapped_children), GoBack)
+      let wrapped_children = [V(blame, inner.1, [], children)]
+      #(V(blame, tag, attrs, wrapped_children), GoBack)
     }
     _ -> #(node, Continue)
   }
@@ -48,6 +48,9 @@ const constructor = wrap_children_in
 ///
 /// Will create a wrapper with all existing children
 /// nested inside it.
+///
+/// Early-returns when it finds a node of the
+/// specified parent tag to wrap.
 pub fn wrap_children_in(param: Param) -> Desugarer {
   Desugarer(
     name,
@@ -59,6 +62,9 @@ pub fn wrap_children_in(param: Param) -> Desugarer {
 ///
 /// Will create a wrapper with all existing children
 /// nested inside it.
+///
+/// Early-returns when it finds a node of the
+/// specified parent tag to wrap.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
@@ -78,8 +84,9 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> root
                   <> div
                     <> p
-                      <>
-                        \"Hello\"
+                      <> div
+                        <>
+                          \"Hello\"
                     <> span
                       <>
                         \"World\"
@@ -89,8 +96,9 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                   <> div
                     <> wrapper
                       <> p
-                        <>
-                          \"Hello\"
+                        <> div
+                          <>
+                            \"Hello\"
                       <> span
                         <>
                           \"World\"
