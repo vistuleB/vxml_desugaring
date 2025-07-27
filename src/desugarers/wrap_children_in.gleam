@@ -1,0 +1,140 @@
+import gleam/option
+import gleam/string.{inspect as ins}
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue, GoBack } as n2t
+import vxml.{type VXML, V}
+
+fn nodemap(
+  node: VXML,
+  inner: InnerParam,
+) -> #(VXML, TrafficLight) {
+  case node {
+    V(blame, tag, attrs, children) if tag == inner.0 -> {
+        let wrapped_children = [V(blame, inner.1, [], children)]
+        #(V(blame, tag, attrs, wrapped_children), GoBack)
+    }
+    _ -> #(node, Continue)
+  }
+}
+
+fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
+  nodemap(_, inner)
+}
+
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  nodemap_factory(inner)
+  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform()
+}
+
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
+}
+
+type Param = #(String,  String)
+//             ↖        ↖
+//             parent   wrapper
+//             tag      tag
+type InnerParam = Param
+
+const name = "wrap_children_in"
+const constructor = wrap_children_in
+
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+// 🏖️🏖️ Desugarer 🏖️🏖️
+// 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
+//------------------------------------------------53
+/// For a specified parent tag, wraps all children
+/// in a given wrapper tag.
+///
+/// Will create a wrapper with all existing children
+/// nested inside it.
+pub fn wrap_children_in(param: Param) -> Desugarer {
+  Desugarer(
+    name,
+    option.Some(ins(param)),
+    option.None,
+    "
+/// For a specified parent tag, wraps all children
+/// in a given wrapper tag.
+///
+/// Will create a wrapper with all existing children
+/// nested inside it.
+    ",
+    case param_to_inner_param(param) {
+      Error(error) -> fn(_) { Error(error) }
+      Ok(inner) -> transform_factory(inner)
+    }
+  )
+}
+
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+// 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
+// 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+  [
+    infra.AssertiveTestData(
+      param: #("div", "wrapper"),
+      source:   "
+                <> root
+                  <> div
+                    <> p
+                      <>
+                        \"Hello\"
+                    <> span
+                      <>
+                        \"World\"
+                ",
+      expected: "
+                <> root
+                  <> div
+                    <> wrapper
+                      <> p
+                        <>
+                          \"Hello\"
+                      <> span
+                        <>
+                          \"World\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: #("section", "content"),
+      source:   "
+                <> root
+                  <> section
+                ",
+      expected: "
+                <> root
+                  <> section
+                    <> content
+                ",
+    ),
+    infra.AssertiveTestData(
+      param: #("article", "body"),
+      source:   "
+                <> root
+                  <> article
+                    <> h1
+                      <>
+                        \"Title\"
+                    <> footer
+                      <>
+                        \"Footer\"
+                ",
+      expected: "
+                <> root
+                  <> article
+                    <> body
+                      <> h1
+                        <>
+                          \"Title\"
+                      <> footer
+                        <>
+                          \"Footer\"
+                ",
+    ),
+  ]
+}
+
+pub fn assertive_tests() {
+  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+}
