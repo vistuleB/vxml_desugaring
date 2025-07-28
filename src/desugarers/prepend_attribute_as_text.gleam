@@ -1,7 +1,7 @@
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue, GoBack} as n2t
+import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue} as n2t
 import vxml.{ type VXML, BlamedContent, T, V, BlamedAttribute}
 
 fn nodemap(
@@ -13,7 +13,7 @@ fn nodemap(
     V(_, tag, _, children) if tag == inner.0 -> {
       // get the attribute value if it exists
       case infra.v_attribute_with_key(vxml, inner.1) {
-        Some(BlamedAttribute(_, _, "\"\"")) -> #(vxml, GoBack)
+        Some(BlamedAttribute(_, _, "\"\"")) -> #(vxml, Continue)
         Some(BlamedAttribute(_, _, value)) ->
           #(V(..vxml, children: [
               T(blame,
