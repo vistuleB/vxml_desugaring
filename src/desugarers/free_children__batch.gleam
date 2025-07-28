@@ -105,7 +105,7 @@ const constructor = free_children__batch
 pub fn free_children__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// given a parent-child structure of the form

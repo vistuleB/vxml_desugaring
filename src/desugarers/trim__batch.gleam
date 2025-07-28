@@ -55,7 +55,7 @@ const constructor = trim__batch
 pub fn trim__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// Removes starting spaces from first and ending

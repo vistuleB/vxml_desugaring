@@ -79,7 +79,7 @@ const constructor = append_attribute_if_child_of__batch
 pub fn append_attribute_if_child_of__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// adds an attribute-pair to a tag when it is the

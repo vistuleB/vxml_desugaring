@@ -1,7 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
@@ -57,7 +56,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 type Param = List(#(String, String, String))
 //                  ↖       ↖       ↖
-//                  tag     attr    value
+//                  tag     key     value
 type InnerParam = Dict(String, List(BlamedAttribute))
 
 const name = "append_attribute__batch"
@@ -67,14 +66,28 @@ const constructor = append_attribute__batch
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds attributes to tags
+/// Takes a list of tuples of the form
+/// ```
+/// #(tag, key, value)
+/// ```
+/// and appends an attribute key=value to the list 
+/// of attributes of each v-node of tag 'tag'. The 
+/// 'tag' value can be repeated in the list, and all
+/// attributes for that tag will be added.
 pub fn append_attribute__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
-/// adds attributes to tags
+/// Takes a list of tuples of the form
+/// ```
+/// #(tag, key, value)
+/// ```
+/// and appends an attribute key=value to the list 
+/// of attributes of each v-node of tag 'tag'. The 
+/// 'tag' value can be repeated in the list, and all
+/// attributes for that tag will be added.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

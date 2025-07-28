@@ -8,8 +8,7 @@ import gleam/pair
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V,
-vxml_to_string}
+import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V, vxml_to_string}
 
 //**************************************************************
 //* css-unit parsing
@@ -34,14 +33,17 @@ fn extract_css_unit(s: String) -> #(String, Option(CSSUnit)) {
     string.ends_with(s, "rem"),
     #(string.drop_end(s, 3), Some(REM)),
   )
+
   use <- on_true_on_false(
     string.ends_with(s, "em"),
     #(string.drop_end(s, 2), Some(EM)),
   )
+
   use <- on_true_on_false(
     string.ends_with(s, "px"),
     #(string.drop_end(s, 2), Some(PX)),
   )
+
   #(s, None)
 }
 
@@ -52,30 +54,6 @@ pub fn parse_number_and_optional_css_unit(
   use number <- result.try(parse_to_float(before_unit))
   Ok(#(number, unit))
 }
-
-// old way (with regex):
-
-// fn css_unit_from_string(s: String) -> Option(CSSUnit) {
-//   case s {
-//     "px" -> Some(PX)
-//     "rem" -> Some(REM)
-//     "em" -> Some(EM)
-//     _ -> None
-//   }
-// }
-
-// pub fn parse_number_and_optional_css_unit(
-//   s: String
-// ) -> Result(#(Float, Option(CSSUnit)), Nil) {
-//   let assert Ok(digits_pattern) = regexp.from_string("^([-0-9.e]+)(|px|rem|em)$")
-//   case regexp.scan(digits_pattern, s) {
-//     [regexp.Match(_, [Some(digits), Some(unit)])] -> {
-//       let assert Ok(number) = parse_to_float(digits)
-//       Ok(#(number, css_unit_from_string(unit)))
-//     }
-//     _ -> Error(Nil)
-//   }
-// }
 
 //**************************************************************
 //* LatexDelimiterPair, LatexDelimiterSingleton
@@ -470,6 +448,22 @@ pub fn get_at(ze_list: List(a), index: Int) -> Result(a, Nil) {
     True -> Error(Nil)
     False -> list.drop(ze_list, index) |> list.first
   }
+}
+
+pub fn list_param_stringifier(param: List(p)) -> String {
+  "[" <> {
+    param
+    |> list.index_map(
+      fn(p, i) {
+        case i > 0 {
+          True -> ", " <> ins(p)
+          False -> " " <> ins(p)
+        }
+      }
+    )
+    |> string.join("\n")
+  }
+  <> " ]"
 }
 
 //**************************************************************

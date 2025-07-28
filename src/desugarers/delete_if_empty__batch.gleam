@@ -46,7 +46,7 @@ const constructor = delete_if_empty__batch
 pub fn delete_if_empty__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.None,
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// deletes nodes that have no children for tose 

@@ -1,7 +1,7 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
+import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
@@ -107,7 +107,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute__batch(
 ) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// For each #(tag, counter_name) pair in the 

@@ -744,7 +744,7 @@ const constructor = rearrange_links__batch
 pub fn rearrange_links__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// matches appearance of first String while 

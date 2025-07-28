@@ -425,8 +425,49 @@ pub type ThreePossibilities(f, g, h) {
   C3(h)
 }
 
+fn ddd_truncate(str: String, max_cols) -> String {
+  case string.length(str) > max_cols {
+    False -> str
+    True -> {
+      let excess = string.length(str) - max_cols
+      string.drop_end(str, excess + 3) <> "..."
+    }
+  }
+}
+
+fn desugarer_to_list_lines(
+  desugarer: Desugarer,
+  index: Int,
+  max_param_cols: Int,
+  max_outside_cols: Int,
+  none_string: String,
+) -> List(#(String, String, String, String)) {
+  let number = ins(index + 1) <> "."
+  let name = desugarer.name
+  let param_lines = case desugarer.stringified_param {
+    None -> [none_string]
+    Some(thing) -> case string.split(thing, "\n") {
+      [] -> panic as "stringified param is empty string?"
+      lines -> lines |> list.map(ddd_truncate(_, max_param_cols))
+    }
+  }
+  let outside = case desugarer.stringified_outside {
+    None -> none_string
+    Some(thing) -> thing |> ddd_truncate(max_outside_cols)
+  }
+  list.index_map(
+    param_lines,
+    fn (p, i) {
+      case i == 0 {
+        True -> #(number, name, p, outside)
+        False -> #("", "  ⋮", p, "⋮")
+      }
+    }
+  )
+}
+
 fn print_pipeline(desugarers: List(Desugarer)) {
-  let none_param = "--"
+  let none_string = "--"
   let max_param_cols = 55
   let max_outside_cols = 55
 
@@ -434,36 +475,12 @@ fn print_pipeline(desugarers: List(Desugarer)) {
     desugarers
     |> list.index_map(
       fn(d, i) {
-        let param = case d.stringified_param {
-          None -> none_param
-          Some(thing) -> thing
-        }
-        let param = case string.length(param) > max_param_cols {
-          False -> param
-          True -> {
-            let excess = string.length(param) - max_param_cols
-            string.drop_end(param, excess + 3) <> "..."
-          }
-        }
-        let outside = case d.stringified_outside {
-          None -> none_param
-          Some(thing) -> thing
-        }
-        let outside = case string.length(outside) > max_outside_cols {
-          False -> outside
-          True -> {
-            let excess = string.length(outside) - max_outside_cols
-            string.drop_end(outside, excess + 3) <> "..."
-          }
-        }
-        #(ins(i + 1) <> ".", d.name, param, outside)
+        desugarer_to_list_lines(d, i, max_param_cols, max_outside_cols, none_string)
       }
     )
+    |> list.flatten
 
-  // let #(col1, col2, col3) = star_block.three_column_maxes(lines)
-  // let width = 3 + 2 + col1 + 2 + 2 + col2 + 2 + 2 + col3 + 2  
-  // io.println(star_block.spaces(width / 2 - 8) <> "*** pipeline: ***")
-  io.println("• greetings! ur pipeline:")
+  io.println("• desugarers in pipeline:")
 
   star_block.four_column_table(
     [

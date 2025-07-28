@@ -1,7 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
@@ -78,7 +77,7 @@ const constructor = append_class_to_child_if__batch
 pub fn append_class_to_child_if__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param |> list.map(infra.quad_drop_3rd))),
+    option.Some(param |> list.map(infra.quad_drop_3rd) |> infra.list_param_stringifier),
     option.None,
     "
 /// appends a class to children if they meet a
