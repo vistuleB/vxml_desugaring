@@ -86,6 +86,7 @@ import desugarers/pair_list_list
 import desugarers/prepend_append_text
 import desugarers/prepend_append_text__batch
 import desugarers/prepend_append_to_text_children_of
+import desugarers/prepend_attribute_as_text
 import desugarers/prepend_text_node
 import desugarers/prepend_text_node__batch
 import desugarers/prepend_text_node__outside
@@ -221,6 +222,7 @@ pub const pair_list_list = pair_list_list.pair_list_list
 pub const prepend_append_text = prepend_append_text.prepend_append_text
 pub const prepend_append_text__batch = prepend_append_text__batch.prepend_append_text__batch
 pub const prepend_append_to_text_children_of = prepend_append_to_text_children_of.prepend_append_to_text_children_of
+pub const prepend_attribute_as_text = prepend_attribute_as_text.prepend_attribute_as_text
 pub const prepend_text_node = prepend_text_node.prepend_text_node
 pub const prepend_text_node__batch = prepend_text_node__batch.prepend_text_node__batch
 pub const prepend_text_node__outside = prepend_text_node__outside.prepend_text_node__outside
@@ -357,6 +359,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   prepend_append_text.assertive_tests,
   prepend_append_text__batch.assertive_tests,
   prepend_append_to_text_children_of.assertive_tests,
+  prepend_attribute_as_text.assertive_tests,
   prepend_text_node.assertive_tests,
   prepend_text_node__batch.assertive_tests,
   prepend_text_node__outside.assertive_tests,
