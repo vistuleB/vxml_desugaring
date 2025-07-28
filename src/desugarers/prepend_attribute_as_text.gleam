@@ -1,42 +1,40 @@
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue} as n2t
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{ type VXML, BlamedContent, T, V, BlamedAttribute}
 
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
-) -> #(VXML, TrafficLight) {
+) -> VXML {
   let blame = infra.blame_us("prepend_attribute_as_text")
   case vxml {
     V(_, tag, _, children) if tag == inner.0 -> {
       // get the attribute value if it exists
       case infra.v_attribute_with_key(vxml, inner.1) {
-        Some(BlamedAttribute(_, _, "\"\"")) -> #(vxml, Continue)
+        Some(BlamedAttribute(_, _, "\"\"")) -> vxml
         Some(BlamedAttribute(_, _, value)) ->
-          #(V(..vxml, children: [
-              T(blame,
-                [BlamedContent(blame, value)]
-              ),
-              ..children
-            ]),
-            Continue,
-          )
-        None -> #(vxml, Continue)
+          V(..vxml, children: [
+            T(blame,
+              [BlamedContent(blame, value)]
+            ),
+            ..children
+          ])
+        None -> vxml
       }
     }
-    _ -> #(vxml, Continue)
+    _ -> vxml
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.EarlyReturnOneToOneNoErrorNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.early_return_one_to_one_no_error_nodemap_2_desugarer_transform()
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -66,7 +64,7 @@ const constructor = prepend_attribute_as_text
 /// as-is without any newline splitting. Empty
 /// attribute values are ignored.
 ///
-/// Early-returns from nodes of tag 'tag'.
+/// Processes all matching nodes depth-first.
 pub fn prepend_attribute_as_text(param: Param) -> Desugarer {
   Desugarer(
     name,
@@ -84,7 +82,7 @@ pub fn prepend_attribute_as_text(param: Param) -> Desugarer {
 /// as-is without any newline splitting. Empty
 /// attribute values are ignored.
 ///
-/// Early-returns from nodes of tag 'tag'.
+/// Processes all matching nodes depth-first.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
