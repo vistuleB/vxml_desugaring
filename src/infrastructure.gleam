@@ -317,7 +317,7 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
 
 pub fn get_root_with_desugaring_error(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   get_root(vxmls)
-  |> result.map_error(fn(msg) { DesugaringError(blamedlines.empty_blame(), msg)})
+  |> result.map_error(fn(msg) { DesugaringError(blamedlines.no_blame(), msg)})
 }
 
 pub fn get_duplicate(list: List(a)) -> Option(a) {
@@ -525,7 +525,7 @@ pub fn validate_unique_keys(
   l: List(#(a, b))
 ) -> Result(List(#(a, b)), DesugaringError) {
   case get_duplicate(list.map(l, pair.first)) {
-    Some(guy) -> Error(DesugaringError(blamedlines.empty_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
+    Some(guy) -> Error(DesugaringError(blamedlines.no_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
     None -> Ok(l)
   }
 }

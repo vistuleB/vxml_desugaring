@@ -14,7 +14,8 @@ fn nodemap(
       case infra.v_attribute_with_key(vxml, inner.1) {
         Some(BlamedAttribute(_, _, value)) if value != "" ->
           V(..vxml, children: [
-            T(blame,
+            T(
+              blame,
               [BlamedContent(blame, value)]
             ),
             ..children

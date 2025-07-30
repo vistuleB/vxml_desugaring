@@ -82,7 +82,7 @@ pub fn default_html_source_parser(
   spotlight_args: List(#(String, String, String)),
 ) -> SourceParser(String) {
   fn (lines) {
-    let path = bl.first_blame_filename(lines) |> result.unwrap("")
+    let path = bl.filename_of_first_blame(lines) |> result.unwrap("")
     let s = string.trim(bl.blamed_lines_to_string(lines))
     use nonempty_string <- result.try(
       case s {
@@ -460,7 +460,8 @@ fn desugarer_to_list_lines(
     fn (p, i) {
       case i == 0 {
         True -> #(number, name, p, outside)
-        False -> #("", "  ⋮", p, "⋮")
+        False -> #("", star_block.spaces(string.length(name)), p, "⋮")
+        // False -> #("", "", p, "⋮")
       }
     }
   )
@@ -468,8 +469,8 @@ fn desugarer_to_list_lines(
 
 fn print_pipeline(desugarers: List(Desugarer)) {
   let none_string = "--"
-  let max_param_cols = 55
-  let max_outside_cols = 55
+  let max_param_cols = 65
+  let max_outside_cols = 45
 
   let lines = 
     desugarers
@@ -524,12 +525,10 @@ pub fn run_renderer(
 
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
-    True -> {
-      io.println(bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
-        "(assembled)",
-        assembled,
-      ))
-    }
+    True -> 
+      assembled
+      |> bl.blamed_lines_pretty_printer_no1("assembled")
+      |> io.println
   }
 
   io.println("• parsing source (" <> input_dir <> ")")
@@ -628,14 +627,7 @@ pub fn run_renderer(
       True -> {
         fr.payload
         |> vp.vxml_to_blamed_lines
-        |> bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
-          "("
-            <> ins(list.length(renderer.pipeline))
-            <> ":splitter_debug_options:"
-            <> fr.path
-            <> ")",
-          _,
-        )
+        |> bl.blamed_lines_pretty_printer_no1("fr:" <> fr.path)
         |> io.println
       }
     }
@@ -658,10 +650,8 @@ pub fn run_renderer(
         {
           False -> Nil
           True -> {
-            bl.blamed_lines_to_table_vanilla_bob_and_jane_sue(
-              "(emitter_debug_options:" <> fr.path <> ")",
-              fr.payload,
-            )
+            fr.payload
+            |> bl.blamed_lines_pretty_printer_no1("fr-bl:" <> fr.path)
             |> io.println
           }
         }
