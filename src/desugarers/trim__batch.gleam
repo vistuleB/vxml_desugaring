@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
@@ -46,7 +45,7 @@ const constructor = trim__batch
 //------------------------------------------------53
 /// Removes starting spaces from first and ending
 /// spaces from last child of nodes with specified
-/// tags if those children are T-nodes. The removal 
+/// tags if those children are T-nodes. The removal
 /// of spaces includes the removal of empty lines
 /// and the deletion of the entire T-node if no
 /// lines remain, in which case the process
@@ -60,7 +59,7 @@ pub fn trim__batch(param: Param) -> Desugarer {
     "
 /// Removes starting spaces from first and ending
 /// spaces from last child of nodes with specified
-/// tag if those children are T-nodes. The removal 
+/// tag if those children are T-nodes. The removal
 /// of spaces includes the removal of empty lines
 /// and the deletion of the entire T-node if no
 /// lines remain, in which case the process

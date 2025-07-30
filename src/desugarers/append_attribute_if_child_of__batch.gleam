@@ -1,7 +1,6 @@
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
@@ -72,8 +71,8 @@ const constructor = append_attribute_if_child_of__batch
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// adds an attribute-pair to a tag when it is the 
-/// child of another specified tag; will not 
+/// adds an attribute-pair to a tag when it is the
+/// child of another specified tag; will not
 /// overwrite if attribute with that key already
 /// exists
 pub fn append_attribute_if_child_of__batch(param: Param) -> Desugarer {
@@ -83,7 +82,7 @@ pub fn append_attribute_if_child_of__batch(param: Param) -> Desugarer {
     option.None,
     "
 /// adds an attribute-pair to a tag when it is the
-/// child of another specified tag; will not 
+/// child of another specified tag; will not
 /// overwrite if attribute with that key already
 /// exists
     ",
