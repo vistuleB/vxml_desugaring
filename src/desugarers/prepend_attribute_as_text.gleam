@@ -1,4 +1,4 @@
-import gleam/option.{Some, None}
+import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
@@ -11,17 +11,15 @@ fn nodemap(
   let blame = infra.blame_us("prepend_attribute_as_text")
   case vxml {
     V(_, tag, _, children) if tag == inner.0 -> {
-      // get the attribute value if it exists
       case infra.v_attribute_with_key(vxml, inner.1) {
-        Some(BlamedAttribute(_, _, "\"\"")) -> vxml
-        Some(BlamedAttribute(_, _, value)) ->
+        Some(BlamedAttribute(_, _, value)) if value != "" ->
           V(..vxml, children: [
             T(blame,
               [BlamedContent(blame, value)]
             ),
             ..children
           ])
-        None -> vxml
+        _ -> vxml
       }
     }
     _ -> vxml
