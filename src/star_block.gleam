@@ -8,6 +8,7 @@ import infrastructure.{type Desugarer}
 pub fn dashes(num: Int) -> String { string.repeat("-", num) }
 pub fn spaces(num: Int) -> String { string.repeat(" ", num) }
 pub fn dots(num: Int) -> String { string.repeat(".", num) }
+pub fn threedots(num: Int) -> String { string.repeat("…", num) }
 
 // ************************
 // 2-column table printer
@@ -97,7 +98,7 @@ pub fn three_column_table(
       <> triple.1
       <> case index % 2 {
         1 -> dots(maxes.1 - string.length(triple.1) + padding.1)
-        _ -> spaces(maxes.1 - string.length(triple.1) + padding.1)
+        _ -> dots(maxes.1 - string.length(triple.1) + padding.1)
       }
       <> "| "
       <> triple.2
@@ -156,6 +157,7 @@ pub fn four_column_table(
       <> tuple.1
       <> case index % 2 {
         1 -> dots(maxes.1 - string.length(tuple.1) + padding.1)
+        _ if index >= 0 -> threedots(maxes.1 - string.length(tuple.1) + padding.1)
         _ -> spaces(maxes.1 - string.length(tuple.1) + padding.1)
       }
       <> "| "
@@ -171,7 +173,7 @@ pub fn four_column_table(
   let assert [first, ..rest] = lines
 
   io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|-" <> dashes(maxes.3 + padding.3) <> "|")
-  one_line(first, 0)
+  one_line(first, -1)
   io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|-" <> dashes(maxes.3 + padding.3) <> "|")
   list.index_map(rest, one_line)
   io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|-" <> dashes(maxes.3 + padding.3) <> "|")
