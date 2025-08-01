@@ -17,16 +17,6 @@ import desugarer_library as dl
 // math delimiter stuff
 //******************
 
-fn all_left_right_delims_for(which: String) -> #(List(String), List(String)) {
-  case which {
-    "MathBlock" -> infra.latex_display_delimiter_pairs_list()
-    "Math" -> infra.latex_inline_delimiter_pairs_list()
-    _ -> panic as "was expecting 'Math' or 'MathBlock'"
-  }
-  |> list.map(infra.opening_and_closing_string_for_pair)
-  |> list.unzip
-}
-
 fn closing_equals_opening(
   pair: LatexDelimiterPair
 ) -> Bool {
@@ -76,7 +66,7 @@ fn split_pair_fold_for_delimiter_pair(
   }
 }
 
-pub fn create_math_or_mathblock_elements(
+fn create_math_or_mathblock_elements(
   parsed: List(LatexDelimiterPair),
   produced: LatexDelimiterPair,
   which: String,
@@ -87,12 +77,21 @@ pub fn create_math_or_mathblock_elements(
     |> list.map(split_pair_fold_for_delimiter_pair(_, which, ["Math", "MathBlock"]))
     |> list.flatten
 
-  let #(left_delims, right_delims) = all_left_right_delims_for(which)
+  let delims = case which {
+    "MathBlock" -> infra.latex_display_delimiter_pairs_list()
+    "Math" -> infra.latex_inline_delimiter_pairs_list()
+    _ -> panic as "was expecting 'Math' or 'MathBlock'"
+  }
 
   [
-    [dl.strip_delimiters_inside(#(which, left_delims, right_delims))],
+    // [dl.strip_delimiters_inside(#(which, left_delims, right_delims))],
+    [
+      dl.strip_delimiters_inside(#(which, delims)),
+    ],
     create_tags,
-    [dl.prepend_append_text(#(which, pair.0, pair.1))],
+    [
+      dl.prepend_append_text(#(which, pair.0, pair.1)),
+    ],
   ]
   |> list.flatten
 }

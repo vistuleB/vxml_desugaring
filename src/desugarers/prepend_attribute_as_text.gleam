@@ -154,14 +154,14 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       param: #("span", "data"),
       source: "
                 <> span
-                  data=\"\"
+                  data=
                   <> em
                     <>
                       \"Text\"
                 ",
       expected: "
                 <> span
-                  data=\"\"
+                  data=
                   <> em
                     <>
                       \"Text\"

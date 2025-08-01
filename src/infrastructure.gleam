@@ -112,6 +112,13 @@ pub fn opening_and_closing_singletons_for_pair(
   }
 }
 
+pub fn left_right_delim_strings(delimiters: List(LatexDelimiterPair)) -> #(List(String), List(String)) {
+  delimiters
+  |> list.map(opening_and_closing_string_for_pair)
+  |> list.unzip
+}
+
+
 //**************************************************************
 //* use <- utilities
 //**************************************************************
@@ -946,6 +953,23 @@ pub fn lines_remove_starting_empty_lines(l: List(BlamedContent)) -> List(BlamedC
   }
 }
 
+pub fn lines_contain(
+  lines: List(BlamedContent),
+  s: String,
+) -> Bool {
+  list.any(lines, fn(bc) {string.contains(bc.content, s)})
+}
+
+pub fn descendant_text_contains(
+  v: VXML,
+  s: String,
+) -> Bool {
+  case v {
+    T(_, lines) -> lines_contain(lines, s)
+    V(_, _, _, children) -> list.any(children, descendant_text_contains(_, s))
+  }
+}
+
 pub fn debug_lines_and(
   lines: List(BlamedContent),
   announcer: String,
@@ -1601,6 +1625,12 @@ pub fn v_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
   }
 }
 
+pub fn extract_children(vxml: VXML, condition: fn(VXML) -> Bool) -> #(VXML, List(VXML)) {
+  let assert V(_, _, _, children) = vxml
+  let #(extracted, left) = list.partition(children, condition)
+  #(V(..vxml, children: left), extracted)
+}
+
 pub fn get_children(vxml: VXML) -> List(VXML) {
   let assert V(_, _, _, children) = vxml
   children
@@ -2107,8 +2137,8 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     False -> Error(
       AssertiveTestError(
         desugarer.name,
-        vxml.debug_vxml_to_string("(obtained) ", output),
-        vxml.debug_vxml_to_string("(expected) ", expected),
+        vxml.debug_vxml_to_string("obtained", output),
+        vxml.debug_vxml_to_string("expected", expected),
       )
     )
   }

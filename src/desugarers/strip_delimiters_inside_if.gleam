@@ -50,9 +50,14 @@ fn nodemap(
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
   case node {
-    V(_, tag, _, children) if tag == inner.0 -> case children {
-      [T(_, _) as t] -> Ok(V(..node, children: [strip(t, inner)]))
-      _ -> Error(DesugaringError(node.blame, "expecting unique text child in target tag"))
+    V(_, tag, _, children) if tag == inner.0 -> {
+      case inner.3(node) {
+        False -> Ok(node)
+        True -> case children {
+          [T(_, _) as t] -> Ok(V(..node, children: [strip(t, inner)]))
+          _ -> Error(DesugaringError(node.blame, "expecting unique text child in target tag"))
+        }
+      }
     }
     _ -> Ok(node)
   }
@@ -66,14 +71,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   n2t.one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
-type Param = #(String,    List(infra.LatexDelimiterPair))
-//             ↖          ↖
-//             tag        delimiters
-//             to target  to remove
-type InnerParam = #(String, List(String), List(String))
+type Param = #(String,    List(infra.LatexDelimiterPair), fn(VXML) -> Bool)
+//             ↖          ↖                               ↖
+//             tag        delimiters                      condition
+//             to target  to remove                       
+type InnerParam = #(String, List(String), List(String), fn(VXML) -> Bool)
 
-const name = "strip_delimiters_inside"
-const constructor = strip_delimiters_inside
+const name = "strip_delimiters_inside_if"
+const constructor = strip_delimiters_inside_if
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -106,9 +111,9 @@ const constructor = strip_delimiters_inside
 ///     "x"
 /// ```
 /// .
-pub fn strip_delimiters_inside(param: Param) -> Desugarer {
+pub fn strip_delimiters_inside_if(param: Param) -> Desugarer {
   let #(opening, closing) = infra.left_right_delim_strings(param.1)
-  let inner = #(param.0, opening, closing)
+  let inner = #(param.0, opening, closing, param.2)
   Desugarer(
     name,
     option.Some(ins(inner)),
@@ -152,7 +157,7 @@ pub fn strip_delimiters_inside(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: #("Z", [infra.DoubleDollar]),
+      param: #("Z", [infra.DoubleDollar], infra.descendant_text_contains(_, "x")),
       source:   "
                 <> root
                   <> Z
@@ -163,7 +168,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                       \"$$x$$\"
                   <> Z
                     <>
-                      \"$x$\"
+                      \"$$w$$\"
                 ",
       expected: "
                 <> root
@@ -175,7 +180,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                       \"$$x$$\"
                   <> Z
                     <>
-                      \"$x$\"
+                      \"$$w$$\"
                 ",
     ),
   ]

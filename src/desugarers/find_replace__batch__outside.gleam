@@ -21,15 +21,15 @@ type Param = #(List(#(String, String)), List(String))
 //             from/to pairs            keep_out_of
 type InnerParam = Param
 
-const name = "find_replace__batch"
-const constructor = find_replace__batch
+const name = "find_replace__batch__outside"
+const constructor = find_replace__batch__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// find and replace strings with other strings
-pub fn find_replace__batch(param: Param) -> Desugarer {
+pub fn find_replace__batch__outside(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

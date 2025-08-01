@@ -52,7 +52,7 @@ import desugarers/detokenize_all
 import desugarers/encode_spaces_in_first_and_last_child
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
-import desugarers/find_replace__batch
+import desugarers/find_replace__batch__outside
 import desugarers/find_replace__outside
 import desugarers/find_replace_in_descendants_of
 import desugarers/fix_ti2_local_links
@@ -109,6 +109,7 @@ import desugarers/rename_with_attributes
 import desugarers/replace_in_attribute_values
 import desugarers/replace_multiple_spaces_by_one
 import desugarers/strip_delimiters_inside
+import desugarers/strip_delimiters_inside_if
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
 import desugarers/timer
@@ -189,7 +190,7 @@ pub const detokenize_all = detokenize_all.detokenize_all
 pub const encode_spaces_in_first_and_last_child = encode_spaces_in_first_and_last_child.encode_spaces_in_first_and_last_child
 pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
-pub const find_replace__batch = find_replace__batch.find_replace__batch
+pub const find_replace__batch__outside = find_replace__batch__outside.find_replace__batch__outside
 pub const find_replace__outside = find_replace__outside.find_replace__outside
 pub const find_replace_in_descendants_of = find_replace_in_descendants_of.find_replace_in_descendants_of
 pub const fix_ti2_local_links = fix_ti2_local_links.fix_ti2_local_links
@@ -246,6 +247,7 @@ pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const replace_in_attribute_values = replace_in_attribute_values.replace_in_attribute_values
 pub const replace_multiple_spaces_by_one = replace_multiple_spaces_by_one.replace_multiple_spaces_by_one
 pub const strip_delimiters_inside = strip_delimiters_inside.strip_delimiters_inside
+pub const strip_delimiters_inside_if = strip_delimiters_inside_if.strip_delimiters_inside_if
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
 pub const timer = timer.timer
@@ -327,7 +329,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   encode_spaces_in_first_and_last_child.assertive_tests,
   extract_starting_and_ending_spaces.assertive_tests,
   filter_nodes_by_attributes.assertive_tests,
-  find_replace__batch.assertive_tests,
+  find_replace__batch__outside.assertive_tests,
   find_replace__outside.assertive_tests,
   find_replace_in_descendants_of.assertive_tests,
   fix_ti2_local_links.assertive_tests,
@@ -384,6 +386,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   replace_in_attribute_values.assertive_tests,
   replace_multiple_spaces_by_one.assertive_tests,
   strip_delimiters_inside.assertive_tests,
+  strip_delimiters_inside_if.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
   timer.assertive_tests,

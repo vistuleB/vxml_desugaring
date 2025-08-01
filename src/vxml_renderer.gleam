@@ -182,13 +182,26 @@ pub type EmitterDebugOptions(d) {
 }
 
 // *****************
+// stub writerly emitter
+// *****************
+
+pub fn stub_writerly_emitter(
+  fragment: OutputFragment(d, VXML),
+) -> Result(OutputFragment(d, List(BlamedLine)), b) {
+  let lines =
+    fragment.payload
+    |> wp.vxml_to_writerlys
+    |> wp.writerlys_to_blamed_lines
+  Ok(OutputFragment(..fragment, payload: lines))
+}
+
+// *****************
 // stub html emitter
 // *****************
 
 pub fn stub_html_emitter(
-  tuple: #(String, VXML, a),
-) -> Result(#(String, List(BlamedLine), a), b) {
-  let #(path, fragment, fragment_type) = tuple
+  fragment: OutputFragment(d, VXML),
+) -> Result(OutputFragment(d, List(BlamedLine)), b) {
   let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, 0, []) }
   let lines =
     list.flatten([
@@ -204,16 +217,16 @@ pub fn stub_html_emitter(
         BlamedLine(blame_us("stub_html_emitter"), 0, "</head>"),
         BlamedLine(blame_us("stub_html_emitter"), 0, "<body>"),
       ],
-      fragment
-        |> infra.get_children
-        |> list.map(fn(vxml) { vp.vxml_to_html_blamed_lines(vxml, 2, 2) })
-        |> list.flatten,
+      fragment.payload
+      |> infra.get_children
+      |> list.map(fn(vxml) { vp.vxml_to_html_blamed_lines(vxml, 2, 2) })
+      |> list.flatten,
       [
         BlamedLine(blame_us("stub_html_emitter"), 0, "</body>"),
         BlamedLine(blame_us("stub_html_emitter"), 0, ""),
       ],
     ])
-  Ok(#(path, lines, fragment_type))
+  Ok(OutputFragment(..fragment, payload: lines))
 }
 
 pub fn stub_jsx_emitter(
