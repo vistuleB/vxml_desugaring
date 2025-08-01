@@ -448,7 +448,7 @@ fn fancy_one_to_many_no_error_nodemap_recursive_application(
           children,
           #([], [], list.drop(children, 1)),
           fn(acc, child) {
-            let shat_children = 
+            let shat_children =
               fancy_one_to_many_no_error_nodemap_recursive_application(
                 child,
                 children_ancestors,
@@ -699,6 +699,64 @@ pub fn fancy_one_to_one_stateful_nodemap_2_desugarer_transform(
       Error(err) -> Error(err)
       Ok(#(vxml, _)) -> Ok(vxml)
     }
+  }
+}
+
+//**********************************************************************
+//* OneToOneBeforeAndAfterNoErrorStatefulNodeMap
+//**********************************************************************
+
+pub type OneToOneBeforeAndAfterNoErrorStatefulNodeMap(a) {
+  OneToOneBeforeAndAfterNoErrorStatefulNodeMap(
+    v_before_transforming_children: fn(VXML, a) -> #(VXML, a),
+    v_after_transforming_children: fn(VXML, a, a) -> #(VXML, a),
+    t_nodemap: fn(VXML, a) -> #(VXML, a),
+  )
+}
+
+fn one_to_one_before_and_after_no_error_stateful_nodemap_recursive_application(
+  original_state: a,
+  node: VXML,
+  nodemap: OneToOneBeforeAndAfterNoErrorStatefulNodeMap(a),
+) -> #(VXML, a) {
+  case node {
+    T(_, _) -> nodemap.t_nodemap(node, original_state)
+    V(_, _, _, children) -> {
+      let #(node, latest_state) =
+        nodemap.v_before_transforming_children(
+          node,
+          original_state,
+        )
+      let #(latest_state, children) =
+        list.map_fold(
+          children,
+          latest_state,
+          fn (acc, child) {
+            let #(vxml, state) = one_to_one_before_and_after_no_error_stateful_nodemap_recursive_application(acc, child, nodemap)
+            #(state, vxml)
+          }
+        )
+      nodemap.v_after_transforming_children(
+        node |> infra.replace_children_with(children),
+        original_state,
+        latest_state,
+      )
+    }
+  }
+}
+
+pub fn one_to_one_before_and_after_no_error_stateful_nodemap_2_desugarer_transform(
+  nodemap: OneToOneBeforeAndAfterNoErrorStatefulNodeMap(a),
+  initial_state: a,
+) -> DesugarerTransform {
+  fn(vxml) {
+    let #(vxml, _) =
+      one_to_one_before_and_after_no_error_stateful_nodemap_recursive_application(
+        initial_state,
+        vxml,
+        nodemap
+      )
+    Ok(vxml)
   }
 }
 
@@ -987,7 +1045,7 @@ fn early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden
     infra.is_v_and_tag_is_one_of(node, forbidden),
     node,
   )
-  let #(node, signal) = nodemap(node)  
+  let #(node, signal) = nodemap(node)
   case node, signal {
     V(_, _, _, children), Continue -> {
       let children =
@@ -1078,8 +1136,8 @@ fn early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidde
       [V(..node, children: children)]
     }
     _, Continue -> {
-      // right now we're not super in love with EarlyReturn (or more 
-      // generally self_first) nodemap replacing itself by > 1 node 
+      // right now we're not super in love with EarlyReturn (or more
+      // generally self_first) nodemap replacing itself by > 1 node
       // and asking us to continue at child level
       panic as "EarlyReturn recursive_application asked to Continue after node spit itself"
     }
