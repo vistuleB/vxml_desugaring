@@ -36,18 +36,18 @@ fn hyperlink_constructor(
     state.path,
     fn(){Error(DesugaringError(blame, "handle occurrence when local path is not defined"))},
   )
-  let #(id, target_path, value) = handle
+  let #(value, id, target_path) = handle
   let #(tag, attrs) = case target_path == path {
     True -> #(inner.1, inner.3)
     False -> #(inner.2, inner.4)
   }
   let attrs = [
-    BlamedAttribute(blame, "href", target_path <> "?id=" <> id),
+    BlamedAttribute(blame, "href", target_path <> "#" <> id),
     ..attrs
   ]
   Ok(V(
     blame,
-    tag, 
+    tag,
     attrs,
     [T(blame, [BlamedContent(blame, value)])],
   ))
@@ -117,7 +117,7 @@ fn splits_2_ts(
   blame: Blame,
 ) -> List(VXML) {
   splits
-  |> augment_to_1_mod_3  
+  |> augment_to_1_mod_3
   |> retain_0_mod_3
   |> list.map(split_2_t(_, blame))
 }
@@ -256,8 +256,8 @@ type Param = #(String,            String,                 String,               
 //             ↖                  ↖                       ↖                      ↖                          ↖
 //             attribute key      tag to use              tag to use             additional key-value       additional key-value
 //             to update the      when handle path        when handle path       pairs for former case      pairs for latter case
-//             local path         equals local path       !equals local path     
-//                                at point of insertion   at point of insertion  
+//             local path         equals local path       !equals local path
+//                                at point of insertion   at point of insertion
 type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAttribute))
 
 const name = "handles_substitute"
@@ -267,40 +267,40 @@ const constructor = handles_substitute
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// Expects a document with root 'GrandWrapper' 
+/// Expects a document with root 'GrandWrapper'
 /// whose attributes comprise of key-value pairs of
 /// the form handle=handle_name|value|id|path
-/// and with a unique child being the root of the 
+/// and with a unique child being the root of the
 /// original document.
-/// 
+///
 /// Replaces >>handle_name occurrences by links,
 /// using two different kinds of tags for links
-/// that point to elements in the same page versus 
+/// that point to elements in the same page versus
 /// links that point element in a different page.
 ///
-/// More specifically, given an occurrence 
-/// >>handle_name where handle_name points to an 
-/// element of path 'path' as given by one of the 
-/// key-value pairs in GrandWrapper, determines if 
-/// 'path' is in another page of the final set of 
+/// More specifically, given an occurrence
+/// >>handle_name where handle_name points to an
+/// element of path 'path' as given by one of the
+/// key-value pairs in GrandWrapper, determines if
+/// 'path' is in another page of the final set of
 /// pages with respect to the current page of the
 /// document by trying to look up the latter on the
 /// latest (closest) ancestor of the element whose
-/// tag is an element of the first list in the 
+/// tag is an element of the first list in the
 /// desugarer's Param argument, looking at the
 /// attribute value of the attribute whose key is
-/// the second argument of Param. The third and 
-/// fourth arguments of Param specify which tags 
-/// and classes to use for the in- and out- page 
-/// links respectively. If the class list is empty 
-/// no 'class' attribute will be added at all to 
+/// the second argument of Param. The third and
+/// fourth arguments of Param specify which tags
+/// and classes to use for the in- and out- page
+/// links respectively. If the class list is empty
+/// no 'class' attribute will be added at all to
 /// that type of link element.
-/// 
+///
 /// Destroys the GrandWrapper root note on exit,
-/// returning its unique child. 
-/// 
+/// returning its unique child.
+///
 /// Throws a DesugaringError if a given handle name
-/// is not found in the list of GrandWrapper 
+/// is not found in the list of GrandWrapper
 /// 'handle' attributes values, or if unable to
 /// locate a local page path for a given handle.
 pub fn handles_substitute(param: Param) -> Desugarer {
@@ -309,40 +309,40 @@ pub fn handles_substitute(param: Param) -> Desugarer {
     option.Some(ins(param)),
     option.None,
     "
-/// Expects a document with root 'GrandWrapper' 
+/// Expects a document with root 'GrandWrapper'
 /// whose attributes comprise of key-value pairs of
 /// the form handle=handle_name|value|id|path
-/// and with a unique child being the root of the 
+/// and with a unique child being the root of the
 /// original document.
-/// 
+///
 /// Replaces >>handle_name occurrences by links,
 /// using two different kinds of tags for links
-/// that point to elements in the same page versus 
+/// that point to elements in the same page versus
 /// links that point element in a different page.
 ///
-/// More specifically, given an occurrence 
-/// >>handle_name where handle_name points to an 
-/// element of path 'path' as given by one of the 
-/// key-value pairs in GrandWrapper, determines if 
-/// 'path' is in another page of the final set of 
+/// More specifically, given an occurrence
+/// >>handle_name where handle_name points to an
+/// element of path 'path' as given by one of the
+/// key-value pairs in GrandWrapper, determines if
+/// 'path' is in another page of the final set of
 /// pages with respect to the current page of the
 /// document by trying to look up the latter on the
 /// latest (closest) ancestor of the element whose
-/// tag is an element of the first list in the 
+/// tag is an element of the first list in the
 /// desugarer's Param argument, looking at the
 /// attribute value of the attribute whose key is
-/// the second argument of Param. The third and 
-/// fourth arguments of Param specify which tags 
-/// and classes to use for the in- and out- page 
-/// links respectively. If the class list is empty 
-/// no 'class' attribute will be added at all to 
+/// the second argument of Param. The third and
+/// fourth arguments of Param specify which tags
+/// and classes to use for the in- and out- page
+/// links respectively. If the class list is empty
+/// no 'class' attribute will be added at all to
 /// that type of link element.
-/// 
+///
 /// Destroys the GrandWrapper root note on exit,
-/// returning its unique child. 
-/// 
+/// returning its unique child.
+///
 /// Throws a DesugaringError if a given handle name
-/// is not found in the list of GrandWrapper 
+/// is not found in the list of GrandWrapper
 /// 'handle' attributes values, or if unable to
 /// locate a local page path for a given handle.
     ",
@@ -368,7 +368,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ),
       source:   "
                 <> GrandWrapper
-                  handle=fluescence|_23-super-id|./ch1.html|AA
+                  handle=fluescence|AA|_23-super-id|./ch1.html
                   <> root
                     <> Chapter
                       path=./ch1.html
@@ -385,7 +385,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     <>
                       \"some text with \"
                     <> InChapterLink
-                      href=./ch1.html?id=_23-super-id
+                      href=./ch1.html#_23-super-id
                       class=handle-in-chapter-link
                       <>
                         \"AA\"
@@ -406,8 +406,8 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ),
       source:   "
                 <> GrandWrapper
-                  handle=fluescence|_23-super-id|./ch1.html|AA
-                  handle=out|_24-super-id|./ch1.html|AA
+                  handle=fluescence|AA|_23-super-id|./ch1.html
+                  handle=out|AA|_24-super-id|./ch1.html
                   <> root
                     <> Page
                       testerpath=./ch1.html
@@ -428,7 +428,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     <>
                       \"some text with \"
                     <> inLink
-                      href=./ch1.html?id=_23-super-id
+                      href=./ch1.html#_23-super-id
                       class=handle-in-link-class
                       <>
                         \"AA\"
@@ -442,7 +442,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                     <>
                       \"this is \"
                     <> outLink
-                      href=./ch1.html?id=_24-super-id
+                      href=./ch1.html#_24-super-id
                       class=handle-out-link-class
                       <>
                         \"AA\"
