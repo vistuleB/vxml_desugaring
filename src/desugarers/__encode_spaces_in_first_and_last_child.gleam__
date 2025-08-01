@@ -19,8 +19,8 @@ fn nodemap(
             tag,
             attrs,
             children
-              |> infra.encode_starting_spaces_in_first_node
-              |> infra.encode_ending_spaces_in_last_node,
+            |> infra.encode_starting_spaces_in_first_node
+            |> infra.encode_ending_spaces_in_last_node,
           ))
         }
         False -> Ok(vxml)

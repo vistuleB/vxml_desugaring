@@ -49,7 +49,6 @@ import desugarers/delete_if_empty__batch
 import desugarers/delete_outside_subtrees
 import desugarers/delete_text_nodes_with_singleton_empty_line
 import desugarers/detokenize_all
-import desugarers/encode_spaces_in_first_and_last_child
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
 import desugarers/find_replace__batch__outside
@@ -79,6 +78,7 @@ import desugarers/insert_bookend_tags
 import desugarers/insert_bookend_text_if_no_attributes
 import desugarers/insert_ti2_counter_commands
 import desugarers/keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
+import desugarers/line_rewrap_no1__outside
 import desugarers/merge_parent_attributes_into_child
 import desugarers/normalize_begin_end_align
 import desugarers/normalize_math_delimiters_inside
@@ -187,7 +187,6 @@ pub const delete_if_empty__batch = delete_if_empty__batch.delete_if_empty__batch
 pub const delete_outside_subtrees = delete_outside_subtrees.delete_outside_subtrees
 pub const delete_text_nodes_with_singleton_empty_line = delete_text_nodes_with_singleton_empty_line.delete_text_nodes_with_singleton_empty_line
 pub const detokenize_all = detokenize_all.detokenize_all
-pub const encode_spaces_in_first_and_last_child = encode_spaces_in_first_and_last_child.encode_spaces_in_first_and_last_child
 pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
 pub const find_replace__batch__outside = find_replace__batch__outside.find_replace__batch__outside
@@ -217,6 +216,7 @@ pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_bookend_text_if_no_attributes = insert_bookend_text_if_no_attributes.insert_bookend_text_if_no_attributes
 pub const insert_ti2_counter_commands = insert_ti2_counter_commands.insert_ti2_counter_commands
 pub const keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
+pub const line_rewrap_no1__outside = line_rewrap_no1__outside.line_rewrap_no1__outside
 pub const merge_parent_attributes_into_child = merge_parent_attributes_into_child.merge_parent_attributes_into_child
 pub const normalize_begin_end_align = normalize_begin_end_align.normalize_begin_end_align
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
@@ -326,7 +326,6 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   delete_outside_subtrees.assertive_tests,
   delete_text_nodes_with_singleton_empty_line.assertive_tests,
   detokenize_all.assertive_tests,
-  encode_spaces_in_first_and_last_child.assertive_tests,
   extract_starting_and_ending_spaces.assertive_tests,
   filter_nodes_by_attributes.assertive_tests,
   find_replace__batch__outside.assertive_tests,
@@ -356,6 +355,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   insert_bookend_text_if_no_attributes.assertive_tests,
   insert_ti2_counter_commands.assertive_tests,
   keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.assertive_tests,
+  line_rewrap_no1__outside.assertive_tests,
   merge_parent_attributes_into_child.assertive_tests,
   normalize_begin_end_align.assertive_tests,
   normalize_math_delimiters_inside.assertive_tests,

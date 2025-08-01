@@ -118,7 +118,6 @@ pub fn left_right_delim_strings(delimiters: List(LatexDelimiterPair)) -> #(List(
   |> list.unzip
 }
 
-
 //**************************************************************
 //* use <- utilities
 //**************************************************************
@@ -827,120 +826,24 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
 }
 
 //**************************************************************
-//* misc (children collecting, inserting, ...)
+//* string
 //**************************************************************
 
-fn lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
-  l1: List(BlamedContent),
-  l2: List(BlamedContent),
-) -> List(BlamedContent) {
-  let assert [first1, ..rest1] = l1
-  let assert [first2, ..rest2] = l2
-  pour(
-    rest1,
-    [
-      BlamedContent(first1.blame, first1.content <> first2.content),
-      ..rest2
-    ]
-  )
+pub fn extract_trim_start(content: String) -> #(String, String) {
+  let new_content = string.trim_start(content)
+  let num_spaces = string.length(content) - string.length(new_content)
+  #(string.repeat(" ", num_spaces), new_content)
 }
 
-pub fn last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(
-  list_of_lists: List(List(BlamedContent))
-) -> List(BlamedContent) {
-  case list_of_lists {
-    [] -> panic as "this is unexpected"
-    [one] -> one
-    [next_to_last, last] -> lines_last_to_first_concatenation_where_first_lines_are_already_reversed(next_to_last, last)
-    [first, ..rest] -> lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
-      first,
-      last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(rest)
-    )
-  }
+pub fn extract_trim_end(content: String) -> #(String, String) {
+  let new_content = string.trim_end(content)
+  let num_spaces = string.length(content) - string.length(new_content)
+  #(string.repeat(" ", num_spaces), new_content)
 }
 
-pub fn t_t_last_to_first_concatenation(node1: VXML, node2: VXML) -> VXML {
-  let assert T(blame1, lines1) = node1
-  let assert T(_, lines2) = node2
-  T(
-    blame1,
-    lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
-      lines1 |> list.reverse,
-      lines2
-    )
-  )
-}
-
-fn last_to_first_concatenation_internal(
-  remaining: List(VXML),
-  already_done: List(VXML),
-  current_t: Option(VXML)
-) {
-  case remaining {
-    [] -> case current_t {
-      None -> already_done |> list.reverse
-      Some(t) -> [t, ..already_done] |> list.reverse
-    }
-    [V(_, _, _, _) as first, ..rest] -> case current_t {
-      None -> last_to_first_concatenation_internal(
-        rest,
-        [first, ..already_done],
-        None
-      )
-      Some(t) -> last_to_first_concatenation_internal(
-        rest,
-        [first, t, ..already_done],
-        None,
-      )
-    }
-    [T(_, _) as first, ..rest] -> case current_t {
-      None -> last_to_first_concatenation_internal(
-        rest,
-        already_done,
-        Some(first)
-      )
-      Some(t) -> last_to_first_concatenation_internal(
-        rest,
-        already_done,
-        Some(t_t_last_to_first_concatenation(t, first))
-      )
-    }
-  }
-}
-
-pub fn last_to_first_concatenation(vxmls: List(VXML)) -> List(VXML) {
-  last_to_first_concatenation_internal(vxmls, [], None)
-}
-
-pub fn v_last_to_first_concatenation(v: VXML) -> VXML {
-  let assert V(blame, tag, attributes, children) = v
-  let children = last_to_first_concatenation(children)
-  V(blame, tag, attributes, children)
-}
-
-fn nonempty_list_t_plain_concatenation(nodes: List(VXML)) -> VXML {
-  let assert [first, ..] = nodes
-  let assert T(blame, _) = first
-  let all_lines = {
-    nodes
-    |> list.map(fn(node) {
-      let assert T(_, blamed_lines) = node
-      blamed_lines
-    })
-    |> list.flatten
-  }
-  T(blame, all_lines)
-}
-
-pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
-  nodes
-  |> either_or_misceginator(is_text_node)
-  |> regroup_eithers_no_empty_lists
-  |> map_either_ors(
-    fn(either: List(VXML)) -> VXML { nonempty_list_t_plain_concatenation(either) },
-    fn(or: VXML) -> VXML { or },
-  )
-}
+//**************************************************************
+//* lines
+//**************************************************************
 
 pub fn lines_remove_starting_empty_lines(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
@@ -1118,6 +1021,223 @@ pub fn first_line_ends_with(
   }
 }
 
+pub fn lines_total_chars(
+  lines: List(BlamedContent)
+) -> Int {
+  lines
+  |> list.map(fn(bc) {string.length(bc.content)})
+  |> int.sum
+}
+
+pub fn line_wrap_rearrangement_internal(
+  is_very_first_token: Bool,
+  blame: Blame,
+  already_bundled: List(BlamedContent),
+  current_line: List(String),
+  wrap_beyond: Int,
+  chars_left: Int,
+  remaining_tokens: List(String),
+) -> #(List(BlamedContent), Int) {
+  let bundle_current = fn() {
+    BlamedContent(blame, current_line |> list.reverse |> string.join(" "))
+  }
+  case remaining_tokens {
+    [] -> {
+      let last = bundle_current()
+      #(
+        [last, ..already_bundled] |> list.reverse,
+        last.content |> string.length,
+      )
+    }
+    [first, ..rest] -> {
+      case first == "" || chars_left > 0 || is_very_first_token {
+        True -> line_wrap_rearrangement_internal(
+          False,
+          blame,
+          already_bundled,
+          [first, ..current_line],
+          wrap_beyond,
+          chars_left - string.length(first) - 1,
+          rest,
+        )
+        False -> line_wrap_rearrangement_internal(
+          False,
+          blame,
+          [bundle_current(), ..already_bundled],
+          [first],
+          wrap_beyond,
+          wrap_beyond - string.length(first),
+          rest,
+        )
+      }
+    }
+  }
+}
+
+pub fn line_wrap_rearrangement(
+  lines: List(BlamedContent),
+  starting_offset: Int,
+  wrap_beyond: Int,
+) -> #(List(BlamedContent), Int) {
+  let assert [BlamedContent(blame, _), ..] = lines
+  let tokens =
+    lines
+    |> list.map(fn(bc){string.split(bc.content, " ")})
+    |> list.flatten
+  let #(lines, last_line_length) = line_wrap_rearrangement_internal(
+    True,
+    blame,
+    [],
+    [],
+    wrap_beyond,
+    wrap_beyond - starting_offset,
+    tokens,
+  )
+  case list.length(lines) > 1 {
+    True -> #(lines, last_line_length)
+    False -> #(lines, last_line_length + starting_offset)
+  }
+}
+
+//**************************************************************
+//* last_to_first concatenation
+//**************************************************************
+
+fn lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
+  l1: List(BlamedContent),
+  l2: List(BlamedContent),
+) -> List(BlamedContent) {
+  let assert [first1, ..rest1] = l1
+  let assert [first2, ..rest2] = l2
+  pour(
+    rest1,
+    [
+      BlamedContent(first1.blame, first1.content <> first2.content),
+      ..rest2
+    ]
+  )
+}
+
+pub fn last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(
+  list_of_lists: List(List(BlamedContent))
+) -> List(BlamedContent) {
+  case list_of_lists {
+    [] -> panic as "this is unexpected"
+    [one] -> one
+    [next_to_last, last] -> lines_last_to_first_concatenation_where_first_lines_are_already_reversed(next_to_last, last)
+    [first, ..rest] -> lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
+      first,
+      last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(rest)
+    )
+  }
+}
+
+pub fn t_t_last_to_first_concatenation(node1: VXML, node2: VXML) -> VXML {
+  let assert T(blame1, lines1) = node1
+  let assert T(_, lines2) = node2
+  T(
+    blame1,
+    lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
+      lines1 |> list.reverse,
+      lines2
+    )
+  )
+}
+
+fn last_to_first_concatenation_internal(
+  remaining: List(VXML),
+  already_done: List(VXML),
+  current_t: Option(VXML)
+) {
+  case remaining {
+    [] -> case current_t {
+      None -> already_done |> list.reverse
+      Some(t) -> [t, ..already_done] |> list.reverse
+    }
+    [V(_, _, _, _) as first, ..rest] -> case current_t {
+      None -> last_to_first_concatenation_internal(
+        rest,
+        [first, ..already_done],
+        None
+      )
+      Some(t) -> last_to_first_concatenation_internal(
+        rest,
+        [first, t, ..already_done],
+        None,
+      )
+    }
+    [T(_, _) as first, ..rest] -> case current_t {
+      None -> last_to_first_concatenation_internal(
+        rest,
+        already_done,
+        Some(first)
+      )
+      Some(t) -> last_to_first_concatenation_internal(
+        rest,
+        already_done,
+        Some(t_t_last_to_first_concatenation(t, first))
+      )
+    }
+  }
+}
+
+pub fn last_to_first_concatenation(vxmls: List(VXML)) -> List(VXML) {
+  last_to_first_concatenation_internal(vxmls, [], None)
+}
+
+pub fn v_last_to_first_concatenation(v: VXML) -> VXML {
+  let assert V(blame, tag, attributes, children) = v
+  let children = last_to_first_concatenation(children)
+  V(blame, tag, attributes, children)
+}
+
+fn nonempty_list_t_plain_concatenation(nodes: List(VXML)) -> VXML {
+  let assert [first, ..] = nodes
+  let assert T(blame, _) = first
+  let all_lines = {
+    nodes
+    |> list.map(fn(node) {
+      let assert T(_, blamed_lines) = node
+      blamed_lines
+    })
+    |> list.flatten
+  }
+  T(blame, all_lines)
+}
+
+pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
+  nodes
+  |> either_or_misceginator(is_text_node)
+  |> regroup_eithers_no_empty_lists
+  |> map_either_ors(
+    fn(either: List(VXML)) -> VXML { nonempty_list_t_plain_concatenation(either) },
+    fn(or: VXML) -> VXML { or },
+  )
+}
+
+//**************************************************************
+//* t-
+//**************************************************************
+
+pub fn t_total_chars(
+  vxml: VXML
+) -> Int {
+  let assert T(_, lines) = vxml
+  lines_total_chars(lines)
+}
+
+pub fn total_chars( // yeah yeah it's not t-... ...relax a bit...
+  vxml: VXML
+) -> Int {
+  case vxml {
+    T(_, lines) -> lines_total_chars(lines)
+    V(_, _, _, children) -> 
+      children
+      |> list.map(total_chars)
+      |> int.sum
+  }
+}
+
 pub fn t_remove_starting_empty_lines(vxml: VXML) -> Option(VXML) {
   let assert T(blame, lines) = vxml
   let lines = lines_remove_starting_empty_lines(lines)
@@ -1134,18 +1254,6 @@ pub fn t_remove_ending_empty_lines(vxml: VXML) -> Option(VXML) {
     [] -> None
     _ -> Some(T(blame, lines))
   }
-}
-
-pub fn extract_starting_spaces_from_text(content: String) -> #(String, String) {
-  let new_content = string.trim_start(content)
-  let num_spaces = string.length(content) - string.length(new_content)
-  #(string.repeat(" ", num_spaces), new_content)
-}
-
-pub fn extract_ending_spaces_from_text(content: String) -> #(String, String) {
-  let new_content = string.trim_end(content)
-  let num_spaces = string.length(content) - string.length(new_content)
-  #(string.repeat(" ", num_spaces), new_content)
 }
 
 pub fn t_trim_start(node: VXML) -> Option(VXML) {
@@ -1215,7 +1323,7 @@ pub fn t_drop_end(node: VXML, to_drop: Int) -> VXML {
 pub fn t_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert T(blame, blamed_contents) = node
   let assert [first, ..rest] = blamed_contents
-  case extract_starting_spaces_from_text(first.content) {
+  case extract_trim_start(first.content) {
     #("", _) -> #(None, node)
     #(spaces, not_spaces) -> #(
       Some(T(first.blame, [BlamedContent(first.blame, spaces)])),
@@ -1227,7 +1335,7 @@ pub fn t_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
 pub fn t_extract_ending_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert T(blame, blamed_contents) = node
   let assert [first, ..rest] = blamed_contents |> list.reverse
-  case extract_ending_spaces_from_text(first.content) {
+  case extract_trim_end(first.content) {
     #("", _) -> #(None, node)
     #(spaces, not_spaces) -> #(
       Some(T(first.blame, [BlamedContent(first.blame, spaces)])),
@@ -1320,77 +1428,77 @@ pub fn v_remove_ending_empty_lines(node: VXML) -> VXML {
   }
 }
 
-pub fn encode_starting_spaces_in_string(content: String) -> String {
-  let new_content = string.trim_start(content)
-  let num_spaces = string.length(content) - string.length(new_content)
-  string.repeat("&ensp;", num_spaces) <> new_content
-}
+// pub fn encode_starting_spaces_in_string(content: String) -> String {
+//   let new_content = string.trim_start(content)
+//   let num_spaces = string.length(content) - string.length(new_content)
+//   string.repeat("&ensp;", num_spaces) <> new_content
+// }
 
-pub fn encode_ending_spaces_in_string(content: String) -> String {
-  let new_content = string.trim_end(content)
-  let num_spaces = string.length(content) - string.length(new_content)
-  new_content <> string.repeat("&ensp;", num_spaces)
-}
+// pub fn encode_ending_spaces_in_string(content: String) -> String {
+//   let new_content = string.trim_end(content)
+//   let num_spaces = string.length(content) - string.length(new_content)
+//   new_content <> string.repeat("&ensp;", num_spaces)
+// }
 
-pub fn encode_starting_spaces_in_blamed_content(
-  blamed_content: BlamedContent,
-) -> BlamedContent {
-  BlamedContent(
-    blamed_content.blame,
-    blamed_content.content |> encode_starting_spaces_in_string,
-  )
-}
+// pub fn encode_starting_spaces_in_blamed_content(
+//   blamed_content: BlamedContent,
+// ) -> BlamedContent {
+//   BlamedContent(
+//     blamed_content.blame,
+//     blamed_content.content |> encode_starting_spaces_in_string,
+//   )
+// }
 
-pub fn encode_ending_spaces_in_blamed_content(
-  blamed_content: BlamedContent,
-) -> BlamedContent {
-  BlamedContent(
-    blamed_content.blame,
-    blamed_content.content |> encode_ending_spaces_in_string,
-  )
-}
+// pub fn encode_ending_spaces_in_blamed_content(
+//   blamed_content: BlamedContent,
+// ) -> BlamedContent {
+//   BlamedContent(
+//     blamed_content.blame,
+//     blamed_content.content |> encode_ending_spaces_in_string,
+//   )
+// }
 
-pub fn encode_starting_spaces_if_text(vxml: VXML) -> VXML {
-  case vxml {
-    V(_, _, _, _) -> vxml
-    T(blame, blamed_contents) -> {
-      let assert [first, ..rest] = blamed_contents
-      T(blame, [first |> encode_starting_spaces_in_blamed_content, ..rest])
-    }
-  }
-}
+// pub fn encode_starting_spaces_if_text(vxml: VXML) -> VXML {
+//   case vxml {
+//     V(_, _, _, _) -> vxml
+//     T(blame, blamed_contents) -> {
+//       let assert [first, ..rest] = blamed_contents
+//       T(blame, [first |> encode_starting_spaces_in_blamed_content, ..rest])
+//     }
+//   }
+// }
 
-pub fn encode_ending_spaces_if_text(vxml: VXML) -> VXML {
-  case vxml {
-    V(_, _, _, _) -> vxml
-    T(blame, blamed_contents) -> {
-      let assert [last, ..rest] = {
-        blamed_contents |> list.reverse
-      }
-      T(
-        blame,
-        [last |> encode_ending_spaces_in_blamed_content, ..rest]
-          |> list.reverse,
-      )
-    }
-  }
-}
+// pub fn encode_ending_spaces_if_text(vxml: VXML) -> VXML {
+//   case vxml {
+//     V(_, _, _, _) -> vxml
+//     T(blame, blamed_contents) -> {
+//       let assert [last, ..rest] = {
+//         blamed_contents |> list.reverse
+//       }
+//       T(
+//         blame,
+//         [last |> encode_ending_spaces_in_blamed_content, ..rest]
+//           |> list.reverse,
+//       )
+//     }
+//   }
+// }
 
-pub fn encode_starting_spaces_in_first_node(vxmls: List(VXML)) -> List(VXML) {
-  case vxmls {
-    [] -> []
-    [first, ..rest] -> [first |> encode_starting_spaces_if_text, ..rest]
-  }
-}
+// pub fn encode_starting_spaces_in_first_node(vxmls: List(VXML)) -> List(VXML) {
+//   case vxmls {
+//     [] -> []
+//     [first, ..rest] -> [first |> encode_starting_spaces_if_text, ..rest]
+//   }
+// }
 
-pub fn encode_ending_spaces_in_last_node(vxmls: List(VXML)) -> List(VXML) {
-  case vxmls |> list.reverse {
-    [] -> []
-    [last, ..rest] ->
-      [last |> encode_ending_spaces_if_text, ..rest]
-      |> list.reverse
-  }
-}
+// pub fn encode_ending_spaces_in_last_node(vxmls: List(VXML)) -> List(VXML) {
+//   case vxmls |> list.reverse {
+//     [] -> []
+//     [last, ..rest] ->
+//       [last |> encode_ending_spaces_if_text, ..rest]
+//       |> list.reverse
+//   }
+// }
 
 pub fn t_start_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
