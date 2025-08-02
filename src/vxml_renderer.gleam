@@ -409,6 +409,30 @@ pub fn sanitize_output_dir(
   )
 }
 
+fn drop_last(z: List(a)) -> List(a) {
+  z |> list.reverse |> list.drop(1) |> list.reverse
+}
+
+pub fn create_dirs(output_dir: String, local_path: String) {
+  let pieces = local_path |> string.split("/")
+  let pieces = drop_last(pieces)
+  list.fold(
+    pieces,
+    output_dir,
+    fn(acc, piece) {
+      let acc = acc <> "/" <> piece
+      case simplifile.is_directory(acc) {
+        Ok(_) -> Nil
+        Error(_) -> {
+          let _ = simplifile.create_directory(acc)
+          Nil
+        }
+      }
+      acc
+    }
+  )
+}
+
 pub fn output_dir_local_path_printer(
   output_dir: String,
   local_path: String,
@@ -416,6 +440,7 @@ pub fn output_dir_local_path_printer(
 ) -> Result(Nil, simplifile.FileError) {
   let assert False = string.starts_with(local_path, "/")
   let assert False = string.ends_with(output_dir, "/")
+  create_dirs(output_dir, local_path)
   let path = output_dir <> "/" <> local_path
   simplifile.write(path, content)
 }

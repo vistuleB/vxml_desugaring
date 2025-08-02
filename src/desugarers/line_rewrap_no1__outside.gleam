@@ -34,7 +34,7 @@ fn line_wrap_in_list(
     }
     [V(_, _, _, _) as first, ..rest] -> {
       let deficit = case inner.1(first) {
-        True -> echo infra.total_chars(first) + deficit
+        True -> infra.total_chars(first) + deficit
         False -> 0
       }
       let #(deficit, already_wrapped) = case deficit > inner.0 {
