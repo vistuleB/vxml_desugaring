@@ -472,6 +472,10 @@ pub fn list_param_stringifier(param: List(p)) -> String {
   <> " ]"
 }
 
+pub fn drop_last(z: List(a)) -> List(a) {
+  z |> list.reverse |> list.drop(1) |> list.reverse
+}
+
 //**************************************************************
 //* tuple manipulation
 //**************************************************************
