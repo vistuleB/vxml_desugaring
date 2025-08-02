@@ -13,6 +13,8 @@ pub type GroupReplacementInstruction {
   Tag(String)
   TagWithAttribute(String, String)
   TagWithTextChild(String)
+  TagFwdText(String, String)
+  TagBwdText(String, String)
 }
 
 pub type RegexpWithGroupReplacementInstructions {
@@ -56,21 +58,29 @@ pub fn split_content_with_replacement(
       let updated_blame = Blame(..blame, char_no: blame.char_no + acc)
       let node_replacement = case instruction {
         Trash -> None
-        Keep -> Some(T(updated_blame, [BlamedContent(updated_blame, split)]))
-        DropLast -> Some(T(updated_blame, [BlamedContent(updated_blame, string.drop_end(split, 1))]))
-        Tag(tag) -> Some(V(updated_blame, tag, [], []))
-        TagWithAttribute(tag, key) -> Some(V(
+        Keep -> Some([T(updated_blame, [BlamedContent(updated_blame, split)])])
+        DropLast -> Some([T(updated_blame, [BlamedContent(updated_blame, string.drop_end(split, 1))])])
+        Tag(tag) -> Some([V(updated_blame, tag, [], [])])
+        TagWithAttribute(tag, key) -> Some([V(
           updated_blame,
           tag,
           [BlamedAttribute(updated_blame, key, split)],
           [],
-        ))
-        TagWithTextChild(tag) -> Some(V(
+        )])
+        TagWithTextChild(tag) -> Some([V(
           updated_blame,
           tag,
           [],
           [T(updated_blame, [BlamedContent(updated_blame, split)])],
-        ))
+        )])
+        TagFwdText(tag, txt) -> Some([
+          V(updated_blame, tag, [], []),
+          T(updated_blame, [BlamedContent(updated_blame, txt)]),
+        ])
+        TagBwdText(tag, txt) -> Some([
+          T(updated_blame, [BlamedContent(updated_blame, txt)]),
+          V(updated_blame, tag, [], []),
+        ])
       }
       let new_acc = acc + string.length(split)
       #(new_acc, node_replacement)
@@ -79,6 +89,7 @@ pub fn split_content_with_replacement(
 
   results
   |> option.values
+  |> list.flatten
   |> infra.last_to_first_concatenation
 }
 

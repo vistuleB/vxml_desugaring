@@ -10,6 +10,10 @@ import infrastructure.{
   BackslashClosingParenthesis,
   BackslashOpeningSquareBracket,
   BackslashClosingSquareBracket,
+  BeginAlign,
+  EndAlign,
+  BeginAlignStar,
+  EndAlignStar,
 } as infra
 import desugarer_library as dl
 
@@ -34,6 +38,10 @@ fn split_pair_fold_data(
     BackslashClosingParenthesis -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\)", "LatexClosingPar"), "LatexClosingPar", "\\)")
     BackslashOpeningSquareBracket -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\[", "LatexOpeningBra"), "LatexOpeningBra", "\\[")
     BackslashClosingSquareBracket -> #(grs.unescaped_suffix_replacement_splitter("\\\\\\]", "LatexClosingBra"), "LatexClosingBra", "\\]")
+    BeginAlign -> #(grs.for_groups([#("\\\\begin{align}", grs.TagFwdText("BeginAlign", "\\begin{align}"))]), "BeginAlign", "\\begin{align}")
+    EndAlign -> #(grs.for_groups([#("\\\\end{align}", grs.TagBwdText("EndAlign", "\\end{align}"))]), "EndAlign", "\\end{align}")
+    BeginAlignStar -> #(grs.for_groups([#("\\\\begin{align\\*}", grs.TagFwdText("BeginAlignStar", "\\begin{align*}"))]), "BeginAlignStar", "\\begin{align*}")
+    EndAlignStar -> #(grs.for_groups([#("\\\\end{align\\*}", grs.TagBwdText("EndAlignStar", "\\end{align*}"))]), "EndAlignStar", "\\end{align*}")
   }
 }
 
@@ -78,13 +86,12 @@ fn create_math_or_mathblock_elements(
     |> list.flatten
 
   let delims = case which {
-    "MathBlock" -> infra.latex_display_delimiter_pairs_list()
-    "Math" -> infra.latex_inline_delimiter_pairs_list()
+    "MathBlock" -> infra.latex_strippable_display_delimiters()
+    "Math" -> infra.latex_inline_delimiters()
     _ -> panic as "was expecting 'Math' or 'MathBlock'"
   }
 
   [
-    // [dl.strip_delimiters_inside(#(which, left_delims, right_delims))],
     [
       dl.strip_delimiters_inside(#(which, delims)),
     ],

@@ -64,6 +64,8 @@ pub type LatexDelimiterPair {
   SingleDollar
   BackslashParenthesis
   BackslashSquareBracket
+  BeginEndAlign
+  BeginEndAlignStar
 }
 
 pub type LatexDelimiterSingleton {
@@ -73,19 +75,23 @@ pub type LatexDelimiterSingleton {
   BackslashClosingParenthesis
   BackslashOpeningSquareBracket
   BackslashClosingSquareBracket
+  BeginAlign
+  EndAlign
+  BeginAlignStar
+  EndAlignStar
 }
 
-pub fn latex_inline_delimiter_pairs_list(
+pub fn latex_inline_delimiters(
 ) -> List(LatexDelimiterPair) {
   [SingleDollar, BackslashParenthesis]
 }
 
-pub fn latex_display_delimiter_pairs_list(
+pub fn latex_strippable_display_delimiters(
 ) -> List(LatexDelimiterPair) {
   [DoubleDollar, BackslashSquareBracket]
 }
 
-pub fn latex_delimiter_pairs_list(
+pub fn latex_strippable_delimiter_pairs(
 ) -> List(LatexDelimiterPair) {
   [DoubleDollar, SingleDollar, BackslashParenthesis, BackslashSquareBracket]
 }
@@ -98,6 +104,8 @@ pub fn opening_and_closing_string_for_pair(
     SingleDollar -> #("$", "$")
     BackslashParenthesis -> #("\\(", "\\)")
     BackslashSquareBracket -> #("\\[", "\\]")
+    BeginEndAlign -> #("\\begin{align}", "\\end{align}")
+    BeginEndAlignStar -> #("\\begin{align*}", "\\end{align*}")
   }
 }
 
@@ -109,6 +117,8 @@ pub fn opening_and_closing_singletons_for_pair(
     SingleDollar -> #(SingleDollarSingleton, SingleDollarSingleton)
     BackslashParenthesis -> #(BackslashOpeningParenthesis, BackslashClosingParenthesis)
     BackslashSquareBracket -> #(BackslashOpeningSquareBracket, BackslashClosingSquareBracket)
+    BeginEndAlign -> #(BeginAlign, EndAlign)
+    BeginEndAlignStar -> #(BeginAlignStar, EndAlignStar)
   }
 }
 
@@ -849,6 +859,15 @@ pub fn extract_trim_end(content: String) -> #(String, String) {
 //* lines
 //**************************************************************
 
+pub fn lines_are_whitespace(
+  lines: List(BlamedContent)
+) -> Bool {
+  list.all(
+    lines,
+    fn(bc){string.trim(bc.content) == ""}
+  )
+}
+
 pub fn lines_remove_starting_empty_lines(l: List(BlamedContent)) -> List(BlamedContent) {
   case l {
     [] -> []
@@ -1103,6 +1122,91 @@ pub fn line_wrap_rearrangement(
   }
 }
 
+pub fn line_wrap_rearrangement_internal_with_blames(
+  is_very_first_token: Bool,
+  blame: Blame,
+  already_bundled: List(BlamedContent),
+  current_line: List(String),
+  wrap_beyond: Int,
+  chars_left: Int,
+  remaining_tokens: List(EitherOr(String, Blame)),
+) -> #(List(BlamedContent), Int) {
+  let bundle_current = fn() {
+    BlamedContent(blame, current_line |> list.reverse |> string.join(" "))
+  }
+  case remaining_tokens {
+    [] -> {
+      let last = bundle_current()
+      #(
+        [last, ..already_bundled] |> list.reverse,
+        last.content |> string.length,
+      )
+    }
+    [Or(blame), ..rest] -> line_wrap_rearrangement_internal_with_blames(
+      False,
+      blame,
+      already_bundled,
+      current_line,
+      wrap_beyond,
+      chars_left,
+      rest,
+    )
+    [Either(some_string), ..rest] -> {
+      let length = string.length(some_string)
+      let blame = Blame(..blame, char_no: blame.char_no + length + 1)
+      case some_string == "" || chars_left > 0 || is_very_first_token {
+        True -> line_wrap_rearrangement_internal_with_blames(
+          False,
+          blame,
+          already_bundled,
+          [some_string, ..current_line],
+          wrap_beyond,
+          chars_left - length - 1,
+          rest,
+        )
+        False -> line_wrap_rearrangement_internal_with_blames(
+          False,
+          blame,
+          [bundle_current(), ..already_bundled],
+          [some_string],
+          wrap_beyond,
+          wrap_beyond - length,
+          rest,
+        )
+      }
+    }
+  }
+}
+
+pub fn line_wrap_rearrangement_with_blames(
+  lines: List(BlamedContent),
+  starting_offset: Int,
+  wrap_beyond: Int,
+) -> #(List(BlamedContent), Int) {
+  let assert [BlamedContent(blame, _), ..] = lines
+  let tokens =
+    lines
+    |> list.map(fn(bc){
+      string.split(bc.content, " ")
+      |> list.map(Either)
+      |> list.prepend(Or(bc.blame))
+    })
+    |> list.flatten
+  let #(lines, last_line_length) = line_wrap_rearrangement_internal_with_blames(
+    True,
+    blame,
+    [],
+    [],
+    wrap_beyond,
+    wrap_beyond - starting_offset,
+    tokens,
+  )
+  case list.length(lines) > 1 {
+    True -> #(lines, last_line_length)
+    False -> #(lines, last_line_length + starting_offset)
+  }
+}
+
 //**************************************************************
 //* last_to_first concatenation
 //**************************************************************
@@ -1222,6 +1326,15 @@ pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
 //**************************************************************
 //* t-
 //**************************************************************
+
+pub fn is_t_and_is_whitespace(
+  vxml: VXML
+) -> Bool {
+  case vxml {
+    T(_, lines) -> lines_are_whitespace(lines)
+    _ -> False
+  }
+}
 
 pub fn t_total_chars(
   vxml: VXML

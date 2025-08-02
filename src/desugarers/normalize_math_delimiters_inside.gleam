@@ -71,7 +71,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   let #(left_target, right_target) =
     infra.opening_and_closing_string_for_pair(param.1)
   let #(left_delims, right_delims) =
-    infra.latex_delimiter_pairs_list()
+    infra.latex_strippable_delimiter_pairs()
     |> list.map(infra.opening_and_closing_string_for_pair)
     |> list.unzip
   let left_delims = list.filter(left_delims, fn(c) {c != left_target })
