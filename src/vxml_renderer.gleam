@@ -190,7 +190,7 @@ pub fn stub_writerly_emitter(
 ) -> Result(OutputFragment(d, List(BlamedLine)), b) {
   let lines =
     fragment.payload
-    |> wp.vxml_to_writerlys
+    |> wp.vxml_to_writerly
     |> wp.writerlys_to_blamed_lines
   Ok(OutputFragment(..fragment, payload: lines))
 }
@@ -391,7 +391,7 @@ fn execute_pipeline(
         Error(error) -> Error(InSituDesugaringError(
           desugarer: desugarer,
           pipeline_step: step,
-          blame: error.blame, 
+          blame: error.blame,
           message: error.message,
         ))
       }
@@ -485,7 +485,7 @@ fn print_pipeline(desugarers: List(Desugarer)) {
   let max_param_cols = 65
   let max_outside_cols = 45
 
-  let lines = 
+  let lines =
     desugarers
     |> list.index_map(
       fn(d, i) {
@@ -538,7 +538,7 @@ pub fn run_renderer(
 
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
-    True -> 
+    True ->
       assembled
       |> bl.blamed_lines_pretty_printer_no1("assembled")
       |> io.println

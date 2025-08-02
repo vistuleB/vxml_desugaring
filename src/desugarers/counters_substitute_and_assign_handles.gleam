@@ -555,7 +555,7 @@ fn v_after_transforming_children(
 }
 
 fn our_two_regexes() -> #(Regexp, Regexp) {
-  let any_number_of_handle_assignments = "((\\w+)(<<))*"
+  let any_number_of_handle_assignments = "(([\\w\\^-]+)(<<))*"
 
   let counter_prefix_and_counter =
     "("
@@ -738,6 +738,45 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
                     \"-2\"
                     \"-3\"
                     \"-2.-1\"
+                ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source:   "
+                <> root
+                  counter=my_counter 5
+                  <>
+                    \"first-handle<<::++my_counter\"
+                    \"second-handle<<::--my_counter\"
+                    \"third-handle<<::++my_counter.::++my_counter\"
+                ",
+      expected: "
+                <> root
+                  counter=my_counter 5
+                  handle=first-handle 6
+                  handle=second-handle 5
+                  handle=third-handle 6.7
+                  <>
+                    \"6\"
+                    \"5\"
+                    \"6.7\"
+                ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source:   "
+                <> root
+                  counter=TestCounter 1
+                  <>
+                    \"handle^with^caret<<::++TestCounter\"
+                    \"another^handle<<::--TestCounter\"
+                ",
+      expected: "
+                <> root
+                  counter=TestCounter 1
+                  handle=handle^with^caret 2
+                  handle=another^handle 1
+                  <>
+                    \"2\"
+                    \"1\"
                 ",
     )
   ]

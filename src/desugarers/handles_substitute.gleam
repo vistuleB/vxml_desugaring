@@ -227,7 +227,7 @@ fn t_transform(
 }
 
 fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(State) {
-  let assert Ok(handles_regexp) = regexp.from_string("(>>)(\\w+)")
+  let assert Ok(handles_regexp) = regexp.from_string("(>>)([\\w\\^-]+)")
   n2t.OneToManyBeforeAndAfterStatefulNodeMap(
     v_before_transforming_children: fn(vxml, state) {v_before_transform(vxml, state, inner)},
     v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
@@ -448,6 +448,52 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                         \"AA\"
                     <>
                       \" outer link\"
+                ",
+    ),
+    infra.AssertiveTestData(
+      param:    #(
+                  "path",
+                  "InChapterLink",
+                  "a",
+                  [#("class", "handle-in-chapter-link")],
+                  [#("class", "handle-out-chapter-link")],
+                ),
+      source:   "
+                <> GrandWrapper
+                  handle=my-cardinal|Cardinal Number|_25-dash-id|./ch1.html
+                  handle=test^handle|Caret Test|_26-caret-id|./ch1.html
+                  <> root
+                    <> Chapter
+                      path=./ch1.html
+                      <>
+                        \"Reference to >>my-cardinal and >>test^handle here\"
+                      <> Math
+                        <>
+                          \"$x^2 + b^2$\"
+                ",
+      expected: "
+                <> root
+                  <> Chapter
+                    path=./ch1.html
+                    <>
+                      \"Reference to \"
+                    <> InChapterLink
+                      href=./ch1.html#_25-dash-id
+                      class=handle-in-chapter-link
+                      <>
+                        \"Cardinal Number\"
+                    <>
+                      \" and \"
+                    <> InChapterLink
+                      href=./ch1.html#_26-caret-id
+                      class=handle-in-chapter-link
+                      <>
+                        \"Caret Test\"
+                    <>
+                      \" here\"
+                    <> Math
+                      <>
+                        \"$x^2 + b^2$\"
                 ",
     )
   ]
