@@ -422,11 +422,11 @@ pub fn create_dirs(output_dir: String, local_path: String) {
     fn(acc, piece) {
       let acc = acc <> "/" <> piece
       case simplifile.is_directory(acc) {
-        Ok(_) -> Nil
-        Error(_) -> {
+        Ok(_) -> {
           let _ = simplifile.create_directory(acc)
           Nil
         }
+        Error(_) -> Nil
       }
       acc
     }
