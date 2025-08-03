@@ -238,19 +238,19 @@ pub fn desugarer_description_star_block(
       None -> ""
     }
 
-  let desugarer_description_lines = case string.is_empty(desugarer.docs) {
-    True -> []
-    False -> 
-      desugarer.docs
-      |> string.trim
-      |> string.split("\n")
-      |> list.map(fn(line) {
-        case string.starts_with(line, "/// ") {
-          True -> string.drop_start(line, 4)
-          False -> line
-        }
-      })
-  }
+  // let desugarer_description_lines = case string.is_empty(desugarer.docs) {
+  //   True -> []
+  //   False -> 
+  //     desugarer.docs
+  //     |> string.trim
+  //     |> string.split("\n")
+  //     |> list.map(fn(line) {
+  //       case string.starts_with(line, "/// ") {
+  //         True -> string.drop_start(line, 4)
+  //         False -> line
+  //       }
+  //     })
+  // }
 
   star_block(
     True,
@@ -259,9 +259,10 @@ pub fn desugarer_description_star_block(
         "DESUGARER " <> ins(step),
         "",
         name_and_param,
-        "",
+        // "",
       ],
-      desugarer_description_lines,
+      // desugarer_description_lines,
+      [],
     ),
     True,
   )

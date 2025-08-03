@@ -1,49 +1,125 @@
 <> Section
-    bool vec[test]
+  bool=vec[test]
+  a=1
+  a=1
+  a=1
+  a=1
+  a=1
+  a=1
+  a=1
+  a=1
+  a=1
+  a=1
+  a=10
+  a=10
+  a=10
+  a=10
+  a=10
+  a=10
+  a=10
+  a=10
+  a=10
+  a=10
+  <>
+    "one two"
+    "three __four__ five"
+  <>
+    "extra"
+    "extra"
+  <> BlankLine
+  <> BlankLine
+  <> BlankLine
+  <> BlankLine
+  <> Image
+    src=images
+  <> BlankLine
+  <> BlankLine
+  <> BlankLine
+  <> BlankLine
+  <>
+    "math $Math$"
+  <>
+    "Follow up"
+  <> WriterlyBlurb
     <>
-        "one two"
-        "three __four__ five"
-    <>
-        "extra"
-        "extra"
-    <> BlankLine
-    <> BlankLine
-    <> BlankLine
-    <> BlankLine
-    <> Image
-        src images
-    <> BlankLine
-    <> BlankLine
-    <> BlankLine
-    <> BlankLine
-    <>
-        "math $Math$"
-    <>
-        "Follow up"
-    <> WriterlyBlurb
-        <>
-            "it's my life"
-            "it's now or never"
+      "it's my life"
+      "it's now or never"
 
-    <> Exercises
-        <> Exercise
-            <>
-                "Exercise Content"
-            <> Grid
-                cols 3
-                <> Item
-                    <> 
-                        "$$ test shiit$$"
-                <> Item
-                <> Item
-            <>
-                "some math $$"
-                "a - 2 = 3$$"
-                "more text"
-            <>
-                "math that ends _|text|_ $$"
-                "a - 5 = 16"
-            <> BlankLine
-            <>
-                "$$"
-            
+  <> Exercises
+    <> Exercise
+      <>
+        "Exercise Content"
+      <> Grid
+        cols=3
+        <> Item
+          <> 
+            "$$ test shiit$$"
+        <> Item
+        <> Item
+      <>
+        "some math $$"
+        "a - 2 = 3$$"
+        "more text"
+      <>
+        "math that ends _|text|_ $$"
+        "a - 5 = 16"
+      <> BlankLine
+      <> marker
+      <>
+        "$$"
+      <> s1
+      <> s2
+      <> s3
+        <> s4
+        <> s5
+      <> s7        
+      <> s7        
+      <> s7        
+      <> s10        
+      <> s13       
+      <> s14       
+      <> s16
+      <> marker       
+      <> s7        
+      <> s7        
+      <> s7        
+      <> s10        
+      <> s13       
+      <> s14       
+      <> s16
+      <> s7        
+      <> s7        
+      <> s7        
+      <> s10        
+      <> s13       
+      <> s14       
+      <> s16
+      <> s7        
+      <> s7        
+      <> s7        
+      <> s10        
+      <> s13       
+      <> s14       
+      <> s16
+  <> Section
+    bool=vec[test]
+    a=1
+    a=1
+    a=1
+    a=1
+    a=1
+    a=1
+    a=1
+    a=1
+    a=1
+    a=1
+    a=10
+    a=10
+    a=10
+    a=10
+    a=10
+    a=10
+    a=10
+    a=10
+    a=10
+    a=10

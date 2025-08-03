@@ -1,3 +1,4 @@
+import vxml
 import shellout
 import gleam/list
 import argv
@@ -6,6 +7,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer} as infra
 import vxml_renderer as vr
 import desugarer_library as dl
+import selectors/within_x_lines_below_tag.{within_x_lines_below_tag}
 
 fn test_pipeline() -> List(Desugarer) {
   [
@@ -153,8 +155,18 @@ fn run_desugarer_tests(names: List(String)) {
   Nil
 }
 
+pub fn test_thing() {
+  let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml", "test/sample.vxml", False, True)
+  echo vxml
+  let results = within_x_lines_below_tag(vxml, "marker", 12)
+  vxml.debug_print_vxmls("hi", results)
+}
+
 pub fn main() {
   case argv.load().arguments {
+    ["--test-thing"] -> {
+      test_thing()
+    }
     ["--test-desugarers", ..names] -> {
       run_desugarer_tests(names)
     }
