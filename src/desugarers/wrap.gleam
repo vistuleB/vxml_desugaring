@@ -35,8 +35,8 @@ type Param = #(String,  String)
 //             tag      tag
 type InnerParam = Param
 
-const name = "wrap_tag_in"
-const constructor = wrap_tag_in
+const name = "wrap"
+const constructor = wrap
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -49,7 +49,7 @@ const constructor = wrap_tag_in
 /// with the target tag as its only child.
 ///
 /// Processes all matching nodes depth-first.
-pub fn wrap_tag_in(param: Param) -> Desugarer {
+pub fn wrap(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

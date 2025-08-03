@@ -132,11 +132,11 @@ import desugarers/unwrap_tags_if_no_attributes
 import desugarers/unwrap_tags_with_no_text_child
 import desugarers/unwrap_tags_with_no_text_descendant
 import desugarers/unwrap_when_zero_or_one_children
+import desugarers/wrap
 import desugarers/wrap_adjacent_non_whitespace_text_with
 import desugarers/wrap_children_before_in
 import desugarers/wrap_children_in
 import desugarers/wrap_each_child
-import desugarers/wrap_tag_in
 
 pub const absorb_into_previous_sibling = absorb_into_previous_sibling.absorb_into_previous_sibling
 pub const add_after_but_not_after_last_child__batch = add_after_but_not_after_last_child__batch.add_after_but_not_after_last_child__batch
@@ -271,11 +271,11 @@ pub const unwrap_tags_if_no_attributes = unwrap_tags_if_no_attributes.unwrap_tag
 pub const unwrap_tags_with_no_text_child = unwrap_tags_with_no_text_child.unwrap_tags_with_no_text_child
 pub const unwrap_tags_with_no_text_descendant = unwrap_tags_with_no_text_descendant.unwrap_tags_with_no_text_descendant
 pub const unwrap_when_zero_or_one_children = unwrap_when_zero_or_one_children.unwrap_when_zero_or_one_children
+pub const wrap = wrap.wrap
 pub const wrap_adjacent_non_whitespace_text_with = wrap_adjacent_non_whitespace_text_with.wrap_adjacent_non_whitespace_text_with
 pub const wrap_children_before_in = wrap_children_before_in.wrap_children_before_in
 pub const wrap_children_in = wrap_children_in.wrap_children_in
 pub const wrap_each_child = wrap_each_child.wrap_each_child
-pub const wrap_tag_in = wrap_tag_in.wrap_tag_in
 
 pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_into_previous_sibling.assertive_tests,
@@ -411,9 +411,9 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   unwrap_tags_with_no_text_child.assertive_tests,
   unwrap_tags_with_no_text_descendant.assertive_tests,
   unwrap_when_zero_or_one_children.assertive_tests,
+  wrap.assertive_tests,
   wrap_adjacent_non_whitespace_text_with.assertive_tests,
   wrap_children_before_in.assertive_tests,
   wrap_children_in.assertive_tests,
   wrap_each_child.assertive_tests,
-  wrap_tag_in.assertive_tests,
 ]
