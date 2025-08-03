@@ -17,6 +17,83 @@ import vxml.{type VXML, V} as vp
 import writerly as wp
 import gleam/time/timestamp.{type Timestamp}
 
+// pub type EchoMode {
+//   On
+//   Off
+//   OnChange
+// }
+
+// pub type Selector = fn(VXML) -> List(VXML)
+
+// fn run_pipeline_new_version(
+//   vxml: VXML,
+//   pipeline: List(#(EchoMode, Selector, Desugarer)),
+// ) -> Result(#(VXML, List(#(Int, Timestamp))), InSituDesugaringError) {
+//   pipeline
+//   |> list.try_fold(
+//     #(vxml, 1, [], ""),
+//     fn(acc, pipe) {
+//       let #(mode, selector, desugarer) = pipe
+//       let #(vxml, step, times, last_debug_output) = acc
+//       let times = case desugarer.name == "timer" {
+//         True -> [#(step, timestamp.system_time()), ..times]
+//         False -> times
+//       }
+//       case mode == On {
+//         False -> Nil
+//         True -> io.print(star_block.desugarer_description_star_block(desugarer, step))
+//       }
+//       use vxml <- infra.on_error_on_ok(
+//         desugarer.transform(vxml),
+//         fn(error) {
+//           Error(InSituDesugaringError(
+//             desugarer: desugarer,
+//             pipeline_step: step,
+//             blame: error.blame,
+//             message: error.message,
+//           ))
+//         }
+//       )
+//       let #(selected, next_debug_output) = case mode == Off {
+//         True -> #([], last_debug_output)
+//         False -> {
+//           let selected = selector(vxml)
+//           #(selected, vp.vxmls_to_string(selected))
+//         }
+//       }
+//       case mode == On || { mode == OnChange && next_debug_output != last_debug_output } {
+//         False -> Nil
+//         True -> {
+//           case mode == On {
+//             True -> Nil
+//             False -> io.print(star_block.desugarer_description_star_block(desugarer, step))
+//           }
+//           use <- infra.on_lazy_true_on_false(
+//             selected == [],
+//             fn() {
+//               io.println("[nothing selected to print]")
+//             }
+//           )
+//           list.index_map(
+//             selected,
+//             fn (selected_guy, i) {
+//               vp.debug_print_vxml(ins(step) <> "-" <> ins(i+1), selected_guy)
+//             }
+//           )
+//           Nil
+//         }
+//       }
+//       Ok(#(
+//         vxml,
+//         step + 1,
+//         times,
+//         next_debug_output,
+//       ))
+//     }
+//   )
+//   |> result.map(fn(acc){#(acc.0, acc.2)}) 
+// }
+
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
 // file/directory -> List(BlamedLine)
@@ -355,7 +432,7 @@ pub type RendererParameters {
 // RENDERER IN-HOUSE HELPER FUNCTIONS
 // *************
 
-fn execute_pipeline(
+fn run_pipeline(
   vxml: VXML,
   desugarers: List(Desugarer),
   pipeline_debug_options: PipelineDebugOptions,
@@ -383,7 +460,7 @@ fn execute_pipeline(
           }
           case pipeline_debug_options.debug_print(step, desugarer) {
             False -> Nil
-            True -> vp.debug_print_vxml("(" <> ins(step) <> ")", vxml)
+            True -> vp.debug_print_vxml(ins(step), vxml)
           }
           Ok(#(vxml, step + 1, times))
         }
@@ -579,7 +656,7 @@ pub fn run_renderer(
   let t0 = timestamp.system_time()
 
   use #(desugared, times) <- infra.on_error_on_ok(
-    over: execute_pipeline(
+    over: run_pipeline(
       parsed,
       renderer.pipeline,
       debug_options.pipeline_debug_options,

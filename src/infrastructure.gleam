@@ -1054,15 +1054,15 @@ pub fn lines_total_chars(
 
 pub fn line_wrap_rearrangement_internal(
   is_very_first_token: Bool,
-  blame: Blame,
+  current_blame: Blame,
   already_bundled: List(BlamedContent),
   current_line: List(String),
   wrap_beyond: Int,
   chars_left: Int,
-  remaining_tokens: List(String),
+  remaining_tokens: List(EitherOr(String, Blame)),
 ) -> #(List(BlamedContent), Int) {
   let bundle_current = fn() {
-    BlamedContent(blame, current_line |> list.reverse |> string.join(" "))
+    BlamedContent(current_blame, current_line |> list.reverse |> string.join(" "))
   }
   case remaining_tokens {
     [] -> {
@@ -1072,24 +1072,35 @@ pub fn line_wrap_rearrangement_internal(
         last.content |> string.length,
       )
     }
-    [first, ..rest] -> {
-      case first == "" || chars_left > 0 || is_very_first_token {
+    [Or(current_blame), ..rest] -> line_wrap_rearrangement_internal(
+      False,
+      current_blame,
+      already_bundled,
+      current_line,
+      wrap_beyond,
+      chars_left,
+      rest,
+    )
+    [Either(some_string), ..rest] -> {
+      let length = string.length(some_string)
+      let current_blame = Blame(..current_blame, char_no: current_blame.char_no + length + 1)
+      case some_string == "" || chars_left > 0 || is_very_first_token {
         True -> line_wrap_rearrangement_internal(
           False,
-          blame,
+          current_blame,
           already_bundled,
-          [first, ..current_line],
+          [some_string, ..current_line],
           wrap_beyond,
-          chars_left - string.length(first) - 1,
+          chars_left - length - 1,
           rest,
         )
         False -> line_wrap_rearrangement_internal(
           False,
-          blame,
+          current_blame,
           [bundle_current(), ..already_bundled],
-          [first],
+          [some_string],
           wrap_beyond,
-          wrap_beyond - string.length(first),
+          wrap_beyond - length,
           rest,
         )
       }
@@ -1102,88 +1113,6 @@ pub fn line_wrap_rearrangement(
   starting_offset: Int,
   wrap_beyond: Int,
 ) -> #(List(BlamedContent), Int) {
-  let assert [BlamedContent(blame, _), ..] = lines
-  let tokens =
-    lines
-    |> list.map(fn(bc){string.split(bc.content, " ")})
-    |> list.flatten
-  let #(lines, last_line_length) = line_wrap_rearrangement_internal(
-    True,
-    blame,
-    [],
-    [],
-    wrap_beyond,
-    wrap_beyond - starting_offset,
-    tokens,
-  )
-  case list.length(lines) > 1 {
-    True -> #(lines, last_line_length)
-    False -> #(lines, last_line_length + starting_offset)
-  }
-}
-
-pub fn line_wrap_rearrangement_internal_with_blames(
-  is_very_first_token: Bool,
-  blame: Blame,
-  already_bundled: List(BlamedContent),
-  current_line: List(String),
-  wrap_beyond: Int,
-  chars_left: Int,
-  remaining_tokens: List(EitherOr(String, Blame)),
-) -> #(List(BlamedContent), Int) {
-  let bundle_current = fn() {
-    BlamedContent(blame, current_line |> list.reverse |> string.join(" "))
-  }
-  case remaining_tokens {
-    [] -> {
-      let last = bundle_current()
-      #(
-        [last, ..already_bundled] |> list.reverse,
-        last.content |> string.length,
-      )
-    }
-    [Or(blame), ..rest] -> line_wrap_rearrangement_internal_with_blames(
-      False,
-      blame,
-      already_bundled,
-      current_line,
-      wrap_beyond,
-      chars_left,
-      rest,
-    )
-    [Either(some_string), ..rest] -> {
-      let length = string.length(some_string)
-      let blame = Blame(..blame, char_no: blame.char_no + length + 1)
-      case some_string == "" || chars_left > 0 || is_very_first_token {
-        True -> line_wrap_rearrangement_internal_with_blames(
-          False,
-          blame,
-          already_bundled,
-          [some_string, ..current_line],
-          wrap_beyond,
-          chars_left - length - 1,
-          rest,
-        )
-        False -> line_wrap_rearrangement_internal_with_blames(
-          False,
-          blame,
-          [bundle_current(), ..already_bundled],
-          [some_string],
-          wrap_beyond,
-          wrap_beyond - length,
-          rest,
-        )
-      }
-    }
-  }
-}
-
-pub fn line_wrap_rearrangement_with_blames(
-  lines: List(BlamedContent),
-  starting_offset: Int,
-  wrap_beyond: Int,
-) -> #(List(BlamedContent), Int) {
-  let assert [BlamedContent(blame, _), ..] = lines
   let tokens =
     lines
     |> list.map(fn(bc){
@@ -1192,9 +1121,10 @@ pub fn line_wrap_rearrangement_with_blames(
       |> list.prepend(Or(bc.blame))
     })
     |> list.flatten
-  let #(lines, last_line_length) = line_wrap_rearrangement_internal_with_blames(
+  let assert [Or(first_blame), ..tokens] = tokens
+  let #(lines, last_line_length) = line_wrap_rearrangement_internal(
     True,
-    blame,
+    first_blame,
     [],
     [],
     wrap_beyond,
