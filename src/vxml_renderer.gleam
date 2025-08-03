@@ -190,7 +190,7 @@ pub fn stub_writerly_emitter(
 ) -> Result(OutputFragment(d, List(BlamedLine)), b) {
   let lines =
     fragment.payload
-    |> wp.vxml_to_writerlys
+    |> wp.vxml_to_writerly
     |> wp.writerlys_to_blamed_lines
   Ok(OutputFragment(..fragment, payload: lines))
 }
