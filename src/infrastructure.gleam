@@ -2378,3 +2378,13 @@ pub type InSituDesugaringError {
     blame: Blame,
   )
 }
+
+pub type EchoMode {
+  On
+  Off
+  OnChange
+}
+
+pub type Selector = fn(VXML) -> List(VXML)
+
+pub type Pipe = #(EchoMode, Selector, Desugarer)

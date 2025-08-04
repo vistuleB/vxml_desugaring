@@ -10,7 +10,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type InSituDesugaringError, InSituDesugaringError, type Desugarer} as infra
+import infrastructure.{type InSituDesugaringError, InSituDesugaringError, type Desugarer, type EchoMode, On, Off, OnChange, type Pipe, type Selector} as infra
 import star_block
 import shellout
 import simplifile
@@ -18,17 +18,9 @@ import vxml.{type VXML, V} as vp
 import writerly as wp
 import gleam/time/timestamp.{type Timestamp}
 
-pub type EchoMode {
-  On
-  Off
-  OnChange
-}
-
-pub type Selector = fn(VXML) -> List(VXML)
-
 fn run_pipeline_new_version(
   vxml: VXML,
-  pipeline: List(#(EchoMode, Selector, Desugarer)),
+  pipeline: List(Pipe),
 ) -> Result(#(VXML, List(#(Int, Timestamp))), InSituDesugaringError) {
   pipeline
   |> list.try_fold(
