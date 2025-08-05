@@ -504,6 +504,10 @@ pub fn quad_drop_4th(t: #(a, b, c, d)) -> #(a, b, c) {
   #(t.0, t.1, t.2)
 }
 
+pub fn triple_3rd(t: #(a, b, c)) -> c {
+  t.2
+}
+
 pub fn triple_drop_2nd(t: #(a, b, c)) -> #(a, c) {
   #(t.0, t.2)
 }
@@ -2112,7 +2116,7 @@ pub fn if_else(cond: Bool, if_branch: a, else_branch: a) -> a {
 pub type AssertiveTestError {
   VXMLParseError(vxml.VXMLParseError)
   TestDesugaringError(DesugaringError)
-  AssertiveTestError(name: String, output: String, expected: String)
+  AssertiveTestError(name: String, output: VXML, expected: VXML)
   NonMatchingDesugarerName(String)
 }
 
@@ -2272,15 +2276,13 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     Error(NonMatchingDesugarerName(desugarer.name)),
   )
 
-  use input <- result.try(
-    vxml.unique_root_parse_string(tst.source, "test " <> desugarer.name, False)
-    |> result.map_error(fn(e) { VXMLParseError(e) })
-  )
+  use vxmls <- result.try(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
 
-  use expected <- result.try(
-    vxml.unique_root_parse_string(tst.expected, "test " <> desugarer.name, False)
-    |> result.map_error(fn(e) { VXMLParseError(e) })
-  )
+  let assert [input] = vxmls
+
+  use vxmls <- result.try(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
+
+  let assert [expected] = vxmls
 
   use output <- result.try(
     desugarer.transform(input)
@@ -2292,8 +2294,8 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     False -> Error(
       AssertiveTestError(
         desugarer.name,
-        vxml.debug_vxml_to_string("obtained", output),
-        vxml.debug_vxml_to_string("expected", expected),
+        output,
+        expected,
       )
     )
   }
@@ -2311,12 +2313,12 @@ pub fn run_and_announce_results(
       0
     }
     Error(error) -> {
-      io.print("\n❌ test " <> ins(number) <> " of " <> ins(total) <> " failed: ")
+      io.print("\n❌ test " <> ins(number) <> " of " <> ins(total) <> " failed:")
       case error {
-        AssertiveTestError(_, output, expected) -> {
+        AssertiveTestError(_, obtained, expected) -> {
           io.println(" obtained != expected:")
-          io.print(output)
-          io.print(expected)
+          vxml.echo_vxml(obtained, "obtained")
+          vxml.echo_vxml(expected, "expected")
           Nil
         }
         _ -> io.println(ins(error))
@@ -2373,7 +2375,7 @@ pub type Desugarer {
 pub type InSituDesugaringError {
   InSituDesugaringError(
     desugarer: Desugarer,
-    pipeline_step: Int,
+    step_no: Int,
     message: String,
     blame: Blame,
   )
@@ -2385,6 +2387,27 @@ pub type EchoMode {
   OnChange
 }
 
-pub type Selector = fn(VXML) -> List(VXML)
+pub type Selector =
+  fn(VXML) -> List(VXML)
 
-pub type Pipe = #(EchoMode, Selector, Desugarer)
+pub type Pipe = 
+  #(EchoMode, Selector, Desugarer)
+
+pub type Pipeline =
+  List(Pipe)
+
+pub fn pipeline_desugarers(
+  pipeline: Pipeline
+) -> List(Desugarer) {
+  pipeline
+  |> list.map(fn(x){x.2})
+}
+
+pub fn wrap_desugarers(
+  desugarers: List(Desugarer),
+  echo_mode: EchoMode,
+  selector: Selector,
+) -> Pipeline {
+  desugarers
+  |> list.map(fn (d) {#(echo_mode, selector, d)})
+}

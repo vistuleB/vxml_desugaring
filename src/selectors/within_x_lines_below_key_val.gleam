@@ -6,23 +6,34 @@ import gleam/option.{type Option, Some, None}
 
 fn take_from_v_tag_and_attributes(
   v: VXML,
-  gas_remaining: Int,
+  initial_gas_remaining: Int,
   inner: Inner,
 ) -> #(Bool, Option(VXML), Int) {
   let assert V(blame, tag, attrs, _) = v
-  let #(saved, gas_remaining) = case tag == inner.0 {
-    True -> #(True, inner.1)
-    False -> #(False, gas_remaining)
+  let #(saved, attrs, gas_remaining) =
+    list.fold(
+      attrs,
+      #(False, [], int.max(initial_gas_remaining - 1, 0)),
+      fn (acc, attr) {
+        let #(saved, attrs, gas_remaining) = acc
+        let #(saved, gas_remaining) = case attr.key == inner.0 && attr.value == inner.1 {
+          True -> #(True, inner.2)
+          False -> #(saved, gas_remaining)
+        }
+        let attrs = case gas_remaining > 0 {
+          True -> [attr, ..attrs]
+          False -> attrs
+        }
+        #(saved, attrs, int.max(0, gas_remaining - 1))
+      }
+    )
+  case list.is_empty(attrs) && initial_gas_remaining <= 0 {
+    True -> {
+      let assert True = gas_remaining == 0
+      #(False, None, 0)
+    }
+    False -> #(saved, Some(V(blame, tag, attrs |> list.reverse, [])), gas_remaining)
   }
-  use <- infra.on_true_on_false(
-    gas_remaining <= 0,
-    #(False, None, 0),
-  )
-  let num_attributes_2_take = int.min(gas_remaining - 1, list.length(attrs))
-  let attrs = list.take(attrs, num_attributes_2_take)
-  let gas_remaining = gas_remaining - 1 - num_attributes_2_take
-  let assert True = gas_remaining >= 0
-  #(saved, Some(V(blame, tag, attrs, [])), gas_remaining)
 }
 
 fn take_from_t(
@@ -53,6 +64,10 @@ fn take_from_v(
   let assert V(_, _, _, children) = vxml
 
   let #(saved, head, gas_remaining) = take_from_v_tag_and_attributes(vxml, initial_gas_remaining, inner)
+  case gas_remaining > 0 || initial_gas_remaining > 0 {
+    True -> {let assert Some(_) = head}
+    False -> None
+  }
 
   let #(saved, gas_remaining, children) =
     list.fold(
@@ -92,7 +107,6 @@ fn take_from_v(
           #(True, Some(V(..guy, children: children)), gas_remaining)
         }
       }
-      
     }
   }
 }
@@ -108,14 +122,15 @@ fn take_from_vxml(
   }
 }
 
-type Inner = #(String, Int)
+type Inner = #(String, String, Int)
 
-pub fn within_x_lines_below_tag(
+pub fn within_x_lines_below_key_val(
   root: VXML,
-  tag: String,
+  key: String,
+  value: String,
   within: Int,
 ) -> List(VXML) {
-  let inner = #(tag, within)
+  let inner = #(key, value, within)
   case take_from_vxml(root, 0, inner) {
     #(True, Some(guy), _) -> [guy]
     #(False, None, 0) -> []

@@ -123,7 +123,7 @@ fn deatomize_vxmls(
         }
 
         _ -> {
-          vxml.debug_print_vxmls("children", children) 
+          list.each(children, vxml.echo_vxml(_, "a child"))
           panic as "should not happen"
         }
       }
