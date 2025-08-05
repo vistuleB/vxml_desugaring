@@ -1,13 +1,18 @@
+import vxml
 import shellout
 import gleam/list
 import argv
 import gleam/io
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer} as infra
+import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import desugarer_library as dl
+import selectors/within_x_lines_below_tag.{within_x_lines_below_tag}
 
-fn test_pipeline() -> List(Desugarer) {
+fn test_pipeline() -> List(Pipe) {
+  let echo_mode = infra.Off
+  let selector = within_x_lines_below_tag(_, "marker", 12)
+
   [
     dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
     dl.prepend_append_text(#("i", "_", "_")),
@@ -16,6 +21,7 @@ fn test_pipeline() -> List(Desugarer) {
     dl.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
     dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]
+  |> infra.wrap_desugarers(echo_mode, selector)
 }
 
 fn test_renderer() {
@@ -45,7 +51,7 @@ fn test_renderer() {
 
   let parameters =
     vr.RendererParameters(
-      input_dir: "test/content/__parent.emu",
+      input_dir: "test/content",
       output_dir: "test/output",
       prettifier_on_by_default: False,
     )
@@ -153,8 +159,19 @@ fn run_desugarer_tests(names: List(String)) {
   Nil
 }
 
+pub fn test_thing() {
+  let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml")
+  echo vxml
+  let results = within_x_lines_below_tag(vxml, "marker", 12)
+  vxml.echo_vxmls(results, "hi")
+  Nil
+}
+
 pub fn main() {
   case argv.load().arguments {
+    ["--test-thing"] -> {
+      test_thing()
+    }
     ["--test-desugarers", ..names] -> {
       run_desugarer_tests(names)
     }

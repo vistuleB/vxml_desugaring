@@ -11,30 +11,31 @@ fn nodemap(
   _: List(VXML),
   _: List(VXML),
   inner: InnerParam,
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   case vxml {
     T(_, _) ->
       case list.any(ancestors, inner) {
-        True -> Ok([vxml])
-        False -> Ok([])
+        True -> [vxml]
+        False -> []
       }
     V(_, _, _, children) -> {
       case
         !list.is_empty(children) || list.any(ancestors, inner) || inner(vxml)
       {
-        True -> Ok([vxml])
-        False -> Ok([])
+        True -> [vxml]
+        False -> []
       }
     }
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToManyNoErrorNodeMap {
   fn(vxml, a, s1, s2, s3) { nodemap(vxml, a, s1, s2, s3, inner) }
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  nodemap_factory(inner)
+  |> n2t.fancy_one_to_many_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

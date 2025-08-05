@@ -504,6 +504,10 @@ pub fn quad_drop_4th(t: #(a, b, c, d)) -> #(a, b, c) {
   #(t.0, t.1, t.2)
 }
 
+pub fn triple_3rd(t: #(a, b, c)) -> c {
+  t.2
+}
+
 pub fn triple_drop_2nd(t: #(a, b, c)) -> #(a, c) {
   #(t.0, t.2)
 }
@@ -1054,15 +1058,15 @@ pub fn lines_total_chars(
 
 pub fn line_wrap_rearrangement_internal(
   is_very_first_token: Bool,
-  blame: Blame,
+  current_blame: Blame,
   already_bundled: List(BlamedContent),
   current_line: List(String),
   wrap_beyond: Int,
   chars_left: Int,
-  remaining_tokens: List(String),
+  remaining_tokens: List(EitherOr(String, Blame)),
 ) -> #(List(BlamedContent), Int) {
   let bundle_current = fn() {
-    BlamedContent(blame, current_line |> list.reverse |> string.join(" "))
+    BlamedContent(current_blame, current_line |> list.reverse |> string.join(" "))
   }
   case remaining_tokens {
     [] -> {
@@ -1072,24 +1076,35 @@ pub fn line_wrap_rearrangement_internal(
         last.content |> string.length,
       )
     }
-    [first, ..rest] -> {
-      case first == "" || chars_left > 0 || is_very_first_token {
+    [Or(current_blame), ..rest] -> line_wrap_rearrangement_internal(
+      False,
+      current_blame,
+      already_bundled,
+      current_line,
+      wrap_beyond,
+      chars_left,
+      rest,
+    )
+    [Either(some_string), ..rest] -> {
+      let length = string.length(some_string)
+      let current_blame = Blame(..current_blame, char_no: current_blame.char_no + length + 1)
+      case some_string == "" || chars_left > 0 || is_very_first_token {
         True -> line_wrap_rearrangement_internal(
           False,
-          blame,
+          current_blame,
           already_bundled,
-          [first, ..current_line],
+          [some_string, ..current_line],
           wrap_beyond,
-          chars_left - string.length(first) - 1,
+          chars_left - length - 1,
           rest,
         )
         False -> line_wrap_rearrangement_internal(
           False,
-          blame,
+          current_blame,
           [bundle_current(), ..already_bundled],
-          [first],
+          [some_string],
           wrap_beyond,
-          wrap_beyond - string.length(first),
+          wrap_beyond - length,
           rest,
         )
       }
@@ -1102,88 +1117,6 @@ pub fn line_wrap_rearrangement(
   starting_offset: Int,
   wrap_beyond: Int,
 ) -> #(List(BlamedContent), Int) {
-  let assert [BlamedContent(blame, _), ..] = lines
-  let tokens =
-    lines
-    |> list.map(fn(bc){string.split(bc.content, " ")})
-    |> list.flatten
-  let #(lines, last_line_length) = line_wrap_rearrangement_internal(
-    True,
-    blame,
-    [],
-    [],
-    wrap_beyond,
-    wrap_beyond - starting_offset,
-    tokens,
-  )
-  case list.length(lines) > 1 {
-    True -> #(lines, last_line_length)
-    False -> #(lines, last_line_length + starting_offset)
-  }
-}
-
-pub fn line_wrap_rearrangement_internal_with_blames(
-  is_very_first_token: Bool,
-  blame: Blame,
-  already_bundled: List(BlamedContent),
-  current_line: List(String),
-  wrap_beyond: Int,
-  chars_left: Int,
-  remaining_tokens: List(EitherOr(String, Blame)),
-) -> #(List(BlamedContent), Int) {
-  let bundle_current = fn() {
-    BlamedContent(blame, current_line |> list.reverse |> string.join(" "))
-  }
-  case remaining_tokens {
-    [] -> {
-      let last = bundle_current()
-      #(
-        [last, ..already_bundled] |> list.reverse,
-        last.content |> string.length,
-      )
-    }
-    [Or(blame), ..rest] -> line_wrap_rearrangement_internal_with_blames(
-      False,
-      blame,
-      already_bundled,
-      current_line,
-      wrap_beyond,
-      chars_left,
-      rest,
-    )
-    [Either(some_string), ..rest] -> {
-      let length = string.length(some_string)
-      let blame = Blame(..blame, char_no: blame.char_no + length + 1)
-      case some_string == "" || chars_left > 0 || is_very_first_token {
-        True -> line_wrap_rearrangement_internal_with_blames(
-          False,
-          blame,
-          already_bundled,
-          [some_string, ..current_line],
-          wrap_beyond,
-          chars_left - length - 1,
-          rest,
-        )
-        False -> line_wrap_rearrangement_internal_with_blames(
-          False,
-          blame,
-          [bundle_current(), ..already_bundled],
-          [some_string],
-          wrap_beyond,
-          wrap_beyond - length,
-          rest,
-        )
-      }
-    }
-  }
-}
-
-pub fn line_wrap_rearrangement_with_blames(
-  lines: List(BlamedContent),
-  starting_offset: Int,
-  wrap_beyond: Int,
-) -> #(List(BlamedContent), Int) {
-  let assert [BlamedContent(blame, _), ..] = lines
   let tokens =
     lines
     |> list.map(fn(bc){
@@ -1192,9 +1125,10 @@ pub fn line_wrap_rearrangement_with_blames(
       |> list.prepend(Or(bc.blame))
     })
     |> list.flatten
-  let #(lines, last_line_length) = line_wrap_rearrangement_internal_with_blames(
+  let assert [Or(first_blame), ..tokens] = tokens
+  let #(lines, last_line_length) = line_wrap_rearrangement_internal(
     True,
-    blame,
+    first_blame,
     [],
     [],
     wrap_beyond,
@@ -2182,7 +2116,7 @@ pub fn if_else(cond: Bool, if_branch: a, else_branch: a) -> a {
 pub type AssertiveTestError {
   VXMLParseError(vxml.VXMLParseError)
   TestDesugaringError(DesugaringError)
-  AssertiveTestError(name: String, output: String, expected: String)
+  AssertiveTestError(name: String, output: VXML, expected: VXML)
   NonMatchingDesugarerName(String)
 }
 
@@ -2342,15 +2276,13 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     Error(NonMatchingDesugarerName(desugarer.name)),
   )
 
-  use input <- result.try(
-    vxml.unique_root_parse_string(tst.source, "test " <> desugarer.name, False)
-    |> result.map_error(fn(e) { VXMLParseError(e) })
-  )
+  use vxmls <- result.try(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
 
-  use expected <- result.try(
-    vxml.unique_root_parse_string(tst.expected, "test " <> desugarer.name, False)
-    |> result.map_error(fn(e) { VXMLParseError(e) })
-  )
+  let assert [input] = vxmls
+
+  use vxmls <- result.try(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
+
+  let assert [expected] = vxmls
 
   use output <- result.try(
     desugarer.transform(input)
@@ -2362,8 +2294,8 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     False -> Error(
       AssertiveTestError(
         desugarer.name,
-        vxml.debug_vxml_to_string("obtained", output),
-        vxml.debug_vxml_to_string("expected", expected),
+        output,
+        expected,
       )
     )
   }
@@ -2381,12 +2313,12 @@ pub fn run_and_announce_results(
       0
     }
     Error(error) -> {
-      io.print("\n❌ test " <> ins(number) <> " of " <> ins(total) <> " failed: ")
+      io.print("\n❌ test " <> ins(number) <> " of " <> ins(total) <> " failed:")
       case error {
-        AssertiveTestError(_, output, expected) -> {
+        AssertiveTestError(_, obtained, expected) -> {
           io.println(" obtained != expected:")
-          io.print(output)
-          io.print(expected)
+          vxml.echo_vxml(obtained, "obtained")
+          vxml.echo_vxml(expected, "expected")
           Nil
         }
         _ -> io.println(ins(error))
@@ -2443,8 +2375,39 @@ pub type Desugarer {
 pub type InSituDesugaringError {
   InSituDesugaringError(
     desugarer: Desugarer,
-    pipeline_step: Int,
+    step_no: Int,
     message: String,
     blame: Blame,
   )
+}
+
+pub type EchoMode {
+  On
+  Off
+  OnChange
+}
+
+pub type Selector =
+  fn(VXML) -> List(VXML)
+
+pub type Pipe = 
+  #(EchoMode, Selector, Desugarer)
+
+pub type Pipeline =
+  List(Pipe)
+
+pub fn pipeline_desugarers(
+  pipeline: Pipeline
+) -> List(Desugarer) {
+  pipeline
+  |> list.map(fn(x){x.2})
+}
+
+pub fn wrap_desugarers(
+  desugarers: List(Desugarer),
+  echo_mode: EchoMode,
+  selector: Selector,
+) -> Pipeline {
+  desugarers
+  |> list.map(fn (d) {#(echo_mode, selector, d)})
 }

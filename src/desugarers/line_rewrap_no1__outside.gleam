@@ -19,7 +19,7 @@ fn line_wrap_in_list(
         True -> 0
         False -> deficit
       }
-      let #(lines, new_indent) =  infra.line_wrap_rearrangement_with_blames(
+      let #(lines, new_indent) =  infra.line_wrap_rearrangement(
         lines,
         deficit,
         inner.0,

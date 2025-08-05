@@ -222,9 +222,34 @@ fn star_block(
   }
 }
 
+pub fn desugarer_name_star_block(
+  desugarer: Desugarer,
+  step_no: Int,
+) -> String {
+  let name_and_param =
+    ins(step_no)
+    <> ". "
+    <> desugarer.name
+    <> case desugarer.stringified_param {
+      Some(desc) ->
+        " "
+        <> ins(desc)
+        |> string.drop_start(1)
+        |> string.drop_end(1)
+        |> string.replace("\\\"", "\"")
+      None -> ""
+    }
+
+  star_block(
+    True,
+    [name_and_param],
+    True,
+  )
+}
+
 pub fn desugarer_description_star_block(
   desugarer: Desugarer,
-  step: Int,
+  step_no: Int,
 ) -> String {
   let name_and_param =
     desugarer.name
@@ -256,7 +281,7 @@ pub fn desugarer_description_star_block(
     True,
     list.append(
       [
-        "DESUGARER " <> ins(step),
+        "DESUGARER " <> ins(step_no),
         "",
         name_and_param,
         "",
