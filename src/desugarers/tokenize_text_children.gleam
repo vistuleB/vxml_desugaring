@@ -43,7 +43,7 @@ fn tokenize_string_acc(
     )
     Ok(#(before, after)) -> tokenize_string_acc(
       [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
-      advance(current_blame, string.length(before)),
+      advance(current_blame, string.length(before) + 1),
       after,
     )
     Error(Nil) -> case leftover == "" {
