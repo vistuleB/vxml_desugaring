@@ -29,6 +29,7 @@ import desugarers/auto_generate_child_if_missing_from_first_descendant_of_type
 import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
 import desugarers/change_attribute_value__batch
+import desugarers/check_tags
 import desugarers/compute_max_element_width
 import desugarers/compute_missing_images_width
 import desugarers/concatenate_tags
@@ -168,6 +169,7 @@ pub const auto_generate_child_if_missing_from_first_descendant_of_type = auto_ge
 pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
 pub const change_attribute_value = change_attribute_value.change_attribute_value
 pub const change_attribute_value__batch = change_attribute_value__batch.change_attribute_value__batch
+pub const check_tags = check_tags.check_tags
 pub const compute_max_element_width = compute_max_element_width.compute_max_element_width
 pub const compute_missing_images_width = compute_missing_images_width.compute_missing_images_width
 pub const concatenate_tags = concatenate_tags.concatenate_tags
@@ -308,6 +310,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   break_lines_into_span_tooltips.assertive_tests,
   change_attribute_value.assertive_tests,
   change_attribute_value__batch.assertive_tests,
+  check_tags.assertive_tests,
   compute_max_element_width.assertive_tests,
   compute_missing_images_width.assertive_tests,
   concatenate_tags.assertive_tests,
