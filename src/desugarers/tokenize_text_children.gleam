@@ -1,4 +1,4 @@
-import blamedlines.{type Blame}
+import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -6,13 +6,12 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V, T}
 
-fn word_to_node(blame: Blame, word: String) {
-  V(
-    blame,
-    "__OneWord",
-    [BlamedAttribute(infra.blame_us("..."), "val", word)],
-    [],
-  )
+fn start_node(blame: Blame) {
+  V(blame, "__StartTokenizedT", [], [])
+}
+
+fn word_node(blame: Blame, word: String) {
+  V(blame, "__OneWord", [BlamedAttribute(infra.no_blame, "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -23,38 +22,34 @@ fn line_node(blame: Blame) {
   V(blame, "__OneNewLine", [], [])
 }
 
-fn start_node(blame: Blame) {
-  V(blame, "__StartAtomizedT", [], [])
-}
-
 fn end_node(blame: Blame) {
-  V(blame, "__EndAtomizedT", [], [])
+  V(blame, "__EndTokenizedT", [], [])
 }
 
-/// since number of spaces between words is important, we can't use string.split and list.intersperse combo
-fn split_words_by_spaces(blame: Blame, str: String, word: String, spaces: String) -> List(VXML) {
-  let word_node = case word {
-    "" -> []
-    _ -> [word_to_node(blame, word)]
-  }
-  let spaces_nodes = list.repeat(space_node(blame), string.length(spaces))
+fn advance(blame: Blame, i: Int) {
+  Blame(..blame, char_no: blame.char_no + i)
+}
 
-  case string.first(str) {
-    Ok(" ") ->
-      list.flatten([  
-        word_node,
-        split_words_by_spaces(blame, string.drop_start(str, 1), "", spaces <> " ")
-      ])
-    Ok(char) ->
-      list.flatten([
-        spaces_nodes,
-        split_words_by_spaces(blame, string.drop_start(str, 1), word <> char, "")
-      ])
-    Error(_) ->
-      list.flatten([
-        spaces_nodes,
-        word_node,
-      ])
+fn tokenize_string_acc(
+  past_tokens: List(VXML),
+  current_blame: Blame,
+  leftover: String,
+) -> List(VXML) {
+  case string.split_once(leftover, " ") {
+    Ok(#("", after)) -> tokenize_string_acc(
+      [space_node(current_blame), ..past_tokens],
+      advance(current_blame, 1),
+      after,
+    )
+    Ok(#(before, after)) -> tokenize_string_acc(
+      [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
+      advance(current_blame, string.length(before)),
+      after,
+    )
+    Error(Nil) -> case leftover == "" {
+      True -> past_tokens |> list.reverse
+      False -> [word_node(current_blame, leftover), ..past_tokens] |> list.reverse
+    }
   }
 }
 
@@ -62,14 +57,11 @@ fn tokenize_t(vxml: VXML) -> List(VXML) {
   let assert T(blame, blamed_contents) = vxml
   blamed_contents
   |> list.index_map(fn(blamed_content, i) {
-    blamed_content.content
-    |> split_words_by_spaces(blamed_content.blame, _, "", "")
-    |> fn (tokens) {
-        case tokens {
-          [] -> [word_to_node(blamed_content.blame, "")]
-          _ -> tokens
-        }
-      }
+    tokenize_string_acc(
+      [],
+      blamed_content.blame,
+      blamed_content.content,
+    )
     |> fn (tokens) {
         case i > 0 {
           False -> tokens |> list.prepend(start_node(blamed_content.blame))
@@ -173,7 +165,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       expected: "
             <> testing
               <> a
-                <> __StartAtomizedT
+                <> __StartTokenizedT
                 <> __OneWord
                   val=first
                 <> __OneSpace
@@ -185,14 +177,14 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> __OneSpace
                 <> __OneWord
                   val=line
-                <> __EndAtomizedT
-                <> __StartAtomizedT
+                <> __EndTokenizedT
+                <> __StartTokenizedT
                 <> __OneWord
                   val=third
                 <> __OneSpace
                 <> __OneWord
                   val=line
-                <> __EndAtomizedT
+                <> __EndTokenizedT
                 <> inside
                   <>
                     \"some text\"
@@ -211,7 +203,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       expected: "
             <> testing
               <> a
-                <> __StartAtomizedT
+                <> __StartTokenizedT
                 <> __OneWord
                   val=first
                 <> __OneSpace
@@ -229,7 +221,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 <> __OneSpace
                 <> __OneWord
                   val=line
-                <> __EndAtomizedT
+                <> __EndTokenizedT
       ",
     ),
     infra.AssertiveTestData(
@@ -244,13 +236,9 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       expected: "
             <> testing
               <> a
-                <> __StartAtomizedT
-                <> __OneWord
-                  val=
+                <> __StartTokenizedT
                 <> __OneNewLine
-                <> __OneWord
-                  val=
-                <> __EndAtomizedT
+                <> __EndTokenizedT
       ",
     )
   ]

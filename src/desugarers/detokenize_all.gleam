@@ -19,45 +19,47 @@ fn detokenize_in_list(
 
   case children {
     [] -> {
+      let assert [] = accumulated_contents
       accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
     }
 
     [first, ..rest] -> {
       case first {
-        V(blame, "__StartAtomizedT", _, _) -> {
+        V(blame, "__StartTokenizedT", _, _) -> {
           let assert [] = accumulated_contents
           let accumulated_contents = [BlamedContent(blame, "")]
           detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
         }
         
         V(blame, "__OneWord", attributes, _) -> {
+          let assert [_, ..] = accumulated_contents
           let assert [BlamedAttribute(_, "val", word)] = attributes
           let accumulated_contents = append_word_to_accumlated_contents(blame, word)
           detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
         }
 
         V(blame, "__OneSpace", _, _) -> {
+          let assert [_, ..] = accumulated_contents
           let accumulated_contents = append_word_to_accumlated_contents(blame, " ")
           detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
         }
 
         V(blame, "__OneNewLine", _, _) -> {
-          let accumulated_contents = case accumulated_contents {
-            [] -> [BlamedContent(blame, ""), BlamedContent(blame, "")]
-            _ -> [BlamedContent(blame, ""), ..accumulated_contents]
-          }
+          let assert [_, ..] = accumulated_contents
+          let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
           detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
         }
-        V(blame, "__EndAtomizedT", _, _) -> {
+
+        V(blame, "__EndTokenizedT", _, _) -> {
+          let assert [_, ..] = accumulated_contents
           let accumulated_contents = append_word_to_accumlated_contents(blame, "")
-          let t = T(blame, accumulated_contents |> list.reverse)
-          detokenize_in_list(rest, [], [t, ..accumulated_nodes])
+          detokenize_in_list(rest, [], [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes])
         }
+
         _ -> {
-          let assert True = list.is_empty(accumulated_contents)
+          let assert [] = accumulated_contents
           detokenize_in_list(rest, [], [first, ..accumulated_nodes])
         }
-      
       }
     }
   }
@@ -124,6 +126,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
       source: "
             <> testing
               <> bb
+                <> __StartTokenizedT
                 <> __OneWord
                   val=first
                 <> __OneSpace
@@ -135,7 +138,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
                 <> __OneSpace
                 <> __OneWord
                   val=line
-                <> __EndAtomizedT
+                <> __EndTokenizedT
                 <> inside
                   <>
                     \"some text\"
@@ -156,13 +159,14 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
       source: "
             <> testing
               <> bb
+                <> __StartTokenizedT
                 <> __OneWord
                   val=first
                 <> __OneSpace
                 <> __OneSpace
                 <> __OneWord
                   val=line
-                <> __EndAtomizedT
+                <> __EndTokenizedT
       ",
       expected: "
             <> testing
@@ -175,6 +179,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
       source: "
             <> testing
               <> bb
+                <> __StartTokenizedT
                 <> __OneWord
                   val=first
                 <> __OneSpace
@@ -182,7 +187,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
                 <> __OneSpace
                 <> __OneWord
                   val=line
-                <> __EndAtomizedT
+                <> __EndTokenizedT
       ",
       expected: "
             <> testing
@@ -196,12 +201,13 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
       source: "
             <> testing
               <> bb
+                <> __StartTokenizedT
                 <> __OneWord
                   val=
                 <> __OneNewLine
                 <> __OneWord
                   val=
-                <> __EndAtomizedT
+                <> __EndTokenizedT
       ",
       expected: "
             <> testing

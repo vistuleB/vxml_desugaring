@@ -168,6 +168,7 @@ pub fn test_thing() {
 }
 
 pub fn main() {
+  echo string.split_once(" hello", " ")
   case argv.load().arguments {
     ["--test-thing"] -> {
       test_thing()
