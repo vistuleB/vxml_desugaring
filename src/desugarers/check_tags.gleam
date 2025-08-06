@@ -10,14 +10,15 @@ fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
+  let #(approved_tags, identifier) = inner
   case vxml {
     T(_, _) -> Ok(vxml)
     V(_, tag, _, _) -> {
-      case list.contains(inner, tag) {
+      case list.contains(approved_tags, tag) {
         True -> Ok(vxml)
         False -> Error(DesugaringError(
-          blamedlines.no_blame(), 
-          "Tag '" <> tag <> "' is not in the approved list. Approved tags: " <> ins(inner)
+          blamedlines.Blame(identifier, 0, 0, []),
+          "Tag '" <> tag <> "' is not in the approved list. Approved tags: " <> ins(approved_tags)
         ))
       }
     }
@@ -34,15 +35,16 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  case param {
-    [] -> Error(DesugaringError(blamedlines.no_blame(), "Approved tags list cannot be empty"))
+  let #(approved_tags, identifier) = param
+  case approved_tags {
+    [] -> Error(DesugaringError(blamedlines.Blame(identifier, 0, 0, []), "Approved tags list cannot be empty"))
     _ -> Ok(param)
   }
 }
 
-type Param = List(String)
-//            ↖
-//            approved tags
+type Param = #(List(String), String)
+//             ↖            ↖
+//             approved tags id
 type InnerParam = Param
 
 const name = "check_tags"
@@ -86,7 +88,7 @@ pub fn check_tags(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: ["root", "div", "p", "span"],
+      param: #(["root", "div", "p", "span"], "test1"),
       source:   "
                 <> root
                   <> div
@@ -109,7 +111,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 ",
     ),
     infra.AssertiveTestData(
-      param: ["root", "section", "h1"],
+      param: #(["root", "section", "h1"], "test2"),
       source:   "
                 <> root
                   <> section
