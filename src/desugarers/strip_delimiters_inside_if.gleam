@@ -33,7 +33,7 @@ fn strip(
   let lines = infra.lines_trim_start(lines)
   let assert [first, ..rest] = lines
   let lines = [
-    BlamedContent(..first, content: echo remove_first_prefix_found(first.content, inner.1)),
+    BlamedContent(..first, content: remove_first_prefix_found(first.content, inner.1)),
     ..rest
   ]
   let lines = infra.reversed_lines_trim_end(lines |> list.reverse)

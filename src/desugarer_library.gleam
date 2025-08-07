@@ -77,6 +77,9 @@ import desugarers/handles_substitute
 import desugarers/identity
 import desugarers/insert_bookend_tags
 import desugarers/insert_bookend_text_if_no_attributes
+import desugarers/insert_line_start_end
+import desugarers/insert_text_start_end
+import desugarers/insert_text_start_end_if_else
 import desugarers/insert_ti2_counter_commands
 import desugarers/keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 import desugarers/line_rewrap_no1__outside
@@ -85,8 +88,6 @@ import desugarers/normalize_begin_end_align
 import desugarers/normalize_math_delimiters_inside
 import desugarers/pair
 import desugarers/pair_list_list
-import desugarers/prepend_append_text
-import desugarers/prepend_append_text__batch
 import desugarers/prepend_append_to_text_children_of
 import desugarers/prepend_attribute_as_text
 import desugarers/prepend_text_node
@@ -109,6 +110,8 @@ import desugarers/rename_with_appended_attributes_and_prepended_text
 import desugarers/rename_with_attributes
 import desugarers/replace_in_attribute_values
 import desugarers/replace_multiple_spaces_by_one
+import desugarers/split_first_line_after_prefix
+import desugarers/split_last_line_before_suffix
 import desugarers/strip_delimiters_inside
 import desugarers/strip_delimiters_inside_if
 import desugarers/surround_elements_by
@@ -119,6 +122,7 @@ import desugarers/trim
 import desugarers/trim__batch
 import desugarers/trim_empty_lines
 import desugarers/trim_empty_lines__batch
+import desugarers/trim_ending_spaces_except_last_line
 import desugarers/trim_spaces_around_newlines__outside
 import desugarers/unwrap
 import desugarers/unwrap__batch
@@ -217,6 +221,9 @@ pub const handles_substitute = handles_substitute.handles_substitute
 pub const identity = identity.identity
 pub const insert_bookend_tags = insert_bookend_tags.insert_bookend_tags
 pub const insert_bookend_text_if_no_attributes = insert_bookend_text_if_no_attributes.insert_bookend_text_if_no_attributes
+pub const insert_line_start_end = insert_line_start_end.insert_line_start_end
+pub const insert_text_start_end = insert_text_start_end.insert_text_start_end
+pub const insert_text_start_end_if_else = insert_text_start_end_if_else.insert_text_start_end_if_else
 pub const insert_ti2_counter_commands = insert_ti2_counter_commands.insert_ti2_counter_commands
 pub const keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 pub const line_rewrap_no1__outside = line_rewrap_no1__outside.line_rewrap_no1__outside
@@ -225,8 +232,6 @@ pub const normalize_begin_end_align = normalize_begin_end_align.normalize_begin_
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.normalize_math_delimiters_inside
 pub const pair = pair.pair
 pub const pair_list_list = pair_list_list.pair_list_list
-pub const prepend_append_text = prepend_append_text.prepend_append_text
-pub const prepend_append_text__batch = prepend_append_text__batch.prepend_append_text__batch
 pub const prepend_append_to_text_children_of = prepend_append_to_text_children_of.prepend_append_to_text_children_of
 pub const prepend_attribute_as_text = prepend_attribute_as_text.prepend_attribute_as_text
 pub const prepend_text_node = prepend_text_node.prepend_text_node
@@ -249,6 +254,8 @@ pub const rename_with_appended_attributes_and_prepended_text = rename_with_appen
 pub const rename_with_attributes = rename_with_attributes.rename_with_attributes
 pub const replace_in_attribute_values = replace_in_attribute_values.replace_in_attribute_values
 pub const replace_multiple_spaces_by_one = replace_multiple_spaces_by_one.replace_multiple_spaces_by_one
+pub const split_first_line_after_prefix = split_first_line_after_prefix.split_first_line_after_prefix
+pub const split_last_line_before_suffix = split_last_line_before_suffix.split_last_line_before_suffix
 pub const strip_delimiters_inside = strip_delimiters_inside.strip_delimiters_inside
 pub const strip_delimiters_inside_if = strip_delimiters_inside_if.strip_delimiters_inside_if
 pub const surround_elements_by = surround_elements_by.surround_elements_by
@@ -259,6 +266,7 @@ pub const trim = trim.trim
 pub const trim__batch = trim__batch.trim__batch
 pub const trim_empty_lines = trim_empty_lines.trim_empty_lines
 pub const trim_empty_lines__batch = trim_empty_lines__batch.trim_empty_lines__batch
+pub const trim_ending_spaces_except_last_line = trim_ending_spaces_except_last_line.trim_ending_spaces_except_last_line
 pub const trim_spaces_around_newlines__outside = trim_spaces_around_newlines__outside.trim_spaces_around_newlines__outside
 pub const unwrap = unwrap.unwrap
 pub const unwrap__batch = unwrap__batch.unwrap__batch
@@ -358,6 +366,9 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   identity.assertive_tests,
   insert_bookend_tags.assertive_tests,
   insert_bookend_text_if_no_attributes.assertive_tests,
+  insert_line_start_end.assertive_tests,
+  insert_text_start_end.assertive_tests,
+  insert_text_start_end_if_else.assertive_tests,
   insert_ti2_counter_commands.assertive_tests,
   keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair.assertive_tests,
   line_rewrap_no1__outside.assertive_tests,
@@ -366,8 +377,6 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   normalize_math_delimiters_inside.assertive_tests,
   pair.assertive_tests,
   pair_list_list.assertive_tests,
-  prepend_append_text.assertive_tests,
-  prepend_append_text__batch.assertive_tests,
   prepend_append_to_text_children_of.assertive_tests,
   prepend_attribute_as_text.assertive_tests,
   prepend_text_node.assertive_tests,
@@ -390,6 +399,8 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   rename_with_attributes.assertive_tests,
   replace_in_attribute_values.assertive_tests,
   replace_multiple_spaces_by_one.assertive_tests,
+  split_first_line_after_prefix.assertive_tests,
+  split_last_line_before_suffix.assertive_tests,
   strip_delimiters_inside.assertive_tests,
   strip_delimiters_inside_if.assertive_tests,
   surround_elements_by.assertive_tests,
@@ -400,6 +411,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   trim__batch.assertive_tests,
   trim_empty_lines.assertive_tests,
   trim_empty_lines__batch.assertive_tests,
+  trim_ending_spaces_except_last_line.assertive_tests,
   trim_spaces_around_newlines__outside.assertive_tests,
   unwrap.assertive_tests,
   unwrap__batch.assertive_tests,

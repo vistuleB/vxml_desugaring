@@ -77,13 +77,11 @@ fn split_pair_fold_for_delimiter_pair(
 fn create_math_or_mathblock_elements(
   parsed: List(LatexDelimiterPair),
   produced: LatexDelimiterPair,
+  backup: LatexDelimiterPair,
   which: String,
 ) -> List(Desugarer) {
-  let pair = infra.opening_and_closing_string_for_pair(produced)
-  let create_tags =
-    parsed
-    |> list.map(split_pair_fold_for_delimiter_pair(_, which, ["Math", "MathBlock"]))
-    |> list.flatten
+  let produced = infra.opening_and_closing_string_for_pair(produced)
+  let backup = infra.opening_and_closing_string_for_pair(backup)
 
   let delims = case which {
     "MathBlock" -> infra.latex_strippable_display_delimiters()
@@ -91,14 +89,29 @@ fn create_math_or_mathblock_elements(
     _ -> panic as "was expecting 'Math' or 'MathBlock'"
   }
 
+  let strip_existing = [dl.strip_delimiters_inside(#(which, delims))]
+
+  let create_tags =
+    parsed
+    |> list.map(split_pair_fold_for_delimiter_pair(_, which, ["Math", "MathBlock"]))
+    |> list.flatten
+
+  let reinsert = case which {
+    "MathBlock" -> [
+      dl.trim("MathBlock"),
+      dl.insert_line_start_end(#("MathBlock", produced)),
+    ]
+    "Math" -> [
+      dl.trim("Math"),
+      dl.insert_text_start_end_if_else(#("Math", produced, backup, infra.descendant_text_does_not_contain(_, produced.0))),
+    ]
+    _ -> panic as "was expecting 'Math' or 'MathBlock'"
+  }
+
   [
-    [
-      dl.strip_delimiters_inside(#(which, delims)),
-    ],
+    strip_existing,
     create_tags,
-    [
-      dl.prepend_append_text(#(which, pair.0, pair.1)),
-    ],
+    reinsert,
   ]
   |> list.flatten
 }
@@ -107,14 +120,15 @@ pub fn create_mathblock_elements(
   parsed: List(LatexDelimiterPair),
   produced: LatexDelimiterPair,
 ) -> List(Desugarer) {
-  create_math_or_mathblock_elements(parsed, produced, "MathBlock")
+  create_math_or_mathblock_elements(parsed, produced, produced, "MathBlock")
 }
 
 pub fn create_math_elements(
   parsed: List(LatexDelimiterPair),
   produced: LatexDelimiterPair,
+  backup: LatexDelimiterPair,
 ) -> List(Desugarer) {
-  create_math_or_mathblock_elements(parsed, produced, "Math")
+  create_math_or_mathblock_elements(parsed, produced, backup, "Math")
 }
 
 //***************

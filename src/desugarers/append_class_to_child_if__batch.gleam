@@ -33,7 +33,7 @@ fn nodemap(
       Ok(classes_and_conditions) -> {
         V(
           ..vxml,
-          children: infra.map_v_nodes(children, update_child(_, classes_and_conditions))
+          children: infra.v_map(children, update_child(_, classes_and_conditions))
         )
       }
     }

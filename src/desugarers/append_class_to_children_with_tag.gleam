@@ -35,7 +35,7 @@ fn nodemap(
         Ok(tags_and_classes_to_append) -> {
           Ok(V(
               ..vxml,
-              children: infra.map_v_nodes(children, update_child(_, tags_and_classes_to_append))
+              children: infra.v_map(children, update_child(_, tags_and_classes_to_append))
           ))
         }
       }

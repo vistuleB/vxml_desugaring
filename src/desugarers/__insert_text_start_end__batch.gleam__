@@ -45,8 +45,8 @@ type Param = List(#(String, String, String))
 //                          text    text
 type InnerParam = List(#(String, #(String, String)))
 
-const name = "prepend_append_text__batch"
-const constructor = prepend_append_text__batch
+const name = "insert_text_start_end__batch"
+const constructor = insert_text_start_end__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -54,7 +54,7 @@ const constructor = prepend_append_text__batch
 //------------------------------------------------53
 /// inserts text at the beginning and end of
 /// specified tags
-pub fn prepend_append_text__batch(param: Param) -> Desugarer {
+pub fn insert_text_start_end__batch(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -10,7 +10,6 @@ fn nodemap(
     T(_, _) ->
       vxml
       |> infra.trim_ending_spaces_except_last_line
-      |> infra.trim_starting_spaces_except_first_line
     _ -> vxml
   }
 }
@@ -19,9 +18,9 @@ fn nodemap_factory() -> n2t.OneToOneNoErrorNodeMap {
   nodemap
 }
 
-fn transform_factory(outside: List(String)) -> DesugarerTransform {
+fn transform_factory() -> DesugarerTransform {
   nodemap_factory()
-  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(outside)
+  |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform()
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -31,8 +30,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "trim_spaces_around_newlines__outside"
-const constructor = trim_spaces_around_newlines__outside
+const name = "trim_ending_spaces_except_last_line"
+const constructor = trim_ending_spaces_except_last_line
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -41,7 +40,7 @@ const constructor = trim_spaces_around_newlines__outside
 /// trims spaces around newlines in text nodes
 /// outside of subtrees rooted at tags given by the
 /// param argument
-pub fn trim_spaces_around_newlines__outside(outside: List(String)) -> Desugarer {
+pub fn trim_ending_spaces_except_last_line() -> Desugarer {
   Desugarer(
     name,
     option.None,
@@ -53,7 +52,7 @@ pub fn trim_spaces_around_newlines__outside(outside: List(String)) -> Desugarer 
     ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
-      Ok(_) -> transform_factory(outside)
+      Ok(_) -> transform_factory()
     }
   )
 }
@@ -61,10 +60,10 @@ pub fn trim_spaces_around_newlines__outside(outside: List(String)) -> Desugarer 
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParamWithOutside) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   []
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_no_param_with_outside(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

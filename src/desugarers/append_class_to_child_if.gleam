@@ -10,7 +10,7 @@ fn nodemap(
 ) -> VXML {
   case vxml {
     V(_, tag, _, children) if tag == inner.0 ->
-      V(..vxml, children: infra.map_v_nodes(children, infra.v_append_classes_if(_, inner.1, inner.2)))
+      V(..vxml, children: infra.v_map(children, infra.v_append_classes_if(_, inner.1, inner.2)))
     _ -> vxml
   }
 }

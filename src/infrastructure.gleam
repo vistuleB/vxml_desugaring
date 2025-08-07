@@ -843,6 +843,10 @@ pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
   Blame(filename, indent, char_no, [comment, ..comments])
 }
 
+pub fn advance(blame: Blame, chars: Int) -> Blame {
+  Blame(..blame, char_no: blame.char_no + chars)
+}
+
 //**************************************************************
 //* string
 //**************************************************************
@@ -898,6 +902,13 @@ pub fn descendant_text_contains(
     T(_, lines) -> lines_contain(lines, s)
     V(_, _, _, children) -> list.any(children, descendant_text_contains(_, s))
   }
+}
+
+pub fn descendant_text_does_not_contain(
+  vxml: VXML,
+  s: String,
+) -> Bool {
+  !descendant_text_contains(vxml, s)
 }
 
 pub fn debug_lines_and(
@@ -1479,77 +1490,15 @@ pub fn v_remove_ending_empty_lines(node: VXML) -> VXML {
   }
 }
 
-// pub fn encode_starting_spaces_in_string(content: String) -> String {
-//   let new_content = string.trim_start(content)
-//   let num_spaces = string.length(content) - string.length(new_content)
-//   string.repeat("&ensp;", num_spaces) <> new_content
-// }
+pub fn t_start_insert_line(node: VXML, bc: BlamedContent) {
+  let assert T(blame, lines) = node
+  T(blame, [bc, ..lines])
+}
 
-// pub fn encode_ending_spaces_in_string(content: String) -> String {
-//   let new_content = string.trim_end(content)
-//   let num_spaces = string.length(content) - string.length(new_content)
-//   new_content <> string.repeat("&ensp;", num_spaces)
-// }
-
-// pub fn encode_starting_spaces_in_blamed_content(
-//   blamed_content: BlamedContent,
-// ) -> BlamedContent {
-//   BlamedContent(
-//     blamed_content.blame,
-//     blamed_content.content |> encode_starting_spaces_in_string,
-//   )
-// }
-
-// pub fn encode_ending_spaces_in_blamed_content(
-//   blamed_content: BlamedContent,
-// ) -> BlamedContent {
-//   BlamedContent(
-//     blamed_content.blame,
-//     blamed_content.content |> encode_ending_spaces_in_string,
-//   )
-// }
-
-// pub fn encode_starting_spaces_if_text(vxml: VXML) -> VXML {
-//   case vxml {
-//     V(_, _, _, _) -> vxml
-//     T(blame, blamed_contents) -> {
-//       let assert [first, ..rest] = blamed_contents
-//       T(blame, [first |> encode_starting_spaces_in_blamed_content, ..rest])
-//     }
-//   }
-// }
-
-// pub fn encode_ending_spaces_if_text(vxml: VXML) -> VXML {
-//   case vxml {
-//     V(_, _, _, _) -> vxml
-//     T(blame, blamed_contents) -> {
-//       let assert [last, ..rest] = {
-//         blamed_contents |> list.reverse
-//       }
-//       T(
-//         blame,
-//         [last |> encode_ending_spaces_in_blamed_content, ..rest]
-//           |> list.reverse,
-//       )
-//     }
-//   }
-// }
-
-// pub fn encode_starting_spaces_in_first_node(vxmls: List(VXML)) -> List(VXML) {
-//   case vxmls {
-//     [] -> []
-//     [first, ..rest] -> [first |> encode_starting_spaces_if_text, ..rest]
-//   }
-// }
-
-// pub fn encode_ending_spaces_in_last_node(vxmls: List(VXML)) -> List(VXML) {
-//   case vxmls |> list.reverse {
-//     [] -> []
-//     [last, ..rest] ->
-//       [last |> encode_ending_spaces_if_text, ..rest]
-//       |> list.reverse
-//   }
-// }
+pub fn t_end_insert_line(node: VXML, bc: BlamedContent) {
+  let assert T(blame, lines) = node
+  T(blame, list.append(lines, [bc]))
+}
 
 pub fn t_start_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
@@ -1571,52 +1520,40 @@ pub fn t_end_insert_text(node: VXML, text: String) {
   )
 }
 
-pub fn list_start_insert_text(
-  blame: Blame,
-  vxmls: List(VXML),
-  text: String,
-) -> List(VXML) {
-  case vxmls {
-    [
-      T(_, _) as first, ..rest
-    ] -> [
-      t_start_insert_text(first, text), ..rest
-    ]
-    _ -> [
-      T(blame, [BlamedContent(blame, text)]), ..vxmls
-    ]
+pub fn v_start_insert_line(vxml: VXML, bc: BlamedContent) -> VXML {
+  let assert V(blame, _, _, children) = vxml
+  let children = case children {
+    [T(_, _) as first, ..rest] -> [t_start_insert_line(first, bc), ..rest]
+    _ -> [T(blame, [bc]), ..children]
   }
+  V(..vxml, children: children)
 }
 
-pub fn list_end_insert_text(
-  blame: Blame,
-  vxmls: List(VXML),
-  text: String,
-) -> List(VXML) {
-  case vxmls |> list.reverse {
-    [T(_, _) as first, ..rest] ->
-      [t_end_insert_text(first, text), ..rest]
-      |> list.reverse
-    _ ->
-      [T(blame, [BlamedContent(blame, text)]), ..vxmls]
-      |> list.reverse
+pub fn v_end_insert_line(vxml: VXML, bc: BlamedContent) -> VXML {
+  let assert V(blame, _, _, children) = vxml
+  let children = case children |> list.reverse {
+    [T(_, _) as first, ..rest] -> [t_end_insert_line(first, bc), ..rest]
+    _ -> [T(blame, [bc]), ..children]
   }
+  V(..vxml, children: children |> list.reverse)
 }
 
-pub fn v_start_insert_text(node: VXML, text: String) -> VXML {
-  let assert V(blame, tag, attrs, children) = node
-  {
-    let children = list_start_insert_text(blame, children, text)
-    V(blame, tag, attrs, children)
+pub fn v_start_insert_text(vxml: VXML, text: String) -> VXML {
+  let assert V(blame, _, _, children) = vxml
+  let children = case children {
+    [T(_, _) as first, ..rest] -> [t_start_insert_text(first, text), ..rest]
+    _ -> [T(blame, [BlamedContent(blame, text)]), ..children]
   }
+  V(..vxml, children: children)
 }
 
-pub fn v_end_insert_text(node: VXML, text: String) -> VXML {
-  let assert V(blame, tag, attrs, children) = node
-  {
-    let children = list_end_insert_text(blame, children, text)
-    V(blame, tag, attrs, children)
+pub fn v_end_insert_text(vxml: VXML, text: String) -> VXML {
+  let assert V(blame, _, _, children) = vxml
+  let children = case children |> list.reverse {
+    [T(_, _) as first, ..rest] -> [t_end_insert_text(first, text), ..rest]
+    _ -> [T(blame, [BlamedContent(blame, text)]), ..children]
   }
+  V(..vxml, children: children |> list.reverse)
 }
 
 // "word" == "non-whitespace" == empty string if string ends with
@@ -2086,17 +2023,31 @@ pub fn v_append_classes_if(
   }
 }
 
-/// maps over a list of VXML nodes, applying mapper only to V nodes
-pub fn map_v_nodes(
+pub fn v_map(
   vxmls: List(VXML),
-  mapper: fn(VXML) -> VXML
+  f: fn(VXML) -> VXML
 ) -> List(VXML) {
   list.map(
     vxmls,
     fn(vxml) {
       case vxml {
         T(_, _) -> vxml
-        V(_, _, _, _) -> mapper(vxml)
+        V(_, _, _, _) -> f(vxml)
+      }
+    }
+  )
+}
+
+pub fn t_map(
+  vxmls: List(VXML),
+  f: fn(VXML) -> VXML
+) -> List(VXML) {
+  list.map(
+    vxmls,
+    fn(vxml) {
+      case vxml {
+        T(_, _) -> f(vxml)
+        V(_, _, _, _) -> vxml
       }
     }
   )

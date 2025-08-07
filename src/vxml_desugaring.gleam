@@ -15,10 +15,10 @@ fn test_pipeline() -> List(Pipe) {
 
   [
     dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
-    dl.prepend_append_text(#("i", "_", "_")),
-    dl.prepend_append_text(#("b", "*", "*")),
-    dl.prepend_append_text(#("strong", "*", "*")),
-    dl.unwrap_tags_if_no_attributes(["i", "b", "strong"]),
+    dl.insert_text_start_end(#("i", #("_", "_"))),
+    dl.insert_text_start_end(#("b", #("*", "*"))),
+    dl.insert_text_start_end(#("strong", #("*", "*"))),
+    dl.unwrap__batch(["i", "b", "strong"]),
     dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]
   |> infra.wrap_desugarers(echo_mode, selector)
@@ -168,7 +168,6 @@ pub fn test_thing() {
 }
 
 pub fn main() {
-  echo string.split_once(" hello", " ")
   case argv.load().arguments {
     ["--test-thing"] -> {
       test_thing()
