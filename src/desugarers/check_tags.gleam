@@ -10,15 +10,14 @@ fn nodemap(
   vxml: VXML,
   inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
-  let #(approved_tags, identifier) = inner
   case vxml {
     T(_, _) -> Ok(vxml)
-    V(_, tag, _, _) -> {
-      case list.contains(approved_tags, tag) {
+    V(blame, tag, _, _) -> {
+      case list.contains(inner.0, tag) {
         True -> Ok(vxml)
         False -> Error(DesugaringError(
-          blamedlines.Blame(identifier, 0, 0, []),
-          "Tag '" <> tag <> "' is not in the approved list. Approved tags: " <> ins(approved_tags)
+          blame,
+          "tag '" <> tag <> "' is not in the approved " <> inner.1 <> " list of tags: " <> ins(inner.0)
         ))
       }
     }
@@ -43,8 +42,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(List(String), String)
-//             ↖            ↖
-//             approved tags id
+//             ↖             ↖
+//             approved      caller id
+//             tags
 type InnerParam = Param
 
 const name = "check_tags"
