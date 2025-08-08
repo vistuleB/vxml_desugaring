@@ -2,7 +2,7 @@ import blamedlines.{Blame}
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
@@ -96,6 +96,7 @@ fn process_python_prompt_lines(lines: List(BlamedContent)) -> List(PythonPromptC
 
 fn nodemap(
   vxml: VXML,
+  inner: InnerParam,
 ) -> VXML {
   case vxml {
     V(blame, "CodeBlock", _, [T(_, lines)]) -> {
@@ -114,15 +115,7 @@ fn nodemap(
           // add newlines between chunks
           let children =
             list_list_vxmls
-            |> list.intersperse([
-              T(
-                desugarer_blame,
-                [
-                  BlamedContent(desugarer_blame, ""),
-                  BlamedContent(desugarer_blame, ""),
-                ]
-              )
-            ])
+            |> list.intersperse([inner])
             |> list.flatten
 
           // create a pre element with python-prompt class
@@ -141,17 +134,31 @@ fn nodemap(
   }
 }
 
-fn nodemap_factory() -> n2t.OneToOneNoErrorNodeMap {
-  fn(vxml) { nodemap(vxml) }
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap(_, inner)
 }
 
-fn transform_factory() -> DesugarerTransform {
-  nodemap_factory()
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  nodemap_factory(inner)
   |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform
+}
+
+fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
+  T(
+    desugarer_blame,
+    [
+      BlamedContent(desugarer_blame, ""),
+      BlamedContent(desugarer_blame, ""),
+    ]
+  )
+  |> Ok
 }
 
 const name = "python_prompt_code_block"
 const constructor = python_prompt_code_block
+
+type Param = Nil
+type InnerParam = VXML
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -170,17 +177,19 @@ pub fn python_prompt_code_block() -> Desugarer {
 /// and converts them to pre elements with proper span
 /// highlighting for prompts, responses, and errors
     ",
-    transform_factory()
+    case param_to_inner_param(Nil) {
+      Error(e) -> fn(_) { Error(e) }
+      Ok(inner) -> transform_factory(inner)
+    }
   )
 }
 
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
   [
-    infra.AssertiveTestData(
-      param: Nil,
+    infra.AssertiveTestDataNoParam(
       source: "
                 <> CodeBlock
                   language=python-prompt
@@ -238,5 +247,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), fn(_) { constructor() })
+  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
 }

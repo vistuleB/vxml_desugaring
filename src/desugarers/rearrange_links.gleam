@@ -97,13 +97,14 @@ fn deatomize_vxmls(
         V(blame, "__EndAtomizedT", _, _) ->
           deatomize_vxmls(rest, [], case accumulated_contents {
             [] -> {
+              let msg = blamedlines.blame_digest(blame) <> " __EndAtomizedT not following text nodes"
               // this has been known to happen when the source
               // contains (or starts with?) an empty
               // <>
               //    ""
               // -type node
               // (and this case should probably just return [] ?)
-              panic as "__EndAtomizedT not following text nodes"
+              panic as msg
             }
             _ -> [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes]
           })
