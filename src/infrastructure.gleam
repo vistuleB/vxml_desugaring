@@ -2454,7 +2454,7 @@ fn extend_selection_down_no_reverse(
   |> pair.second
 }
 
-pub fn extend_selection_down(
+fn extend_selection_down(
   lines: List(SelectedPigeonLine),
   amt: Int,
 ) -> List(SelectedPigeonLine) {
@@ -2463,7 +2463,7 @@ pub fn extend_selection_down(
   |> list.reverse
 }
 
-pub fn extend_selection_up(
+fn extend_selection_up(
   lines: List(SelectedPigeonLine),
   amt: Int,
 ) -> List(SelectedPigeonLine) {
@@ -2472,7 +2472,7 @@ pub fn extend_selection_up(
   |> extend_selection_down_no_reverse(amt)
 }
 
-pub fn extend_selection_to_ancestors(
+fn extend_selection_to_ancestors(
   lines: List(SelectedPigeonLine),
 ) -> List(SelectedPigeonLine) {
   lines
@@ -2499,7 +2499,7 @@ pub fn extend_selection_to_ancestors(
   |> pair.second
 }
 
-pub fn extend_selection_to_ancestors_without_attributes(
+fn extend_selection_to_ancestors_without_attributes(
   lines: List(SelectedPigeonLine),
 ) -> List(SelectedPigeonLine) {
   lines
