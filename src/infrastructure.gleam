@@ -894,6 +894,13 @@ pub fn lines_contain(
   list.any(lines, fn(bc) {string.contains(bc.content, s)})
 }
 
+pub fn lines_first_blame(lines: List(BlamedContent)) -> Blame {
+  case lines {
+    [] -> no_blame
+    [first, ..] -> first.blame
+  }
+}
+
 pub fn descendant_text_contains(
   v: VXML,
   s: String,
