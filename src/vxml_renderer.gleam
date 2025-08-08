@@ -398,7 +398,7 @@ fn run_pipeline(
             False -> io.print(star_block.desugarer_name_star_block(desugarer, step_no))
           }
           selected
-          |> infra.selected_lines_to_string(ins(step_no))
+          |> infra.selected_lines_to_string("")
           |> io.println
         }
       }
