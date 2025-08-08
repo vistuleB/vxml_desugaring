@@ -1,7 +1,7 @@
 import blamedlines.{type Blame}
 import gleam/list
 import gleam/option.{Some,None}
-import gleam/string.{inspect as ins}
+import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
@@ -103,7 +103,6 @@ fn process_python_prompt_lines(lines: List(BlamedContent)) -> List(PythonPromptC
 
 fn nodemap(
   vxml: VXML,
-  _inner: InnerParam,
 ) -> Result(List(VXML), DesugaringError) {
   case vxml {
     V(blame, "CodeBlock", _attributes, [T(_, lines)]) -> {
@@ -151,21 +150,16 @@ fn nodemap(
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNodeMap {
-  nodemap(_, inner)
+fn nodemap_factory() -> n2t.OneToManyNodeMap {
+  fn(vxml) { nodemap(vxml) }
 }
 
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  nodemap_factory(inner)
+fn transform_factory() -> DesugarerTransform {
+  nodemap_factory()
   |> n2t.one_to_many_nodemap_2_desugarer_transform
 }
 
-fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param)
-}
 
-type Param = Nil
-type InnerParam = Param
 
 const name = "python_prompt_code_block"
 const constructor = python_prompt_code_block
@@ -177,27 +171,24 @@ const constructor = python_prompt_code_block
 /// Processes CodeBlock elements with language=python-prompt
 /// and converts them to pre elements with proper span
 /// highlighting for prompts, responses, and errors
-pub fn python_prompt_code_block(param: Param) -> Desugarer {
+pub fn python_prompt_code_block() -> Desugarer {
   Desugarer(
     name,
-    Some(ins(param)),
+    None,
     None,
     "
 /// Processes CodeBlock elements with language=python-prompt
 /// and converts them to pre elements with proper span
 /// highlighting for prompts, responses, and errors
     ",
-    case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error) }
-      Ok(inner) -> transform_factory(inner)
-    }
+    transform_factory()
   )
 }
 
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
-fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
+fn assertive_tests_data() -> List(infra.AssertiveTestData(Nil)) {
   [
     infra.AssertiveTestData(
       param: Nil,
@@ -258,5 +249,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_tests_from_data(name, assertive_tests_data(), fn(_) { constructor() })
 }
