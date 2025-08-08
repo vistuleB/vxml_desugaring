@@ -387,29 +387,19 @@ fn run_pipeline(
         True -> #([], last_debug_output)
         False -> {
           let selected = selector(vxml)
-          #(selected, vp.vxmls_to_string(selected))
+          #(selected, selected |> infra.selected_lines_to_string(""))
         }
       }
       case mode == On || { mode == OnChange && next_debug_output != last_debug_output } {
         False -> Nil
         True -> {
           case mode == On {
-            True -> Nil
+            True -> Nil   // b/c it was already printed, in this case
             False -> io.print(star_block.desugarer_name_star_block(desugarer, step_no))
           }
-          use <- infra.on_lazy_true_on_false(
-            selected == [],
-            fn() {
-              io.println("[nothing selected to print]")
-            }
-          )
-          list.index_map(
-            selected,
-            fn (selected_guy, i) {
-              vp.echo_vxml(selected_guy, ins(step_no) <> "-" <> ins(i+1))
-            }
-          )
-          Nil
+          selected
+          |> infra.selected_lines_to_string(ins(step_no))
+          |> io.println
         }
       }
       Ok(#(
@@ -1015,7 +1005,6 @@ fn amend_spotlight_args(
 pub fn cli_usage() {
   let margin = "   "
   io.println("")
-  // io.println("You can mix and match the following command line options:")
   io.println("Renderer options:")
   io.println("")
   io.println(margin <> "--help")
@@ -1031,41 +1020,13 @@ pub fn cli_usage() {
   io.println(margin <> "--echo-assembled-source | --echo-assembled")
   io.println(margin <> "  -> print the assembled blamed lines of source")
   io.println("")
-  io.println(margin <> "--select-desugaring-echoed <key=value+p> | <tag_name+p>")
-  io.println(margin <> "  -> restrict the echoed output of desugaring steps to")
-  io.println(margin <> "     parts of the document within p lines below of a given")
-  io.println(margin <> "     key-value pair or tag name; ancestors leading up to")
-  io.println(margin <> "     selected tags will be printed, without attributes")
+  io.println(margin <> "--echo")
+  io.println(margin <> "  -> echo from the desugaring pipeline, with options:")
+  io.println(margin <> "     -on <name1> <name1>")
+  io.println(margin <> "     -onchange <x-y>")
+  io.println(margin <> "     -select <key=value+p-m> | <tag+p-m>")
+  io.println(margin <> "     -select-with-ancestors <key=value+p-m> | <tag+p-m>")
   io.println("")
-  io.println(margin <> "--desugaring-echo-on <desugarer_name1> <desugarer_name2> <step1> <step2> <stepx>-<stepy>")
-  io.println(margin <> "  -> print outputs of designated desugaring steps")
-  io.println(margin <> "     based on name of desugarer or index of step;")
-  io.println(margin <> "     leave options empty to match all desugaring steps")
-  io.println("")
-  io.println(margin <> "--desugaring-echo-onchange <desugarer_name1> <desugarer_name2> <step1> <step2> <stepx>-<stepy>")
-  io.println(margin <> "  -> print outputs of designated desugaring steps")
-  io.println(margin <> "     based on name of desugarer or index of step if the")
-  io.println(margin <> "     'select-echoed' printout of the document has changed")
-  io.println(margin <> "     compared to the previous printout; leave options empty")
-  io.println(margin <> "     to match all desugaring steps")
-  io.println("")
-  // io.println(margin <> "--debug-pipeline <name1> <name2> ...")
-  // io.println(margin <> "  -> print output of desugarers with given names, list no names")
-  // io.println(margin <> "  to match all")
-  // io.println("")
-  // io.println(margin <> "--debug-pipeline-<x>-<y>")
-  // io.println(margin <> "  -> print output of desugarers number x up to y")
-  // io.println("")
-  // io.println(margin <> "--debug-pipeline-<x>")
-  // io.println(margin <> "  -> print output of desugarer number x")
-  // io.println("")
-  // io.println(margin <> "--debug-pipeline-last")
-  // io.println(margin <> "  -> print last output of pipeline")
-  // io.println("")
-  // io.println(margin <> "--debug-pipeline-")
-  // io.println(margin <> "  -> an ignored option that useful to keep '--debug-pipeline-'")
-  // io.println(margin <> "  -> close at hand on the command line")
-  // io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
   io.println(margin <> "  before conversion blamed lines, list no subpaths to match all")

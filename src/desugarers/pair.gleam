@@ -1,9 +1,20 @@
+import blamedlines.{type Blame} as bl
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+
+fn pairing_msg(
+  local: Blame,
+  remote: Blame,
+) -> String {
+  case local.filename == remote.filename {
+    True -> "paired with --:" <> ins(remote.line_no) <> ":" <> ins(remote.char_no)
+    False -> "p.w. " <> bl.blame_digest(remote)
+  }
+}
 
 fn accumulator(
   opening: String,
@@ -151,7 +162,7 @@ fn accumulator(
                 enclosing,
                 [
                   V(
-                    infra.get_blame(dude) |> infra.append_blame_comment("paired with " <> ins(infra.get_blame(first))),
+                    dude.blame |> infra.append_blame_comment(pairing_msg(dude.blame, first.blame)),
                     enclosing,
                     [],
                     after_last_opening |> list.reverse,
@@ -190,7 +201,7 @@ fn accumulator(
                 enclosing,
                 [
                   V(
-                    infra.get_blame(dude) |> infra.append_blame_comment("paired with " <> ins(infra.get_blame(first))),
+                    dude.blame |> infra.append_blame_comment(pairing_msg(dude.blame, first.blame)),
                     enclosing,
                     [],
                     after_last_opening |> list.reverse,
@@ -205,6 +216,8 @@ fn accumulator(
       }
   }
 }
+
+
 
 fn nodemap(
   node: VXML,

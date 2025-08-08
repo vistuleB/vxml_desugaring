@@ -7,12 +7,11 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import desugarer_library as dl
-import selectors/within_x_lines_below_tag.{within_x_lines_below_tag}
+import selector_library as sl
 
 fn test_pipeline() -> List(Pipe) {
   let echo_mode = infra.Off
-  let selector = within_x_lines_below_tag(_, "marker", 12)
-
+  let selector = sl.tag("marker")
   [
     dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
     dl.insert_text_start_end(#("i", #("_", "_"))),
@@ -162,8 +161,6 @@ fn run_desugarer_tests(names: List(String)) {
 pub fn test_thing() {
   let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml")
   echo vxml
-  let results = within_x_lines_below_tag(vxml, "marker", 12)
-  vxml.echo_vxmls(results, "hi")
   Nil
 }
 

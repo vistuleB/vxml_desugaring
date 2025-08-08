@@ -1,7 +1,7 @@
-import selectors/within_x_lines_below_key_val
-import selectors/within_x_lines_below_tag
-import selectors/within_x_lines_below_testtest
+import selectors/tag
+import selectors/testtest_5_12
+import selectors/within_pm_lines_of_key_val
 
-pub const within_x_lines_below_key_val = within_x_lines_below_key_val.within_x_lines_below_key_val
-pub const within_x_lines_below_tag = within_x_lines_below_tag.within_x_lines_below_tag
-pub const within_x_lines_below_testtest = within_x_lines_below_testtest.within_x_lines_below_testtest
+pub const tag = tag.tag
+pub const testtest_5_12 = testtest_5_12.testtest_5_12
+pub const within_pm_lines_of_key_val = within_pm_lines_of_key_val.within_pm_lines_of_key_val
