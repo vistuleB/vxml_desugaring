@@ -1,5 +1,5 @@
 import gleam/list
-import gleam/option
+import gleam/option.{None}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 
 import nodemaps_2_desugarer_transforms as n2t
@@ -90,8 +90,8 @@ type InnerParam = Nil
 pub fn expand_ti3_carousel() -> Desugarer {
   Desugarer(
     name,
-    option.None,
-    option.None,
+    None,
+    None,
     "
 /// Expands compressed Carousel syntax to full form.
 ///
