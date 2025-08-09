@@ -1010,38 +1010,41 @@ pub fn cli_usage() {
   io.println(margin <> "--help")
   io.println(margin <> "  -> print this message")
   io.println("")
-  io.println(margin <> "--restrict-source <subpath1> <subpath2> ...")
+  io.println(margin <> "--only <subpath1> <subpath2> ...")
   io.println(margin <> "  -> restrict source to paths that match one of the given subpaths")
   io.println("")
-  io.println(margin <> "--restrict-source <key1=val1> <key2=val2> ...")
+  io.println(margin <> "--only <key1=val1> <key2=val2> ...")
   io.println(margin <> "  -> restrict source to elements that have one of the")
   io.println(margin <> "     given key-value pairs as attributes")
   io.println("")
   io.println(margin <> "--echo-assembled-source | --echo-assembled")
   io.println(margin <> "  -> print the assembled blamed lines of source")
   io.println("")
-  io.println(margin <> "--echo")
-  io.println(margin <> "  -> echo from the desugaring pipeline, with options:")
-  io.println(margin <> "     -on <name1> <name1>")
-  io.println(margin <> "     -onchange <x-y>")
-  io.println(margin <> "     -select <key=value+p-m> | <tag+p-m>")
-  io.println(margin <> "     -select-with-ancestors <key=value+p-m> | <tag+p-m>")
+  io.println(margin <> "--show-changes-near-[text|tag|keyval] +<p>-<m> <range options>")
+  io.println(margin <> "  -> track changes near text, tag, or key=val pair, with options:")
+  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before marker")
+  io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
+  io.println(margin <> "       marker")
+  io.println(margin <> "     • <range options> specificy which desugaring steps to track:")
+  io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
+  io.println(margin <> "         • !x to force a printout at desugaring step x with or")
+  io.println(margin <> "           without changes in selected area")
   io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "  before conversion blamed lines, list no subpaths to match all")
+  io.println(margin <> "     before conversion blamed lines, list none to match all")
   io.println("")
   io.println(margin <> "--echo-fragments-bl <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "  after conversion blamed lines, list no subpaths to match all")
+  io.println(margin <> "     after conversion blamed lines, list none to match all")
   io.println("")
   io.println(margin <> "--echo-fragments-printed <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "  in string form before prettifying, list no subpaths to match all")
+  io.println(margin <> "     in string form before prettifying, list none to match all")
   io.println("")
   io.println(margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "  in string form after prettifying, list no subpaths to match all")
+  io.println(margin <> "     in string form after prettifying, list none to match all")
   io.println("")
   io.println(margin <> "--prettier0")
   io.println(margin <> "  -> turn the prettifier off if on by default")
@@ -1051,12 +1054,118 @@ pub fn cli_usage() {
   io.println("")
 }
 
+type CliSelectorType {
+  Text(String)
+  Tag(String)
+  KeyVal(String, String)
+}
+
+type PlusMinusRange {
+  PlusMinusRange(
+    plus: Int,
+    minus: Int,
+  )
+}
+
+type ShowChangesNearCliArgs {
+  ShowChangesNearCliArgs(
+    selector_type: CliSelectorType,
+    range: Option(PlusMinusRange),
+    restrict_on_change_check_to_steps: List(Int),
+    force_output_at_steps: List(Int),
+  )
+}
+
+fn parse_plus_minus(
+  s: String,
+) -> Result(PlusMinusRange, Nil) {
+  case string.starts_with(s, "+"), string.starts_with(s, "-") {
+    True, _ -> {
+      let s = string.drop_start(s, 1)
+      case string.split_once(s, "-") {
+        Ok(#(before, after)) -> {
+          case int.parse(before), int.parse(after) {
+            Ok(p), Ok(m) -> Ok(PlusMinusRange(plus: p, minus: m))
+            _, _ -> Error(Nil)
+          }
+        }
+        _ -> case int.parse(s) {
+          Ok(m) -> Ok(PlusMinusRange(plus: 0, minus: m))
+          _ -> Error(Nil)
+        }
+      }
+    }
+
+    _, True -> {
+      let s = string.drop_start(s, 1)
+      case string.split_once(s, "+") {
+        Ok(#(before, after)) -> {
+          case int.parse(before), int.parse(after) {
+            Ok(m), Ok(p) -> Ok(PlusMinusRange(plus: p, minus: m))
+            _, _ -> Error(Nil)
+          }
+        }
+        _ -> case int.parse(s) {
+          Ok(p) -> Ok(PlusMinusRange(plus: p, minus: 0))
+          _ -> Error(Nil)
+        }
+      }
+    }
+
+    _, _ -> Error(Nil)
+  }
+}
+
+fn parse_show_changes_near_args(
+  values: List(String)
+) -> Result(ShowChangesNearCliArgs, CommandLineError) {
+  use first_payload, values <- infra.on_empty_on_nonempty(
+    values,
+    Error(SelectorValues("missing 1st argument")),
+  )
+
+  let assert True = first_payload != ""
+
+  let selector_type = Text(first_payload)
+
+  use second_payload, values <- infra.on_empty_on_nonempty(
+    values,
+    Ok(ShowChangesNearCliArgs(
+      selector_type: selector_type,
+      range: None,
+      restrict_on_change_check_to_steps: [],
+      force_output_at_steps: [],
+    )),
+  )
+
+  use range <- infra.on_error_on_ok(
+    parse_plus_minus(second_payload),
+    fn(_){Error(SelectorValues("2nd argument to --show-changes-near should have form +<p>-<m> or -<m>+<p> where p, m are integers"))},
+  )
+
+  use #(restrict, force) <- result.try(
+    list.try_fold(
+      values,
+      #([], []),
+      fn (acc, val) {
+        Ok(acc)
+      }
+    ),
+  )
+
+  Ok(ShowChangesNearCliArgs(
+    selector_type: selector_type,
+    range: Some(range),
+    restrict_on_change_check_to_steps: restrict,
+    force_output_at_steps: force,
+  ))
+}
+
 pub type CommandLineError {
   ExpectedDoubleDashString(String)
   UnwantedOptionArgument(String)
-  ErrorRunningSpotlight(Int, String)
-  BadDebugPipelineRange(String)
   UnexpectedArgumentsToOption(String)
+  SelectorValues(String)
 }
 
 fn parse_attribute_value_args_in_filename(
@@ -1088,7 +1197,12 @@ pub fn process_command_line_arguments(
   )
 
   list_key_values
-  |> list.fold(Ok(empty_command_line_amendments()), fn(result, pair) {
+  |> list.fold(
+    Ok(empty_command_line_amendments()),
+    fn(
+      result : Result(CommandLineAmendments, CommandLineError), 
+      pair : #(String, List(String)),
+    ) {
     use amendments <- result.try(result)
     let #(option, values) = pair
     case option {
@@ -1131,7 +1245,7 @@ pub fn process_command_line_arguments(
       "--debug-fragments-prettified" ->
         Ok(amendments |> amend_debug_prettified_string_fragments_local_paths(values))
 
-      "--spotlight" -> {
+      "--only" -> {
         let args =
           values
           |> list.map(parse_attribute_value_args_in_filename)
@@ -1139,65 +1253,75 @@ pub fn process_command_line_arguments(
         Ok(amendments |> amend_spotlight_args(args))
       }
 
-      "--debug-pipeline" ->
-        case list.is_empty(values) {
-          True -> Ok(amendments |> amend_debug_pipeline_range(0, 0))
-          False ->
-            Ok(amendments |> amend_debug_pipeline_names(values))
-        }
-
-      "--debug-pipeline-last" ->
-        case list.is_empty(values) {
-          True -> Ok(amendments |> amend_debug_pipeline_range(-2, -2))
-          False ->
-            Ok(amendments |> amend_debug_pipeline_names(values))
-        }
-
-      _ -> {
-        case string.starts_with(option, "--debug-pipeline-") {
-          True -> {
-            let suffix = string.drop_start(option, string.length("--debug-pipeline-"))
-            let pieces = string.split(suffix, "-")
-            case list.length(pieces) {
-              2 -> {
-                let assert [b, c] = pieces
-                case int.parse(b), int.parse(c) {
-                  Ok(debug_start), Ok(debug_end) -> {
-                    Ok(
-                      amendments
-                      |> amend_debug_pipeline_range(debug_start, debug_end),
-                    )
-                  }
-                  _, _ -> Error(BadDebugPipelineRange(option))
-                }
-              }
-              1 -> {
-                let assert [b] = pieces
-                case int.parse(b) {
-                  Ok(debug_start) -> {
-                    Ok(
-                      amendments
-                      |> amend_debug_pipeline_range(debug_start, debug_start),
-                    )
-                  }
-                  _ -> case suffix {
-                    "" -> Ok(amendments)
-                    _ -> Error(BadDebugPipelineRange(option))
-                  }
-                }
-              }
-              _ -> Error(BadDebugPipelineRange(option))
-            }
-          }
-
-          False -> {
-            case list.contains(xtra_keys, option) {
-              False -> Error(UnwantedOptionArgument(option))
-              True -> Ok(amendments |> amend_user_args(option, values))
-            }
-          }
-        }
+      "--show-changes-near-text" -> {
+        let args = parse_show_changes_near_args(values)
+        Ok(amendments)
       }
+
+      _ -> case list.contains(xtra_keys, option) {
+        False -> Error(UnwantedOptionArgument(option))
+        True -> Ok(amendments |> amend_user_args(option, values))
+      }
+
+      // "--debug-pipeline" ->
+      //   case list.is_empty(values) {
+      //     True -> Ok(amendments |> amend_debug_pipeline_range(0, 0))
+      //     False ->
+      //       Ok(amendments |> amend_debug_pipeline_names(values))
+      //   }
+
+      // "--debug-pipeline-last" ->
+      //   case list.is_empty(values) {
+      //     True -> Ok(amendments |> amend_debug_pipeline_range(-2, -2))
+      //     False ->
+      //       Ok(amendments |> amend_debug_pipeline_names(values))
+      //   }
+
+      // _ -> {
+      //   case string.starts_with(option, "--debug-pipeline-") {
+      //     True -> {
+      //       let suffix = string.drop_start(option, string.length("--debug-pipeline-"))
+      //       let pieces = string.split(suffix, "-")
+      //       case list.length(pieces) {
+      //         2 -> {
+      //           let assert [b, c] = pieces
+      //           case int.parse(b), int.parse(c) {
+      //             Ok(debug_start), Ok(debug_end) -> {
+      //               Ok(
+      //                 amendments
+      //                 |> amend_debug_pipeline_range(debug_start, debug_end),
+      //               )
+      //             }
+      //             _, _ -> Error(BadDebugPipelineRange(option))
+      //           }
+      //         }
+      //         1 -> {
+      //           let assert [b] = pieces
+      //           case int.parse(b) {
+      //             Ok(debug_start) -> {
+      //               Ok(
+      //                 amendments
+      //                 |> amend_debug_pipeline_range(debug_start, debug_start),
+      //               )
+      //             }
+      //             _ -> case suffix {
+      //               "" -> Ok(amendments)
+      //               _ -> Error(BadDebugPipelineRange(option))
+      //             }
+      //           }
+      //         }
+      //         _ -> Error(BadDebugPipelineRange(option))
+      //       }
+      //     }
+
+      //     False -> {
+      //       case list.contains(xtra_keys, option) {
+      //         False -> Error(UnwantedOptionArgument(option))
+      //         True -> Ok(amendments |> amend_user_args(option, values))
+      //       }
+      //     }
+      //   }
+      // }
     }
   })
 }

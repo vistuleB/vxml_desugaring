@@ -1,6 +1,7 @@
 import infrastructure as infra
 import desugarers/absorb_into_previous_sibling
 import desugarers/add_after_but_not_after_last_child__batch
+import desugarers/add_before
 import desugarers/add_before_but_not_before_first_child
 import desugarers/add_before_but_not_before_first_child__batch
 import desugarers/add_before_but_not_before_first_of_kind
@@ -146,6 +147,7 @@ import desugarers/wrap_each_child
 
 pub const absorb_into_previous_sibling = absorb_into_previous_sibling.absorb_into_previous_sibling
 pub const add_after_but_not_after_last_child__batch = add_after_but_not_after_last_child__batch.add_after_but_not_after_last_child__batch
+pub const add_before = add_before.add_before
 pub const add_before_but_not_before_first_child = add_before_but_not_before_first_child.add_before_but_not_before_first_child
 pub const add_before_but_not_before_first_child__batch = add_before_but_not_before_first_child__batch.add_before_but_not_before_first_child__batch
 pub const add_before_but_not_before_first_of_kind = add_before_but_not_before_first_of_kind.add_before_but_not_before_first_of_kind
@@ -292,6 +294,7 @@ pub const wrap_each_child = wrap_each_child.wrap_each_child
 pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   absorb_into_previous_sibling.assertive_tests,
   add_after_but_not_after_last_child__batch.assertive_tests,
+  add_before.assertive_tests,
   add_before_but_not_before_first_child.assertive_tests,
   add_before_but_not_before_first_child__batch.assertive_tests,
   add_before_but_not_before_first_of_kind.assertive_tests,
