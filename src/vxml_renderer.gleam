@@ -1116,6 +1116,19 @@ fn parse_plus_minus(
   }
 }
 
+fn lo_hi_ints(lo: Int, hi: Int) -> List(Int) {
+  case lo < hi {
+    True -> [lo, ..lo_hi_ints(lo + 1, hi)]
+    False -> [lo]
+  }
+}
+
+fn unique_ints(g: List(Int)) -> List(Int) {
+  g
+  |> list.sort(int.compare)
+  |> list.unique
+}
+
 fn parse_show_changes_near_args(
   values: List(String)
 ) -> Result(ShowChangesNearCliArgs, CommandLineError) {
@@ -1148,7 +1161,25 @@ fn parse_show_changes_near_args(
       values,
       #([], []),
       fn (acc, val) {
-        Ok(acc)
+        let original_val = val
+        let #(forced, val) = case string.starts_with(val, "!") {
+          True -> #(True, string.drop_start(val, 1))
+          False -> #(False, val)
+        }
+        use ints <- result.try(case string.split_once(val, "-") {
+          Ok(#(before, after)) -> case int.parse(before), int.parse(after) {
+            Ok(lo), Ok(hi) -> Ok(lo_hi_ints(lo, hi))
+            _, _ -> Error(SelectorValues("unable to parse '" <> original_val <> "' as integer range"))
+          }
+          Error(Nil) -> case int.parse(val) {
+            Ok(guy) -> Ok([guy])
+            Error(Nil) -> Error(SelectorValues("unable to parse '" <> original_val <> "' as integer range"))
+          }
+        })
+        case forced {
+          False -> Ok(#(list.append(acc.0, ints) |> unique_ints, acc.1))
+          True -> Ok(#(acc.0, list.append(acc.1, ints) |> unique_ints))
+        }
       }
     ),
   )
@@ -1254,7 +1285,9 @@ pub fn process_command_line_arguments(
       }
 
       "--show-changes-near-text" -> {
-        let args = parse_show_changes_near_args(values)
+        io.println("welcome!")
+        use args <- result.try(parse_show_changes_near_args(values))
+        echo args
         Ok(amendments)
       }
 
