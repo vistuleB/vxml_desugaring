@@ -47,6 +47,7 @@ fn test_renderer() {
       emitter: vr.stub_jsx_emitter,
       prettifier: vr.default_prettier_prettifier,
     )
+    |> vr.amend_renderer_by_command_line_amendments(amendments)
 
   let parameters =
     vr.RendererParameters(
@@ -54,11 +55,11 @@ fn test_renderer() {
       output_dir: "test/output",
       prettifier_on_by_default: False,
     )
-    |> vr.amend_renderer_paramaters_by_command_line_amendment(amendments)
+    |> vr.amend_renderer_paramaters_by_command_line_amendments(amendments)
 
   let debug_options =
     vr.default_renderer_debug_options()
-    |> vr.amend_renderer_debug_options_by_command_line_amendment(amendments, renderer.pipeline)
+    |> vr.amend_renderer_debug_options_by_command_line_amendments(amendments)
 
   let _ = vr.run_renderer(renderer, parameters, debug_options)
 

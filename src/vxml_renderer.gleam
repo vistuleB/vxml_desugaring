@@ -1,7 +1,8 @@
 import gleam/float
 import gleam/time/duration
 import blamedlines.{type Blame, type BlamedLine, Blame, BlamedLine} as bl
-import desugarers/filter_nodes_by_attributes.{filter_nodes_by_attributes}
+import desugarer_library as dl
+import selector_library as sl
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/io
@@ -71,7 +72,7 @@ pub fn default_writerly_source_parser(
     )
 
     use filtered_vxml <- result.try(
-      filter_nodes_by_attributes(spotlight_args).transform(vxml)
+      dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
       |> result.map_error(fn(e) { ins(e) }),
     )
 
@@ -96,7 +97,7 @@ pub fn default_html_source_parser(
       |> vp.xmlm_based_html_parser(path)
       |> result.map_error(fn(e) { ins(e) })
     )
-    filter_nodes_by_attributes(spotlight_args).transform(vxml)
+    dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
     |> result.map_error(fn(e) { ins(e) })
   }
 }
@@ -106,11 +107,11 @@ pub fn default_html_source_parser(
 // VXML -> ... -> VXML
 // *************
 
-pub type PipelineDebugOptions {
-  PipelineDebugOptions(
-    debug_print: fn(Int, Desugarer) -> Bool,
-  )
-}
+// pub type PipelineDebugOptions {
+//   PipelineDebugOptions(
+//     debug_print: fn(Int, Desugarer) -> Bool,
+//   )
+// }
 
 // *************
 // OutputFragment(d, z)                         // 'd' is fragment classifier type, 'z' is payload type
@@ -330,7 +331,6 @@ pub type RendererDebugOptions(d) {
   RendererDebugOptions(
     assembler_debug_options: BlamedLinesAssemblerDebugOptions,
     source_parser_debug_options: SourceParserDebugOptions,
-    pipeline_debug_options: PipelineDebugOptions,
     splitter_debug_options: SplitterDebugOptions(d),
     emitter_debug_options: EmitterDebugOptions(d),
     printer_debug_options: PrinterDebugOptions(d),
@@ -870,9 +870,7 @@ pub type CommandLineAmendments {
     input_dir: Option(String),
     output_dir: Option(String),
     debug_assembled_input: Bool,
-    debug_pipeline_range: #(Int, Int),
-    debug_pipeline_names: Option(List(String)),
-    basic_messages: Bool,
+    show_changes_near: Option(ShowChangesNearCliArgs),
     debug_vxml_fragments_local_paths: Option(List(String)),
     debug_blamed_lines_fragments_local_paths: Option(List(String)),
     debug_printed_string_fragments_local_paths: Option(List(String)),
@@ -894,9 +892,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     input_dir: None,
     output_dir: None,
     debug_assembled_input: False,
-    debug_pipeline_range: #(-1, -1),
-    debug_pipeline_names: None,
-    basic_messages: True,
+    show_changes_near: None,
     debug_vxml_fragments_local_paths: None,
     debug_blamed_lines_fragments_local_paths: None,
     debug_printed_string_fragments_local_paths: None,
@@ -913,24 +909,6 @@ fn amend_debug_assembled_input(
   val: Bool,
 ) -> CommandLineAmendments {
   CommandLineAmendments(..amendments, debug_assembled_input: val)
-}
-
-fn amend_debug_pipeline_range(
-  amendments: CommandLineAmendments,
-  start: Int,
-  end: Int,
-) -> CommandLineAmendments {
-  CommandLineAmendments(..amendments, debug_pipeline_range: #(start, end))
-}
-
-fn amend_debug_pipeline_names(
-  amendments: CommandLineAmendments,
-  names: List(String),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    debug_pipeline_names: Some(names),
-  )
 }
 
 pub fn amend_debug_vxml_fragments_local_paths(
@@ -1054,20 +1032,57 @@ pub fn cli_usage() {
   io.println("")
 }
 
-type CliSelectorType {
-  Text(String)
-  Tag(String)
-  KeyVal(String, String)
+fn apply_show_changes_near_cli_args_to_pipeline(
+  pipeline: Pipeline,
+  cli: ShowChangesNearCliArgs,
+) -> Pipeline {
+  let apply_to_all = cli.restrict_on_change_check_to_steps == [] && cli.force_output_at_steps == []
+  let PlusMinusRange(p, m) = option.unwrap(cli.range, PlusMinusRange(0, 0))
+  let selector = case cli.selector_type {
+    Text(string) -> sl.text(string)
+  }
+  |> infra.extend_selector_down(p)
+  |> infra.extend_selector_up(m)
+  case apply_to_all {
+    True -> {
+      list.map(
+        pipeline,
+        fn (pipe) { #(infra.OnChange, selector, pipe.2) }
+      )
+    }
+    False -> {
+      list.index_map(
+        pipeline,
+        fn (pipe, i) {
+          let step_no = i + 1
+          let on_change = list.contains(cli.restrict_on_change_check_to_steps, step_no)
+          let on = list.contains(cli.force_output_at_steps, step_no)
+          let mode = case on_change, on {
+            _, True -> infra.On
+            True, _ -> infra.OnChange
+            _, _ -> infra.Off
+          }
+          #(mode, selector, pipe.2)
+        }
+      )
+    }
+  }
 }
 
-type PlusMinusRange {
+pub type CliSelectorType {
+  Text(String)
+  // Tag(String)
+  // KeyVal(String, String)
+}
+
+pub type PlusMinusRange {
   PlusMinusRange(
     plus: Int,
     minus: Int,
   )
 }
 
-type ShowChangesNearCliArgs {
+pub type ShowChangesNearCliArgs {
   ShowChangesNearCliArgs(
     selector_type: CliSelectorType,
     range: Option(PlusMinusRange),
@@ -1287,74 +1302,13 @@ pub fn process_command_line_arguments(
       "--show-changes-near-text" -> {
         io.println("welcome!")
         use args <- result.try(parse_show_changes_near_args(values))
-        echo args
-        Ok(amendments)
+        Ok(CommandLineAmendments(..amendments, show_changes_near: Some(args)))
       }
 
       _ -> case list.contains(xtra_keys, option) {
         False -> Error(UnwantedOptionArgument(option))
         True -> Ok(amendments |> amend_user_args(option, values))
       }
-
-      // "--debug-pipeline" ->
-      //   case list.is_empty(values) {
-      //     True -> Ok(amendments |> amend_debug_pipeline_range(0, 0))
-      //     False ->
-      //       Ok(amendments |> amend_debug_pipeline_names(values))
-      //   }
-
-      // "--debug-pipeline-last" ->
-      //   case list.is_empty(values) {
-      //     True -> Ok(amendments |> amend_debug_pipeline_range(-2, -2))
-      //     False ->
-      //       Ok(amendments |> amend_debug_pipeline_names(values))
-      //   }
-
-      // _ -> {
-      //   case string.starts_with(option, "--debug-pipeline-") {
-      //     True -> {
-      //       let suffix = string.drop_start(option, string.length("--debug-pipeline-"))
-      //       let pieces = string.split(suffix, "-")
-      //       case list.length(pieces) {
-      //         2 -> {
-      //           let assert [b, c] = pieces
-      //           case int.parse(b), int.parse(c) {
-      //             Ok(debug_start), Ok(debug_end) -> {
-      //               Ok(
-      //                 amendments
-      //                 |> amend_debug_pipeline_range(debug_start, debug_end),
-      //               )
-      //             }
-      //             _, _ -> Error(BadDebugPipelineRange(option))
-      //           }
-      //         }
-      //         1 -> {
-      //           let assert [b] = pieces
-      //           case int.parse(b) {
-      //             Ok(debug_start) -> {
-      //               Ok(
-      //                 amendments
-      //                 |> amend_debug_pipeline_range(debug_start, debug_start),
-      //               )
-      //             }
-      //             _ -> case suffix {
-      //               "" -> Ok(amendments)
-      //               _ -> Error(BadDebugPipelineRange(option))
-      //             }
-      //           }
-      //         }
-      //         _ -> Error(BadDebugPipelineRange(option))
-      //       }
-      //     }
-
-      //     False -> {
-      //       case list.contains(xtra_keys, option) {
-      //         False -> Error(UnwantedOptionArgument(option))
-      //         True -> Ok(amendments |> amend_user_args(option, values))
-      //       }
-      //     }
-      //   }
-      // }
     }
   })
 }
@@ -1370,7 +1324,7 @@ fn override_if_some(thing: a, replacement: Option(a)) -> a {
   }
 }
 
-pub fn amend_renderer_paramaters_by_command_line_amendment(
+pub fn amend_renderer_paramaters_by_command_line_amendments(
   parameters: RendererParameters,
   amendments: CommandLineAmendments,
 ) -> RendererParameters {
@@ -1384,14 +1338,6 @@ pub fn amend_renderer_paramaters_by_command_line_amendment(
 //********************
 // AMENDING RENDERER DEBUG OPTIONS BY COMMAND LINE AMENDMENTS
 //********************
-
-fn is_some_and_contains_or_is_empty(z: Option(List(a)), thing: a) -> Bool {
-  case z {
-    None -> False
-    Some([]) -> True
-    Some(x) -> list.contains(x, thing)
-  }
-}
 
 fn is_some_and_any_or_is_empty(z: Option(List(a)), f: fn(a) -> Bool) -> Bool {
   case z {
@@ -1407,23 +1353,6 @@ pub fn db_amend_assembler_debug_options(
 ) -> BlamedLinesAssemblerDebugOptions {
   BlamedLinesAssemblerDebugOptions(
     debug_print: amendments.debug_assembled_input,
-  )
-}
-
-pub fn db_amend_pipeline_debug_options(
-  _previous: PipelineDebugOptions,
-  amendments: CommandLineAmendments,
-  pipeline: List(Pipe),
-) -> PipelineDebugOptions {
-  let #(start, end) = amendments.debug_pipeline_range
-  let names = amendments.debug_pipeline_names
-  PipelineDebugOptions(
-    debug_print: fn(step, desugarer: Desugarer) {
-      { start == 0 && end == 0 }
-      || { start <= step && step <= end }
-      || { start == -2 && end == -2 && step == list.length(pipeline) }
-      || { is_some_and_contains_or_is_empty(names, desugarer.name) }
-    },
   )
 }
 
@@ -1483,10 +1412,19 @@ pub fn db_amend_prettifier_debug_options(
   )
 }
 
-pub fn amend_renderer_debug_options_by_command_line_amendment(
+pub fn amend_renderer_by_command_line_amendments(
+  renderer: Renderer(a, c, d, e, f, h),
+  amendments: CommandLineAmendments,
+) -> Renderer(a, c, d, e, f, h) {
+  case amendments.show_changes_near {
+    None -> renderer
+    Some(cli) -> Renderer(..renderer, pipeline: apply_show_changes_near_cli_args_to_pipeline(renderer.pipeline, cli))
+  }
+}
+
+pub fn amend_renderer_debug_options_by_command_line_amendments(
   debug_options: RendererDebugOptions(d),
   amendments: CommandLineAmendments,
-  pipeline: List(Pipe),
 ) -> RendererDebugOptions(d) {
   RendererDebugOptions(
     db_amend_assembler_debug_options(
@@ -1494,11 +1432,6 @@ pub fn amend_renderer_debug_options_by_command_line_amendment(
       amendments,
     ),
     debug_options.source_parser_debug_options,
-    db_amend_pipeline_debug_options(
-      debug_options.pipeline_debug_options,
-      amendments,
-      pipeline,
-    ),
     db_amend_splitter_debug_options(
       debug_options.splitter_debug_options,
       amendments,
@@ -1536,12 +1469,12 @@ pub fn empty_source_parser_debug_options(
   )
 }
 
-pub fn empty_pipeline_debug_options(
-) -> PipelineDebugOptions {
-  PipelineDebugOptions(
-    debug_print: fn(_step, _pipe) { False },
-  )
-}
+// pub fn empty_pipeline_debug_options(
+// ) -> PipelineDebugOptions {
+//   PipelineDebugOptions(
+//     debug_print: fn(_step, _pipe) { False },
+//   )
+// }
 
 pub fn empty_splitter_debug_options(
 ) -> SplitterDebugOptions(d) {
@@ -1574,7 +1507,7 @@ pub fn default_renderer_debug_options(
   RendererDebugOptions(
     assembler_debug_options: empty_assembler_debug_options(),
     source_parser_debug_options: empty_source_parser_debug_options(),
-    pipeline_debug_options: empty_pipeline_debug_options(),
+    // pipeline_debug_options: empty_pipeline_debug_options(),
     splitter_debug_options: empty_splitter_debug_options(),
     emitter_debug_options: empty_emitter_debug_options(),
     printer_debug_options: empty_printer_debug_options(),
