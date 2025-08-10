@@ -14,26 +14,26 @@ fn nodemap(
       // ignore Carousel that have children
       case children {
         [] -> {
-          // check if there are any non-src attributes - error if there are
-          case list.any(attrs, fn(attr) {attr.key != "src"}) {
+          // get all src attributes
+          let src_attrs = list.filter(attrs, fn(attr) { attr.key == "src" })
+          // create CarouselItem children with img tags
+          let carousel_items = list.map(src_attrs, fn(src_attr) {
+            let img = V(blame, "img", [src_attr], [])
+            V(blame, "CarouselItem", [], [img])
+          })
+          Ok(V(blame, "Carousel", [], carousel_items))
+        }
+        _ -> {
+          // check if there are any src attributes - error if there are
+          case list.any(attrs, fn(attr) { attr.key == "src" }) {
             True ->
               Error(DesugaringError(
-                            blame,
-                            "All attributes should be src which represents source of the image"
-                    ))
-            False -> {
-              // get all src attributes
-              let src_attrs = list.filter(attrs, fn(attr) { attr.key == "src" })
-              // create CarouselItem children with img tags
-              let carousel_items = list.map(src_attrs, fn(src_attr) {
-                let img = V(blame, "img", [src_attr], [])
-                V(blame, "CarouselItem", [], [img])
-              })
-              Ok(V(blame, "Carousel", [], carousel_items))
-            }
+                blame,
+                "Carousel cannot have src attribute and children at the same time."
+              ))
+            False -> Ok(vxml)
           }
         }
-        _ -> Ok(vxml)
       }
     }
     _ -> Ok(vxml)
