@@ -11,7 +11,6 @@ fn nodemap(
   case vxml {
     T(_, _) -> Ok(vxml)
     V(blame, tag, attrs, children) if tag == "Carousel" -> {
-      // ignore Carousel that have children
       case children {
         [] -> {
           // get all src attributes
