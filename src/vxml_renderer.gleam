@@ -358,19 +358,27 @@ fn run_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
 ) -> Result(#(VXML, List(#(Int, Timestamp))), InSituDesugaringError) {
+  let print_star_block = fn(printed_before: Bool, desugarer: Desugarer, step_no: Int) {
+    case printed_before {
+      False -> io.println("")
+      True -> Nil
+    }
+    io.print(star_block.desugarer_name_star_block(desugarer, step_no))
+  }
+
   pipeline
   |> list.try_fold(
-    #(vxml, 1, "", []),
+    #(vxml, 1, "", [], False),
     fn(acc, pipe) {
-      let #(vxml, step_no, last_debug_output, times) = acc
+      let #(vxml, step_no, last_debug_output, times, printed_before) = acc
       let #(mode, selector, desugarer) = pipe
       let times = case desugarer.name == "timer" {
         True -> [#(step_no, timestamp.system_time()), ..times]
         False -> times
       }
       case mode == On {
-        True -> io.print(star_block.desugarer_name_star_block(desugarer, step_no))
-        False -> Nil
+        True -> print_star_block(printed_before, desugarer, step_no)
+        _ -> Nil
       }
       use vxml <- infra.on_error_on_ok(
         desugarer.transform(vxml),
@@ -390,24 +398,23 @@ fn run_pipeline(
           #(selected, selected |> infra.selected_lines_to_string(""))
         }
       }
-      case mode == On || { mode == OnChange && next_debug_output != last_debug_output } {
-        False -> Nil
-        True -> {
-          case mode == On {
-            True -> Nil   // b/c it was already printed, in this case
-            False -> io.print(star_block.desugarer_name_star_block(desugarer, step_no))
-          }
-          selected
-          |> infra.selected_lines_to_string("")
-          |> io.println
-        }
+      let must_print = mode == On || { mode == OnChange && next_debug_output != last_debug_output }
+      case mode != On && must_print {
+        True -> print_star_block(printed_before, desugarer, step_no)
+        _ -> Nil
       }
-      Ok(#(
+      case must_print {
+        True -> io.println(selected |> infra.selected_lines_to_string(""))
+        _ -> Nil
+      }
+      #(
         vxml,
         step_no + 1,
         next_debug_output,
         times,
-      ))
+        printed_before || must_print,
+      )
+      |> Ok
     }
   )
   |> result.map(fn(acc){#(acc.0, acc.3)}) 
@@ -528,8 +535,6 @@ fn print_pipeline(desugarers: List(Desugarer)) {
     )
     |> list.flatten
 
-  io.println("• desugarers in pipeline:")
-
   star_block.four_column_table(
     [
       #("#.", "name", "param", "outside"),
@@ -553,6 +558,7 @@ pub fn run_renderer(
   let parameters = sanitize_output_dir(parameters)
   let RendererParameters(input_dir, output_dir, prettifier) = parameters
 
+  io.println("• pipeline:")
   print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
 
   io.println("• assembling blamed lines (" <> input_dir <> ")")
@@ -870,7 +876,7 @@ pub type CommandLineAmendments {
     input_dir: Option(String),
     output_dir: Option(String),
     debug_assembled_input: Bool,
-    show_changes_near: Option(ShowChangesNearCliArgs),
+    show_changes_near: Option(PipelineCliArgsModifier),
     debug_vxml_fragments_local_paths: Option(List(String)),
     debug_blamed_lines_fragments_local_paths: Option(List(String)),
     debug_printed_string_fragments_local_paths: Option(List(String)),
@@ -909,46 +915,6 @@ fn amend_debug_assembled_input(
   val: Bool,
 ) -> CommandLineAmendments {
   CommandLineAmendments(..amendments, debug_assembled_input: val)
-}
-
-pub fn amend_debug_vxml_fragments_local_paths(
-  amendments: CommandLineAmendments,
-  names: List(String),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    debug_vxml_fragments_local_paths: Some(names),
-  )
-}
-
-pub fn amend_debug_blamed_lines_fragments_local_paths(
-  amendments: CommandLineAmendments,
-  names: List(String),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    debug_blamed_lines_fragments_local_paths: Some(names),
-  )
-}
-
-fn amend_debug_printed_string_fragments_local_paths(
-  amendments: CommandLineAmendments,
-  names: List(String),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    debug_printed_string_fragments_local_paths: Some(names),
-  )
-}
-
-fn amend_debug_prettified_string_fragments_local_paths(
-  amendments: CommandLineAmendments,
-  names: List(String),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    debug_prettified_string_fragments_local_paths: Some(names),
-  )
 }
 
 fn amend_user_args(
@@ -1034,20 +1000,14 @@ pub fn cli_usage() {
 
 fn apply_show_changes_near_cli_args_to_pipeline(
   pipeline: Pipeline,
-  cli: ShowChangesNearCliArgs,
+  cli: PipelineCliArgsModifier,
 ) -> Pipeline {
   let apply_to_all = cli.restrict_on_change_check_to_steps == [] && cli.force_output_at_steps == []
-  let PlusMinusRange(p, m) = option.unwrap(cli.range, PlusMinusRange(0, 0))
-  let selector = case cli.selector_type {
-    Text(string) -> sl.text(string)
-  }
-  |> infra.extend_selector_down(p)
-  |> infra.extend_selector_up(m)
   case apply_to_all {
     True -> {
       list.map(
         pipeline,
-        fn (pipe) { #(infra.OnChange, selector, pipe.2) }
+        fn (pipe) { #(infra.OnChange, cli.selector, pipe.2) }
       )
     }
     False -> {
@@ -1062,17 +1022,11 @@ fn apply_show_changes_near_cli_args_to_pipeline(
             True, _ -> infra.OnChange
             _, _ -> infra.Off
           }
-          #(mode, selector, pipe.2)
+          #(mode, cli.selector, pipe.2)
         }
       )
     }
   }
-}
-
-pub type CliSelectorType {
-  Text(String)
-  // Tag(String)
-  // KeyVal(String, String)
 }
 
 pub type PlusMinusRange {
@@ -1082,10 +1036,9 @@ pub type PlusMinusRange {
   )
 }
 
-pub type ShowChangesNearCliArgs {
-  ShowChangesNearCliArgs(
-    selector_type: CliSelectorType,
-    range: Option(PlusMinusRange),
+pub type PipelineCliArgsModifier {
+  PipelineCliArgsModifier(
+    selector: infra.Selector,
     restrict_on_change_check_to_steps: List(Int),
     force_output_at_steps: List(Int),
   )
@@ -1105,7 +1058,7 @@ fn parse_plus_minus(
           }
         }
         _ -> case int.parse(s) {
-          Ok(m) -> Ok(PlusMinusRange(plus: 0, minus: m))
+          Ok(p) -> Ok(PlusMinusRange(plus: p, minus: 0))
           _ -> Error(Nil)
         }
       }
@@ -1121,7 +1074,7 @@ fn parse_plus_minus(
           }
         }
         _ -> case int.parse(s) {
-          Ok(p) -> Ok(PlusMinusRange(plus: p, minus: 0))
+          Ok(m) -> Ok(PlusMinusRange(plus: 0, minus: m))
           _ -> Error(Nil)
         }
       }
@@ -1145,8 +1098,11 @@ fn unique_ints(g: List(Int)) -> List(Int) {
 }
 
 fn parse_show_changes_near_args(
+  option: String,
   values: List(String)
-) -> Result(ShowChangesNearCliArgs, CommandLineError) {
+) -> Result(PipelineCliArgsModifier, CommandLineError) {
+  let assert True = string.starts_with(option, "--show-changes-near")
+
   use first_payload, values <- infra.on_empty_on_nonempty(
     values,
     Error(SelectorValues("missing 1st argument")),
@@ -1154,13 +1110,22 @@ fn parse_show_changes_near_args(
 
   let assert True = first_payload != ""
 
-  let selector_type = Text(first_payload)
+  use selector <- result.try(
+    case option {
+      "--show-changes-near-keyval" -> case string.split_once(first_payload, "=") {
+        Ok(#(before, after)) if before != "" -> Ok(sl.key_val(before, after))
+        _ -> Error(SelectorValues("expecting key=val after --show-changes-near-keyval"))
+      }
+      "--show-changes-near-text" -> Ok(sl.text(first_payload))
+      "--show-changes-near-tag" -> Ok(sl.tag(first_payload))
+      _ -> Error(SelectorValues("expecting '-text', '-tag', or '-keyval' suffix to --show-changes-near option"))
+    }
+  )
 
   use second_payload, values <- infra.on_empty_on_nonempty(
     values,
-    Ok(ShowChangesNearCliArgs(
-      selector_type: selector_type,
-      range: None,
+    Ok(PipelineCliArgsModifier(
+      selector: selector,
       restrict_on_change_check_to_steps: [],
       force_output_at_steps: [],
     )),
@@ -1170,6 +1135,11 @@ fn parse_show_changes_near_args(
     parse_plus_minus(second_payload),
     fn(_){Error(SelectorValues("2nd argument to --show-changes-near should have form +<p>-<m> or -<m>+<p> where p, m are integers"))},
   )
+
+  let selector =
+    selector
+    |> infra.extend_selector_down(range.plus)
+    |> infra.extend_selector_up(range.minus)
 
   use #(restrict, force) <- result.try(
     list.try_fold(
@@ -1192,16 +1162,18 @@ fn parse_show_changes_near_args(
           }
         })
         case forced {
-          False -> Ok(#(list.append(acc.0, ints) |> unique_ints, acc.1))
-          True -> Ok(#(acc.0, list.append(acc.1, ints) |> unique_ints))
+          False -> Ok(#(list.append(acc.0, ints), acc.1))
+          True -> Ok(#(acc.0, list.append(acc.1, ints)))
         }
       }
     ),
   )
 
-  Ok(ShowChangesNearCliArgs(
-    selector_type: selector_type,
-    range: Some(range),
+  let force = force |> unique_ints
+  let restrict = restrict |> unique_ints |> list.filter(fn(x){!list.contains(force, x)})
+
+  Ok(PipelineCliArgsModifier(
+    selector: selector,
     restrict_on_change_check_to_steps: restrict,
     force_output_at_steps: force,
   ))
@@ -1219,17 +1191,18 @@ fn parse_attribute_value_args_in_filename(
 ) -> List(#(String, String, String)) {
   let assert [path, ..args] = string.split(path, "&")
   case args {
+    // did not contain '&':
     [] -> {
       case string.split_once(path, "=") {
         Ok(#(key, value)) -> [#("", key, value)]
         Error(Nil) -> [#(path, "", "")]
       }
     }
-    _ ->
-      list.map(args, fn(arg) {
-        let assert [key, value] = string.split(arg, "=")
-        #(path, key, value)
-      })
+    // did contain '&'
+    _ -> list.map(args, fn(arg) {
+      let assert [key, value] = string.split(arg, "=") // <- this should be generating a CommandLineError instead of asserting
+      #(path, key, value)
+    })
   }
 }
 
@@ -1261,6 +1234,14 @@ pub fn process_command_line_arguments(
         }
       }
 
+      "--only" -> {
+        let args =
+          values
+          |> list.map(parse_attribute_value_args_in_filename)
+          |> list.flatten()
+        Ok(amendments |> amend_spotlight_args(args))
+      }
+
       "--prettier0" ->
         case list.is_empty(values) {
           True -> Ok(CommandLineAmendments(..amendments, prettier: Some(False)))
@@ -1273,41 +1254,34 @@ pub fn process_command_line_arguments(
           False -> Error(UnexpectedArgumentsToOption("--prettier1"))
         }
 
-      "--debug-assembled-input" | "--debug-assembled" ->
+      "--echo-assembled-input" | "--echo-assembled" ->
         case list.is_empty(values) {
           True -> Ok(amendments |> amend_debug_assembled_input(True))
           False -> Error(UnexpectedArgumentsToOption(option))
         }
 
-      "--debug-fragments" ->
-        Ok(amendments |> amend_debug_vxml_fragments_local_paths(values))
+      "--echo-fragments" ->
+        Ok(CommandLineAmendments(..amendments, debug_vxml_fragments_local_paths: Some(values)))
 
-      "--debug-fragments-bl" ->
-        Ok(amendments |> amend_debug_blamed_lines_fragments_local_paths(values))
+      "--echo-fragments-bl" ->
+        Ok(CommandLineAmendments(..amendments, debug_blamed_lines_fragments_local_paths: Some(values)))
 
-      "--debug-fragments-printed" ->
-        Ok(amendments |> amend_debug_printed_string_fragments_local_paths(values))
+      "--echo-fragments-printed" ->
+        Ok(CommandLineAmendments(..amendments, debug_printed_string_fragments_local_paths: Some(values)))
 
-      "--debug-fragments-prettified" ->
-        Ok(amendments |> amend_debug_prettified_string_fragments_local_paths(values))
+      "--echo-fragments-prettified" ->
+        Ok(CommandLineAmendments(..amendments, debug_prettified_string_fragments_local_paths: Some(values)))
 
-      "--only" -> {
-        let args =
-          values
-          |> list.map(parse_attribute_value_args_in_filename)
-          |> list.flatten()
-        Ok(amendments |> amend_spotlight_args(args))
-      }
+      _ -> case string.starts_with(option, "--show-changes-near") {
+        True -> {
+          use pipeline_mod <- result.try(parse_show_changes_near_args(option, values))
+          Ok(CommandLineAmendments(..amendments, show_changes_near: Some(pipeline_mod)))
+        }
 
-      "--show-changes-near-text" -> {
-        io.println("welcome!")
-        use args <- result.try(parse_show_changes_near_args(values))
-        Ok(CommandLineAmendments(..amendments, show_changes_near: Some(args)))
-      }
-
-      _ -> case list.contains(xtra_keys, option) {
-        False -> Error(UnwantedOptionArgument(option))
-        True -> Ok(amendments |> amend_user_args(option, values))
+        False -> case list.contains(xtra_keys, option) {
+          True -> Ok(amendments |> amend_user_args(option, values))
+          False -> Error(UnwantedOptionArgument(option))
+        }
       }
     }
   })
