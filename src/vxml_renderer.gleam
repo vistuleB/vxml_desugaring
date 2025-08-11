@@ -1179,6 +1179,24 @@ fn parse_show_changes_near_args(
   ))
 }
 
+fn join_pipeline_modifiers(
+  pm1: Option(PipelineCliArgsModifier),
+  pm2: PipelineCliArgsModifier,
+) -> PipelineCliArgsModifier {
+  use pm1 <- infra.on_none_on_some(pm1, pm2)
+  let f1 = pm1.force_output_at_steps
+  let f2 = pm2.force_output_at_steps
+  let force = list.append(f1, f2) |> unique_ints
+  let r1 = pm1.restrict_on_change_check_to_steps
+  let r2 = pm2.restrict_on_change_check_to_steps
+  let restrict = list.append(r1, r2) |> unique_ints |> list.filter(fn(x){!list.contains(force, x)})
+  PipelineCliArgsModifier(
+    selector: infra.or_selectors(pm1.selector, pm2.selector),
+    restrict_on_change_check_to_steps: restrict,
+    force_output_at_steps: force,
+  )
+}
+
 pub type CommandLineError {
   ExpectedDoubleDashString(String)
   UnwantedOptionArgument(String)
@@ -1275,7 +1293,7 @@ pub fn process_command_line_arguments(
       _ -> case string.starts_with(option, "--show-changes-near") {
         True -> {
           use pipeline_mod <- result.try(parse_show_changes_near_args(option, values))
-          Ok(CommandLineAmendments(..amendments, show_changes_near: Some(pipeline_mod)))
+          Ok(CommandLineAmendments(..amendments, show_changes_near: Some(join_pipeline_modifiers(amendments.show_changes_near, pipeline_mod))))
         }
 
         False -> case list.contains(xtra_keys, option) {

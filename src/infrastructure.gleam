@@ -2619,3 +2619,38 @@ pub fn vxml_to_pigeon_lines(
   vxml_to_pigeon_lines_internal([], vxml, 0)
   |> list.reverse
 }
+
+fn or_selected_1(
+  l1: SelectedPigeonLine,
+  l2: SelectedPigeonLine,
+) -> SelectedPigeonLine {
+  let assert True = l1.payload == l2.payload
+  case l1, l2 {
+    OG(pigeon), _ -> OG(pigeon)
+    _, OG(pigeon) -> OG(pigeon)
+    Byproduct(pigeon), _ -> Byproduct(pigeon)
+    _, Byproduct(pigeon) -> Byproduct(pigeon)
+    _, _ -> l1
+  }
+}
+
+pub fn or_selected_pigeon_lines(
+  l1: List(SelectedPigeonLine),
+  l2: List(SelectedPigeonLine),
+) -> List(SelectedPigeonLine) {
+  let assert True = list.length(l1) == list.length(l2)
+  list.zip(l1, l2)
+  |> list.map(fn(pair) {or_selected_1(pair.0, pair.1)})
+}
+
+pub fn or_selectors( // this is very expensive -- it's 'just for show', use in emergency only
+  s1: Selector,
+  s2: Selector,
+) -> Selector {
+  fn (vxml) {
+    or_selected_pigeon_lines(
+      vxml |> s1,
+      vxml |> s2,
+    )
+  }
+}
