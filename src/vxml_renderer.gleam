@@ -1002,12 +1002,21 @@ fn apply_show_changes_near_cli_args_to_pipeline(
   pipeline: Pipeline,
   cli: PipelineCliArgsModifier,
 ) -> Pipeline {
-  let apply_to_all = cli.restrict_on_change_check_to_steps == [] && cli.force_output_at_steps == []
+  let num_steps = list.length(pipeline)
+  let wraparound = fn(x: Int) {
+    case x < 0 {
+      True -> num_steps + x + 1
+      False -> x
+    }
+  }
+  let restrict = list.map(cli.restrict_on_change_check_to_steps, wraparound)
+  let force = list.map(cli.force_output_at_steps, wraparound)
+  let apply_to_all = restrict == [] && force == []
   case apply_to_all {
     True -> {
       list.map(
         pipeline,
-        fn (pipe) { #(infra.OnChange, cli.selector, pipe.2) }
+        fn (pipe) { #(infra.OnChange, option.unwrap(cli.selector, pipe.1), pipe.2) }
       )
     }
     False -> {
@@ -1015,14 +1024,14 @@ fn apply_show_changes_near_cli_args_to_pipeline(
         pipeline,
         fn (pipe, i) {
           let step_no = i + 1
-          let on_change = list.contains(cli.restrict_on_change_check_to_steps, step_no)
-          let on = list.contains(cli.force_output_at_steps, step_no)
+          let on_change = list.contains(restrict, step_no)
+          let on = list.contains(force, step_no)
           let mode = case on_change, on {
             _, True -> infra.On
             True, _ -> infra.OnChange
             _, _ -> infra.Off
           }
-          #(mode, cli.selector, pipe.2)
+          #(mode, option.unwrap(cli.selector, pipe.1), pipe.2)
         }
       )
     }
@@ -1038,7 +1047,7 @@ pub type PlusMinusRange {
 
 pub type PipelineCliArgsModifier {
   PipelineCliArgsModifier(
-    selector: infra.Selector,
+    selector: Option(infra.Selector),
     restrict_on_change_check_to_steps: List(Int),
     force_output_at_steps: List(Int),
   )
@@ -1097,6 +1106,56 @@ fn unique_ints(g: List(Int)) -> List(Int) {
   |> list.unique
 }
 
+fn cleanup_step_numbers(
+  restrict: List(Int),
+  force: List(Int),
+) -> #(List(Int), List(Int)) {
+  let force = force |> unique_ints
+  let restrict = restrict |> unique_ints |> list.filter(fn(x){!list.contains(force, x)})
+  #(restrict, force)
+}
+
+fn parse_step_numbers(
+  values: List(String)
+) -> Result(#(List(Int), List(Int)), CommandLineError) {
+  use #(restrict, force) <- result.try(list.try_fold(
+    values,
+    #([], []),
+    fn (acc, val) {
+      let original_val = val
+      let #(forced, val) = case string.starts_with(val, "!") {
+        True -> #(True, string.drop_start(val, 1))
+        False -> #(False, val)
+      }
+      let #(first_val_negative, val) = case string.starts_with(val, "-") {
+        True -> #(True, string.drop_start(val, 1))
+        False -> #(False, val)
+      }
+      let multiply_first = fn(x: Int) {
+        case first_val_negative {
+          True -> -x
+          False -> x
+        }
+      }
+      use ints <- result.try(case string.split_once(val, "-") {
+        Ok(#(before, after)) -> case int.parse(before), int.parse(after) {
+          Ok(lo), Ok(hi) -> Ok(lo_hi_ints(lo |> multiply_first, hi))
+          _, _ -> Error(StepNoValues("unable to parse '" <> original_val <> "' as integer range (1)"))
+        }
+        Error(Nil) -> case int.parse(val) {
+          Ok(guy) -> Ok([guy |> multiply_first])
+          Error(Nil) -> Error(StepNoValues("unable to parse '" <> original_val <> "' as integer range (2)"))
+        }
+      })
+      case forced {
+        False -> Ok(#(list.append(acc.0, ints), acc.1))
+        True -> Ok(#(acc.0, list.append(acc.1, ints)))
+      }
+    }
+  ))
+  Ok(cleanup_step_numbers(restrict, force))
+}
+
 fn parse_show_changes_near_args(
   option: String,
   values: List(String)
@@ -1113,7 +1172,7 @@ fn parse_show_changes_near_args(
   use selector <- result.try(
     case option {
       "--show-changes-near-keyval" -> case string.split_once(first_payload, "=") {
-        Ok(#(before, after)) if before != "" -> Ok(sl.key_val(before, after))
+        Ok(#(before, after)) if before != "" -> Ok(sl.keyval(before, after))
         _ -> Error(SelectorValues("expecting key=val after --show-changes-near-keyval"))
       }
       "--show-changes-near-text" -> Ok(sl.text(first_payload))
@@ -1125,55 +1184,37 @@ fn parse_show_changes_near_args(
   use second_payload, values <- infra.on_empty_on_nonempty(
     values,
     Ok(PipelineCliArgsModifier(
-      selector: selector,
+      selector: Some(selector),
       restrict_on_change_check_to_steps: [],
       force_output_at_steps: [],
     )),
   )
 
-  use range <- infra.on_error_on_ok(
+  use plus_minus <- infra.on_error_on_ok(
     parse_plus_minus(second_payload),
     fn(_){Error(SelectorValues("2nd argument to --show-changes-near should have form +<p>-<m> or -<m>+<p> where p, m are integers"))},
   )
 
   let selector =
     selector
-    |> infra.extend_selector_down(range.plus)
-    |> infra.extend_selector_up(range.minus)
+    |> infra.extend_selector_down(plus_minus.plus)
+    |> infra.extend_selector_up(plus_minus.minus)
 
-  use #(restrict, force) <- result.try(
-    list.try_fold(
-      values,
-      #([], []),
-      fn (acc, val) {
-        let original_val = val
-        let #(forced, val) = case string.starts_with(val, "!") {
-          True -> #(True, string.drop_start(val, 1))
-          False -> #(False, val)
-        }
-        use ints <- result.try(case string.split_once(val, "-") {
-          Ok(#(before, after)) -> case int.parse(before), int.parse(after) {
-            Ok(lo), Ok(hi) -> Ok(lo_hi_ints(lo, hi))
-            _, _ -> Error(SelectorValues("unable to parse '" <> original_val <> "' as integer range"))
-          }
-          Error(Nil) -> case int.parse(val) {
-            Ok(guy) -> Ok([guy])
-            Error(Nil) -> Error(SelectorValues("unable to parse '" <> original_val <> "' as integer range"))
-          }
-        })
-        case forced {
-          False -> Ok(#(list.append(acc.0, ints), acc.1))
-          True -> Ok(#(acc.0, list.append(acc.1, ints)))
-        }
-      }
-    ),
-  )
-
-  let force = force |> unique_ints
-  let restrict = restrict |> unique_ints |> list.filter(fn(x){!list.contains(force, x)})
+  use #(restrict, force) <- result.try(parse_step_numbers(values))
 
   Ok(PipelineCliArgsModifier(
-    selector: selector,
+    selector: Some(selector),
+    restrict_on_change_check_to_steps: restrict,
+    force_output_at_steps: force,
+  ))
+}
+
+fn parse_show_change_at_steps_args(
+  values: List(String),
+) -> Result(PipelineCliArgsModifier, CommandLineError) {
+  use #(restrict, force) <- result.try(parse_step_numbers(values))
+  Ok(PipelineCliArgsModifier(
+    selector: None,
     restrict_on_change_check_to_steps: restrict,
     force_output_at_steps: force,
   ))
@@ -1184,14 +1225,15 @@ fn join_pipeline_modifiers(
   pm2: PipelineCliArgsModifier,
 ) -> PipelineCliArgsModifier {
   use pm1 <- infra.on_none_on_some(pm1, pm2)
-  let f1 = pm1.force_output_at_steps
-  let f2 = pm2.force_output_at_steps
-  let force = list.append(f1, f2) |> unique_ints
-  let r1 = pm1.restrict_on_change_check_to_steps
-  let r2 = pm2.restrict_on_change_check_to_steps
-  let restrict = list.append(r1, r2) |> unique_ints |> list.filter(fn(x){!list.contains(force, x)})
+  let #(restrict, force) = cleanup_step_numbers(
+    list.append(pm1.force_output_at_steps, pm2.force_output_at_steps),
+    list.append(pm1.restrict_on_change_check_to_steps, pm2.restrict_on_change_check_to_steps),
+  )
   PipelineCliArgsModifier(
-    selector: infra.or_selectors(pm1.selector, pm2.selector),
+    selector: case pm1.selector, pm2.selector {
+      Some(s1), Some(s2) -> Some(infra.or_selectors(s1, s2))
+      _, _ -> option.or(pm1.selector, pm2.selector)
+    },
     restrict_on_change_check_to_steps: restrict,
     force_output_at_steps: force,
   )
@@ -1202,6 +1244,7 @@ pub type CommandLineError {
   UnwantedOptionArgument(String)
   UnexpectedArgumentsToOption(String)
   SelectorValues(String)
+  StepNoValues(String)
 }
 
 fn parse_attribute_value_args_in_filename(
@@ -1289,6 +1332,11 @@ pub fn process_command_line_arguments(
 
       "--echo-fragments-prettified" ->
         Ok(CommandLineAmendments(..amendments, debug_prettified_string_fragments_local_paths: Some(values)))
+
+      "--show-changes-at-steps" -> {
+        use pipeline_mod <- result.try(parse_show_change_at_steps_args(values))
+        Ok(CommandLineAmendments(..amendments, show_changes_near: Some(join_pipeline_modifiers(amendments.show_changes_near, pipeline_mod))))
+      }
 
       _ -> case string.starts_with(option, "--show-changes-near") {
         True -> {

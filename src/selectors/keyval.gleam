@@ -1,30 +1,28 @@
 import infrastructure.{type Selector, type PigeonSelector} as infra
 import gleam/list
-import gleam/string
 
-pub fn text_pigeon_version(
-  s: String,
+pub fn keyval_pigeon_version(
+  key: String,
+  val: String,
 ) -> PigeonSelector {
   list.map(
     _,
     fn(pigeon) {
       case pigeon {
-        infra.PigeonL(_, _, content) -> case string.contains(content, s) {
-          True -> infra.OG(pigeon)
-          False -> infra.NotSelected(pigeon)
-        }
+        infra.PigeonA(_, _, k, v) if k == key && v == val -> infra.OG(pigeon)
         _ -> infra.NotSelected(pigeon)
       }
     }
   )
 }
 
-pub fn text(
-  s: String,
+pub fn keyval(
+  key: String,
+  val: String,
 ) -> Selector {
   fn (vxml) {
     vxml 
     |> infra.vxml_to_pigeon_lines
-    |> text_pigeon_version(s)
+    |> keyval_pigeon_version(key, val)
   }
 }

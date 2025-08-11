@@ -333,7 +333,7 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
 
 pub fn get_root_with_desugaring_error(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   get_root(vxmls)
-  |> result.map_error(fn(msg) { DesugaringError(blamedlines.no_blame(), msg)})
+  |> result.map_error(fn(msg) { DesugaringError(no_blame, msg)})
 }
 
 pub fn get_duplicate(list: List(a)) -> Option(a) {
@@ -824,6 +824,10 @@ pub const no_blame = Blame("", -1, -1, [])
 
 pub fn blame_us(message: String) -> Blame {
     Blame(message, 0, 0, [])
+}
+
+pub fn comment_blame(c: String) -> Blame {
+  Blame("", 0, 0, [c])
 }
 
 pub fn get_blame(vxml: VXML) -> Blame {
@@ -2362,6 +2366,9 @@ pub type SelectedPigeonLine {
   Byproduct(payload: PigeonLine)
 }
 
+pub type PigeonSelector =
+  fn(List(PigeonLine)) -> List(SelectedPigeonLine)
+
 pub type Selector =
   fn(VXML) -> List(SelectedPigeonLine)
 
@@ -2403,11 +2410,62 @@ pub fn pigeon_line_2_blamed_line(line: PigeonLine) -> BlamedLine {
   }
 }
 
+pub fn selected_pigeon_line_2_blamed_line(line: SelectedPigeonLine) -> BlamedLine {
+  line.payload |> pigeon_line_2_blamed_line
+}
+
 pub fn selected_lines_to_blamed_lines(lines: List(SelectedPigeonLine)) -> List(BlamedLine) {
+  let s2l = selected_pigeon_line_2_blamed_line
   lines
-  |> list.filter(is_selected_pigeon_line)
-  |> list.map(fn(x){x.payload})
-  |> list.map(pigeon_line_2_blamed_line)
+  |> list.fold(
+    #(False, None, []),
+    fn (acc, line) {
+      case is_selected_pigeon_line(line) {
+        True -> case acc.1 {
+          None -> 
+            #(
+              True,
+              None,
+              [line |> s2l, ..acc.2],
+            )
+
+          Some(#(indentation, num_lines)) ->
+            #(
+              True,
+              None, 
+              [line |> s2l, BlamedLine(comment_blame(ins(num_lines)), indentation, "..."), ..acc.2],
+            )
+        }
+        False -> case acc.0, acc.1 {
+          False, None -> 
+            #(
+              False,
+              None,
+              acc.2
+            )
+
+          True, None -> {
+            #(
+              True,
+              Some(#(line.payload.indent, 1)),
+              acc.2,
+            )
+          }
+
+          True, Some(#(indentation, num_lines)) -> 
+            #(
+              True,
+              Some(#(int.min(line.payload.indent, indentation), num_lines + 1)),
+              acc.2,
+            )
+
+          False, Some(_) -> panic as "shouldn't reach this combo"
+        }
+      }
+    }
+  )
+  |> triple_3rd
+  |> list.reverse
 }
 
 pub fn selected_lines_to_string(lines: List(SelectedPigeonLine), banner: String) -> String {
@@ -2426,6 +2484,13 @@ fn bring_to_byproduct_level(line: SelectedPigeonLine) -> SelectedPigeonLine {
 fn is_pigeon_v(line: PigeonLine) -> Bool {
   case line {
     PigeonV(_, _, _) -> True
+    _ -> False
+  }
+}
+
+fn is_pigeon_a(line: PigeonLine) -> Bool {
+  case line {
+    PigeonA(_, _, _, _) -> True
     _ -> False
   }
 }
@@ -2481,6 +2546,8 @@ fn extend_selection_up(
 
 fn extend_selection_to_ancestors(
   lines: List(SelectedPigeonLine),
+  with_elder_siblings with_siblings: Bool,
+  with_attributes with_attributes: Bool,
 ) -> List(SelectedPigeonLine) {
   lines
   |> list.reverse
@@ -2488,50 +2555,110 @@ fn extend_selection_to_ancestors(
     #(-1, []),
     fn (acc, line) {
       let #(indent, lines) = acc
+      let is_v = is_pigeon_v(line.payload)
+      let is_a = is_pigeon_a(line.payload)
+      let line = case {
+        line.payload.indent < indent
+      } || {
+        line.payload.indent == indent && { {is_v && with_siblings} || {is_a && with_attributes} }
+      } || {
+        line.payload.indent == indent + 2 && with_siblings && is_a && with_attributes
+      } {
+        True -> line |> bring_to_byproduct_level
+        False -> line
+      }
       let indent = case {
-        line.payload.indent < indent && is_pigeon_v(line.payload)
+        line.payload.indent < indent && is_v
       } || {
         line.payload.indent > indent && is_og(line)
       } {
         True -> line.payload.indent
         False -> indent
       }
-      let lines = case line.payload.indent <= indent {
-        True -> [line |> bring_to_byproduct_level, ..lines]
-        False -> [line, ..lines]
-      }
-      #(indent, lines)
+      #(indent, [line, ..lines])
     }
   )
   |> pair.second
 }
 
-fn extend_selection_to_ancestors_without_attributes(
-  lines: List(SelectedPigeonLine),
-) -> List(SelectedPigeonLine) {
-  lines
-  |> list.reverse
-  |> list.fold(
-    #(-1, []),
-    fn (acc, line) {
-      let #(indent, lines) = acc
-      let indent = case {
-        line.payload.indent < indent && is_pigeon_v(line.payload)
-      } || {
-        line.payload.indent > indent && is_og(line)
-      } {
-        True -> line.payload.indent
-        False -> indent
-      }
-      let lines = case line.payload.indent <= indent && is_pigeon_v(line.payload) {
-        True -> [line |> bring_to_byproduct_level, ..lines]
-        False -> [line, ..lines]
-      }
-      #(indent, lines)
-    }
-  )
-  |> pair.second
-}
+// fn extend_selection_to_ancestors(
+//   lines: List(SelectedPigeonLine),
+// ) -> List(SelectedPigeonLine) {
+//   lines
+//   |> list.reverse
+//   |> list.fold(
+//     #(-1, []),
+//     fn (acc, line) {
+//       let #(indent, lines) = acc
+//       let indent = case {
+//         line.payload.indent < indent && is_pigeon_v(line.payload)
+//       } || {
+//         line.payload.indent > indent && is_og(line)
+//       } {
+//         True -> line.payload.indent
+//         False -> indent
+//       }
+//       case line.payload.indent <= indent {
+//         True -> #(indent - 2, [line |> bring_to_byproduct_level, ..lines])
+//         False -> #(indent, [line, ..lines])
+//       }
+//     }
+//   )
+//   |> pair.second
+// }
+
+// fn extend_selection_to_ancestors_with_elder_siblings(
+//   lines: List(SelectedPigeonLine),
+// ) -> List(SelectedPigeonLine) {
+//   lines
+//   |> list.reverse
+//   |> list.fold(
+//     #(-1, []),
+//     fn (acc, line) {
+//       let #(indent, lines) = acc
+//       let indent = case {
+//         line.payload.indent < indent && is_pigeon_v(line.payload)
+//       } || {
+//         line.payload.indent > indent && is_og(line)
+//       } {
+//         True -> line.payload.indent
+//         False -> indent
+//       }
+//       case line.payload.indent <= indent {
+//         True -> #(indent, [line |> bring_to_byproduct_level, ..lines])
+//         False -> #(indent, [line, ..lines])
+//       }
+//     }
+//   )
+//   |> pair.second
+// }
+
+// fn extend_selection_to_ancestors_with_elder_siblings_without_attributes(
+//   lines: List(SelectedPigeonLine),
+// ) -> List(SelectedPigeonLine) {
+//   lines
+//   |> list.reverse
+//   |> list.fold(
+//     #(-1, []),
+//     fn (acc, line) {
+//       let #(indent, lines) = acc
+//       let indent = case {
+//         line.payload.indent < indent && is_pigeon_v(line.payload)
+//       } || {
+//         line.payload.indent > indent && is_og(line)
+//       } {
+//         True -> line.payload.indent
+//         False -> indent
+//       }
+//       let lines = case line.payload.indent <= indent && is_pigeon_v(line.payload) {
+//         True -> [line |> bring_to_byproduct_level, ..lines]
+//         False -> [line, ..lines]
+//       }
+//       #(indent, lines)
+//     }
+//   )
+//   |> pair.second
+// }
 
 pub fn extend_selector_up(
   f: Selector,
@@ -2556,24 +2683,49 @@ pub fn extend_selector_down(
 }
 
 pub fn extend_selector_to_ancestors(
-  f: Selector
+  f: Selector,
+  with_elder_siblings with_siblings: Bool,
+  with_attributes with_attributes: Bool,
 ) -> Selector {
   fn (vxml) {
     vxml
     |> f
-    |> extend_selection_to_ancestors
+    |> extend_selection_to_ancestors(
+      with_siblings,
+      with_attributes,
+    )
   }
 }
 
-pub fn extend_selector_to_ancestors_without_attributes(
-  f: Selector
-) -> Selector {
-  fn (vxml) {
-    vxml
-    |> f
-    |> extend_selection_to_ancestors_without_attributes
-  }
-}
+// pub fn extend_selector_to_ancestors(
+//   f: Selector
+// ) -> Selector {
+//   fn (vxml) {
+//     vxml
+//     |> f
+//     |> extend_selection_to_ancestors
+//   }
+// }
+
+// pub fn extend_selector_to_ancestors_with_elder_siblings(
+//   f: Selector
+// ) -> Selector {
+//   fn (vxml) {
+//     vxml
+//     |> f
+//     |> extend_selection_to_ancestors_with_elder_siblings
+//   }
+// }
+
+// pub fn extend_selector_to_ancestors_with_elder_siblings_without_attributes(
+//   f: Selector
+// ) -> Selector {
+//   fn (vxml) {
+//     vxml
+//     |> f
+//     |> extend_selection_to_ancestors_with_elder_siblings_without_attributes
+//   }
+// }
 
 fn v_pigeon_lines(
   vxml: VXML,
