@@ -2366,8 +2366,8 @@ pub type SelectedPigeonLine {
   Byproduct(payload: PigeonLine)
 }
 
-pub type PigeonSelector =
-  fn(List(PigeonLine)) -> List(SelectedPigeonLine)
+pub type InternalSelector =
+  fn(List(SelectedPigeonLine)) -> List(SelectedPigeonLine)
 
 pub type Selector =
   fn(VXML) -> List(SelectedPigeonLine)
@@ -2581,84 +2581,27 @@ fn extend_selection_to_ancestors(
   |> pair.second
 }
 
-// fn extend_selection_to_ancestors(
-//   lines: List(SelectedPigeonLine),
-// ) -> List(SelectedPigeonLine) {
-//   lines
-//   |> list.reverse
-//   |> list.fold(
-//     #(-1, []),
-//     fn (acc, line) {
-//       let #(indent, lines) = acc
-//       let indent = case {
-//         line.payload.indent < indent && is_pigeon_v(line.payload)
-//       } || {
-//         line.payload.indent > indent && is_og(line)
-//       } {
-//         True -> line.payload.indent
-//         False -> indent
-//       }
-//       case line.payload.indent <= indent {
-//         True -> #(indent - 2, [line |> bring_to_byproduct_level, ..lines])
-//         False -> #(indent, [line, ..lines])
-//       }
-//     }
-//   )
-//   |> pair.second
-// }
+pub fn extend_internal_selector_up(
+  f: InternalSelector,
+  amt: Int,
+) -> InternalSelector {
+  fn (lines) {
+    lines
+    |> f
+    |> extend_selection_up(amt)
+  }
+}
 
-// fn extend_selection_to_ancestors_with_elder_siblings(
-//   lines: List(SelectedPigeonLine),
-// ) -> List(SelectedPigeonLine) {
-//   lines
-//   |> list.reverse
-//   |> list.fold(
-//     #(-1, []),
-//     fn (acc, line) {
-//       let #(indent, lines) = acc
-//       let indent = case {
-//         line.payload.indent < indent && is_pigeon_v(line.payload)
-//       } || {
-//         line.payload.indent > indent && is_og(line)
-//       } {
-//         True -> line.payload.indent
-//         False -> indent
-//       }
-//       case line.payload.indent <= indent {
-//         True -> #(indent, [line |> bring_to_byproduct_level, ..lines])
-//         False -> #(indent, [line, ..lines])
-//       }
-//     }
-//   )
-//   |> pair.second
-// }
-
-// fn extend_selection_to_ancestors_with_elder_siblings_without_attributes(
-//   lines: List(SelectedPigeonLine),
-// ) -> List(SelectedPigeonLine) {
-//   lines
-//   |> list.reverse
-//   |> list.fold(
-//     #(-1, []),
-//     fn (acc, line) {
-//       let #(indent, lines) = acc
-//       let indent = case {
-//         line.payload.indent < indent && is_pigeon_v(line.payload)
-//       } || {
-//         line.payload.indent > indent && is_og(line)
-//       } {
-//         True -> line.payload.indent
-//         False -> indent
-//       }
-//       let lines = case line.payload.indent <= indent && is_pigeon_v(line.payload) {
-//         True -> [line |> bring_to_byproduct_level, ..lines]
-//         False -> [line, ..lines]
-//       }
-//       #(indent, lines)
-//     }
-//   )
-//   |> pair.second
-// }
+pub fn extend_internal_selector_down(
+  f: InternalSelector,
+  amt: Int,
+) -> InternalSelector {
+  fn (lines) {
+    lines
+    |> f
+    |> extend_selection_down(amt)
+  }
+}
 
 pub fn extend_selector_up(
   f: Selector,
@@ -2696,36 +2639,6 @@ pub fn extend_selector_to_ancestors(
     )
   }
 }
-
-// pub fn extend_selector_to_ancestors(
-//   f: Selector
-// ) -> Selector {
-//   fn (vxml) {
-//     vxml
-//     |> f
-//     |> extend_selection_to_ancestors
-//   }
-// }
-
-// pub fn extend_selector_to_ancestors_with_elder_siblings(
-//   f: Selector
-// ) -> Selector {
-//   fn (vxml) {
-//     vxml
-//     |> f
-//     |> extend_selection_to_ancestors_with_elder_siblings
-//   }
-// }
-
-// pub fn extend_selector_to_ancestors_with_elder_siblings_without_attributes(
-//   f: Selector
-// ) -> Selector {
-//   fn (vxml) {
-//     vxml
-//     |> f
-//     |> extend_selection_to_ancestors_with_elder_siblings_without_attributes
-//   }
-// }
 
 fn v_pigeon_lines(
   vxml: VXML,
@@ -2772,7 +2685,13 @@ pub fn vxml_to_pigeon_lines(
   |> list.reverse
 }
 
-fn or_selected_1(
+pub fn vxml_to_unselected_lines(
+  vxml: VXML
+) -> List(SelectedPigeonLine) {
+  vxml |> vxml_to_pigeon_lines |> list.map(NotSelected(_))
+}
+
+fn or_selected_pigeon_line(
   l1: SelectedPigeonLine,
   l2: SelectedPigeonLine,
 ) -> SelectedPigeonLine {
@@ -2792,17 +2711,17 @@ pub fn or_selected_pigeon_lines(
 ) -> List(SelectedPigeonLine) {
   let assert True = list.length(l1) == list.length(l2)
   list.zip(l1, l2)
-  |> list.map(fn(pair) {or_selected_1(pair.0, pair.1)})
+  |> list.map(fn(pair) {or_selected_pigeon_line(pair.0, pair.1)})
 }
 
-pub fn or_selectors( // this is very expensive -- it's 'just for show', use in emergency only
-  s1: Selector,
-  s2: Selector,
-) -> Selector {
-  fn (vxml) {
+pub fn or_internal_selectors(
+  s1: InternalSelector,
+  s2: InternalSelector,
+) -> InternalSelector {
+  fn (lines) {
     or_selected_pigeon_lines(
-      vxml |> s1,
-      vxml |> s2,
+      lines |> s1,
+      lines |> s2,
     )
   }
 }

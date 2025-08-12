@@ -1,13 +1,14 @@
-import infrastructure.{type Selector, type PigeonSelector} as infra
+import infrastructure.{type Selector, type InternalSelector} as infra
 import gleam/list
 import gleam/string
 
-pub fn text_pigeon_version(
+pub fn text_internal_selector(
   s: String,
-) -> PigeonSelector {
+) -> InternalSelector {
   list.map(
     _,
-    fn(pigeon) {
+    fn(line: infra.SelectedPigeonLine) {
+      let pigeon = line.payload
       case pigeon {
         infra.PigeonL(_, _, content) -> case string.contains(content, s) {
           True -> infra.OG(pigeon)
@@ -24,7 +25,7 @@ pub fn text(
 ) -> Selector {
   fn (vxml) {
     vxml 
-    |> infra.vxml_to_pigeon_lines
-    |> text_pigeon_version(s)
+    |> infra.vxml_to_unselected_lines
+    |> text_internal_selector(s)
   }
 }

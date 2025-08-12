@@ -1,12 +1,13 @@
-import infrastructure.{type Selector, type PigeonSelector} as infra
+import infrastructure.{type Selector, type InternalSelector} as infra
 import gleam/list
 
-pub fn tag_pigeon_version(
+pub fn tag_internal_selector(
   tag: String,
-) -> PigeonSelector {
+) -> InternalSelector {
   list.map(
     _,
-    fn(pigeon) {
+    fn(line: infra.SelectedPigeonLine) {
+      let pigeon = line.payload
       case pigeon {
         infra.PigeonV(_, _, tag_name) if tag_name == tag -> infra.OG(pigeon)
         _ -> infra.NotSelected(pigeon)
@@ -20,7 +21,7 @@ pub fn tag(
 ) -> Selector {
   fn (vxml) {
     vxml 
-    |> infra.vxml_to_pigeon_lines
-    |> tag_pigeon_version(tag)
+    |> infra.vxml_to_unselected_lines
+    |> tag_internal_selector(tag)
   }
 }

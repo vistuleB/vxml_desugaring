@@ -21,6 +21,12 @@ MODULES=$(find "$SRC_DIR" -maxdepth 1 -type f -name '*.gleam' ! -name '__*' \
   printf '%s\n' "$MODULES" | while IFS= read -r m; do
     echo "pub const ${m} = ${m}.${m}"
   done
+  echo
+
+  # consts
+  printf '%s\n' "$MODULES" | while IFS= read -r m; do
+    echo "pub const ${m}_internal_selector = ${m}.${m}_internal_selector"
+  done
 } > "$OUT_FILE"
 
 echo "Wrote $OUT_FILE with $(printf '%s\n' "$MODULES" | wc -l | tr -d ' ') selector(s)."

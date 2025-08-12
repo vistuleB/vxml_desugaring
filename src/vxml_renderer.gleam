@@ -1051,11 +1051,15 @@ fn apply_show_changes_near_cli_args_to_pipeline(
   let restrict = list.map(cli.restrict_on_change_check_to_steps, wraparound)
   let force = list.map(cli.force_output_at_steps, wraparound)
   let apply_to_all = restrict == [] && force == []
+  let cli_selector = case cli.selector {
+    Some(some) -> Some(fn(vxml) { vxml |> infra.vxml_to_unselected_lines |> some })
+    None -> None
+  }
   case apply_to_all {
     True -> {
       list.map(
         pipeline,
-        fn (pipe) { #(infra.OnChange, option.unwrap(cli.selector, pipe.1), pipe.2) }
+        fn (pipe) { #(infra.OnChange, option.unwrap(cli_selector, pipe.1), pipe.2) }
       )
     }
     False -> {
@@ -1070,7 +1074,7 @@ fn apply_show_changes_near_cli_args_to_pipeline(
             True, _ -> infra.OnChange
             _, _ -> infra.Off
           }
-          #(mode, option.unwrap(cli.selector, pipe.1), pipe.2)
+          #(mode, option.unwrap(cli_selector, pipe.1), pipe.2)
         }
       )
     }
@@ -1086,7 +1090,7 @@ pub type PlusMinusRange {
 
 pub type PipelineCliArgsModifier {
   PipelineCliArgsModifier(
-    selector: Option(infra.Selector),
+    selector: Option(infra.InternalSelector),
     restrict_on_change_check_to_steps: List(Int),
     force_output_at_steps: List(Int),
   )
@@ -1211,11 +1215,11 @@ fn parse_show_changes_near_args(
   use selector <- result.try(
     case option {
       "--show-changes-near-keyval" -> case string.split_once(first_payload, "=") {
-        Ok(#(before, after)) if before != "" -> Ok(sl.keyval(before, after))
+        Ok(#(before, after)) if before != "" -> Ok(sl.keyval_internal_selector(before, after))
         _ -> Error(SelectorValues("expecting key=val after --show-changes-near-keyval"))
       }
-      "--show-changes-near-text" -> Ok(sl.text(first_payload))
-      "--show-changes-near-tag" -> Ok(sl.tag(first_payload))
+      "--show-changes-near-text" -> Ok(sl.text_internal_selector(first_payload))
+      "--show-changes-near-tag" -> Ok(sl.tag_internal_selector(first_payload))
       _ -> Error(SelectorValues("expecting '-text', '-tag', or '-keyval' suffix to --show-changes-near option"))
     }
   )
@@ -1236,8 +1240,8 @@ fn parse_show_changes_near_args(
 
   let selector =
     selector
-    |> infra.extend_selector_down(plus_minus.plus)
-    |> infra.extend_selector_up(plus_minus.minus)
+    |> infra.extend_internal_selector_down(plus_minus.plus)
+    |> infra.extend_internal_selector_up(plus_minus.minus)
 
   use #(restrict, force) <- result.try(parse_step_numbers(values))
 
@@ -1270,7 +1274,7 @@ fn join_pipeline_modifiers(
   )
   PipelineCliArgsModifier(
     selector: case pm1.selector, pm2.selector {
-      Some(s1), Some(s2) -> Some(infra.or_selectors(s1, s2))
+      Some(s1), Some(s2) -> Some(infra.or_internal_selectors(s1, s2))
       _, _ -> option.or(pm1.selector, pm2.selector)
     },
     restrict_on_change_check_to_steps: restrict,
