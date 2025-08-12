@@ -35,7 +35,14 @@ pub type BlamedLinesAssemblerDebugOptions {
 pub fn default_blamed_lines_assembler(
   spotlight_paths: List(String)
 ) -> BlamedLinesAssembler(wp.AssemblyError) {
-  wp.assemble_blamed_lines_advanced_mode(_, spotlight_paths)
+  let spaces = string.repeat(" ", string.length("• assembling blamed lines... done; from: "))
+  fn (input_dir) {
+    use #(directory_tree, assembled) <- result.try(wp.assemble_blamed_lines_advanced_mode(input_dir, spotlight_paths))
+    let directory_tree = list.map(directory_tree, fn(line){spaces <> line}) |> list.drop(1)
+    io.println("done; from: " <> input_dir)
+    io.println(string.join(directory_tree, "\n"))
+    Ok(assembled)
+  }
 }
 
 // *************
@@ -561,13 +568,13 @@ pub fn run_renderer(
   io.println("• pipeline:")
   print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
 
-  io.println("• assembling blamed lines (" <> input_dir <> ")")
+  io.print("• assembling blamed lines... ")
 
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(input_dir),
     fn(error_a) {
       io.println(
-        "renderer.assembler error on input_dir "
+        "\nrenderer.assembler error on input_dir "
         <> input_dir
         <> ": "
         <> ins(error_a),
@@ -584,17 +591,20 @@ pub fn run_renderer(
       |> io.println
   }
 
-  io.println("• parsing source (" <> input_dir <> ")")
+  io.print("• parsing blamed lines to VXML...")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
     with_on_error: fn(error: c) {
+      io.println("")
       io.println("renderer.source_parser error: " <> ins(error))
       Error(SourceParserError(error))
     },
   )
 
-  io.print("• starting pipeline...")
+  io.println(" done;")
+
+  io.print("• starting pipeline... ")
   let t0 = timestamp.system_time()
 
   use #(desugared, times) <- infra.on_error_on_ok(
@@ -626,7 +636,7 @@ pub fn run_renderer(
   let t1 = timestamp.system_time()
   let seconds = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
-  io.println(" ...ended pipeline (" <> ins(seconds) <> "s)")
+  io.println("done (" <> ins(seconds) <> "s);")
 
   case list.length(times) > 0 {
     False -> Nil
@@ -647,7 +657,7 @@ pub fn run_renderer(
     }
   }
 
-  io.print("• splitting the vxml...")
+  io.print("• splitting the vxml... ")
 
   // vxml fragments generation
   use fragments <- infra.on_error_on_ok(
@@ -664,7 +674,7 @@ pub fn run_renderer(
     fn(fr) { #(ins(fr.classifier), prefix <> fr.path) }
   )
 
-  io.println(" ...obtained " <> ins(list.length(fragments)) <> " fragments:")
+  io.println("done; obtained " <> ins(list.length(fragments)) <> " fragments:")
   star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 2)
 
   // fragments debug printing
@@ -682,12 +692,14 @@ pub fn run_renderer(
     }
   })
 
-  io.println("• converting fragments to blamed line fragments")
+  io.print("• converting fragments to blamed line fragments... ")
 
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
     |> list.map(renderer.emitter)
+
+  io.println("done;")
 
   // blamed line fragments debug printing
   fragments
@@ -708,7 +720,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("• converting blamed line fragments to string fragments")
+  io.print("• converting blamed line fragments to string fragments... ")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -725,6 +737,8 @@ pub fn run_renderer(
       }
     })
   }
+
+  io.println("done;")
 
   // string fragments debug printing
   fragments
@@ -747,7 +761,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("• writing string fragments to files")
+  io.println("• writing string fragments to files...")
 
   // printing string fragments (list.map to record errors)
   let fragments =
@@ -770,6 +784,8 @@ pub fn run_renderer(
           ))
       }
     })
+
+  io.println("  ...done;")
 
   // running prettifier (list.map to record erros)
   case prettifier {
@@ -958,21 +974,44 @@ pub fn cli_usage() {
   io.println(margin <> "  -> restrict source to paths that match one of the given subpaths")
   io.println("")
   io.println(margin <> "--only <key1=val1> <key2=val2> ...")
-  io.println(margin <> "  -> restrict source to elements that have one of the")
-  io.println(margin <> "     given key-value pairs as attributes")
+  io.println(margin <> "  -> restrict source to elements that have one of the given key-value")
+  io.println(margin <> "     pairs as attributes")
   io.println("")
   io.println(margin <> "--echo-assembled-source | --echo-assembled")
   io.println(margin <> "  -> print the assembled blamed lines of source")
   io.println("")
-  io.println(margin <> "--show-changes-near-[text|tag|keyval] +<p>-<m> <range options>")
-  io.println(margin <> "  -> track changes near text, tag, or key=val pair, with options:")
+  io.println(margin <> "--show-changes-near-[text|tag|keyval] <payload> +<p>-<m> <step numbers>")
+  io.println(margin <> "  -> track changes near text, tag, or key=val pair as given by")
+  io.println(margin <> "     <payload> argument, e.g.:")
+  io.println("")
+  io.println(margin <> "     gleam run -- --show-changes-near-text \"lorem ipsum\"")
+  io.println("")
+  // io.println(margin <> "     additional options '+<p>-<m>' and '<step numbers>':")
+  // io.println("")
   io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before marker")
   io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
   io.println(margin <> "       marker")
-  io.println(margin <> "     • <range options> specificy which desugaring steps to track:")
+  io.println("")
+  io.println(margin <> "     • <step numbers> specificy which desugaring steps to track:")
   io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
-  io.println(margin <> "         • !x to force a printout at desugaring step x with or")
-  io.println(margin <> "           without changes in selected area")
+  io.println(margin <> "         • !x to force a printout at desugaring step x whether or")
+  io.println(margin <> "           not changes in selection occur")
+  io.println(margin <> "         • leave empty to track all steps")
+  io.println(margin <> "         • use negative arguments to denote steps from end of list")
+  io.println(margin <> "           in python fashion (-1 denotes last desugaring step)")
+  // io.println("")
+  // io.println(margin <> "     leave <step numbers> empty to track all steps")
+  // io.println("")
+  // io.println(margin <> "     use negative arguments to denote steps from end of list in")
+  // io.println(margin <> "     python-style, for example -1 to denote last desugaring step")
+  // io.println("")
+  // io.println(margin <> "     note that <step numbers> options cannot be specified without")
+  // io.println(margin <> "     also specifiying +<p>-<m> option; use --show-changes-at-steps")
+  // io.println(margin <> "     otherwise")
+  io.println("")
+  io.println(margin <> "--show-changes-at-steps")
+  io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
+  io.println(margin <> "     --show-changes-near-[] option, with the same semantics")
   io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
