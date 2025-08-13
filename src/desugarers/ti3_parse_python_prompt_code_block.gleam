@@ -6,7 +6,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
-const desugarer_blame = Blame("python_prompt_code_block", 0, 0, [])
+const desugarer_blame = Blame("ti3_parse_python_prompt_code_block", 0, 0, [])
 
 type PythonPromptChunk {
   PromptLine(BlamedContent)
@@ -154,8 +154,8 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
   |> Ok
 }
 
-const name = "python_prompt_code_block"
-const constructor = python_prompt_code_block
+const name = "ti3_parse_python_prompt_code_block"
+const constructor = ti3_parse_python_prompt_code_block
 
 type Param = Nil
 type InnerParam = VXML
@@ -167,7 +167,7 @@ type InnerParam = VXML
 /// Processes CodeBlock elements with language=python-prompt
 /// and converts them to pre elements with proper span
 /// highlighting for prompts, responses, and errors
-pub fn python_prompt_code_block() -> Desugarer {
+pub fn ti3_parse_python_prompt_code_block() -> Desugarer {
   Desugarer(
     name,
     option.None,

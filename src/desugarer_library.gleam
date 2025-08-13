@@ -96,7 +96,6 @@ import desugarers/prepend_text_node
 import desugarers/prepend_text_node__batch
 import desugarers/prepend_text_node__outside
 import desugarers/prepend_text_node_if_has_ancestor_else__batch
-import desugarers/python_prompt_code_block
 import desugarers/rearrange_links
 import desugarers/rearrange_links__batch
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
@@ -120,6 +119,7 @@ import desugarers/strip_delimiters_inside_if
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
 import desugarers/ti3_parse_orange_comment_code_block
+import desugarers/ti3_parse_python_prompt_code_block
 import desugarers/timer
 import desugarers/tokenize_text_children
 import desugarers/trim
@@ -244,7 +244,6 @@ pub const prepend_text_node = prepend_text_node.prepend_text_node
 pub const prepend_text_node__batch = prepend_text_node__batch.prepend_text_node__batch
 pub const prepend_text_node__outside = prepend_text_node__outside.prepend_text_node__outside
 pub const prepend_text_node_if_has_ancestor_else__batch = prepend_text_node_if_has_ancestor_else__batch.prepend_text_node_if_has_ancestor_else__batch
-pub const python_prompt_code_block = python_prompt_code_block.python_prompt_code_block
 pub const rearrange_links = rearrange_links.rearrange_links
 pub const rearrange_links__batch = rearrange_links__batch.rearrange_links__batch
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
@@ -268,6 +267,7 @@ pub const strip_delimiters_inside_if = strip_delimiters_inside_if.strip_delimite
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
 pub const ti3_parse_orange_comment_code_block = ti3_parse_orange_comment_code_block.ti3_parse_orange_comment_code_block
+pub const ti3_parse_python_prompt_code_block = ti3_parse_python_prompt_code_block.ti3_parse_python_prompt_code_block
 pub const timer = timer.timer
 pub const tokenize_text_children = tokenize_text_children.tokenize_text_children
 pub const trim = trim.trim
@@ -393,7 +393,6 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   prepend_text_node__batch.assertive_tests,
   prepend_text_node__outside.assertive_tests,
   prepend_text_node_if_has_ancestor_else__batch.assertive_tests,
-  python_prompt_code_block.assertive_tests,
   rearrange_links.assertive_tests,
   rearrange_links__batch.assertive_tests,
   reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.assertive_tests,
@@ -417,6 +416,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
   ti3_parse_orange_comment_code_block.assertive_tests,
+  ti3_parse_python_prompt_code_block.assertive_tests,
   timer.assertive_tests,
   tokenize_text_children.assertive_tests,
   trim.assertive_tests,
