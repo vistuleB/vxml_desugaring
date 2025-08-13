@@ -1,7 +1,7 @@
 import gleam/result
 import gleam/list
 import vxml.{type VXML, V, T}
-import infrastructure.{type DesugarerTransform, type DesugaringError} as infra
+import infrastructure.{type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 
 //**************************************************************
 //* OneToOneNoErrorNodeMap
@@ -997,10 +997,7 @@ pub fn one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
 //* EarlyReturnOneToOneNoErrorNodeMap
 //**************************************************************
 
-pub type TrafficLight {
-  Continue
-  GoBack
-}
+
 
 pub type EarlyReturnOneToOneNoErrorNodeMap =
   fn(VXML) -> #(VXML, TrafficLight)

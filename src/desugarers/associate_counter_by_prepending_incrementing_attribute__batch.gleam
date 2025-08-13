@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/string
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, T, V}
 
@@ -68,12 +68,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.aggregate_on_first(param))
+  let tag_counter_pairs = param |> list.map(fn(triple) { #(triple.0, triple.1) })
+  Ok(infra.aggregate_on_first(tag_counter_pairs))
 }
 
-type Param = List(#(String, String))
-//                  ↖       ↖
-//                  tag     counter_name
+type Param = List(#(String, String, TrafficLight))
+//                  ↖       ↖        ↖
+//                  tag     counter   traffic_light
+//                          name
 
 type InnerParam =
   Dict(String, List(String))
@@ -85,8 +87,8 @@ const constructor = associate_counter_by_prepending_incrementing_attribute__batc
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// For each #(tag, counter_name) pair in the 
-/// parameter list, this desugarer adds an 
+/// For each #(tag, counter_name, traffic_light) tuple in the 
+/// parameter list, this desugarer adds an
 /// attribute of the form
 /// ```
 /// .=counter_name ::++counter_name
@@ -110,8 +112,8 @@ pub fn associate_counter_by_prepending_incrementing_attribute__batch(
     option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
-/// For each #(tag, counter_name) pair in the 
-/// parameter list, this desugarer adds an 
+/// For each #(tag, counter_name, traffic_light) tuple in the 
+/// parameter list, this desugarer adds an
 /// attribute of the form
 /// ```
 /// .=counter_name ::++counter_name

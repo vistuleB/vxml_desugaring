@@ -11,6 +11,15 @@ import gleam/string.{inspect as ins}
 import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V, vxml_to_string}
 
 //**************************************************************
+//* Traffic Light for early returns
+//**************************************************************
+
+pub type TrafficLight {
+  Continue
+  GoBack
+}
+
+//**************************************************************
 //* css-unit parsing
 //**************************************************************
 

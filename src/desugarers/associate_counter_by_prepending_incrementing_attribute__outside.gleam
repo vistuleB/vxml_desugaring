@@ -1,8 +1,8 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue, GoBack} as n2t
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, V}
 
 fn nodemap(
@@ -36,7 +36,7 @@ fn nodemap(
           [new_attribute, ..other_attributes],
           children,
         ),
-        GoBack
+        inner.3
       )
     }
     _ -> #(vxml, Continue)
@@ -61,16 +61,17 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       ".",
       "::++" <> param.1,
     ),
+    param.2,
   )
   |> Ok
 }
 
-type Param = #(String, String)
-//             ↖       ↖           
-//             tag     counter_name
+type Param = #(String, String, TrafficLight)
+//             ↖       ↖        ↖           
+//             tag     counter   traffic_light
+//                     name                 
 //                                 
-//                                 
-type InnerParam = #(String, String, BlamedAttribute)
+type InnerParam = #(String, String, BlamedAttribute, TrafficLight)
 
 const name = "associate_counter_by_prepending_incrementing_attribute__outside"
 const constructor = associate_counter_by_prepending_incrementing_attribute__outside
@@ -81,7 +82,7 @@ const constructor = associate_counter_by_prepending_incrementing_attribute__outs
 //------------------------------------------------53
 /// Given arguments
 /// ```
-/// tag_name, counter_name
+/// tag_name, counter_name, traffic_light
 /// ```
 /// this desugarer adds an attribute of the form
 /// ```
@@ -100,7 +101,8 @@ const constructor = associate_counter_by_prepending_incrementing_attribute__outs
 /// list of node 'tag' to the post-incremented value
 /// counter counter_name.
 /// 
-/// Early-Returns from 'tag_name' nodes.
+/// The traffic_light parameter determines whether to
+/// Continue or GoBack after processing each node.
 pub fn associate_counter_by_prepending_incrementing_attribute__outside(
   param: Param,
   outside: List(String),
@@ -112,7 +114,7 @@ pub fn associate_counter_by_prepending_incrementing_attribute__outside(
     "
 /// Given arguments
 /// ```
-/// tag_name, counter_name
+/// tag_name, counter_name, traffic_light
 /// ```
 /// this desugarer adds an attribute of the form
 /// ```
@@ -131,7 +133,8 @@ pub fn associate_counter_by_prepending_incrementing_attribute__outside(
 /// list of node 'tag' to the post-incremented value 
 /// counter counter_name.
 /// 
-/// Early-Returns from 'tag_name' nodes.
+/// The traffic_light parameter determines whether to
+/// Continue or GoBack after processing each node.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }

@@ -1,8 +1,9 @@
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, GoBack, Continue} as n2t
+
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
 
 fn nodemap(

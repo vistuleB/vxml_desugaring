@@ -1,7 +1,7 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
-import nodemaps_2_desugarer_transforms.{type TrafficLight, Continue, GoBack } as n2t
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
+import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V}
 
 fn children_up_to_not_including(
