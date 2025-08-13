@@ -99,6 +99,7 @@ import desugarers/prepend_text_node_if_has_ancestor_else__batch
 import desugarers/python_prompt_code_block
 import desugarers/rearrange_links
 import desugarers/rearrange_links__batch
+import desugarers/rearrange_links_v2
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/regex_split_and_replace__batch__outside
 import desugarers/regex_split_and_replace__outside
@@ -246,6 +247,7 @@ pub const prepend_text_node_if_has_ancestor_else__batch = prepend_text_node_if_h
 pub const python_prompt_code_block = python_prompt_code_block.python_prompt_code_block
 pub const rearrange_links = rearrange_links.rearrange_links
 pub const rearrange_links__batch = rearrange_links__batch.rearrange_links__batch
+pub const rearrange_links_v2 = rearrange_links_v2.rearrange_links_v2
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const regex_split_and_replace__batch__outside = regex_split_and_replace__batch__outside.regex_split_and_replace__batch__outside
 pub const regex_split_and_replace__outside = regex_split_and_replace__outside.regex_split_and_replace__outside
@@ -394,6 +396,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   python_prompt_code_block.assertive_tests,
   rearrange_links.assertive_tests,
   rearrange_links__batch.assertive_tests,
+  rearrange_links_v2.assertive_tests,
   reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.assertive_tests,
   regex_split_and_replace__batch__outside.assertive_tests,
   regex_split_and_replace__outside.assertive_tests,

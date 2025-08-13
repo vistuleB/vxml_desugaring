@@ -1,4 +1,4 @@
-import blamedlines.{type Blame, Blame}
+import blamedlines.{type Blame}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -18,16 +18,12 @@ fn space_node(blame: Blame) {
   V(blame, "__OneSpace", [], [])
 }
 
-fn line_node(blame: Blame) {
+fn newline_node(blame: Blame) {
   V(blame, "__OneNewLine", [], [])
 }
 
 fn end_node(blame: Blame) {
   V(blame, "__EndTokenizedT", [], [])
-}
-
-fn advance(blame: Blame, i: Int) {
-  Blame(..blame, char_no: blame.char_no + i)
 }
 
 fn tokenize_string_acc(
@@ -38,12 +34,12 @@ fn tokenize_string_acc(
   case string.split_once(leftover, " ") {
     Ok(#("", after)) -> tokenize_string_acc(
       [space_node(current_blame), ..past_tokens],
-      advance(current_blame, 1),
+      infra.advance(current_blame, 1),
       after,
     )
     Ok(#(before, after)) -> tokenize_string_acc(
       [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
-      advance(current_blame, string.length(before) + 1),
+      infra.advance(current_blame, string.length(before) + 1),
       after,
     )
     Error(Nil) -> case leftover == "" {
@@ -62,13 +58,11 @@ fn tokenize_t(vxml: VXML) -> List(VXML) {
       blamed_content.blame,
       blamed_content.content,
     )
-    |> fn (tokens) {
-        case i > 0 {
-          False -> tokens |> list.prepend(start_node(blamed_content.blame))
-          True -> tokens |> list.prepend(line_node(blamed_content.blame))
-        }
-      }
+    |> list.prepend(case i == 0 {
+      True -> start_node(blamed_content.blame)
+      False -> newline_node(blamed_content.blame)
     })
+  })
   |> list.flatten
   |> list.append([end_node(blame)])
 }
@@ -86,15 +80,9 @@ fn nodemap(
 ) -> VXML {
   case vxml {
     T(_, _) -> vxml
-    V(_, _, _, _) -> case inner(vxml) {
+    V(_, _, _, children) -> case inner(vxml) {
       False -> vxml
-      True -> V(
-        ..vxml,
-        children: list.map(
-          vxml.children,
-          tokenize_if_t,
-        ) |> list.flatten
-      )
+      True -> V(..vxml, children: list.map(children, tokenize_if_t) |> list.flatten)
     }
   }
 }

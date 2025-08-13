@@ -1,4 +1,4 @@
-import vxml
+// import vxml
 import shellout
 import gleam/list
 import argv
@@ -160,8 +160,9 @@ fn run_desugarer_tests(names: List(String)) {
 }
 
 pub fn test_thing() {
-  let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml")
-  echo vxml
+  // let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml")
+  // echo vxml
+  dl.rearrange_links_v2(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>"))
   Nil
 }
 
