@@ -14,9 +14,16 @@ fn nodemap(
         [] -> {
           // get all src attributes
           let src_attrs = list.filter(attrs, fn(attr) { attr.key == "src" })
+          // get style attribute if it exists
+          let style_attr = list.filter(attrs, fn(attr) { attr.key == "style" })
           // create CarouselItem children with img tags
           let carousel_items = list.map(src_attrs, fn(src_attr) {
-            let img = V(blame, "img", [src_attr], [])
+            let img_attrs = case style_attr {
+              [] -> [src_attr]
+              [style] -> [src_attr, style]
+              _ -> [src_attr] // multiple styles, just use first one implicitly
+            }
+            let img = V(blame, "img", img_attrs, [])
             V(blame, "CarouselItem", [], [img])
           })
           Ok(V(blame, "Carousel", [], carousel_items))
