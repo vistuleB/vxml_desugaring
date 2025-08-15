@@ -10,17 +10,17 @@ const desugarer_blame = Blame("ti3_parse_orange_comment", 0, 0, [])
 const t_1_empty_line = T(desugarer_blame, [BlamedContent(desugarer_blame, "")])
 const orange = V(desugarer_blame, "span", [BlamedAttribute(desugarer_blame, "class", "orange-comment")], [])
 
-fn t_1_line(line: BlamedContent) -> VXML {
+fn blamed_content_2_t(line: BlamedContent) -> VXML {
   T(line.blame, [line])
 }
 
 fn elements_for_line(line: BlamedContent) -> List(VXML) {
   case string.split_once(line.content, "//") {
-    Error(_) -> [t_1_line(line)]
+    Error(_) -> [blamed_content_2_t(line)]
     Ok(#(before, after)) -> {
       let after_blame = infra.advance(line.blame, string.length(before) + 2)
-      let before = t_1_line(BlamedContent(line.blame, before))
-      let orange = orange |> infra.prepend_child(t_1_line(BlamedContent(after_blame, after)))
+      let before = blamed_content_2_t(BlamedContent(line.blame, before))
+      let orange = orange |> infra.prepend_child(blamed_content_2_t(BlamedContent(after_blame, after)))
       [before, orange, t_1_empty_line]
     }
   }
