@@ -13,12 +13,13 @@ fn test_pipeline() -> List(Pipe) {
   let echo_mode = infra.Off
   let selector = sl.tag("marker")
   [
-    dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
-    dl.insert_text_start_end(#("i", #("_", "_"))),
-    dl.insert_text_start_end(#("b", #("*", "*"))),
-    dl.insert_text_start_end(#("strong", #("*", "*"))),
-    dl.unwrap__batch(["i", "b", "strong"]),
-    dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
+      dl.rearrange_links_v2(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>")),
+    // dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
+    // dl.insert_text_start_end(#("i", #("_", "_"))),
+    // dl.insert_text_start_end(#("b", #("*", "*"))),
+    // dl.insert_text_start_end(#("strong", #("*", "*"))),
+    // dl.unwrap__batch(["i", "b", "strong"]),
+    // dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]
   |> infra.wrap_desugarers(echo_mode, selector)
 }
@@ -51,7 +52,7 @@ fn test_renderer() {
 
   let parameters =
     vr.RendererParameters(
-      input_dir: "test/content",
+      input_dir: "test/sample.wly",
       output_dir: "test/output",
       prettifier_on_by_default: False,
     )

@@ -2,6 +2,10 @@
 
     *Notation.*
     Curly braces typically denote the beginning
+    Theorem 
+    |> a
+        href=cd
+        3.2
     “$\{$” and ending “$\}$” of a collection of
     elements, otherwise known as a _set_.
     For example, this is a set containing the

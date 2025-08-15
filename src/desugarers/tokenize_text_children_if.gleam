@@ -82,7 +82,10 @@ fn nodemap(
     T(_, _) -> vxml
     V(_, _, _, children) -> case inner(vxml) {
       False -> vxml
-      True -> V(..vxml, children: list.map(children, tokenize_if_t) |> list.flatten)
+      True -> {
+        let children = list.map(children, tokenize_if_t) |> list.flatten
+        V(..vxml, children: children)
+      }
     }
   }
 }
@@ -103,15 +106,15 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = fn(VXML) -> Bool
 type InnerParam = Param
 
-const name = "tokenize_text_children"
-const constructor = tokenize_text_children
+const name = "tokenize_text_children_if"
+const constructor = tokenize_text_children_if
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// 
-pub fn tokenize_text_children(param: Param) -> Desugarer {
+pub fn tokenize_text_children_if(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

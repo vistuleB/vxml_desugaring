@@ -368,6 +368,13 @@ fn match_until_end_internal(
   }
 }
 
+fn match_until_end(
+  atomized: List(VXML),
+  inner: InnerParam,
+) -> List(VXML) {
+  match_until_end_internal(atomized, inner.0, inner.1, [])
+}
+
 fn atomize_text_node(vxml: VXML) -> List(VXML) {
   let assert T(blame, blamed_contents) = vxml
   blamed_contents
@@ -657,13 +664,6 @@ fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(
   )
 
   Ok(#(pattern1, pattern2))
-}
-
-fn match_until_end(
-  atomized: List(VXML),
-  inner: InnerParam,
-) -> List(VXML) {
-  match_until_end_internal(atomized, inner.0, inner.1, [])
 }
 
 fn nodemap(

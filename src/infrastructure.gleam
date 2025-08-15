@@ -1718,9 +1718,15 @@ pub fn v_all_attributes_with_key(
 
 pub fn v_has_attribute_with_key(vxml: VXML, key: String) -> Bool {
   let assert V(_, _, attrs, _) = vxml
-  case list.find(attrs, fn(b) { b.key == key }) {
-    Error(Nil) -> False
-    Ok(_) -> True
+  let to_return = list.any(attrs, fn(b) {b.key == key})
+  let assert True = to_return == attributes_have_key(attrs, key)
+  to_return
+}
+
+pub fn is_v_and_has_attribute_with_key(vxml: VXML, key: String) -> Bool {
+  case vxml {
+    V(_, _, _, _) -> v_has_attribute_with_key(vxml, key)
+    _ -> False
   }
 }
 
@@ -1767,6 +1773,24 @@ pub fn is_v_and_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
     T(_, _) -> False
     V(_, tag, _, _) -> list.contains(tags, tag)
   }
+}
+
+pub fn attributes_have_key(
+  attrs: List(BlamedAttribute),
+  key: String,
+) -> Bool {
+  list.any(attrs, fn(x){x.key == key})
+}
+
+pub fn attributes_have_key_with_echo(
+  attrs: List(BlamedAttribute),
+  key: String,
+) -> Bool {
+  io.println("inside!" <> ins(attrs))
+  list.any(attrs, fn(x){
+    echo key
+    {x.key == key}
+  })
 }
 
 pub fn is_v_and_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
