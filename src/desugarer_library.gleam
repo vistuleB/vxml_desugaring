@@ -51,6 +51,7 @@ import desugarers/delete_if_empty__batch
 import desugarers/delete_outside_subtrees
 import desugarers/delete_text_nodes_with_singleton_empty_line
 import desugarers/detokenize_all
+import desugarers/echo_if_see_text
 import desugarers/expand_ti3_carousel
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
@@ -199,6 +200,7 @@ pub const delete_if_empty__batch = delete_if_empty__batch.delete_if_empty__batch
 pub const delete_outside_subtrees = delete_outside_subtrees.delete_outside_subtrees
 pub const delete_text_nodes_with_singleton_empty_line = delete_text_nodes_with_singleton_empty_line.delete_text_nodes_with_singleton_empty_line
 pub const detokenize_all = detokenize_all.detokenize_all
+pub const echo_if_see_text = echo_if_see_text.echo_if_see_text
 pub const expand_ti3_carousel = expand_ti3_carousel.expand_ti3_carousel
 pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
@@ -348,6 +350,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   delete_outside_subtrees.assertive_tests,
   delete_text_nodes_with_singleton_empty_line.assertive_tests,
   detokenize_all.assertive_tests,
+  echo_if_see_text.assertive_tests,
   expand_ti3_carousel.assertive_tests,
   extract_starting_and_ending_spaces.assertive_tests,
   filter_nodes_by_attributes.assertive_tests,

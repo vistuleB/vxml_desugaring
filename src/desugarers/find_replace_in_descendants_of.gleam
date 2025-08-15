@@ -12,9 +12,9 @@ fn nodemap(
   _: List(VXML),
   _: List(VXML),
   inner: InnerParam,
-) -> Result(VXML, infra.DesugaringError) {
+) -> VXML {
   case vxml {
-    V(_, _, _, _) -> Ok(vxml)
+    V(_, _, _, _) -> vxml
     T(_, _) -> {
       list.fold(inner, vxml, fn(v, tuple) -> VXML {
         let #(ancestor, list_pairs) = tuple
@@ -23,19 +23,18 @@ fn nodemap(
           True -> infra.find_replace_in_t(vxml, list_pairs)
         }
       })
-      |> Ok
     }
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.FancyOneToOneNoErrorNodeMap {
   fn(vxml, ancestors, s1, s2, s3) {
     nodemap(vxml, ancestors, s1, s2, s3, inner)
   }
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.fancy_one_to_one_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  n2t.fancy_one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

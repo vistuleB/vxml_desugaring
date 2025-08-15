@@ -1301,6 +1301,16 @@ pub fn is_t_and_is_whitespace(
   }
 }
 
+pub fn is_t_and_text_contains(
+  vxml: VXML,
+  content: String,
+) -> Bool {
+  case vxml {
+    T(_, lines) -> lines_contain(lines, content)
+    _ -> False
+  }
+}
+
 pub fn t_total_chars(
   vxml: VXML
 ) -> Int {
