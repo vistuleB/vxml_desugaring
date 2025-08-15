@@ -7,6 +7,14 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
 const desugarer_blame = Blame("ti3_parse_python_prompt_code_block", 0, 0, [])
+const newline_t =
+  T(
+    desugarer_blame,
+    [
+      BlamedContent(desugarer_blame, ""),
+      BlamedContent(desugarer_blame, ""),
+    ]
+  )
 
 type PythonPromptChunk {
   PromptLine(BlamedContent)
@@ -96,14 +104,12 @@ fn process_python_prompt_lines(lines: List(BlamedContent)) -> List(PythonPromptC
 
 fn nodemap(
   vxml: VXML,
-  inner: InnerParam,
 ) -> VXML {
   case vxml {
     V(blame, "CodeBlock", _, [T(_, lines)]) -> {
       // check if this CodeBlock has language=python-prompt
       case infra.v_has_key_value(vxml, "language", "python-prompt") {
         True -> {
-
           // process the lines into chunks
           let chunks = process_python_prompt_lines(lines)
 
@@ -115,7 +121,7 @@ fn nodemap(
           // add newlines between chunks
           let children =
             list_list_vxmls
-            |> list.intersperse([inner])
+            |> list.intersperse([newline_t])
             |> list.flatten
 
           // create a pre element with python-prompt class
@@ -126,16 +132,15 @@ fn nodemap(
             children,
           )
         }
-
-        _ -> vxml  // not a python-prompt CodeBlock, return unchanged
+        _ -> vxml // not a python-prompt CodeBlock, return unchanged
       }
     }
-    _ -> vxml  // not a CodeBlock, return unchanged
+    _ -> vxml // not a CodeBlock, return unchanged
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
-  nodemap(_, inner)
+fn nodemap_factory(_inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
@@ -143,39 +148,34 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform
 }
 
-fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
-  T(
-    desugarer_blame,
-    [
-      BlamedContent(desugarer_blame, ""),
-      BlamedContent(desugarer_blame, ""),
-    ]
-  )
-  |> Ok
+fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
+  Ok(param)
 }
 
 const name = "ti3_parse_python_prompt_code_block"
 const constructor = ti3_parse_python_prompt_code_block
 
 type Param = Nil
-type InnerParam = VXML
+type InnerParam = Param
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// Processes CodeBlock elements with language=python-prompt
-/// and converts them to pre elements with proper span
-/// highlighting for prompts, responses, and errors
+/// Processes CodeBlock elements with 
+/// language=python-prompt and converts them to pre
+/// elements with proper span highlighting for 
+/// prompts, responses, and errors
 pub fn ti3_parse_python_prompt_code_block() -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
     "
-/// Processes CodeBlock elements with language=python-prompt
-/// and converts them to pre elements with proper span
-/// highlighting for prompts, responses, and errors
+/// Processes CodeBlock elements with 
+/// language=python-prompt and converts them to pre
+/// elements with proper span highlighting for 
+/// prompts, responses, and errors
     ",
     case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }

@@ -6,66 +6,57 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 
-const desugarer_blame = Blame("ti3_parse_orange_comment_code_block", 0, 0, [])
+const desugarer_blame = Blame("ti3_parse_orange_comment", 0, 0, [])
+const t_1_empty_line = T(desugarer_blame, [BlamedContent(desugarer_blame, "")])
+const orange = V(desugarer_blame, "span", [BlamedAttribute(desugarer_blame, "class", "orange-comment")], [])
 
-fn process_line_for_orange_comments(line: BlamedContent, acc: List(VXML)) -> List(VXML) {
+fn t_1_line(line: BlamedContent) -> VXML {
+  T(line.blame, [line])
+}
+
+fn elements_for_line(line: BlamedContent) -> List(VXML) {
   case string.split_once(line.content, "//") {
-    Error(_) -> [T(line.blame, [line]), ..acc]
-
+    Error(_) -> [t_1_line(line)]
     Ok(#(before, after)) -> {
-      let before_blame = line.blame
       let after_blame = infra.advance(line.blame, string.length(before) + 2)
-
-      // create the three elements in reverse order (since we're prepending to acc)
-      let newline_element = T(desugarer_blame, [BlamedContent(desugarer_blame, "")])
-      let orange_comment_element = V(
-        desugarer_blame,
-        "span",
-        [BlamedAttribute(desugarer_blame, "class", "orange-comment")],
-        [T(after_blame, [BlamedContent(after_blame, after)])]
-      )
-      let before_element = T(before_blame, [BlamedContent(before_blame, before)])
-
-      [newline_element, orange_comment_element, before_element, ..acc]
+      let before = t_1_line(BlamedContent(line.blame, before))
+      let orange = orange |> infra.prepend_child(t_1_line(BlamedContent(after_blame, after)))
+      [before, orange, t_1_empty_line]
     }
   }
 }
 
-fn process_orange_comment_lines(lines: List(BlamedContent)) -> List(VXML) {
+fn process_orange_comment_lines(
+  lines: List(BlamedContent),
+) -> List(VXML) {
   lines
-  |> list.fold([], fn(acc, line) { process_line_for_orange_comments(line, acc) })
+  |> list.fold([], fn(acc, line) { infra.pour(elements_for_line(line), acc)})
   |> list.reverse
   |> infra.plain_concatenation_in_list
 }
 
 fn nodemap(
   vxml: VXML,
-  _inner: InnerParam,
 ) -> VXML {
   case vxml {
     V(blame, "CodeBlock", _, [T(_, lines)]) -> {
-      // check if this CodeBlock has language=orange-comment
       case infra.v_has_key_value(vxml, "language", "orange-comment") {
-        True -> {
-          // process the lines for orange comments
-          let processed_children = process_orange_comment_lines(lines)
-
+        True ->
           V(
             blame,
             "pre",
             [],
-            processed_children,
+            process_orange_comment_lines(lines, ),
           )
-        }
-        _ -> vxml  // not an orange-comment CodeBlock, return unchanged
+        _ -> vxml
       }
     }
-    _ -> vxml  // not a CodeBlock, return unchanged
+    _ -> vxml
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
-  nodemap(_, inner)
+fn nodemap_factory(_: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap(_)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
@@ -74,21 +65,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
-  T(
-    desugarer_blame,
-    [
-      BlamedContent(desugarer_blame, ""),
-      BlamedContent(desugarer_blame, ""),
-    ]
-  )
-  |> Ok
+  Ok(Nil)
 }
 
 const name = "ti3_parse_orange_comment_code_block"
 const constructor = ti3_parse_orange_comment_code_block
 
 type Param = Nil
-type InnerParam = VXML
+type InnerParam = Nil
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
