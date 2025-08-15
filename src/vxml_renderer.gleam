@@ -35,7 +35,7 @@ pub type BlamedLinesAssemblerDebugOptions {
 pub fn default_blamed_lines_assembler(
   spotlight_paths: List(String)
 ) -> BlamedLinesAssembler(wp.AssemblyError) {
-  let spaces = string.repeat(" ", string.length("• assembling blamed lines from "))
+  let spaces = string.repeat(" ", string.length("• assembling "))
   fn (input_dir) {
     use #(directory_tree, assembled) <- result.try(wp.assemble_blamed_lines_advanced_mode(input_dir, spotlight_paths))
     let directory_tree = list.map(directory_tree, fn(line){spaces <> line}) |> list.drop(1)
@@ -568,7 +568,7 @@ pub fn run_renderer(
   io.println("• pipeline:")
   print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
 
-  io.print("• assembling blamed lines from ")
+  io.print("• assembling ")
 
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(input_dir),
