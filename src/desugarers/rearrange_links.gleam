@@ -261,7 +261,10 @@ fn maybe_prepend_end_node(
     [V(_, "__OneWord", _, _), ..] -> [end_node(blame), ..others]
     [V(_, "__OneSpace", _, _), ..] -> [end_node(blame), ..others]
     [V(_, "__OneNewLine", _, _), ..] -> [end_node(blame), ..others]
-    _ -> others
+    _ -> {
+      // vxml.echo_vxmls(others, blame.filename)
+      others
+    }
   }
 }
 
@@ -272,7 +275,7 @@ fn prefix_match_to_atomized_list(
   already_ready: List(VXML),
 ) -> List(VXML) {
   case pattern {
-    [] -> maybe_prepend_end_node(Blame("hoola", 0, 0, []), already_ready) |> list.reverse
+    [] -> maybe_prepend_end_node(Blame("hoola" <> ins(already_ready), 0, 0, []), already_ready) |> list.reverse
     [p, ..pattern_rest] -> {
       case p {
         Word(word) -> prefix_match_to_atomized_list(
@@ -309,12 +312,7 @@ fn prefix_match_to_atomized_list(
             blame,
             tag,
             attributes |> infra.append_to_class_attribute(blame, classes),
-            prefix_match_to_atomized_list(
-              vxml.blame,
-              internal_pattern,
-              match,
-              [],
-            ),
+            prefix_match_to_atomized_list(vxml.blame, internal_pattern, match, []),
           )
           prefix_match_to_atomized_list(
             default_blame,
@@ -421,8 +419,6 @@ fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
     })
   {
     True -> {
-      // io.println("atomizing " <> ins(list.length(children)) <> " list of children")
-      // vxml.debug_print_vxmls("hey", children)
       children
       |> list.map(atomize_if_t_or_a_with_single_t_child)
       |> list.flatten
@@ -551,46 +547,6 @@ fn split_variables(words: List(String)) -> List(Option(LinkPattern)) {
   })
 }
 
-fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
-  content
-  |> string.split(" ")
-  |> split_variables
-  |> list.intersperse(Some([Space]))
-  |> keep_some_remove_none_and_unwrap
-  |> list.flatten
-  |> Ok
-}
-
-fn extra_string_to_link_pattern(
-  s: String,
-) -> Result(LinkPattern, DesugaringError) {
-  case
-    xmlm.document_tree(
-      xmlm.from_string(s),
-      match_tag_and_children,
-      match_link_content,
-    )
-  {
-    Ok(#(_, pattern, _)) -> pattern
-    Error(input_error) ->
-      Error(DesugaringError(infra.blame_us(""), ins(input_error)))
-  }
-}
-
-fn make_sure_attributes_are_quoted(input: String) -> String {
-  let assert Ok(pattern) =
-    regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
-
-  regexp.match_map(pattern, input, fn(match: regexp.Match) {
-    case match.submatches {
-      [Some(key), Some(value)] -> {
-        key <> "=\"" <> value <> "\""
-      }
-      _ -> match.content
-    }
-  })
-}
-
 fn get_content_vars(
   pattern2: LinkPattern,
 ) -> List(Int) {
@@ -650,6 +606,46 @@ fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
     None -> Ok(vars)
     Some(int) -> Error(int)
   }
+}
+
+fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
+  content
+  |> string.split(" ")
+  |> split_variables
+  |> list.intersperse(Some([Space]))
+  |> keep_some_remove_none_and_unwrap
+  |> list.flatten
+  |> Ok
+}
+
+fn extra_string_to_link_pattern(
+  s: String,
+) -> Result(LinkPattern, DesugaringError) {
+  case
+    xmlm.document_tree(
+      xmlm.from_string(s),
+      match_tag_and_children,
+      match_link_content,
+    )
+  {
+    Ok(#(_, pattern, _)) -> pattern
+    Error(input_error) ->
+      Error(DesugaringError(infra.blame_us(""), ins(input_error)))
+  }
+}
+
+fn make_sure_attributes_are_quoted(input: String) -> String {
+  let assert Ok(pattern) =
+    regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
+
+  regexp.match_map(pattern, input, fn(match: regexp.Match) {
+    case match.submatches {
+      [Some(key), Some(value)] -> {
+        key <> "=\"" <> value <> "\""
+      }
+      _ -> match.content
+    }
+  })
 }
 
 fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {

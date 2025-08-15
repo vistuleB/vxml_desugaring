@@ -35,11 +35,11 @@ pub type BlamedLinesAssemblerDebugOptions {
 pub fn default_blamed_lines_assembler(
   spotlight_paths: List(String)
 ) -> BlamedLinesAssembler(wp.AssemblyError) {
-  let spaces = string.repeat(" ", string.length("• assembling blamed lines... done; from: "))
+  let spaces = string.repeat(" ", string.length("• assembling blamed lines from "))
   fn (input_dir) {
     use #(directory_tree, assembled) <- result.try(wp.assemble_blamed_lines_advanced_mode(input_dir, spotlight_paths))
     let directory_tree = list.map(directory_tree, fn(line){spaces <> line}) |> list.drop(1)
-    io.println("done; from: " <> input_dir)
+    io.println(input_dir)
     io.println(string.join(directory_tree, "\n"))
     Ok(assembled)
   }
@@ -568,7 +568,7 @@ pub fn run_renderer(
   io.println("• pipeline:")
   print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
 
-  io.print("• assembling blamed lines... ")
+  io.print("• assembling blamed lines from ")
 
   use assembled <- infra.on_error_on_ok(
     renderer.assembler(input_dir),
@@ -591,7 +591,7 @@ pub fn run_renderer(
       |> io.println
   }
 
-  io.print("• parsing blamed lines to VXML...")
+  io.print("• parsing blamed lines to VXML")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -602,7 +602,7 @@ pub fn run_renderer(
     },
   )
 
-  io.println(" done;")
+  io.println("")
 
   io.print("• starting pipeline... ")
   let t0 = timestamp.system_time()
@@ -636,7 +636,7 @@ pub fn run_renderer(
   let t1 = timestamp.system_time()
   let seconds = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
-  io.println("done (" <> ins(seconds) <> "s);")
+  io.println("...ended pipeline (" <> ins(seconds) <> "s);")
 
   case list.length(times) > 0 {
     False -> Nil
@@ -674,7 +674,7 @@ pub fn run_renderer(
     fn(fr) { #(ins(fr.classifier), prefix <> fr.path) }
   )
 
-  io.println("done; obtained " <> ins(list.length(fragments)) <> " fragments:")
+  io.println("-> obtained " <> ins(list.length(fragments)) <> " fragments:")
   star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 2)
 
   // fragments debug printing
@@ -692,14 +692,14 @@ pub fn run_renderer(
     }
   })
 
-  io.print("• converting fragments to blamed line fragments... ")
+  io.print("• converting fragments to blamed line fragments")
 
   // vxml fragments -> blamed line fragments
   let fragments =
     fragments
     |> list.map(renderer.emitter)
 
-  io.println("done;")
+  io.println("")
 
   // blamed line fragments debug printing
   fragments
@@ -720,7 +720,7 @@ pub fn run_renderer(
     }
   })
 
-  io.print("• converting blamed line fragments to string fragments... ")
+  io.print("• converting blamed line fragments to string fragments")
 
   // blamed line fragments -> string fragments
   let fragments = {
@@ -738,7 +738,7 @@ pub fn run_renderer(
     })
   }
 
-  io.println("done;")
+  io.println("")
 
   // string fragments debug printing
   fragments
@@ -761,7 +761,7 @@ pub fn run_renderer(
     }
   })
 
-  io.println("• writing string fragments to files...")
+  io.println("• writing string fragments to files")
 
   // printing string fragments (list.map to record errors)
   let fragments =
@@ -771,7 +771,7 @@ pub fn run_renderer(
       let brackets = "[" <> output_dir <> "/]"
       case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
         Ok(Nil) -> {
-          io.println("  wrote: " <> brackets <> fr.path)
+          io.println("  wrote " <> brackets <> fr.path)
           Ok(GhostOfOutputFragment(fr.path, fr.classifier))
         }
         Error(file_error) ->
@@ -784,8 +784,6 @@ pub fn run_renderer(
           ))
       }
     })
-
-  io.println("  ...done;")
 
   // running prettifier (list.map to record erros)
   case prettifier {
@@ -996,9 +994,11 @@ pub fn cli_usage() {
   io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
   io.println(margin <> "         • !x to force a printout at desugaring step x whether or")
   io.println(margin <> "           not changes in selection occur")
-  io.println(margin <> "         • leave empty to track all steps")
-  io.println(margin <> "         • use negative arguments to denote steps from end of list")
-  io.println(margin <> "           in python fashion (-1 denotes last desugaring step)")
+  io.println(margin <> "       leave empty to track all steps and use negative arguments")
+  io.println(margin <> "       to denote steps from end of list")
+  // io.println(margin <> "         • leave empty to track all steps")
+  // io.println(margin <> "         • use negative arguments to denote steps from end of list")
+  // io.println(margin <> "           in python fashion (-1 denotes last desugaring step)")
   // io.println("")
   // io.println(margin <> "     leave <step numbers> empty to track all steps")
   // io.println("")

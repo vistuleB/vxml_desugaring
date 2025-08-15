@@ -30,6 +30,9 @@ import desugarers/auto_generate_child_if_missing_from_first_descendant_of_type
 import desugarers/break_lines_into_span_tooltips
 import desugarers/change_attribute_value
 import desugarers/change_attribute_value__batch
+import desugarers/check_proper_detokenization
+import desugarers/check_proper_href_tokenization
+import desugarers/check_proper_tokenization
 import desugarers/check_tags
 import desugarers/compute_max_element_width
 import desugarers/compute_missing_images_width
@@ -52,6 +55,7 @@ import desugarers/delete_outside_subtrees
 import desugarers/delete_text_nodes_with_singleton_empty_line
 import desugarers/detokenize_all
 import desugarers/echo_if_see_text
+import desugarers/detokenize_href_surroundings
 import desugarers/expand_ti3_carousel
 import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
@@ -99,6 +103,8 @@ import desugarers/prepend_text_node__outside
 import desugarers/prepend_text_node_if_has_ancestor_else__batch
 import desugarers/rearrange_links
 import desugarers/rearrange_links__batch
+import desugarers/rearrange_links_v2
+import desugarers/rearrange_links_v3
 import desugarers/reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 import desugarers/regex_split_and_replace__batch__outside
 import desugarers/regex_split_and_replace__outside
@@ -122,7 +128,8 @@ import desugarers/ti2_carousel_component
 import desugarers/ti3_parse_orange_comment_code_block
 import desugarers/ti3_parse_python_prompt_code_block
 import desugarers/timer
-import desugarers/tokenize_text_children
+import desugarers/tokenize_href_surroundings
+import desugarers/tokenize_text_children_if
 import desugarers/trim
 import desugarers/trim__batch
 import desugarers/trim_empty_lines
@@ -179,6 +186,9 @@ pub const auto_generate_child_if_missing_from_first_descendant_of_type = auto_ge
 pub const break_lines_into_span_tooltips = break_lines_into_span_tooltips.break_lines_into_span_tooltips
 pub const change_attribute_value = change_attribute_value.change_attribute_value
 pub const change_attribute_value__batch = change_attribute_value__batch.change_attribute_value__batch
+pub const check_proper_detokenization = check_proper_detokenization.check_proper_detokenization
+pub const check_proper_href_tokenization = check_proper_href_tokenization.check_proper_href_tokenization
+pub const check_proper_tokenization = check_proper_tokenization.check_proper_tokenization
 pub const check_tags = check_tags.check_tags
 pub const compute_max_element_width = compute_max_element_width.compute_max_element_width
 pub const compute_missing_images_width = compute_missing_images_width.compute_missing_images_width
@@ -201,6 +211,7 @@ pub const delete_outside_subtrees = delete_outside_subtrees.delete_outside_subtr
 pub const delete_text_nodes_with_singleton_empty_line = delete_text_nodes_with_singleton_empty_line.delete_text_nodes_with_singleton_empty_line
 pub const detokenize_all = detokenize_all.detokenize_all
 pub const echo_if_see_text = echo_if_see_text.echo_if_see_text
+pub const detokenize_href_surroundings = detokenize_href_surroundings.detokenize_href_surroundings
 pub const expand_ti3_carousel = expand_ti3_carousel.expand_ti3_carousel
 pub const extract_starting_and_ending_spaces = extract_starting_and_ending_spaces.extract_starting_and_ending_spaces
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.filter_nodes_by_attributes
@@ -248,6 +259,8 @@ pub const prepend_text_node__outside = prepend_text_node__outside.prepend_text_n
 pub const prepend_text_node_if_has_ancestor_else__batch = prepend_text_node_if_has_ancestor_else__batch.prepend_text_node_if_has_ancestor_else__batch
 pub const rearrange_links = rearrange_links.rearrange_links
 pub const rearrange_links__batch = rearrange_links__batch.rearrange_links__batch
+pub const rearrange_links_v2 = rearrange_links_v2.rearrange_links_v2
+pub const rearrange_links_v3 = rearrange_links_v3.rearrange_links_v3
 pub const reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 pub const regex_split_and_replace__batch__outside = regex_split_and_replace__batch__outside.regex_split_and_replace__batch__outside
 pub const regex_split_and_replace__outside = regex_split_and_replace__outside.regex_split_and_replace__outside
@@ -271,7 +284,8 @@ pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
 pub const ti3_parse_orange_comment_code_block = ti3_parse_orange_comment_code_block.ti3_parse_orange_comment_code_block
 pub const ti3_parse_python_prompt_code_block = ti3_parse_python_prompt_code_block.ti3_parse_python_prompt_code_block
 pub const timer = timer.timer
-pub const tokenize_text_children = tokenize_text_children.tokenize_text_children
+pub const tokenize_href_surroundings = tokenize_href_surroundings.tokenize_href_surroundings
+pub const tokenize_text_children_if = tokenize_text_children_if.tokenize_text_children_if
 pub const trim = trim.trim
 pub const trim__batch = trim__batch.trim__batch
 pub const trim_empty_lines = trim_empty_lines.trim_empty_lines
@@ -329,6 +343,9 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   break_lines_into_span_tooltips.assertive_tests,
   change_attribute_value.assertive_tests,
   change_attribute_value__batch.assertive_tests,
+  check_proper_detokenization.assertive_tests,
+  check_proper_href_tokenization.assertive_tests,
+  check_proper_tokenization.assertive_tests,
   check_tags.assertive_tests,
   compute_max_element_width.assertive_tests,
   compute_missing_images_width.assertive_tests,
@@ -351,6 +368,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   delete_text_nodes_with_singleton_empty_line.assertive_tests,
   detokenize_all.assertive_tests,
   echo_if_see_text.assertive_tests,
+  detokenize_href_surroundings.assertive_tests,
   expand_ti3_carousel.assertive_tests,
   extract_starting_and_ending_spaces.assertive_tests,
   filter_nodes_by_attributes.assertive_tests,
@@ -398,6 +416,8 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   prepend_text_node_if_has_ancestor_else__batch.assertive_tests,
   rearrange_links.assertive_tests,
   rearrange_links__batch.assertive_tests,
+  rearrange_links_v2.assertive_tests,
+  rearrange_links_v3.assertive_tests,
   reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node.assertive_tests,
   regex_split_and_replace__batch__outside.assertive_tests,
   regex_split_and_replace__outside.assertive_tests,
@@ -421,7 +441,8 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   ti3_parse_orange_comment_code_block.assertive_tests,
   ti3_parse_python_prompt_code_block.assertive_tests,
   timer.assertive_tests,
-  tokenize_text_children.assertive_tests,
+  tokenize_href_surroundings.assertive_tests,
+  tokenize_text_children_if.assertive_tests,
   trim.assertive_tests,
   trim__batch.assertive_tests,
   trim_empty_lines.assertive_tests,

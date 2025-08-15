@@ -15,9 +15,7 @@ fn nodemap(
       V(
         blame,
         tag,
-        list.filter(attributes, fn(blamed_attribute) {
-          blamed_attribute.key != inner
-        }),
+        list.filter(attributes, fn(blamed_attribute) {blamed_attribute.key != inner}),
         children,
       )
     }
