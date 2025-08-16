@@ -1,4 +1,3 @@
-import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
@@ -8,57 +7,40 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
+import blamedlines.{type Blame, Blame}
+import vxml.{type VXML, T, V, BlamedAttribute, BlamedContent}
 import xmlm
 
-type LinkPatternToken {
-  Word(String)    // (does not contain whitespace)
+const desugarer_blame = Blame("rearrange_links", 0, 0, [])
+
+type PatternToken {
+  EndT
+  StartT
   Space
+  Word(String)    // (does not contain whitespace)
   ContentVar(Int)
   A(
-    String,       // tag name ( for now it's either a or InChapterLink )
-    String,       // classes
-    Int,          // href variable
-    LinkPattern,  // the List(LinkPatternToken) inside of the a-tag
+    tag: String,
+    classes: String,
+    href: Int,
+    children: LinkPattern,
   )
 }
 
 type LinkPattern =
-  List(LinkPatternToken)
+  List(PatternToken)
 
-type PrefixMatchOnAtomizedList {
-  PrefixMatchOnAtomizedList(
-    left_unmatched: Int,
+type MatchData {
+  MatchData(
     href_var_dict: Dict(Int, VXML),
     content_var_dict: Dict(Int, List(VXML)),
   )
 }
 
-fn word_to_node(blame: Blame, word: String) {
-  V(
-    blame,
-    "__OneWord",
-    [BlamedAttribute(infra.blame_us("..."), "val", word)],
-    [],
-  )
-}
-
-fn space_node(blame: Blame) {
-  V(blame, "__OneSpace", [], [])
-}
-
-fn line_node(blame: Blame) {
-  V(blame, "__OneNewLine", [], [])
-}
-
-fn end_node(blame: Blame) {
-  V(blame, "__EndAtomizedT", [], [])
-}
-
-fn deatomize_vxmls(
+fn detokenize_maybe(
   children: List(VXML),
   accumulated_contents: List(vxml.BlamedContent),
-  accumulated_nodes: List(VXML)
+  accumulated_nodes: List(VXML),
 ) -> List(VXML) {
   let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.BlamedContent) {
     case accumulated_contents {
@@ -69,66 +51,118 @@ fn deatomize_vxmls(
 
   case children {
     [] -> {
-      let assert True = list.is_empty(accumulated_contents)
+      let assert [] = accumulated_contents
       accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
     }
 
     [first, ..rest] -> {
       case first {
+        V(blame, "__StartTokenizedT", _, _) -> {
+          let assert [] = accumulated_contents
+          let accumulated_contents = [BlamedContent(blame, "")]
+          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
+        }
+        
         V(blame, "__OneWord", attributes, _) -> {
+          let assert [_, ..] = accumulated_contents
           let assert [BlamedAttribute(_, "val", word)] = attributes
           let accumulated_contents = append_word_to_accumlated_contents(blame, word)
-          deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
+          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
         }
 
         V(blame, "__OneSpace", _, _) -> {
+          let assert [_, ..] = accumulated_contents
           let accumulated_contents = append_word_to_accumlated_contents(blame, " ")
-          deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
+          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
         }
 
         V(blame, "__OneNewLine", _, _) -> {
-          let accumulated_contents = case accumulated_contents {
-            [] -> [BlamedContent(blame, ""), BlamedContent(blame, "")]
-            _ -> [BlamedContent(blame, ""), ..accumulated_contents]
-          }
-          deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
+          let assert [_, ..] = accumulated_contents
+          let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
+          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
         }
 
-        V(blame, "__EndAtomizedT", _, _) ->
-          deatomize_vxmls(rest, [],
-          case accumulated_contents {
-            [] -> {
-              // this has been known to happen when the source
-              // contains (or starts with?) an empty
-              // <>
-              //    ""
-              // -type node
-              // (and this case should probably just return [] ?)
-              // let msg = blamedlines.blame_digest(blame) <> " __EndAtomizedT not following text nodes"
-              // panic as msg
-              [T(blame, [BlamedContent(blame, "")]), ..accumulated_nodes]
+        V(blame, "__EndTokenizedT", _, _) -> {
+          let assert [_, ..] = accumulated_contents
+          let accumulated_contents = append_word_to_accumlated_contents(blame, "")
+          detokenize_maybe(rest, [], [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes])
+        }
+
+        T(_, _) -> {
+          let assert [] = accumulated_contents
+          panic as "how did T not become tokenized"
+        }
+
+        V(_, _, _, children) -> {
+          case infra.v_has_attribute_with_key(first, "href") {
+            True -> {
+              let children = detokenize_maybe(children, [], [])
+              detokenize_maybe(rest, [], [V(..first, children: children), ..accumulated_nodes])
             }
-            _ -> [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes]
-        })
+            False -> detokenize_maybe(rest, [], [first, ..accumulated_nodes])
+          }
+        }
+      }
+    }
+  }
+}
 
-        V(b, "a", a, children) | V(b, "InChapterLink", a, children) -> {
+fn generate_replacement_vxml_internal(
+  already_ready: List(VXML),
+  pattern: List(PatternToken),
+  match_data: MatchData,
+) -> List(VXML) {
+  case pattern {
+    [] -> already_ready |> list.reverse
+    [p, ..pattern_rest] -> {
+      case p {
+        StartT -> generate_replacement_vxml_internal(
+          [start_node(desugarer_blame), ..already_ready],
+          pattern_rest,
+          match_data,
+        )
 
-          let assert True = list.is_empty(accumulated_contents)
-          let V(_, ze_tag, _, _) = first
-          let updated_children = deatomize_vxmls(children, [], [])
-          let a = list.filter(a, fn(x){x.key != "class" || x.value != ""})
+        EndT -> generate_replacement_vxml_internal(
+          [end_node(desugarer_blame), ..already_ready],
+          pattern_rest,
+          match_data,
+        )
 
-          deatomize_vxmls(rest, [], [V(b, ze_tag, a, updated_children), ..accumulated_nodes])
+        Space -> generate_replacement_vxml_internal(
+          [space_node(desugarer_blame), ..already_ready],
+          pattern_rest,
+          match_data,
+        )
+
+        Word(word) -> generate_replacement_vxml_internal(
+          [word_node(desugarer_blame, word), ..already_ready],
+          pattern_rest,
+          match_data,
+        )
+
+        ContentVar(z) -> {
+          let assert Ok(z_vxmls) = dict.get(match_data.content_var_dict, z)
+          generate_replacement_vxml_internal(
+            infra.pour(z_vxmls, already_ready),
+            pattern_rest,
+            match_data,
+          )
         }
 
-        V(_, _, _, _) -> {
-          let assert True = list.is_empty(accumulated_contents)
-          deatomize_vxmls(rest, [], [first, ..accumulated_nodes])
-        }
-
-        _ -> {
-          list.each(children, vxml.echo_vxml(_, "a child"))
-          panic as "should not happen"
+        A(_, classes, href_int, internal_pattern) -> {
+          let assert Ok(vxml) = dict.get(match_data.href_var_dict, href_int)
+          let assert V(blame, tag, attributes, _) = vxml
+          let a_node = V(
+            blame,
+            tag,
+            attributes |> infra.append_to_class_attribute(blame, classes),
+            generate_replacement_vxml_internal([], internal_pattern, match_data),
+          )
+          generate_replacement_vxml_internal(
+            [a_node, ..already_ready],
+            pattern_rest,
+            match_data,
+          )
         }
       }
     }
@@ -138,230 +172,168 @@ fn deatomize_vxmls(
 fn fast_forward_past_spaces(
   atomized: List(VXML),
 ) -> List(VXML) {
-  list.drop_while(atomized, infra.tag_is_one_of(_, ["__OneSpace", "__OneNewLine", "__EndAtomizedT"]))
+  list.drop_while(atomized, infra.tag_is_one_of(_, ["__OneSpace", "__OneNewLine"]))
 }
 
-fn fast_forward_past_end_t(
-  atomized: List(VXML),
-) -> List(VXML) {
-  list.drop_while(atomized, infra.tag_equals(_, "__EndAtomizedT"))
+fn insert_new_content_key_val_into_match_data(
+  match_data: MatchData,
+  key: Int,
+  val: List(VXML),
+) -> MatchData {
+  let c = match_data.content_var_dict
+  let assert Error(Nil) = dict.get(c, key)
+  let c = dict.insert(c, key, val)
+  MatchData(..match_data, content_var_dict: c)
+}
+
+fn insert_new_href_key_val_into_match_data(
+  match_data: MatchData,
+  key: Int,
+  val: VXML,
+) -> MatchData {
+  let c = match_data.href_var_dict
+  let assert Error(Nil) = dict.get(c, key)
+  let c = dict.insert(c, key, val)
+  MatchData(..match_data, href_var_dict: c)
+}
+
+fn is_inner_text_token(
+  vxml: VXML
+) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    V(_, "__OneWord", _, _) -> True
+    V(_, "__OneSpace", _, _) -> True
+    V(_, "__OneNewLine", _, _) -> True
+    _ -> False
+  }
+}
+
+fn vxmls_dont_start_or_end_inside_text_mode(
+  vxmls: List(VXML),
+) -> Bool {
+  case vxmls {
+    [] -> True
+    [first, ..] -> {
+      let assert Ok(last) = list.last(vxmls)
+      !{
+        is_inner_text_token(first)
+        || is_inner_text_token(last)
+        || infra.is_v_and_tag_equals(first, "__EndT")
+        || infra.is_v_and_tag_equals(last, "__StartT")
+      }
+    }
+  }
 }
 
 fn match_internal(
   atomized: List(VXML),
   pattern: LinkPattern,
-  href_dict_so_far: Dict(Int, VXML),
-  content_var_dict_so_far: Dict(Int, List(VXML)),
-) -> Option(PrefixMatchOnAtomizedList) {
-  let atomized = fast_forward_past_end_t(atomized)
-
+  match_data: MatchData,
+) -> Option(#(MatchData, List(VXML))) {
   case pattern {
-    [] -> Some(PrefixMatchOnAtomizedList(
-      left_unmatched: atomized |> list.length,
-      href_var_dict: href_dict_so_far,
-      content_var_dict: content_var_dict_so_far,
-    ))
-
-    [ContentVar(z), ..pattern_rest] -> {
-      let assert True = list.is_empty(pattern_rest)
-      let assert Error(Nil) = dict.get(content_var_dict_so_far, z)
-      let content_var_dict_so_far = dict.insert(
-        content_var_dict_so_far,
-        z,
-        atomized |> list.take(list.length(atomized) - 1) // we're dropping the last __EndAtomizedT, that will be re-created by replace function (L261)
-      )
-
-      Some(PrefixMatchOnAtomizedList(
-        left_unmatched: 0,
-        href_var_dict: href_dict_so_far,
-        content_var_dict: content_var_dict_so_far
-      ))
+    [] -> {
+      Some(#(match_data, atomized))
     }
 
-    [Word(word), ..pattern_rest] ->
+    [EndT, ..pattern_rest] -> {
+      case atomized {
+        [V(_, "__EndTokenizedT", _, _), ..atomized_rest] ->
+          match_internal(atomized_rest, pattern_rest, match_data)
+        _ -> None
+      }
+    }
+
+    [StartT, ..pattern_rest] -> {
+      case atomized {
+        [V(_, "__StartTokenizedT", _, _), ..atomized_rest] ->
+          match_internal(atomized_rest, pattern_rest, match_data)
+        _ -> None
+      }
+    }
+
+    [ContentVar(content_int), ..pattern_rest] -> {
+      let assert [] = pattern_rest
+      let assert True = vxmls_dont_start_or_end_inside_text_mode(atomized)
+      let match_data = insert_new_content_key_val_into_match_data(match_data, content_int, atomized)
+      match_internal([], pattern_rest, match_data)
+    }
+
+    [Word(word), ..pattern_rest] -> {
       case atomized {
         [V(_, "__OneWord", _, _) as v, ..atomized_rest] -> {
           let assert Some(attr) = infra.v_attribute_with_key(v, "val")
           case attr.value == word {
-            True -> match_internal(
-              atomized_rest,
-              pattern_rest,
-              href_dict_so_far,
-              content_var_dict_so_far,
-            )
+            True -> match_internal(atomized_rest, pattern_rest, match_data)
             False -> None
           }
         }
         _ -> None
       }
+    }
 
-    [Space, ..pattern_rest] -> case atomized {
-      [V(_, tag, _, _), ..atomized_rest] if tag == "__OneSpace" || tag == "__OneNewLine" -> {
-        match_internal(
-          atomized_rest |> fast_forward_past_spaces,
-          pattern_rest,
-          href_dict_so_far,
-          content_var_dict_so_far,
-        )
-      }
-      _ -> {
-        None
+    [Space, ..pattern_rest] -> {
+      case atomized {
+        [V(_, tag, _, _), ..atomized_rest] if tag == "__OneSpace" || tag == "__OneNewLine" ->
+          match_internal(atomized_rest |> fast_forward_past_spaces, pattern_rest, match_data)
+        _ -> None
       }
     }
 
-    [A(_, _, href_int, internal_tokens,), ..pattern_rest] -> case atomized {
-      [V(_, tag, _, children) as v, ..atomized_rest] if tag == "a" || tag == "InChapterLink" -> {
-        let href_dict_so_far = dict.insert(href_dict_so_far, href_int, v)
-        case match_internal(
-          children,
-          internal_tokens,
-          href_dict_so_far,
-          content_var_dict_so_far,
-        ) {
-          None -> None
-          Some(PrefixMatchOnAtomizedList(left_unmatched, href_dict_so_far, content_var_dict_so_far)) -> {
-            case left_unmatched > 0 {
-              True -> None
-              False -> match_internal(
-                atomized_rest,
-                pattern_rest,
-                href_dict_so_far,
-                content_var_dict_so_far,
-              )
+    [A(_, _, href_int, pattern_internal), ..pattern_rest] -> {
+      case atomized {
+        [V(_, _, _, children) as v, ..atomized_rest] -> case infra.v_has_attribute_with_key(v, "href") {
+          True -> {
+            let match_data = insert_new_href_key_val_into_match_data(match_data, href_int, v)
+            case match_internal(children, pattern_internal, match_data) {
+              // children must match in their entirety:
+              Some(#(match_data, [])) -> match_internal(atomized_rest, pattern_rest, match_data)
+              _ -> None
             }
           }
+          False -> None
         }
-      }
-
-      _ -> None
-    }
-  }
-}
-
-fn match(
-  atomized: List(VXML),
-  pattern: LinkPattern,
-) -> Option(PrefixMatchOnAtomizedList) {
-  case atomized {
-    [V(_, "__EndAtomizedT", _, _)] -> None // so that we can 'fast_forward_past_end_t' at start of match_internal (and only ff past "our" __EndTs)
-    _ -> match_internal(
-      atomized,
-      pattern,
-      dict.new(),
-      dict.new(),
-    )
-  }
-}
-
-fn maybe_prepend_end_node(
-  blame: Blame,
-  others: List(VXML),
-) -> List(VXML) {
-  case others {
-    [V(_, "__OneWord", _, _), ..] -> [end_node(blame), ..others]
-    [V(_, "__OneSpace", _, _), ..] -> [end_node(blame), ..others]
-    [V(_, "__OneNewLine", _, _), ..] -> [end_node(blame), ..others]
-    _ -> {
-      // vxml.echo_vxmls(others, blame.filename)
-      others
-    }
-  }
-}
-
-fn prefix_match_to_atomized_list(
-  default_blame: Blame,
-  pattern: List(LinkPatternToken),
-  match: PrefixMatchOnAtomizedList,
-  already_ready: List(VXML),
-) -> List(VXML) {
-  case pattern {
-    [] -> maybe_prepend_end_node(Blame("hoola" <> ins(already_ready), 0, 0, []), already_ready) |> list.reverse
-    [p, ..pattern_rest] -> {
-      case p {
-        Word(word) -> prefix_match_to_atomized_list(
-          default_blame,
-          pattern_rest,
-          match,
-          [word_to_node(default_blame, word), ..already_ready],
-        )
-
-        Space -> prefix_match_to_atomized_list(
-          default_blame,
-          pattern_rest,
-          match,
-          [space_node(default_blame), ..already_ready],
-        )
-
-        ContentVar(z) -> {
-          let assert Ok(z_vxmls) = dict.get(match.content_var_dict, z)
-          prefix_match_to_atomized_list(
-            default_blame,
-            pattern_rest,
-            match,
-            [
-              z_vxmls |> list.reverse,
-              already_ready,
-            ] |> list.flatten,
-          )
-        }
-
-        A(_, classes, href_int, internal_pattern) -> {
-          let assert Ok(vxml) = dict.get(match.href_var_dict, href_int)
-          let assert V(blame, tag, attributes, _) = vxml
-          let a_node = V(
-            blame,
-            tag,
-            attributes |> infra.append_to_class_attribute(blame, classes),
-            prefix_match_to_atomized_list(vxml.blame, internal_pattern, match, []),
-          )
-          prefix_match_to_atomized_list(
-            default_blame,
-            pattern_rest,
-            match,
-            [a_node, ..maybe_prepend_end_node(Blame("goopie", 0, 0, []), already_ready)],
-          )
-        }
+        _ -> None
       }
     }
   }
 }
 
-fn replace(
-  atomized: List(VXML),
+fn match(atomized: List(VXML), pattern: LinkPattern) -> Option(#(MatchData, List(VXML))) {
+  match_internal(atomized, pattern, MatchData(dict.new(), dict.new()))
+}
+
+fn generate_replacement_vxml(
   pattern: LinkPattern,
-  match: PrefixMatchOnAtomizedList,
+  match_data: MatchData,
 ) -> List(VXML) {
-  let to_be_dropped = list.length(atomized) - match.left_unmatched
-  let assert True = 0 <= to_be_dropped && to_be_dropped <= list.length(atomized)
-  let assert Ok(V(first_blame, _, _, _)) = list.first(atomized)
-  let tail = list.drop(atomized, to_be_dropped)
-  let head = prefix_match_to_atomized_list(first_blame, pattern, match, [])
-  [head, tail] |> list.flatten
+  generate_replacement_vxml_internal([], pattern, match_data)
 }
 
 fn match_until_end_internal(
+  already_done: List(VXML),
   atomized: List(VXML),
   pattern1: LinkPattern,
   pattern2: LinkPattern,
-  already_done: List(VXML),
 ) -> List(VXML) {
   case atomized {
     [] -> already_done |> list.reverse
+
     [first, ..rest] -> case match(atomized, pattern1) {
       None -> match_until_end_internal(
+        [first, ..already_done],
         rest,
         pattern1,
         pattern2,
-        [first, ..already_done],
       )
 
-      Some(match) -> {
-        let assert [first, ..rest] = replace(atomized, pattern2, match)
+      Some(#(match_data, rest)) -> {
+        let replacement = generate_replacement_vxml(pattern2, match_data)
         match_until_end_internal(
+          infra.pour(replacement, already_done),
           rest,
           pattern1,
           pattern2,
-          [first, ..maybe_prepend_end_node(Blame("yoyo", 0, 0, []), already_done)],
         )
       }
     }
@@ -370,83 +342,299 @@ fn match_until_end_internal(
 
 fn match_until_end(
   atomized: List(VXML),
-  inner: InnerParam,
+  pattern1: LinkPattern,
+  pattern2: LinkPattern,
 ) -> List(VXML) {
-  match_until_end_internal(atomized, inner.0, inner.1, [])
+  match_until_end_internal([], atomized, pattern1, pattern2)
 }
 
-fn atomize_text_node(vxml: VXML) -> List(VXML) {
+fn start_node(blame: Blame) {
+  V(blame, "__StartTokenizedT", [], [])
+}
+
+fn word_node(blame: Blame, word: String) {
+  V(blame, "__OneWord", [BlamedAttribute(infra.no_blame, "val", word)], [])
+}
+
+fn space_node(blame: Blame) {
+  V(blame, "__OneSpace", [], [])
+}
+
+fn newline_node(blame: Blame) {
+  V(blame, "__OneNewLine", [], [])
+}
+
+fn end_node(blame: Blame) {
+  V(blame, "__EndTokenizedT", [], [])
+}
+
+fn tokenize_string_acc(
+  past_tokens: List(VXML),
+  current_blame: Blame,
+  leftover: String,
+) -> List(VXML) {
+  case string.split_once(leftover, " ") {
+    Ok(#("", after)) -> tokenize_string_acc(
+      [space_node(current_blame), ..past_tokens],
+      infra.advance(current_blame, 1),
+      after,
+    )
+    Ok(#(before, after)) -> tokenize_string_acc(
+      [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
+      infra.advance(current_blame, string.length(before) + 1),
+      after,
+    )
+    Error(Nil) -> case leftover == "" {
+      True -> past_tokens |> list.reverse
+      False -> [word_node(current_blame, leftover), ..past_tokens] |> list.reverse
+    }
+  }
+}
+
+fn tokenize_t(vxml: VXML) -> List(VXML) {
   let assert T(blame, blamed_contents) = vxml
   blamed_contents
-  |> list.map(fn(blamed_content) {
-    blamed_content.content
-    |> string.split(" ")
-    |> list.map(fn(word) { word_to_node(blamed_content.blame, word) })
-    |> list.intersperse(space_node(blamed_content.blame))
-    |> list.filter(fn(node) {
-      case node {
-        V(_, "__OneWord", attr, _) -> {
-          let assert [BlamedAttribute(_, "val", word)] = attr
-          !{ word |> string.is_empty }
-        }
-        _ -> True
-      }
+  |> list.index_map(fn(blamed_content, i) {
+    tokenize_string_acc(
+      [],
+      blamed_content.blame,
+      blamed_content.content,
+    )
+    |> list.prepend(case i == 0 {
+      True -> start_node(blamed_content.blame)
+      False -> newline_node(blamed_content.blame)
     })
   })
-  |> list.intersperse([line_node(blame)])
   |> list.flatten
   |> list.append([end_node(blame)])
 }
 
-fn atomize_if_t_or_a_with_single_t_child(vxml: VXML) -> List(VXML) {
+fn tokenize_if_t_or_href_tag_with_single_t_child(vxml: VXML) -> List(VXML) {
   case vxml {
-    V(blame, "a", attributes, [T(_, _) as t]) -> {
-      [V(blame, "a", attributes, atomize_text_node(t))]
+    T(_, _) -> tokenize_t(vxml)
+    V(_, _, _, [T(_, _) as t]) -> case infra.v_has_attribute_with_key(vxml, "href") {
+      False -> [vxml]
+      True -> [V(..vxml, children: tokenize_t(t))]
     }
-    V(blame, "InChapterLink", attributes, [T(_, _) as t]) -> {
-      [V(blame, "InChapterLink", attributes, atomize_text_node(t))]
-    }
-    V(_, _, _, _) -> [vxml]
-    T(_, _) -> atomize_text_node(vxml)
+    _ -> [vxml]
   }
 }
 
-fn atomize_maybe(children: List(VXML)) -> Result(List(VXML), Nil) {
-  case
-    list.any(children, fn(v) {
-      infra.is_v_and_tag_equals(v, "a")
-      || infra.is_v_and_tag_equals(v, "InChapterLink")
-    })
-  {
+fn tokenize_maybe(children: List(VXML)) -> Option(List(VXML)) {
+  case list.any(children, infra.is_v_and_has_attribute_with_key(_, "href")) {
     True -> {
       children
-      |> list.map(atomize_if_t_or_a_with_single_t_child)
+      |> list.map(tokenize_if_t_or_href_tag_with_single_t_child)
       |> list.flatten
-      |> Ok
+      |> Some
     }
-    False -> Error(Nil)
+    False -> None
   }
 }
 
-fn is_variable(token: String) -> Option(Int) {
-  let length = string.length(token)
-  let start = string.slice(token, 0, 1)
-  let mid = token |> string.drop_start(1) |> string.drop_end(1)
-  let end = string.slice(token, length - 1, length)
-  case start == "_", end == "_", int.parse(mid) {
-    True, True, Ok(x) -> Some(x)
-    _, _, _ -> None
+// fn echo_pattern(
+//   tokens: LinkPattern,
+//   banner: String,
+// ) -> Nil {
+//   io.println("")
+//   io.println(banner <> ":")
+//   list.each(
+//     tokens,
+//     fn(t){io.println("  " <> ins(t))}
+//   )
+//   Nil
+// }
+
+fn nodemap(
+  vxml: VXML,
+  inner: InnerParam,
+) -> VXML {
+  case vxml {
+    V(_, _, _, children) -> {
+      use atomized <- infra.on_none_on_some(
+        tokenize_maybe(children),
+        vxml,
+      )
+      
+      let atomized =
+        atomized
+        |> match_until_end(inner.0, inner.1)
+        |> detokenize_maybe([], [])
+      
+      V(..vxml, children: atomized)
+    }
+    _ -> vxml
   }
 }
 
-fn keep_some_remove_none_and_unwrap(l: List(Option(a))) -> List(a) {
-  l
-  |> list.filter_map(fn(x) {
-    case x {
-      Some(x) -> Ok(x)
-      None -> Error(Nil)
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
+  nodemap(_, inner)
+}
+
+fn transform_factory(inner: InnerParam) -> DesugarerTransform {
+  n2t.one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
+}
+
+type PatternTokenClassification {
+  TextPatternToken
+  NonTextPatternToken
+  StartTToken
+  EndTToken
+}
+
+type PatternTokenTransition {
+  TextToNonText
+  NonTextToText
+  NoTransition
+}
+
+fn classify_pattern_token(token: PatternToken) -> PatternTokenClassification {
+  case token {
+    Space | Word(_) -> TextPatternToken
+    ContentVar(_) | A(_, _, _, _) -> NonTextPatternToken
+    StartT -> StartTToken
+    EndT -> EndTToken
+  }
+}
+
+fn first_token_classification(pattern: LinkPattern) -> PatternTokenClassification {
+  let assert [first, ..] = pattern
+  classify_pattern_token(first)
+}
+
+fn last_token_classification(pattern: LinkPattern) -> PatternTokenClassification {
+  let assert Ok(last) = list.last(pattern)
+  classify_pattern_token(last)
+}
+
+fn first_and_last_classifications(pattern: LinkPattern) -> #(PatternTokenClassification, PatternTokenClassification) {
+  #(first_token_classification(pattern), last_token_classification(pattern))
+}
+
+fn check_pattern_token_text_non_text_consistency(
+  tokens: LinkPattern,
+)  -> LinkPattern {
+  tokens
+  |> list.fold(
+    None,
+    fn (acc, token) {
+      // first check children of the token, while simulating "must start
+      // in non-text mode, must end in non-text mode" for the children:
+      let _ = case token {
+        A(_, _, _, children) -> {
+          check_pattern_token_text_non_text_consistency(list.append([EndT, ..children], [StartT]))
+        }
+        _ -> []
+      }
+      // ...now compare previous & this token transition:
+      let next_classification = classify_pattern_token(token)
+      case acc {
+        None -> Some(next_classification)
+        Some(prev_classification) -> {
+          case prev_classification, next_classification {
+            TextPatternToken, NonTextPatternToken -> panic as "text went straight to non-text"
+            TextPatternToken, StartTToken -> panic as "text followed by start"
+            NonTextPatternToken, TextPatternToken -> panic as "non-text went straight to text"
+            NonTextPatternToken, EndTToken -> panic as "non-text followed by end"
+            StartTToken, NonTextPatternToken -> panic as "start not followed by end or text"
+            StartTToken, StartTToken -> panic as "start followed by start"
+            EndTToken, TextPatternToken -> panic as "end not followed by start or non-text"
+            EndTToken, EndTToken -> panic as "end followed by end"
+            _, _ -> Some(next_classification)
+          }
+        }
+      }
     }
-  })
+  )
+  tokens
+}
+
+fn transition_kind(from: PatternToken, to: PatternToken) -> PatternTokenTransition {
+  case classify_pattern_token(from), classify_pattern_token(to) {
+    TextPatternToken, NonTextPatternToken -> TextToNonText
+    NonTextPatternToken, TextPatternToken -> NonTextToText
+    TextPatternToken, TextPatternToken -> NoTransition
+    NonTextPatternToken, NonTextPatternToken -> NoTransition
+    _, _ -> panic as "not expecting StartT or EndT tokens in this function"
+  }
+}
+
+fn insert_start_t_end_t_into_link_pattern(
+  pattern_tokens: LinkPattern
+) -> LinkPattern {
+  list.fold(
+    pattern_tokens,
+    [],
+    fn(acc, token) {
+      let token = case token {
+        A(_, _, _, children) -> {
+          let children = insert_start_t_end_t_into_link_pattern(children)
+          let children = case first_and_last_classifications(children) {
+            #(TextPatternToken, TextPatternToken) -> list.append([StartT, ..children], [EndT])
+            #(NonTextPatternToken, TextPatternToken) -> list.append(children, [EndT])
+            #(TextPatternToken, NonTextPatternToken) -> [StartT, ..children]
+            #(NonTextPatternToken, NonTextPatternToken) -> children
+            #(_, _) -> panic as "not expecting StartT or EndT tokens in insert_start_t_end_t_into_link_pattern"
+          }
+          A(..token, children: children)
+        }
+        _ -> token
+      }
+      case acc {
+        [] -> [token]
+        [last, ..] -> case transition_kind(last, token) {
+          TextToNonText -> [token, EndT, ..acc]
+          NonTextToText -> [token, StartT, ..acc]
+          NoTransition -> [token, ..acc]
+        }
+      }
+    }
+  )
+  |> list.reverse
+}
+
+fn make_target_pattern_substitutable_for_source_pattern(
+  source: LinkPattern,
+  target: LinkPattern,
+) -> LinkPattern {
+  let #(source_first, source_last) = first_and_last_classifications(source)
+  let #(target_first, target_last) = first_and_last_classifications(target)
+  let target = case source_first, target_first {
+    TextPatternToken, NonTextPatternToken -> [EndT, ..target]
+    NonTextPatternToken, TextPatternToken -> [StartT, ..target]
+    TextPatternToken, TextPatternToken -> target
+    NonTextPatternToken, NonTextPatternToken -> target
+    _, _ -> panic as "expecting Text/NonText tokens at start of source & target patterns"
+  }
+  let target = case source_last, target_last {
+    TextPatternToken, NonTextPatternToken -> list.append(target, [StartT])
+    NonTextPatternToken, TextPatternToken -> list.append(target, [EndT])
+    TextPatternToken, TextPatternToken -> target
+    NonTextPatternToken, NonTextPatternToken -> target
+    _, _ -> panic as "expecting Text/NonText tokens at end of source & target patterns"
+  }
+  target
+}
+
+fn check_target_pattern_substitutable_for_source_pattern(
+  source: LinkPattern,
+  target: LinkPattern,
+) -> Nil {
+  check_pattern_token_text_non_text_consistency(source)
+  check_pattern_token_text_non_text_consistency(target)
+  let #(source_first, source_last) = first_and_last_classifications(source)
+  let #(target_first, target_last) = first_and_last_classifications(target)
+  case source_first {
+    TextPatternToken -> { let assert True = target_first == TextPatternToken || target_first == EndTToken }
+    NonTextPatternToken -> { let assert True = target_first == NonTextPatternToken || target_first == StartTToken }
+    _ -> panic as "expecting Text/NonText token at start of source pattern"
+  }
+  case source_last {
+    TextPatternToken -> { let assert True = target_last == TextPatternToken || target_last == StartTToken }
+    NonTextPatternToken -> { let assert True = target_last == NonTextPatternToken || target_last == EndTToken }
+    _ -> panic as "expecting Text/NonText token at end of source pattern"
+  }
+  Nil
 }
 
 fn xmlm_tag_name(t: xmlm.Tag) -> String {
@@ -461,48 +649,92 @@ fn xmlm_attribute_equals(t: xmlm.Attribute, name: String) -> Bool {
   }
 }
 
-fn match_tag_and_children(
+fn pseudoword_to_pattern_tokens(word: String, re: regexp.Regexp) -> List(PatternToken) {
+  // this is what it means to be a pseudoword:
+  let assert True = word == " " || {!string.contains(word, " ") && word != ""}
+
+  // case 1: a space
+  use <- infra.on_lazy_true_on_false(word == " ", fn(){[Space]})
+
+  // case 2: an ordinary word
+  use <- infra.on_lazy_false_on_true(regexp.check(re, word), fn(){[Word(word)]})
+
+  // case 3: a word containing 'ContentVar' patterns
+  regexp.split(re, word)
+  |> list.index_map(
+    // example of splits for _1_._2_ ==> ["", "_1_", ".", "_2_", ""]
+    fn(x, i) {
+      case i % 2 == 0 {
+        True -> case x {
+          "" -> None
+          _ -> Some(Word(x))
+        }
+        False -> {
+          let assert True = string.starts_with(x, "_") && string.ends_with(x, "_") && string.length(x) > 2
+          let assert Ok(x) = x |> string.drop_end(1) |> string.drop_start(1) |> int.parse
+          Some(ContentVar(x))
+        }
+      }
+    }
+  )
+  |> option.values
+}
+
+fn pseudowords_to_pattern_tokens(words: List(String), re: regexp.Regexp) -> List(PatternToken) {
+  list.fold(
+    words,
+    [],
+    fn(acc, word) {
+      pseudoword_to_pattern_tokens(word, re)
+      |> infra.pour(acc)
+    }
+  )
+  |> list.reverse
+}
+
+fn xlml_text_to_link_pattern(content: String, re: regexp.Regexp) -> Result(LinkPattern, DesugaringError) {
+  content
+  |> string.split(" ")
+  |> list.intersperse(" ")
+  |> list.filter(fn(s){s != ""})
+  |> pseudowords_to_pattern_tokens(re)
+  |> Ok
+}
+
+fn xmlm_tag_to_link_pattern(
   xmlm_tag: xmlm.Tag,
   children: List(Result(LinkPattern, DesugaringError)),
 ) {
   use tag_content_patterns <- result.try(children |> result.all)
+
   let tag_content_patterns = tag_content_patterns |> list.flatten
+
   use <- infra.on_true_on_false(
     xmlm_tag_name(xmlm_tag) == "root",
     Ok(tag_content_patterns),
   )
-  use <- infra.on_false_on_true(
-    xmlm_tag_name(xmlm_tag) == "a" || xmlm_tag_name(xmlm_tag) == "InChapterLink",
-    Error(DesugaringError(
-      infra.blame_us(""),
-      "pattern tag is not '<a>' or <InChapterLink> it is "
-        <> xmlm_tag_name(xmlm_tag),
-    )),
-  )
+
   use href_attribute <- result.try(
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "href"))
-    |> result.map_error(fn(_) {
-      DesugaringError(
-        infra.blame_us(""),
-        "<a> pattern tag missing 'href' attribute",
-      )
-    }),
+    |> result.map_error(
+      fn(_) {DesugaringError(infra.no_blame, "<a> pattern tag missing 'href' attribute")}
+    ),
   )
-  let class_attribute =
-    xmlm_tag.attributes
-    |> list.find(xmlm_attribute_equals(_, "class"))
-  let xmlm.Attribute(_, value) =
-    href_attribute
+
+  let xmlm.Attribute(_, value) = href_attribute
+
   use value <- result.try(
     int.parse(value)
     |> result.map_error(fn(_) {
-      DesugaringError(
-        infra.blame_us(""),
-        "<a> pattern 'href' attribute not an int",
-      )
+      DesugaringError(infra.no_blame, "<a> pattern 'href' attribute does not parse to an int")
     }),
   )
+
+  let class_attribute =
+    xmlm_tag.attributes
+    |> list.find(xmlm_attribute_equals(_, "class"))
+
   let classes = case class_attribute {
     Ok(x) -> {
       let xmlm.Attribute(_, value) = x
@@ -510,47 +742,74 @@ fn match_tag_and_children(
     }
     Error(_) -> ""
   }
-  Ok([A(xmlm_tag_name(xmlm_tag), classes, value, tag_content_patterns)])
+
+  Ok([A(
+    tag: xmlm_tag_name(xmlm_tag),
+    classes: classes,
+    href: value,
+    children: tag_content_patterns,
+  )])
 }
 
-fn regex_splits_to_optional_tokens(splits: List(String)) -> Option(LinkPattern) {
-  splits
-  |> list.filter(fn(x) { !{ x |> string.is_empty } })
-  |> list.map(fn(x) {
-    case is_variable(x) {
-      Some(x) -> ContentVar(x)
-      None -> Word(x)
+fn extra_string_to_link_pattern(
+  s: String,
+  re: regexp.Regexp,
+) -> Result(LinkPattern, DesugaringError) {
+  use #(_, pattern, _) <- infra.on_error_on_ok(
+    xmlm.document_tree(
+      xmlm.from_string(s),
+      xmlm_tag_to_link_pattern,
+      xlml_text_to_link_pattern(_, re),
+    ),
+    fn(input_error) {
+      Error(DesugaringError(infra.no_blame, "xmlm input error: " <> ins(input_error)))
+    },
+  )
+
+  use pattern <- result.try(pattern) // pattern was a Result(TokenPatter, DesugaringError)
+
+  pattern
+  |> insert_start_t_end_t_into_link_pattern
+  |> check_pattern_token_text_non_text_consistency
+  |> Ok
+}
+
+fn make_sure_attributes_are_quoted(input: String, re: regexp.Regexp) -> String {
+  regexp.match_map(re, input, fn(match: regexp.Match) {
+    case match.submatches {
+      [Some(key), Some(value)] -> key <> "=\"" <> value <> "\""
+      _ -> match.content
     }
   })
-  |> Some
 }
 
-fn word_to_optional_tokens(word: String) -> Option(LinkPattern) {
-  case word {
-    "" -> None
-    _ -> Some([Word(word)])
-  }
-}
+fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
+  let #(s1, s2) = string_pair
+  let assert Ok(re1) = regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
+  let assert Ok(re2) = regexp.from_string("(_[0-9]+_)")
 
-fn split_variables(words: List(String)) -> List(Option(LinkPattern)) {
-  let assert Ok(re) = regexp.from_string("(_[0-9]+_)")
-  words
-  |> list.map(fn(word) {
-    case regexp.check(re, word) {
-      False -> word_to_optional_tokens(word)
-      True -> {
-        regexp.split(re, word)
-        // example of splits for _1_._2_ ==> ["", "_1_", ".", "_2_", ""]
-        |> regex_splits_to_optional_tokens
-      }
-    }
-  })
+  use pattern1 <- result.try(
+    { "<root>" <> s1 <> "</root>" }
+    |> make_sure_attributes_are_quoted(re1)
+    |> extra_string_to_link_pattern(re2)
+  )
+
+  use pattern2 <- result.try(
+    { "<root>" <> s2 <> "</root>" }
+    |> make_sure_attributes_are_quoted(re1)
+    |> extra_string_to_link_pattern(re2)
+  )
+
+  let pattern2 = make_target_pattern_substitutable_for_source_pattern(pattern1, pattern2)
+  check_target_pattern_substitutable_for_source_pattern(pattern1, pattern2)
+
+  Ok(#(pattern1, pattern2))
 }
 
 fn get_content_vars(
   pattern2: LinkPattern,
 ) -> List(Int) {
-  list.map(pattern2, fn(token){
+  list.map(pattern2, fn(token) {
     case token {
       ContentVar(var) -> [var]
       A(_, _, _, sub_pattern) -> get_content_vars(sub_pattern)
@@ -563,7 +822,7 @@ fn get_content_vars(
 fn get_href_vars(
   pattern2: LinkPattern,
 ) -> List(Int) {
-  list.map(pattern2, fn(token){
+  list.map(pattern2, fn(token) {
     case token {
       A(_, _, var, _) -> [var]
       _ -> []
@@ -606,91 +865,6 @@ fn collect_unique_href_vars(pattern1: LinkPattern) -> Result(List(Int), Int) {
     None -> Ok(vars)
     Some(int) -> Error(int)
   }
-}
-
-fn match_link_content(content: String) -> Result(LinkPattern, DesugaringError) {
-  content
-  |> string.split(" ")
-  |> split_variables
-  |> list.intersperse(Some([Space]))
-  |> keep_some_remove_none_and_unwrap
-  |> list.flatten
-  |> Ok
-}
-
-fn extra_string_to_link_pattern(
-  s: String,
-) -> Result(LinkPattern, DesugaringError) {
-  case
-    xmlm.document_tree(
-      xmlm.from_string(s),
-      match_tag_and_children,
-      match_link_content,
-    )
-  {
-    Ok(#(_, pattern, _)) -> pattern
-    Error(input_error) ->
-      Error(DesugaringError(infra.blame_us(""), ins(input_error)))
-  }
-}
-
-fn make_sure_attributes_are_quoted(input: String) -> String {
-  let assert Ok(pattern) =
-    regexp.compile("([a-zA-Z0-9-]+)=([^\"'][^ >]*)", regexp.Options(True, True))
-
-  regexp.match_map(pattern, input, fn(match: regexp.Match) {
-    case match.submatches {
-      [Some(key), Some(value)] -> {
-        key <> "=\"" <> value <> "\""
-      }
-      _ -> match.content
-    }
-  })
-}
-
-fn string_pair_to_link_pattern_pair(string_pair: #(String, String)) -> Result(#(LinkPattern, LinkPattern), DesugaringError) {
-  let #(s1, s2) = string_pair
-
-  use pattern1 <- result.try(
-    { "<root>" <> s1 <> "</root>" }
-    |> make_sure_attributes_are_quoted
-    |> extra_string_to_link_pattern,
-  )
-
-  use pattern2 <- result.try(
-    { "<root>" <> s2 <> "</root>" }
-    |> make_sure_attributes_are_quoted
-    |> extra_string_to_link_pattern,
-  )
-
-  Ok(#(pattern1, pattern2))
-}
-
-fn nodemap(
-  vxml: VXML,
-  inner: InnerParam,
-) -> VXML {
-  case vxml {
-    V(b, tag, attributes, children) -> {
-      use atomized <- infra.on_error_on_ok(
-        over: atomize_maybe(children),
-        with_on_error: fn(_) { vxml },
-      )
-      atomized
-      |> match_until_end(inner) 
-      |> deatomize_vxmls([], [])
-      |> V(b, tag, attributes, _)
-    }
-    _ -> vxml
-  }
-}
-
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
-  nodemap(_, inner)
-}
-
-fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_one_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

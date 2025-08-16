@@ -8,10 +8,10 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import blamedlines.{type Blame, Blame}
-import vxml.{type VXML, T, V, BlamedAttribute, BlamedContent}
+import vxml.{type VXML, T, V, BlamedAttribute}
 import xmlm
 
-const desugarer_blame = Blame("rearrange_links_v2", 0, 0, [])
+const desugarer_blame = Blame("rearrange_links_v3", 0, 0, [])
 
 type PatternToken {
   EndT
@@ -35,76 +35,6 @@ type MatchData {
     href_var_dict: Dict(Int, VXML),
     content_var_dict: Dict(Int, List(VXML)),
   )
-}
-
-fn detokenize_maybe(
-  children: List(VXML),
-  accumulated_contents: List(vxml.BlamedContent),
-  accumulated_nodes: List(VXML),
-) -> List(VXML) {
-  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.BlamedContent) {
-    case accumulated_contents {
-      [first, ..rest] -> [BlamedContent(first.blame, first.content <> word), ..rest]
-      _ -> [BlamedContent(blame, word)]
-    }
-  }
-
-  case children {
-    [] -> {
-      let assert [] = accumulated_contents
-      accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
-    }
-
-    [first, ..rest] -> {
-      case first {
-        V(blame, "__StartTokenizedT", _, _) -> {
-          let assert [] = accumulated_contents
-          let accumulated_contents = [BlamedContent(blame, "")]
-          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
-        }
-        
-        V(blame, "__OneWord", attributes, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let assert [BlamedAttribute(_, "val", word)] = attributes
-          let accumulated_contents = append_word_to_accumlated_contents(blame, word)
-          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
-        }
-
-        V(blame, "__OneSpace", _, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let accumulated_contents = append_word_to_accumlated_contents(blame, " ")
-          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
-        }
-
-        V(blame, "__OneNewLine", _, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
-          detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
-        }
-
-        V(blame, "__EndTokenizedT", _, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let accumulated_contents = append_word_to_accumlated_contents(blame, "")
-          detokenize_maybe(rest, [], [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes])
-        }
-
-        T(_, _) -> {
-          let assert [] = accumulated_contents
-          panic as "how did T not become tokenized"
-        }
-
-        V(_, _, _, children) -> {
-          case infra.v_has_attribute_with_key(first, "href") {
-            True -> {
-              let children = detokenize_maybe(children, [], [])
-              detokenize_maybe(rest, [], [V(..first, children: children), ..accumulated_nodes])
-            }
-            False -> detokenize_maybe(rest, [], [first, ..accumulated_nodes])
-          }
-        }
-      }
-    }
-  }
 }
 
 fn generate_replacement_vxml_internal(
@@ -360,84 +290,8 @@ fn space_node(blame: Blame) {
   V(blame, "__OneSpace", [], [])
 }
 
-fn newline_node(blame: Blame) {
-  V(blame, "__OneNewLine", [], [])
-}
-
 fn end_node(blame: Blame) {
   V(blame, "__EndTokenizedT", [], [])
-}
-
-fn tokenize_string_acc(
-  past_tokens: List(VXML),
-  current_blame: Blame,
-  leftover: String,
-) -> List(VXML) {
-  case string.split_once(leftover, " ") {
-    Ok(#("", after)) -> tokenize_string_acc(
-      [space_node(current_blame), ..past_tokens],
-      infra.advance(current_blame, 1),
-      after,
-    )
-    Ok(#(before, after)) -> tokenize_string_acc(
-      [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
-      infra.advance(current_blame, string.length(before) + 1),
-      after,
-    )
-    Error(Nil) -> case leftover == "" {
-      True -> past_tokens |> list.reverse
-      False -> [word_node(current_blame, leftover), ..past_tokens] |> list.reverse
-    }
-  }
-}
-
-fn tokenize_t(vxml: VXML) -> List(VXML) {
-  let assert T(blame, blamed_contents) = vxml
-  blamed_contents
-  |> list.index_map(fn(blamed_content, i) {
-    tokenize_string_acc(
-      [],
-      blamed_content.blame,
-      blamed_content.content,
-    )
-    |> list.prepend(case i == 0 {
-      True -> start_node(blamed_content.blame)
-      False -> newline_node(blamed_content.blame)
-    })
-  })
-  |> list.flatten
-  |> list.append([end_node(blame)])
-}
-
-fn tokenize_if_t_or_href_tag_with_single_t_child(vxml: VXML) -> List(VXML) {
-  case vxml {
-    T(_, _) -> tokenize_t(vxml)
-    V(_, _, _, [T(_, _) as t]) -> case infra.v_has_attribute_with_key(vxml, "href") {
-      False -> [vxml]
-      True -> [V(..vxml, children: tokenize_t(t))]
-    }
-    _ -> [vxml]
-  }
-}
-
-// fn tokenize_if_t(vxml: VXML) -> List(VXML) {
-//   case vxml {
-//     T(_, _) -> tokenize_t(vxml)
-//     _ -> [vxml]
-//   }
-// }
-
-fn tokenize_maybe(children: List(VXML)) -> Option(List(VXML)) {
-  case list.any(children, infra.is_v_and_has_attribute_with_key(_, "href")) {
-    True -> {
-      children
-      |> list.map(tokenize_if_t_or_href_tag_with_single_t_child)
-      // |> list.map(tokenize_if_t)
-      |> list.flatten
-      |> Some
-    }
-    False -> None
-  }
 }
 
 // fn echo_pattern(
@@ -458,18 +312,11 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    V(_, _, _, children) -> {
-      use atomized <- infra.on_none_on_some(
-        tokenize_maybe(children),
-        vxml,
-      )
-      
-      let atomized =
-        atomized
-        |> match_until_end(inner.0, inner.1)
-        |> detokenize_maybe([], [])
-      
-      V(..vxml, children: atomized)
+    V(_, _, attrs, children) -> {
+      case infra.attributes_have_key(attrs, "had_href_child") {
+        False -> vxml
+        True -> V(..vxml, children: match_until_end(children, inner.0, inner.1))
+      }
     }
     _ -> vxml
   }
@@ -778,7 +625,7 @@ fn extra_string_to_link_pattern(
 
   pattern
   |> insert_start_t_end_t_into_link_pattern
-  |> check_pattern_token_text_non_text_consistency
+  // |> check_pattern_token_text_non_text_consistency
   |> Ok
 }
 
@@ -908,8 +755,8 @@ type Param = #(String,   String)
 
 type InnerParam = #(LinkPattern, LinkPattern)
 
-const name = "rearrange_links_v2"
-const constructor = rearrange_links_v2
+const name = "rearrange_links_4_pre_tokenized_src"
+const constructor = rearrange_links_4_pre_tokenized_src
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -919,7 +766,7 @@ const constructor = rearrange_links_v2
 /// considering (x) as a variable and replaces it 
 /// with the second String (x) can be used in second
 /// String to use the variable from first String
-pub fn rearrange_links_v2(param: Param) -> Desugarer {
+pub fn rearrange_links_4_pre_tokenized_src(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

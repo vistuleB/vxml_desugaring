@@ -10,10 +10,9 @@ import desugarer_library as dl
 import selector_library as sl
 
 fn test_pipeline() -> List(Pipe) {
-  let echo_mode = infra.Off
-  let selector = sl.tag("marker")
   [
-      dl.rearrange_links_v2(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>")),
+    dl.identity(),
+    dl.rearrange_links(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>")),
     // dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
     // dl.insert_text_start_end(#("i", #("_", "_"))),
     // dl.insert_text_start_end(#("b", #("*", "*"))),
@@ -21,7 +20,7 @@ fn test_pipeline() -> List(Pipe) {
     // dl.unwrap__batch(["i", "b", "strong"]),
     // dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]
-  |> infra.wrap_desugarers(echo_mode, selector)
+  |> infra.wrap_desugarers(infra.Off, sl.all())
 }
 
 fn test_renderer() {
@@ -163,7 +162,7 @@ fn run_desugarer_tests(names: List(String)) {
 pub fn test_thing() {
   // let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml")
   // echo vxml
-  dl.rearrange_links_v2(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>"))
+  dl.rearrange_links(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>"))
   Nil
 }
 
