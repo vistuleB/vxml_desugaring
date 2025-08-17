@@ -14,19 +14,55 @@ fn nodemap(
         [] -> {
           // get all src attributes
           let src_attrs = list.filter(attrs, fn(attr) { attr.key == "src" })
-          // get style attribute if it exists
-          let style_attr = list.filter(attrs, fn(attr) { attr.key == "style" })
-          // create CarouselItem children with img tags
-          let carousel_items = list.map(src_attrs, fn(src_attr) {
-            let img_attrs = case style_attr {
-              [] -> [src_attr]
-              [style] -> [src_attr, style]
-              _ -> [src_attr] // multiple styles, just use first one implicitly
+          // get img-width and img-height attributes if they exist
+          let img_width_attr = list.filter(attrs, fn(attr) { attr.key == "img-width" })
+          let img_height_attr = list.filter(attrs, fn(attr) { attr.key == "img-height" })
+
+          // validate only one img-width attribute
+          case list.length(img_width_attr) > 1 {
+            True -> Error(DesugaringError(
+              blame,
+              "Carousel should have only one img-width attribute."
+            ))
+            False -> case list.length(img_height_attr) > 1 {
+              True -> Error(DesugaringError(
+                blame,
+                "Carousel should have only one img-height attribute."
+              ))
+              False -> {
+                // create CarouselItem children with img tags
+                let carousel_items = list.map(src_attrs, fn(src_attr) {
+                  let base_attrs = [src_attr]
+
+                  // build style attribute from img-width and img-height
+                  let style_value = case img_width_attr, img_height_attr {
+                    [], [] -> ""
+                    [width_attr], [] -> "width: " <> width_attr.value <> ";"
+                    [], [height_attr] -> "height: " <> height_attr.value <> ";"
+                    [width_attr], [height_attr] -> "width: " <> width_attr.value <> "; height: " <> height_attr.value <> ";"
+                    _, _ -> "" // should never happen due to validation above
+                  }
+
+                  let final_attrs = case style_value {
+                    "" -> base_attrs
+                    _ -> {
+                      let style_blame = case img_width_attr, img_height_attr {
+                        [width_attr], _ -> width_attr.blame
+                        [], [height_attr] -> height_attr.blame
+                        _, _ -> blame
+                      }
+                      list.append(base_attrs, [vxml.BlamedAttribute(style_blame, "style", style_value)])
+
+                    }
+                  }
+
+                  let img = V(blame, "img", final_attrs, [])
+                  V(blame, "CarouselItem", [], [img])
+                })
+                Ok(V(blame, "Carousel", [], carousel_items))
+              }
             }
-            let img = V(blame, "img", img_attrs, [])
-            V(blame, "CarouselItem", [], [img])
-          })
-          Ok(V(blame, "Carousel", [], carousel_items))
+          }
         }
         _ -> {
           // check if there are any src attributes - error if there are
@@ -90,7 +126,7 @@ type InnerParam = Nil
 ///
 /// Validates that compressed Carousel has:
 /// - No children
-/// - Only src attributes
+/// - Only src, img-width, and img-height attributes
 /// - At least one src attribute
 pub fn expand_ti3_carousel() -> Desugarer {
   Desugarer(
@@ -120,7 +156,7 @@ pub fn expand_ti3_carousel() -> Desugarer {
 ///
 /// Validates that compressed Carousel has:
 /// - No children
-/// - Only src attributes
+/// - Only src, img-width, and img-height attributes
 /// - At least one src attribute
     ",
     case param_to_inner_param(Nil) {
@@ -153,6 +189,40 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
                   <> CarouselItem
                     <> img
                       src=\"image3.jpg\"
+                ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source:   "
+                <> Carousel
+                  src=\"image1.jpg\"
+                  src=\"image2.jpg\"
+                  img-width=200px
+                  img-height=150px
+                ",
+      expected: "
+                <> Carousel
+                  <> CarouselItem
+                    <> img
+                      src=\"image1.jpg\"
+                      style=width: 200px; height: 150px;
+                  <> CarouselItem
+                    <> img
+                      src=\"image2.jpg\"
+                      style=width: 200px; height: 150px;
+                ",
+    ),
+    infra.AssertiveTestDataNoParam(
+      source:   "
+                <> Carousel
+                  src=\"only.jpg\"
+                  img-width=100px
+                ",
+      expected: "
+                <> Carousel
+                  <> CarouselItem
+                    <> img
+                      src=\"only.jpg\"
+                      style=width: 100px;
                 ",
     ),
     infra.AssertiveTestDataNoParam(
