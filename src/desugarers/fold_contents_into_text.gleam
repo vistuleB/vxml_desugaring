@@ -374,13 +374,23 @@ const constructor = fold_contents_into_text
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
+/// Replaces a specified tag by its contents
+/// assuming that the tag contains exactly one child 
+/// consisting of text.
+/// 
+/// The text content gets folded into surrounding text
+/// nodes (in end-of-last-line to beginning-of-first-line
+/// fashion).
+/// 
+/// Returns an error if any instance of the tag fails
+/// to have exactly one text child.
 pub fn fold_contents_into_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
     "
-/// replaces a specified tag by its contents
+/// Replaces a specified tag by its contents
 /// assuming that the tag contains exactly one child 
 /// consisting of text.
 /// 
