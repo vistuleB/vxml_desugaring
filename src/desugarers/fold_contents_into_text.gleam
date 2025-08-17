@@ -6,20 +6,11 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn inside_text_node(node: VXML) -> Result(VXML, DesugaringError) {
-  case node {
-    V(blame, tag, _, children) ->
-      case children {
-        [T(_, _) as child] -> Ok(child)
-        [] -> Error(DesugaringError(blame, "fold_contents_into_text: cannot fold tag '" <> tag <> "' because it has no children"))
-        [V(_, _, _, _), ..] -> Error(DesugaringError(blame, "fold_contents_into_text: cannot fold tag '" <> tag <> "' because its first child is not a text node"))
-        [T(_, _), ..rest] ->
-          case rest {
-            [] -> panic as "impossible: should be handled by single child case"
-            _ -> Error(DesugaringError(blame, "fold_contents_into_text: cannot fold tag '" <> tag <> "' because it has multiple children (expected exactly one text child)"))
-          }
-      }
-    T(blame, _) -> Error(DesugaringError(blame, "fold_contents_into_text: internal error - tried to extract text from text node"))
+fn get_single_t_child(node: VXML) -> Result(VXML, DesugaringError) {
+  let assert V(blame, _, _, children) = node
+  case children {
+    [T(_, _) as child] -> Ok(child)
+    _ -> Error(DesugaringError(blame, "found '" <> node.tag <> "' with bad children: " <> ins(children)))
   }
 }
 
@@ -66,7 +57,7 @@ fn accumulator(
               //
               // we turn the previous v node into a standalone text node
               // *
-              use text_node <- result.try(inside_text_node(last_v))
+              use text_node <- result.try(get_single_t_child(last_v))
               Ok([text_node, ..already_processed] |> list.reverse)
             }
           }
@@ -90,7 +81,7 @@ fn accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              use text_node <- result.try(inside_text_node(last_v))
+              use text_node <- result.try(get_single_t_child(last_v))
               Ok([
                 infra.t_t_last_to_first_concatenation(
                   last_t,
@@ -129,7 +120,7 @@ fn accumulator(
               //
               // we bundle the v & first, add to already_processed, reset v to None
               // *
-              use text_node <- result.try(inside_text_node(last_v))
+              use text_node <- result.try(get_single_t_child(last_v))
               accumulator(
                 inner,
                 already_processed,
@@ -167,7 +158,7 @@ fn accumulator(
               //
               // we bundle t & v & first and etc
               // *
-              use text_node <- result.try(inside_text_node(last_v))
+              use text_node <- result.try(get_single_t_child(last_v))
               accumulator(
                 inner,
                 already_processed,
@@ -232,7 +223,7 @@ fn accumulator(
                   //
                   // standalone-bundle the previous v node & add first to already processed
                   // *
-                  use text_node <- result.try(inside_text_node(last_v))
+                  use text_node <- result.try(get_single_t_child(last_v))
                   accumulator(
                     inner,
                     [first, text_node, ..already_processed],
@@ -249,7 +240,7 @@ fn accumulator(
                   //
                   // standalone-bundle the previous v node & make 'first' the optional_last_v
                   // *
-                  use text_node <- result.try(inside_text_node(last_v))
+                  use text_node <- result.try(get_single_t_child(last_v))
                   accumulator(
                     inner,
                     already_processed,
@@ -306,7 +297,7 @@ fn accumulator(
                   //
                   // fold t & v, put first & folded t/v into already_processed
                   // *
-                  use text_node <- result.try(inside_text_node(last_v))
+                  use text_node <- result.try(get_single_t_child(last_v))
                   accumulator(
                     inner,
                     [
@@ -330,7 +321,7 @@ fn accumulator(
                   //
                   // fold t & v, put into already_processed, make v the new optional_last_v
                   // *
-                  use text_node <- result.try(inside_text_node(last_v))
+                  use text_node <- result.try(get_single_t_child(last_v))
                   accumulator(
                     inner,
                     already_processed,
@@ -383,24 +374,22 @@ const constructor = fold_contents_into_text
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// replaces a specified tag by its contents, but ONLY
-/// if the tag contains exactly one text node child.
-/// The text content gets folded into surrounding text
-/// nodes (in end-of-last-line to beginning-of-first-line
-/// fashion). Returns an error if the tag doesn't have
-/// exactly one text child.
 pub fn fold_contents_into_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
     "
-/// replaces a specified tag by its contents, but ONLY
-/// if the tag contains exactly one text node child.
+/// replaces a specified tag by its contents
+/// assuming that the tag contains exactly one child 
+/// consisting of text.
+/// 
 /// The text content gets folded into surrounding text
 /// nodes (in end-of-last-line to beginning-of-first-line
-/// fashion). Returns an error if the tag doesn't have
-/// exactly one text child.
+/// fashion).
+/// 
+/// Returns an error if any instance of the tag fails
+/// to have exactly one text child.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
