@@ -1,6 +1,6 @@
 import gleam/float
 import gleam/int
-import blamedlines.{type Blame, Blame, type BlamedLine, BlamedLine}
+import blamedlines.{type Blame, Blame, type OutputLine, OutputLine}
 import gleam/dict.{type Dict}
 import gleam/io
 import gleam/list
@@ -558,7 +558,7 @@ pub fn validate_unique_keys(
   l: List(#(a, b))
 ) -> Result(List(#(a, b)), DesugaringError) {
   case get_duplicate(list.map(l, pair.first)) {
-    Some(guy) -> Error(DesugaringError(blamedlines.no_blame(), "duplicate key in list being converted to dict: " <> ins(guy)))
+    Some(guy) -> Error(DesugaringError(no_blame, "duplicate key in list being converted to dict: " <> ins(guy)))
     None -> Ok(l)
   }
 }
@@ -2444,20 +2444,20 @@ pub fn is_selected_pigeon_line(line: SelectedPigeonLine) -> Bool {
   }
 }
 
-pub fn pigeon_line_2_blamed_line(line: PigeonLine) -> BlamedLine {
+pub fn pigeon_line_2_blamed_line(line: PigeonLine) -> OutputLine {
   case line {
-    PigeonV(blame, indent, tag) -> BlamedLine(blame, indent, "<> " <> tag)
-    PigeonA(blame, indent, key, val) -> BlamedLine(blame, indent, key <> "=" <> val)
-    PigeonT(blame, indent) -> BlamedLine(blame, indent, "<>")
-    PigeonL(blame, indent, content) -> BlamedLine(blame, indent, "\"" <> content <> "\"")
+    PigeonV(blame, indent, tag) -> OutputLine(blame, indent, "<> " <> tag)
+    PigeonA(blame, indent, key, val) -> OutputLine(blame, indent, key <> "=" <> val)
+    PigeonT(blame, indent) -> OutputLine(blame, indent, "<>")
+    PigeonL(blame, indent, content) -> OutputLine(blame, indent, "\"" <> content <> "\"")
   }
 }
 
-pub fn selected_pigeon_line_2_blamed_line(line: SelectedPigeonLine) -> BlamedLine {
+pub fn selected_pigeon_line_2_blamed_line(line: SelectedPigeonLine) -> OutputLine {
   line.payload |> pigeon_line_2_blamed_line
 }
 
-pub fn selected_lines_to_blamed_lines(lines: List(SelectedPigeonLine)) -> List(BlamedLine) {
+pub fn selected_lines_to_output_lines(lines: List(SelectedPigeonLine)) -> List(OutputLine) {
   let s2l = selected_pigeon_line_2_blamed_line
   lines
   |> list.fold(
@@ -2476,7 +2476,7 @@ pub fn selected_lines_to_blamed_lines(lines: List(SelectedPigeonLine)) -> List(B
             #(
               True,
               None, 
-              [line |> s2l, BlamedLine(comment_blame(ins(num_lines)), indentation, "..."), ..acc.2],
+              [line |> s2l, OutputLine(comment_blame(ins(num_lines)), indentation, "..."), ..acc.2],
             )
         }
         False -> case acc.0, acc.1 {
@@ -2513,8 +2513,8 @@ pub fn selected_lines_to_blamed_lines(lines: List(SelectedPigeonLine)) -> List(B
 
 pub fn selected_lines_to_string(lines: List(SelectedPigeonLine), banner: String) -> String {
   lines
-  |> selected_lines_to_blamed_lines
-  |> blamedlines.blamed_lines_pretty_printer_no1(banner)
+  |> selected_lines_to_output_lines
+  |> blamedlines.output_lines_pretty_printer_no1(banner)
 }
 
 fn bring_to_byproduct_level(line: SelectedPigeonLine) -> SelectedPigeonLine {

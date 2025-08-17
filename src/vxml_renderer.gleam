@@ -1,6 +1,6 @@
 import gleam/float
 import gleam/time/duration
-import blamedlines.{type Blame, type BlamedLine, Blame, BlamedLine} as bl
+import blamedlines.{type Blame, Blame, type InputLine, type OutputLine, OutputLine} as bl
 import desugarer_library as dl
 import selector_library as sl
 import gleam/dict.{type Dict}
@@ -24,7 +24,7 @@ import gleam/time/timestamp.{type Timestamp}
 // *************
 
 pub type BlamedLinesAssembler(a) =
-  fn(String) -> Result(List(BlamedLine), a)
+  fn(String) -> Result(List(InputLine), a)
 
 pub type BlamedLinesAssemblerDebugOptions {
   BlamedLinesAssemblerDebugOptions(
@@ -37,7 +37,7 @@ pub fn default_blamed_lines_assembler(
 ) -> BlamedLinesAssembler(wp.AssemblyError) {
   let spaces = string.repeat(" ", string.length("• assembling "))
   fn (input_dir) {
-    use #(directory_tree, assembled) <- result.try(wp.assemble_blamed_lines_advanced_mode(input_dir, spotlight_paths))
+    use #(directory_tree, assembled) <- result.try(wp.assemble_input_lines_advanced_mode(input_dir, spotlight_paths))
     let directory_tree = list.map(directory_tree, fn(line){spaces <> line}) |> list.drop(1)
     io.println(input_dir)
     io.println(string.join(directory_tree, "\n"))
@@ -51,7 +51,7 @@ pub fn default_blamed_lines_assembler(
 // *************
 
 pub type SourceParser(c) =
-  fn(List(BlamedLine)) -> Result(VXML, c)
+  fn(List(InputLine)) -> Result(VXML, c)
 
 pub type SourceParserDebugOptions {
   SourceParserDebugOptions(
@@ -68,7 +68,7 @@ pub fn default_writerly_source_parser(
 ) -> SourceParser(String) {
   fn (lines) {
     use writerlys <- result.try(
-      wp.parse_blamed_lines(lines)
+      wp.parse_input_lines(lines)
       |> result.map_error(fn(e) { ins(e) }),
     )
 
@@ -90,9 +90,12 @@ pub fn default_writerly_source_parser(
 pub fn default_html_source_parser(
   spotlight_args: List(#(String, String, String)),
 ) -> SourceParser(String) {
-  fn (lines) {
-    let path = bl.filename_of_first_blame(lines) |> result.unwrap("")
-    let s = string.trim(bl.blamed_lines_to_string(lines))
+  fn (lines: List(InputLine)) {
+    // we don't have our own html parser that can give
+    // proper blames, we have to resort to this nonsense
+    let assert [first_line, ..] = lines
+    let path = first_line.blame.filename
+    let s = lines |> bl.input_lines_to_output_lines |> bl.output_lines_to_string |> string.trim
     use nonempty_string <- result.try(
       case s {
         "" -> Error("empty content")
@@ -175,15 +178,15 @@ pub fn stub_splitter(
 
 // *************
 // EMITTER(d, f)                                        // where 'd' is fragment type & 'f' is emitter error type
-// OutputFragment(d) -> #(String, List(BlamedLine), d)  // #(local_path, blamed_lines, fragment_type)
+// OutputFragment(d) -> #(String, List(OutputLine), d)  // #(local_path, blamed_lines, fragment_type)
 // *************
 
 pub type Emitter(d, f) =
-  fn(OutputFragment(d, VXML)) -> Result(OutputFragment(d, List(BlamedLine)), f)
+  fn(OutputFragment(d, VXML)) -> Result(OutputFragment(d, List(OutputLine)), f)
 
 pub type EmitterDebugOptions(d) {
   EmitterDebugOptions(
-    debug_print: fn(OutputFragment(d, List(BlamedLine))) -> Bool,
+    debug_print: fn(OutputFragment(d, List(OutputLine))) -> Bool,
   )
 }
 
@@ -193,11 +196,11 @@ pub type EmitterDebugOptions(d) {
 
 pub fn stub_writerly_emitter(
   fragment: OutputFragment(d, VXML),
-) -> Result(OutputFragment(d, List(BlamedLine)), b) {
+) -> Result(OutputFragment(d, List(OutputLine)), b) {
   let lines =
     fragment.payload
     |> wp.vxml_to_writerlys
-    |> list.map(wp.writerly_to_blamed_lines)
+    |> list.map(wp.writerly_to_output_lines)
     |> list.flatten
   Ok(OutputFragment(..fragment, payload: lines))
 }
@@ -208,29 +211,29 @@ pub fn stub_writerly_emitter(
 
 pub fn stub_html_emitter(
   fragment: OutputFragment(d, VXML),
-) -> Result(OutputFragment(d, List(BlamedLine)), b) {
+) -> Result(OutputFragment(d, List(OutputLine)), b) {
   let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, 0, []) }
   let lines =
     list.flatten([
       [
-        BlamedLine(blame_us("stub_html_emitter"), 0, "<!DOCTYPE html>"),
-        BlamedLine(blame_us("stub_html_emitter"), 0, "<html>"),
-        BlamedLine(blame_us("stub_html_emitter"), 0, "<head>"),
-        BlamedLine(blame_us("stub_html_emitter"), 2, "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">"),
-        BlamedLine(blame_us("stub_html_emitter"), 2, "<meta charset=\"utf-8\">"),
-        BlamedLine(blame_us("stub_html_emitter"), 2, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"),
-        BlamedLine(blame_us("stub_html_emitter"), 2, "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>"),
-        BlamedLine(blame_us("stub_html_emitter"), 2, "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>"),
-        BlamedLine(blame_us("stub_html_emitter"), 0, "</head>"),
-        BlamedLine(blame_us("stub_html_emitter"), 0, "<body>"),
+        OutputLine(blame_us("stub_html_emitter"), 0, "<!DOCTYPE html>"),
+        OutputLine(blame_us("stub_html_emitter"), 0, "<html>"),
+        OutputLine(blame_us("stub_html_emitter"), 0, "<head>"),
+        OutputLine(blame_us("stub_html_emitter"), 2, "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">"),
+        OutputLine(blame_us("stub_html_emitter"), 2, "<meta charset=\"utf-8\">"),
+        OutputLine(blame_us("stub_html_emitter"), 2, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"),
+        OutputLine(blame_us("stub_html_emitter"), 2, "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>"),
+        OutputLine(blame_us("stub_html_emitter"), 2, "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>"),
+        OutputLine(blame_us("stub_html_emitter"), 0, "</head>"),
+        OutputLine(blame_us("stub_html_emitter"), 0, "<body>"),
       ],
       fragment.payload
       |> infra.get_children
-      |> list.map(fn(vxml) { vp.vxml_to_html_blamed_lines(vxml, 2, 2) })
+      |> list.map(fn(vxml) { vp.vxml_to_html_output_lines(vxml, 2, 2) })
       |> list.flatten,
       [
-        BlamedLine(blame_us("stub_html_emitter"), 0, "</body>"),
-        BlamedLine(blame_us("stub_html_emitter"), 0, ""),
+        OutputLine(blame_us("stub_html_emitter"), 0, "</body>"),
+        OutputLine(blame_us("stub_html_emitter"), 0, ""),
       ],
     ])
   Ok(OutputFragment(..fragment, payload: lines))
@@ -238,24 +241,24 @@ pub fn stub_html_emitter(
 
 pub fn stub_jsx_emitter(
   fragment: OutputFragment(d, VXML),
-) -> Result(OutputFragment(d, List(BlamedLine)), b) {
+) -> Result(OutputFragment(d, List(OutputLine)), b) {
   let blame_us = fn(msg: String) -> Blame { Blame(msg, 0, 0,[]) }
   let lines =
     list.flatten([
       [
-        BlamedLine(blame_us("panel_emitter"), 0, "import Something from \"./Somewhere\";"),
-        BlamedLine(blame_us("panel_emitter"), 0, ""),
-        BlamedLine(blame_us("panel_emitter"), 0, "const OurSuperComponent = () => {"),
-        BlamedLine(blame_us("panel_emitter"), 2, "return ("),
-        BlamedLine(blame_us("panel_emitter"), 4, "<>"),
+        OutputLine(blame_us("panel_emitter"), 0, "import Something from \"./Somewhere\";"),
+        OutputLine(blame_us("panel_emitter"), 0, ""),
+        OutputLine(blame_us("panel_emitter"), 0, "const OurSuperComponent = () => {"),
+        OutputLine(blame_us("panel_emitter"), 2, "return ("),
+        OutputLine(blame_us("panel_emitter"), 4, "<>"),
       ],
-      vp.vxmls_to_jsx_blamed_lines(fragment.payload |> infra.get_children, 6),
+      vp.vxmls_to_jsx_output_lines(fragment.payload |> infra.get_children, 6),
       [
-        BlamedLine(blame_us("panel_emitter"), 4, "</>"),
-        BlamedLine(blame_us("panel_emitter"), 2, ");"),
-        BlamedLine(blame_us("panel_emitter"), 0, "};"),
-        BlamedLine(blame_us("panel_emitter"), 0, ""),
-        BlamedLine(blame_us("panel_emitter"), 0, "export default OurSuperComponent;"),
+        OutputLine(blame_us("panel_emitter"), 4, "</>"),
+        OutputLine(blame_us("panel_emitter"), 2, ");"),
+        OutputLine(blame_us("panel_emitter"), 0, "};"),
+        OutputLine(blame_us("panel_emitter"), 0, ""),
+        OutputLine(blame_us("panel_emitter"), 0, "export default OurSuperComponent;"),
       ],
     ])
   Ok(OutputFragment(..fragment, payload: lines))
@@ -321,11 +324,11 @@ pub type Renderer(
   h, // Prettifier error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),     // file/directory -> List(BlamedLine)                     Result w/ error type a
-    source_parser: SourceParser(c),         // List(BlamedLine) -> VXML                               Result w/ error type c
+    assembler: BlamedLinesAssembler(a),     // file/directory -> List(OutputLine)                     Result w/ error type a
+    source_parser: SourceParser(c),         // List(OutputLine) -> VXML                               Result w/ error type c
     pipeline: List(Pipe),                   // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
     splitter: Splitter(d, e),               // VXML -> List(#(String, VXML, d))                       Result w/ error type e
-    emitter: Emitter(d, f),                 // #(String, VXML, d) -> #(String, List(BlamedLine), d)   Result w/ error type f
+    emitter: Emitter(d, f),                 // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
     prettifier: Prettifier(d, h),           // String, #(String, d) -> Nil                            Result w/ error type h
   )
 }
@@ -585,10 +588,10 @@ pub fn run_renderer(
 
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
-    True ->
-      assembled
-      |> bl.blamed_lines_pretty_printer_no1("assembled")
-      |> io.println
+    True -> {
+      bl.echo_input_lines(assembled, "assembled")
+      Nil
+    }
   }
 
   io.print("• parsing blamed lines to VXML")
@@ -685,8 +688,8 @@ pub fn run_renderer(
       False -> Nil
       True -> {
         fr.payload
-        |> vp.vxml_to_blamed_lines
-        |> bl.blamed_lines_pretty_printer_no1("fr:" <> fr.path)
+        |> vp.vxml_to_output_lines
+        |> bl.output_lines_pretty_printer_no1("fr:" <> fr.path)
         |> io.println
       }
     }
@@ -712,7 +715,7 @@ pub fn run_renderer(
           False -> Nil
           True -> {
             fr.payload
-            |> bl.blamed_lines_pretty_printer_no1("fr-bl:" <> fr.path)
+            |> bl.output_lines_pretty_printer_no1("fr-bl:" <> fr.path)
             |> io.println
           }
         }
@@ -732,7 +735,7 @@ pub fn run_renderer(
           Error(C1(error))
         }
         Ok(fr) -> {
-          Ok(OutputFragment(..fr, payload: bl.blamed_lines_to_string(fr.payload)))
+          Ok(OutputFragment(..fr, payload: bl.output_lines_to_string(fr.payload)))
         }
       }
     })
@@ -1444,7 +1447,7 @@ pub fn db_amend_emitter_debug_options(
   amendments: CommandLineAmendments,
 ) -> EmitterDebugOptions(d) {
   EmitterDebugOptions(
-    debug_print: fn(fr: OutputFragment(d, List(BlamedLine))) {
+    debug_print: fn(fr: OutputFragment(d, List(OutputLine))) {
       previous.debug_print(fr) || is_some_and_any_or_is_empty(
         amendments.debug_blamed_lines_fragments_local_paths,
         string.contains(fr.path, _),
