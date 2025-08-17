@@ -1,14 +1,26 @@
 import gleam/list
 import gleam/option.{type Option}
+import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 
-fn inside_text_node(node: VXML) -> VXML {
-  let assert V(_, _, _, children) = node
-  let assert [T(_, _) as child] = children
-  child
+fn inside_text_node(node: VXML) -> Result(VXML, DesugaringError) {
+  case node {
+    V(blame, tag, _, children) ->
+      case children {
+        [T(_, _) as child] -> Ok(child)
+        [] -> Error(DesugaringError(blame, "fold_contents_into_text: cannot fold tag '" <> tag <> "' because it has no children"))
+        [V(_, _, _, _), ..] -> Error(DesugaringError(blame, "fold_contents_into_text: cannot fold tag '" <> tag <> "' because its first child is not a text node"))
+        [T(_, _), ..rest] ->
+          case rest {
+            [] -> panic as "impossible: should be handled by single child case"
+            _ -> Error(DesugaringError(blame, "fold_contents_into_text: cannot fold tag '" <> tag <> "' because it has multiple children (expected exactly one text child)"))
+          }
+      }
+    T(blame, _) -> Error(DesugaringError(blame, "fold_contents_into_text: internal error - tried to extract text from text node"))
+  }
 }
 
 fn accumulator(
@@ -17,7 +29,7 @@ fn accumulator(
   optional_last_t: Option(VXML),
   optional_last_v: Option(VXML),
   remaining: List(VXML),
-) -> List(VXML) {
+) -> Result(List(VXML), DesugaringError) {
   // *
   // - already_processed: previously processed children in
   //   reverse order (last stuff is first in the list)
@@ -28,7 +40,7 @@ fn accumulator(
   //   * the last node before remaining if
   //     optional_last_v == None
   //
-  // - optional_last_v is a possible previoux v-node that
+  // - optional_last_v is a possible previous v-node that
   //   matched the dictionary; if it is not None, it is the
   //   immediately previous node to 'remaining'
   // *
@@ -45,8 +57,8 @@ fn accumulator(
               //
               // we reverse the list
               // *
-              already_processed |> list.reverse
-            option.Some(last_v) ->
+              Ok(already_processed |> list.reverse)
+            option.Some(last_v) -> {
               // *
               // case N01: - no following node
               //           - no previous t node
@@ -54,8 +66,9 @@ fn accumulator(
               //
               // we turn the previous v node into a standalone text node
               // *
-              [inside_text_node(last_v), ..already_processed]
-              |> list.reverse
+              use text_node <- result.try(inside_text_node(last_v))
+              Ok([text_node, ..already_processed] |> list.reverse)
+            }
           }
         }
         option.Some(last_t) ->
@@ -68,8 +81,8 @@ fn accumulator(
               //
               // we add the t to already_processed, reverse the list
               // *
-              [last_t, ..already_processed] |> list.reverse
-            option.Some(last_v) ->
+              Ok([last_t, ..already_processed] |> list.reverse)
+            option.Some(last_v) -> {
               // *
               // case N11: - no following node
               //           - there is a previous t node
@@ -77,14 +90,16 @@ fn accumulator(
               //
               // we bundle the t & v, add to already_processed, reverse the list
               // *
-              [
+              use text_node <- result.try(inside_text_node(last_v))
+              Ok([
                 infra.t_t_last_to_first_concatenation(
                   last_t,
-                  inside_text_node(last_v),
+                  text_node,
                 ),
                 ..already_processed
               ]
-              |> list.reverse
+              |> list.reverse)
+            }
           }
       }
     [T(_, _) as first, ..rest] ->
@@ -106,7 +121,7 @@ fn accumulator(
                 option.None,
                 rest,
               )
-            option.Some(last_v) ->
+            option.Some(last_v) -> {
               // *
               // case T01: - 'first' is a Text node
               //           - no previous t node
@@ -114,16 +129,18 @@ fn accumulator(
               //
               // we bundle the v & first, add to already_processed, reset v to None
               // *
+              use text_node <- result.try(inside_text_node(last_v))
               accumulator(
                 inner,
                 already_processed,
                 option.Some(infra.t_t_last_to_first_concatenation(
-                  inside_text_node(last_v),
+                  text_node,
                   first,
                 )),
                 option.None,
                 rest,
               )
+            }
           }
         option.Some(last_t) -> {
           case optional_last_v {
@@ -150,13 +167,14 @@ fn accumulator(
               //
               // we bundle t & v & first and etc
               // *
+              use text_node <- result.try(inside_text_node(last_v))
               accumulator(
                 inner,
                 already_processed,
                 option.Some(infra.t_t_last_to_first_concatenation(
                   last_t,
                   infra.t_t_last_to_first_concatenation(
-                    inside_text_node(last_v),
+                    text_node,
                     first,
                   ),
                 )),
@@ -206,7 +224,7 @@ fn accumulator(
               }
             option.Some(last_v) ->
               case tag == inner {
-                False ->
+                False -> {
                   // *
                   // case W01: - 'first' is non-matching V-node
                   //           - no previous t node
@@ -214,14 +232,16 @@ fn accumulator(
                   //
                   // standalone-bundle the previous v node & add first to already processed
                   // *
+                  use text_node <- result.try(inside_text_node(last_v))
                   accumulator(
                     inner,
-                    [first, inside_text_node(last_v), ..already_processed],
+                    [first, text_node, ..already_processed],
                     option.None,
                     option.None,
                     rest,
                   )
-                True ->
+                }
+                True -> {
                   // *
                   // case M01: - 'first' is matching V-node
                   //           - no previous t node
@@ -229,13 +249,15 @@ fn accumulator(
                   //
                   // standalone-bundle the previous v node & make 'first' the optional_last_v
                   // *
+                  use text_node <- result.try(inside_text_node(last_v))
                   accumulator(
                     inner,
                     already_processed,
-                    option.Some(inside_text_node(last_v)),
+                    option.Some(text_node),
                     option.Some(first),
                     rest,
                   )
+                }
               }
           }
         }
@@ -249,7 +271,7 @@ fn accumulator(
                   //           - there exists a previous t node
                   //           - no previous v node
                   //
-                  // add 'first' and previoux t node to already_processed
+                  // add 'first' and previous t node to already_processed
                   // *
                   accumulator(
                     inner,
@@ -276,21 +298,22 @@ fn accumulator(
               }
             option.Some(last_v) ->
               case tag == inner {
-                False ->
+                False -> {
                   // *
                   // case W11: - 'first' is a non-matching V-node
                   //           - there exists a previous t node
                   //           - there exists a previous v node
                   //
-                  // fold t & v, put first & folder t/v into already_processed
+                  // fold t & v, put first & folded t/v into already_processed
                   // *
+                  use text_node <- result.try(inside_text_node(last_v))
                   accumulator(
                     inner,
                     [
                       first,
                       infra.t_t_last_to_first_concatenation(
                         last_t,
-                        inside_text_node(last_v),
+                        text_node,
                       ),
                       ..already_processed
                     ],
@@ -298,7 +321,8 @@ fn accumulator(
                     option.None,
                     rest,
                   )
-                True ->
+                }
+                True -> {
                   // *
                   // case M11: - 'first' is matching V-node
                   //           - there exists a previous t node
@@ -306,16 +330,18 @@ fn accumulator(
                   //
                   // fold t & v, put into already_processed, make v the new optional_last_v
                   // *
+                  use text_node <- result.try(inside_text_node(last_v))
                   accumulator(
                     inner,
                     already_processed,
                     option.Some(infra.t_t_last_to_first_concatenation(
                       last_t,
-                      inside_text_node(last_v),
+                      text_node,
                     )),
                     option.Some(first),
                     rest,
                   )
+                }
               }
           }
       }
@@ -329,8 +355,7 @@ fn nodemap(
   case node {
     T(_, _) -> Ok(node)
     V(blame, tag, attrs, children) -> {
-      let new_children =
-        accumulator(inner, [], option.None, option.None, children)
+      use new_children <- result.try(accumulator(inner, [], option.None, option.None, children))
       Ok(V(blame, tag, attrs, new_children))
     }
   }
@@ -358,22 +383,24 @@ const constructor = fold_contents_into_text
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// replaces a specified a tag by its contents (like 
-/// 'unwrap'), but with the first/last text node of
-/// the contents, if any, being folded into 
-/// surrounding text nodes (in end-of-last-line to 
-/// beginning-of-first-line fashion)
+/// replaces a specified tag by its contents, but ONLY
+/// if the tag contains exactly one text node child.
+/// The text content gets folded into surrounding text
+/// nodes (in end-of-last-line to beginning-of-first-line
+/// fashion). Returns an error if the tag doesn't have
+/// exactly one text child.
 pub fn fold_contents_into_text(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
     "
-/// replaces a specified a tag by its contents (like 
-/// 'unwrap'), but with the first/last text node of
-/// the contents, if any, being folded into 
-/// surrounding text nodes (in end-of-last-line to 
-/// beginning-of-first-line fashion)
+/// replaces a specified tag by its contents, but ONLY
+/// if the tag contains exactly one text node child.
+/// The text content gets folded into surrounding text
+/// nodes (in end-of-last-line to beginning-of-first-line
+/// fashion). Returns an error if the tag doesn't have
+/// exactly one text child.
     ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
