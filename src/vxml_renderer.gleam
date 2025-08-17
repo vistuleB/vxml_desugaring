@@ -178,7 +178,7 @@ pub fn stub_splitter(
 
 // *************
 // EMITTER(d, f)                                        // where 'd' is fragment type & 'f' is emitter error type
-// OutputFragment(d) -> #(String, List(OutputLine), d)  // #(local_path, blamed_lines, fragment_type)
+// OutputFragment(d) -> #(String, List(OutputLine), d)  // #(local_path, output_lines, fragment_type)
 // *************
 
 pub type Emitter(d, f) =
@@ -594,7 +594,7 @@ pub fn run_renderer(
     }
   }
 
-  io.print("• parsing blamed lines to VXML")
+  io.print("• parsing input lines to VXML")
 
   use parsed: VXML <- infra.on_error_on_ok(
     over: renderer.source_parser(assembled),
@@ -695,16 +695,16 @@ pub fn run_renderer(
     }
   })
 
-  io.print("• converting fragments to blamed line fragments")
+  io.print("• converting fragments to output line fragments")
 
-  // vxml fragments -> blamed line fragments
+  // vxml fragments -> output line fragments
   let fragments =
     fragments
     |> list.map(renderer.emitter)
 
   io.println("")
 
-  // blamed line fragments debug printing
+  // output line fragments debug printing
   fragments
   |> list.each(fn(result) {
     case result {
@@ -715,7 +715,7 @@ pub fn run_renderer(
           False -> Nil
           True -> {
             fr.payload
-            |> bl.output_lines_pretty_printer_no1("fr-bl:" <> fr.path)
+            |> bl.output_lines_pretty_printer_no1("fr-ol:" <> fr.path)
             |> io.println
           }
         }
@@ -723,9 +723,9 @@ pub fn run_renderer(
     }
   })
 
-  io.print("• converting blamed line fragments to string fragments")
+  io.print("• converting output line fragments to string fragments")
 
-  // blamed line fragments -> string fragments
+  // output line fragments -> string fragments
   let fragments = {
     fragments
     |> list.map(fn(result) {
@@ -895,7 +895,7 @@ pub type CommandLineAmendments {
     debug_assembled_input: Bool,
     show_changes_near: Option(PipelineCliArgsModifier),
     debug_vxml_fragments_local_paths: Option(List(String)),
-    debug_blamed_lines_fragments_local_paths: Option(List(String)),
+    debug_output_lines_fragments_local_paths: Option(List(String)),
     debug_printed_string_fragments_local_paths: Option(List(String)),
     debug_prettified_string_fragments_local_paths: Option(List(String)),
     spotlight_key_values: List(#(String, String, String)),
@@ -917,7 +917,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     debug_assembled_input: False,
     show_changes_near: None,
     debug_vxml_fragments_local_paths: None,
-    debug_blamed_lines_fragments_local_paths: None,
+    debug_output_lines_fragments_local_paths: None,
     debug_printed_string_fragments_local_paths: None,
     debug_prettified_string_fragments_local_paths: None,
     spotlight_key_values: [],
@@ -979,7 +979,7 @@ pub fn cli_usage() {
   io.println(margin <> "     pairs as attributes")
   io.println("")
   io.println(margin <> "--echo-assembled-source | --echo-assembled")
-  io.println(margin <> "  -> print the assembled blamed lines of source")
+  io.println(margin <> "  -> print the assembled input lines of source")
   io.println("")
   io.println(margin <> "--show-changes-near-[text|tag|keyval] <payload> +<p>-<m> <step numbers>")
   io.println(margin <> "  -> track changes near text, tag, or key=val pair as given by")
@@ -1004,11 +1004,11 @@ pub fn cli_usage() {
   io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     before conversion blamed lines, list none to match all")
+  io.println(margin <> "     before conversion to output lines, list none to match all")
   io.println("")
-  io.println(margin <> "--echo-fragments-bl <subpath1> <subpath2> ...")
+  io.println(margin <> "--echo-fragments-ol <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     after conversion blamed lines, list none to match all")
+  io.println(margin <> "     after conversion to output lines, list none to match all")
   io.println("")
   io.println(margin <> "--echo-fragments-printed <subpath1> <subpath2> ...")
   io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
@@ -1356,8 +1356,8 @@ pub fn process_command_line_arguments(
       "--echo-fragments" ->
         Ok(CommandLineAmendments(..amendments, debug_vxml_fragments_local_paths: Some(values)))
 
-      "--echo-fragments-bl" ->
-        Ok(CommandLineAmendments(..amendments, debug_blamed_lines_fragments_local_paths: Some(values)))
+      "--echo-fragments-ol" ->
+        Ok(CommandLineAmendments(..amendments, debug_output_lines_fragments_local_paths: Some(values)))
 
       "--echo-fragments-printed" ->
         Ok(CommandLineAmendments(..amendments, debug_printed_string_fragments_local_paths: Some(values)))
@@ -1449,7 +1449,7 @@ pub fn db_amend_emitter_debug_options(
   EmitterDebugOptions(
     debug_print: fn(fr: OutputFragment(d, List(OutputLine))) {
       previous.debug_print(fr) || is_some_and_any_or_is_empty(
-        amendments.debug_blamed_lines_fragments_local_paths,
+        amendments.debug_output_lines_fragments_local_paths,
         string.contains(fr.path, _),
       )
     },
@@ -1579,7 +1579,6 @@ pub fn default_renderer_debug_options(
   RendererDebugOptions(
     assembler_debug_options: empty_assembler_debug_options(),
     source_parser_debug_options: empty_source_parser_debug_options(),
-    // pipeline_debug_options: empty_pipeline_debug_options(),
     splitter_debug_options: empty_splitter_debug_options(),
     emitter_debug_options: empty_emitter_debug_options(),
     printer_debug_options: empty_printer_debug_options(),
