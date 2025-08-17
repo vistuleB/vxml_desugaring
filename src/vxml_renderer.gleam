@@ -32,7 +32,7 @@ pub type BlamedLinesAssemblerDebugOptions {
   )
 }
 
-pub fn default_blamed_lines_assembler(
+pub fn default_input_lines_assembler(
   spotlight_paths: List(String)
 ) -> BlamedLinesAssembler(wp.AssemblyError) {
   let spaces = string.repeat(" ", string.length("• assembling "))
