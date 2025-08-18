@@ -8,7 +8,7 @@ pub const keyval = keyval.keyval
 pub const tag = tag.tag
 pub const text = text.text
 
-pub const all_internal_selector = all.all_internal_selector
-pub const keyval_internal_selector = keyval.keyval_internal_selector
-pub const tag_internal_selector = tag.tag_internal_selector
-pub const text_internal_selector = text.text_internal_selector
+pub const all_pigeon_selector = all.pigeon_selector
+pub const keyval_pigeon_selector = keyval.pigeon_selector
+pub const tag_pigeon_selector = tag.pigeon_selector
+pub const text_pigeon_selector = text.pigeon_selector

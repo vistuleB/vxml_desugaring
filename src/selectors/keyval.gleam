@@ -1,7 +1,7 @@
-import infrastructure.{type Selector, type InternalSelector} as infra
+import infrastructure.{type Selector, type PigeonLine} as infra
 
 pub fn pigeon_selector(
-  pigeon: infra.PigeonLine,
+  pigeon: PigeonLine,
   key: String,
   val: String,
 ) -> Bool {
@@ -9,14 +9,6 @@ pub fn pigeon_selector(
     infra.PigeonA(_, _, k, v) if k == key && v == val -> True
     _ -> False
   }
-}
-
-pub fn keyval_internal_selector(
-  key: String,
-  val: String,
-) -> InternalSelector {
-  pigeon_selector(_, key, val)
-  |> infra.pigeon_selector_to_internal_selector()
 }
 
 pub fn keyval(

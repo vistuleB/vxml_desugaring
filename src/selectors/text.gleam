@@ -1,21 +1,14 @@
-import infrastructure.{type Selector, type InternalSelector} as infra
+import infrastructure.{type Selector, type PigeonLine} as infra
 import gleam/string
 
 pub fn pigeon_selector(
-  pigeon: infra.PigeonLine,
+  pigeon: PigeonLine,
   s: String,
 ) -> Bool {
   case pigeon {
     infra.PigeonL(_, _, content) -> string.contains(content, s)
     _ -> False
   }
-}
-
-pub fn text_internal_selector(
-  s: String,
-) -> InternalSelector {
-  pigeon_selector(_, s)
-  |> infra.pigeon_selector_to_internal_selector()
 }
 
 pub fn text(

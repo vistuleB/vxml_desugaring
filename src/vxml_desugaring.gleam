@@ -1,4 +1,3 @@
-// import vxml
 import shellout
 import gleam/list
 import argv
@@ -13,12 +12,6 @@ fn test_pipeline() -> List(Pipe) {
   [
     dl.identity(),
     dl.rearrange_links(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>")),
-    // dl.extract_starting_and_ending_spaces(["i", "b", "strong"]),
-    // dl.insert_text_start_end(#("i", #("_", "_"))),
-    // dl.insert_text_start_end(#("b", #("*", "*"))),
-    // dl.insert_text_start_end(#("strong", #("*", "*"))),
-    // dl.unwrap__batch(["i", "b", "strong"]),
-    // dl.cut_paste_attribute_from_first_child_to_self(#("Book", "title"))
   ]
   |> infra.wrap_desugarers(infra.Off, sl.all())
 }
