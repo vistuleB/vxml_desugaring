@@ -2412,9 +2412,6 @@ pub type SelectedPigeonLine {
 pub type PigeonSelector =
   fn(PigeonLine) -> Bool
 
-// pub type InternalSelector =
-//   fn(List(SelectedPigeonLine)) -> List(SelectedPigeonLine)
-
 pub type Selector =
   fn(VXML) -> List(SelectedPigeonLine)
 
@@ -2627,28 +2624,6 @@ pub fn extend_selection_to_ancestors(
   |> pair.second
 }
 
-// pub fn extend_internal_selector_up(
-//   f: InternalSelector,
-//   amt: Int,
-// ) -> InternalSelector {
-//   fn (lines) {
-//     lines
-//     |> f
-//     |> extend_selection_up(amt)
-//   }
-// }
-
-// pub fn extend_internal_selector_down(
-//   f: InternalSelector,
-//   amt: Int,
-// ) -> InternalSelector {
-//   fn (lines) {
-//     lines
-//     |> f
-//     |> extend_selection_down(amt)
-//   }
-// }
-
 pub fn extend_selector_up(
   f: Selector,
   amt: Int,
@@ -2748,28 +2723,6 @@ pub fn pigeon_selector_to_selector(
   }
 }
 
-// pub fn pigeon_selector_to_internal_selector(
-//   pigeon_selector: PigeonSelector,
-// ) -> InternalSelector {
-//   fn (lines: List(SelectedPigeonLine)) {
-//     lines
-//     |> list.map(
-//       fn (line: SelectedPigeonLine) {
-//         case pigeon_selector(line.payload) {
-//           True -> OG(line.payload)
-//           False -> NotSelected(line.payload)
-//         }
-//       }
-//     )
-//   }
-// }
-
-// pub fn vxml_to_unselected_lines(
-//   vxml: VXML
-// ) -> List(SelectedPigeonLine) {
-//   vxml |> vxml_to_pigeon_lines |> list.map(NotSelected(_))
-// }
-
 fn or_selected_pigeon_line(
   l1: SelectedPigeonLine,
   l2: SelectedPigeonLine,
@@ -2791,25 +2744,6 @@ pub fn or_selected_pigeon_lines(
   let assert True = list.length(l1) == list.length(l2)
   list.map2(l1, l2, or_selected_pigeon_line)
 }
-
-// pub fn or_internal_selectors(
-//   s1: InternalSelector,
-//   s2: InternalSelector,
-// ) -> InternalSelector {
-//   fn (lines) {
-//     or_selected_pigeon_lines(
-//       lines |> s1,
-//       lines |> s2,
-//     )
-//   }
-// }
-
-// pub fn or_pigeon_selectors(
-//   s1: PigeonSelector,
-//   s2: PigeonSelector,
-// ) -> PigeonSelector {
-//   fn (pigeon) { s1(pigeon) || s2(pigeon) }
-// }
 
 pub type Pigeon2SelectedSelector =
   fn(List(PigeonLine)) -> List(SelectedPigeonLine)
@@ -2834,26 +2768,3 @@ pub fn apply_pigeon_selector_to_line(
     False -> NotSelected(pigeon)
   }
 }
-
-// pub fn apply_pigeon_selector_to_lines(
-//   lines: List(PigeonLine),
-//   pigeon_selector: PigeonSelector,
-// ) -> List(SelectedPigeonLine) {
-//   list.map(lines, apply_pigeon_selector_to_line(_, pigeon_selector))
-// }
-
-// pub fn pigeon_selector_to_pigeon_2_selected_selector(
-//   pigeon_selector: PigeonSelector,
-// ) -> Pigeon2SelectedSelector {
-//   fn (pigeons: List(PigeonLine)) {
-//     pigeons
-//     |> list.map(
-//       fn (pigeon: PigeonLine) {
-//         case pigeon_selector(pigeon) {
-//           True -> OG(pigeon)
-//           False -> NotSelected(pigeon)
-//         }
-//       }
-//     )
-//   }
-// }
