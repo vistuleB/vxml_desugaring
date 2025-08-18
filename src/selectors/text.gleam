@@ -1,31 +1,26 @@
 import infrastructure.{type Selector, type InternalSelector} as infra
-import gleam/list
 import gleam/string
+
+pub fn pigeon_selector(
+  pigeon: infra.PigeonLine,
+  s: String,
+) -> Bool {
+  case pigeon {
+    infra.PigeonL(_, _, content) -> string.contains(content, s)
+    _ -> False
+  }
+}
 
 pub fn text_internal_selector(
   s: String,
 ) -> InternalSelector {
-  list.map(
-    _,
-    fn(line: infra.SelectedPigeonLine) {
-      let pigeon = line.payload
-      case pigeon {
-        infra.PigeonL(_, _, content) -> case string.contains(content, s) {
-          True -> infra.OG(pigeon)
-          False -> infra.NotSelected(pigeon)
-        }
-        _ -> infra.NotSelected(pigeon)
-      }
-    }
-  )
+  pigeon_selector(_, s)
+  |> infra.pigeon_selector_to_internal_selector()
 }
 
 pub fn text(
   s: String,
 ) -> Selector {
-  fn (vxml) {
-    vxml 
-    |> infra.vxml_to_unselected_lines
-    |> text_internal_selector(s)
-  }
+  pigeon_selector(_, s)
+  |> infra.pigeon_selector_to_selector()
 }

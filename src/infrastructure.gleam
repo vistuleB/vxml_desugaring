@@ -2409,6 +2409,9 @@ pub type SelectedPigeonLine {
   Byproduct(payload: PigeonLine)
 }
 
+pub type PigeonSelector =
+  fn(PigeonLine) -> Bool
+
 pub type InternalSelector =
   fn(List(SelectedPigeonLine)) -> List(SelectedPigeonLine)
 
@@ -2726,6 +2729,39 @@ pub fn vxml_to_pigeon_lines(
 ) -> List(PigeonLine) {
   vxml_to_pigeon_lines_internal([], vxml, 0)
   |> list.reverse
+}
+
+pub fn pigeon_selector_to_selector(
+  pigeon_selector: PigeonSelector,
+) -> Selector {
+  fn (vxml) {
+    vxml
+    |> vxml_to_pigeon_lines
+    |> list.map(
+      fn (pigeon) {
+        case pigeon_selector(pigeon) {
+          True -> OG(pigeon)
+          False -> NotSelected(pigeon)
+        }
+      }
+    )
+  }
+}
+
+pub fn pigeon_selector_to_internal_selector(
+  pigeon_selector: PigeonSelector,
+) -> InternalSelector {
+  fn (lines: List(SelectedPigeonLine)) {
+    lines
+    |> list.map(
+      fn (line: SelectedPigeonLine) {
+        case pigeon_selector(line.payload) {
+          True -> OG(line.payload)
+          False -> NotSelected(line.payload)
+        }
+      }
+    )
+  }
 }
 
 pub fn vxml_to_unselected_lines(
