@@ -1234,7 +1234,7 @@ fn parse_show_changes_near_args(
       lines
       |> list.map(infra.apply_pigeon_selector_to_line(_, selector))
       |> infra.extend_selection_up(plus_minus.minus)
-      |> infra.extend_selection_up(plus_minus.plus)
+      |> infra.extend_selection_down(plus_minus.plus)
     }
 
   use #(restrict, force) <- result.try(parse_step_numbers(values))
