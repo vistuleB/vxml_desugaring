@@ -689,8 +689,8 @@ pub fn run_renderer(
       True -> {
         fr.payload
         |> vp.vxml_to_output_lines
-        |> bl.output_lines_pretty_printer_no1("fr:" <> fr.path)
-        |> io.println
+        |> bl.echo_output_lines("fr:" <> fr.path)
+        Nil
       }
     }
   })
@@ -715,8 +715,8 @@ pub fn run_renderer(
           False -> Nil
           True -> {
             fr.payload
-            |> bl.output_lines_pretty_printer_no1("fr-ol:" <> fr.path)
-            |> io.println
+            |> bl.echo_output_lines("fr-ol:" <> fr.path)
+            Nil
           }
         }
       }

@@ -382,7 +382,7 @@ const constructor = fold_contents_into_text
 /// nodes (in end-of-last-line to beginning-of-first-line
 /// fashion).
 /// 
-/// Returns an error if any instance of the tag fails
+/// Throws an error if any instance of the tag fails
 /// to have exactly one text child.
 pub fn fold_contents_into_text(param: Param) -> Desugarer {
   Desugarer(
@@ -398,7 +398,7 @@ pub fn fold_contents_into_text(param: Param) -> Desugarer {
 /// nodes (in end-of-last-line to beginning-of-first-line
 /// fashion).
 /// 
-/// Returns an error if any instance of the tag fails
+/// Throws an error if any instance of the tag fails
 /// to have exactly one text child.
     ",
     case param_to_inner_param(param) {
