@@ -1,4 +1,3 @@
-import blamedlines.{type Blame, Blame}
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, Some, None}
@@ -7,6 +6,7 @@ import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
+import blamedlines.{type Blame} as bl
 
 type HandlesDict =
   Dict(String, #(String,       String,     String))
@@ -24,14 +24,13 @@ type State {
 fn convert_handles_to_attributes(
   handles: HandlesDict,
 ) -> List(BlamedAttribute) {
-  let blame = Blame("", 0, 0, [])
   list.map2(
     dict.keys(handles),
     dict.values(handles),
     fn (key, values) {
       let #(value, id, filename) = values
       BlamedAttribute(
-        blame: blame,
+        blame: desugarer_blame,
         key: "handle",
         value: key <> "|" <> value <> "|" <> id <> "|" <> filename,
       )
@@ -158,7 +157,7 @@ fn v_after_transforming_children(
     False -> Ok(#(vxml, state))
     True -> {
       let grand_wrapper = V(
-        infra.blame_us("handles_generate_dictionary"),
+        desugarer_blame,
         "GrandWrapper",
         convert_handles_to_attributes(state.handles),
         [vxml],
@@ -201,6 +200,7 @@ type InnerParam = Param
 
 const name = "handles_generate_dictionary"
 const constructor = handles_generate_dictionary
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

@@ -1,18 +1,18 @@
-import blamedlines.{Blame}
+import blamedlines as bl
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V, T}
 
-const our_blame = Blame("generate_ti3_menu", 0, 0, [])
+const desugarer_blame = bl.Des([], "generate_ti3_menu")
 
 fn an_attribute(key: String, value: String) -> BlamedAttribute {
-  BlamedAttribute(our_blame, key, value)
+  BlamedAttribute(desugarer_blame, key, value)
 }
 
 fn a_1_line_text_node(content: String) -> VXML {
-  T(our_blame, [BlamedContent(our_blame, content)])
+  T(desugarer_blame, [BlamedContent(desugarer_blame, content)])
 }
 
 fn into_list(a: a) -> List(a) {
@@ -61,7 +61,7 @@ fn a_tag_with_href_and_content(
   content: String,
 ) -> VXML {
   V(
-    our_blame,
+    desugarer_blame,
     "a",
     an_attribute("href", href) |> into_list,
     a_1_line_text_node(content) |> into_list,
@@ -104,7 +104,7 @@ fn info_2_left_menu(
   let ch_link_option = prev_info |> option.map(info_2_link(_, LeftMenu))
 
   V(
-    our_blame,
+    desugarer_blame,
     "LeftMenu",
     an_attribute("class", "menu-left") |> into_list,
     option.values([
@@ -124,7 +124,7 @@ fn info_2_right_menu(
   let ch_link_option = prev_info |> option.map(info_2_link(_, RightMenu))
 
   V(
-    our_blame,
+    desugarer_blame,
     "RightMenu",
     an_attribute("class", "menu-right") |> into_list,
     option.values([
@@ -139,7 +139,7 @@ fn infos_2_menu(
   homepage_url: String,
 ) -> VXML {
   V(
-    our_blame,
+    desugarer_blame,
     "Menu",
     [],
     [

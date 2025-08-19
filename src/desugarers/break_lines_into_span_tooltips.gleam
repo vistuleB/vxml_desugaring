@@ -4,13 +4,20 @@ import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
+import blamedlines as bl
 
 fn line_to_tooltip_span(
   bc: BlamedContent,
   inner: InnerParam,
 ) -> VXML {
   let location =
-    inner <> bc.blame.filename <> ":" <> ins(bc.blame.line_no) <> ":" <> "50"
+    inner <> case bc.blame {
+      bl.Src(_, _, _, _) -> {
+        let assert bl.Src(_, path, line_no, char_no) = bc.blame
+        path <> ":" <> ins(line_no) <> ":" <> ins(char_no)
+      }
+      _ -> ""
+    }
   V(
     bc.blame,
     "span",

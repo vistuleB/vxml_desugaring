@@ -1,10 +1,10 @@
-import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{None, Some}
 import gleam/regexp.{type Regexp}
 import gleam/string.{inspect as ins}
 import infrastructure as infra
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import blamedlines.{type Blame} as bl
 
 pub type GroupReplacementInstruction {
   Keep
@@ -55,7 +55,7 @@ pub fn split_content_with_replacement(
         True -> infra.get_at(w.instructions, mod_index)
         False -> Ok(Keep)
       }
-      let updated_blame = Blame(..blame, char_no: blame.char_no + acc)
+      let updated_blame = bl.advance(blame, acc)
       let node_replacement = case instruction {
         Trash -> None
         Keep -> Some([T(updated_blame, [BlamedContent(updated_blame, split)])])

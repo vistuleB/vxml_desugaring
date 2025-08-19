@@ -4,6 +4,9 @@ import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, T, BlamedContent}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "auto_generate_child_if_miss...")
 
 fn nodemap(
   node: VXML,
@@ -28,7 +31,7 @@ fn nodemap(
           ..node,
           children: [
             V(
-              infra.blame_us("auto_generate_child_if_missing_from_attribute"),
+              desugarer_blame,
               inner.1,
               [],
               [T(attribute.blame, [BlamedContent(attribute.blame, attribute.value)])],

@@ -5,6 +5,9 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "append_attribute")
 
 fn nodemap(
   vxml: VXML,
@@ -33,7 +36,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
     BlamedAttribute(
-      infra.blame_us("append_attribute"),
+      desugarer_blame,
       param.1,
       param.2,
     )

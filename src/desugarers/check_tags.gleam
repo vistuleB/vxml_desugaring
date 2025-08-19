@@ -4,7 +4,6 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
-import blamedlines
 
 fn nodemap(
   vxml: VXML,
@@ -17,7 +16,7 @@ fn nodemap(
         True -> Ok(vxml)
         False -> Error(DesugaringError(
           blame,
-          "tag '" <> tag <> "' is not in the approved " <> inner.1 <> " list of tags: " <> ins(inner.0)
+          "tag '" <> tag <> "' is not in approved " <> inner.1 <> " list of tags: " <> ins(inner.0)
         ))
       }
     }
@@ -34,11 +33,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let #(approved_tags, identifier) = param
-  case approved_tags {
-    [] -> Error(DesugaringError(blamedlines.Blame(identifier, 0, 0, []), "Approved tags list cannot be empty"))
-    _ -> Ok(param)
-  }
+  Ok(param)
 }
 
 type Param = #(List(String), String)

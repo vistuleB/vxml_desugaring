@@ -1,14 +1,12 @@
-import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option.{type Option, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
+import blamedlines as bl
 
-fn blame_us(note: String) -> Blame {
-  Blame("generate_lbp_toc" <> note, 0, 0, [])
-}
+const desugarer_blame = bl.Des([], "generate_lbp_table_of_contents")
 
 fn chapter_link(
   chapter_link_component_name: String,
@@ -39,8 +37,8 @@ fn chapter_link(
       blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(blame_us("L42"), "article_type", ins(count)),
-        BlamedAttribute(blame_us("L43"), "href", tp <> ins(count)),
+        BlamedAttribute(desugarer_blame, "article_type", ins(count)),
+        BlamedAttribute(desugarer_blame, "href", tp <> ins(count)),
       ],
       title_element.children,
     ),
@@ -52,9 +50,9 @@ fn type_of_chapters_title(
   label: String,
 ) -> VXML {
   V(
-    blame_us("L55"),
+    desugarer_blame,
     type_of_chapters_title_component_name,
-    [BlamedAttribute(blame_us("L57"), "label", label)],
+    [BlamedAttribute(desugarer_blame, "label", label)],
     [],
   )
 }
@@ -66,13 +64,15 @@ fn div_with_id_title_and_menu_items(
   menu_items: List(VXML),
 ) -> VXML {
   V(
-    blame_us("L69"),
+    desugarer_blame,
     "div",
-    [BlamedAttribute(blame_us("L71"), "id", id)], 
+    [
+      BlamedAttribute(desugarer_blame, "id", id)
+    ], 
     [
       type_of_chapters_title(type_of_chapters_title_component_name, title_label),
-      V(blame_us("L74"), "ul", [], menu_items),
-    ]
+      V(desugarer_blame, "ul", [], menu_items),
+    ],
   )
 }
 
@@ -121,7 +121,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
       False -> []
     },
     case exists_bootcamps, exists_chapters, maybe_spacer {
-      True, True, Some(spacer_tag) -> [V(blame_us("L124"), spacer_tag, [], [])]
+      True, True, Some(spacer_tag) -> [V(desugarer_blame, spacer_tag, [], [])]
       _, _, _ -> []
     },
     case exists_bootcamps {
@@ -132,7 +132,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
 
   Ok(infra.prepend_child(
     root,
-    V(blame_us("L135"), table_of_contents_tag, [], children),
+    V(desugarer_blame, table_of_contents_tag, [], children),
   ))
 }
 

@@ -4,6 +4,9 @@ import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError,DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "generate_lbp_breadcrumbs")
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use #(head, last) <- infra.on_error_on_ok(
@@ -53,16 +56,15 @@ fn cleanup_children(children: List(VXML)) -> List(VXML){
 }
 
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
-  let blame = infra.blame_us("generate_lbp_section_breadcrumbs")
   V(
-    blame,
+    desugarer_blame,
     "BreadcrumbItem",
-    [BlamedAttribute(blame, "id", "breadcrumb-" <> ins(index))],
+    [BlamedAttribute(desugarer_blame, "id", "breadcrumb-" <> ins(index))],
     [
       V(
-        blame,
+        desugarer_blame,
         "InChapterLink",
-        [BlamedAttribute(blame, "href", "?id=" <> target_id)],
+        [BlamedAttribute(desugarer_blame, "href", "?id=" <> target_id)],
         children |> cleanup_children,
       ),
     ]
@@ -100,7 +102,7 @@ fn generate_sections_list(
   }
 
   Ok(V(
-    infra.blame_us("generate_lbp_section_breadcrumbs"),
+    desugarer_blame,
     "SectionsBreadcrumbs",
     [],
     list.flatten([sections_nodes, exercises_node])

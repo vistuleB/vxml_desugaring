@@ -4,6 +4,9 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, V}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "associate_counter_by_...__outside")
 
 fn nodemap(
   vxml: VXML,
@@ -57,7 +60,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     param.0,
     param.1,
     BlamedAttribute(
-      infra.blame_us("assoc_counter_oustide"),
+      desugarer_blame,
       ".",
       "::++" <> param.1,
     ),

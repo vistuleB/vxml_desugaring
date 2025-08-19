@@ -4,6 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{ type VXML, BlamedContent, T, V }
+import blamedlines as bl
 
 fn nodemap(
   vxml: VXML,
@@ -30,7 +31,7 @@ fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTrans
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("prepend_text_node__outside")
+  let blame = desugarer_blame
   #(
     param.0,
     T(
@@ -51,6 +52,7 @@ type InnerParam = #(String, VXML)
 
 const name = "prepend_text_node__outside"
 const constructor = prepend_text_node__outside
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

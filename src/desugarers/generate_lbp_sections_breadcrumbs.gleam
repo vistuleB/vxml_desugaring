@@ -4,6 +4,9 @@ import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "generate_lbp_section_breadcrumbs")
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use last <- infra.on_error_on_ok(
@@ -84,16 +87,24 @@ fn transform_children(children: List(VXML)) -> List(VXML){
 }
 
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
-  let blame = infra.blame_us("generate_lbp_sections_breadcrumbs")
+  let link = V(
+    desugarer_blame, 
+    "InChapterLink",
+    [BlamedAttribute(desugarer_blame, "href", "?id=" <> target_id)],
+    children
+  )
 
-   let link = V(blame, "InChapterLink", [
-        BlamedAttribute(blame, "href", "?id=" <> target_id),
-      ], children)
-
-  V(blame, "BreadcrumbItem", [
-    BlamedAttribute(blame, "class", "breadcrumb"),
-    BlamedAttribute(blame, "id", "breadcrumb-" <> ins(index)),
-  ], [link])
+  V(
+    desugarer_blame,
+    "BreadcrumbItem",
+    [
+      BlamedAttribute(desugarer_blame, "class", "breadcrumb"),
+      BlamedAttribute(desugarer_blame, "id", "breadcrumb-" <> ins(index)),
+    ],
+    [
+      link
+    ],
+  )
 }
 
 fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
@@ -127,7 +138,12 @@ fn generate_sections_list(sections: List(VXML), exercises: List(VXML)) -> Result
     _ -> panic as "We don't have more than one exercises section"
   }
 
-  Ok(V(infra.blame_us("generate_lbp_sections_breadcrumbs"), "SectionsBreadcrumbs", [], list.flatten([sections_nodes, exercises_node])))
+  Ok(V(
+    desugarer_blame,
+    "SectionsBreadcrumbs",
+    [],
+    list.flatten([sections_nodes, exercises_node])
+  ))
 }
 
 fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {

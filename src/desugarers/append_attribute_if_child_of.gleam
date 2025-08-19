@@ -4,6 +4,9 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "append_attribute_if_child_of")
 
 fn child_mapper(
   vxml: VXML,
@@ -17,7 +20,7 @@ fn child_mapper(
           True -> attributes
           False -> list.append(
             attributes,
-            [BlamedAttribute(infra.blame_us("append_attribute_if_child_of"), inner.2, inner.3)],
+            [BlamedAttribute(desugarer_blame, inner.2, inner.3)],
           )
         }
       V(..vxml, attributes: attributes)

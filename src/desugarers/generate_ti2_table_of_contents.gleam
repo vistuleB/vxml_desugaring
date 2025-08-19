@@ -1,4 +1,4 @@
-import blamedlines.{type Blame, Blame}
+import blamedlines.{type Blame} as bl
 import gleam/list
 import gleam/option
 import gleam/result
@@ -8,7 +8,7 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 
 fn blame_us(note: String) -> Blame {
-  Blame("generate_ti2_toc:" <> note, -1, -1, [])
+  bl.Des([], "generate_ti2_toc:" <> note)
 }
 
 fn prepand_0(number: String) {

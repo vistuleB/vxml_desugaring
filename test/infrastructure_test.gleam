@@ -3,7 +3,7 @@ import gleeunit/should
 import gleam/list
 import infrastructure as infra
 import vxml.{V, T, BlamedAttribute}
-import blamedlines.{Blame}
+import blamedlines.{Src}
 
 pub fn main() {
   gleeunit.main()
@@ -70,7 +70,7 @@ pub fn kabob_case_to_camel_case_test() {
 }
 
 pub fn has_class_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // test node with single class that matches
   let node_with_class = V(
@@ -134,7 +134,7 @@ pub fn has_class_test() {
 }
 
 pub fn filter_descendants_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // create a nested structure for testing
   // <div class="parent">
@@ -225,7 +225,7 @@ pub fn filter_descendants_test() {
 }
 
 pub fn descendants_with_key_value_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // create a nested structure for testing
   // <div class="parent">
@@ -302,7 +302,7 @@ pub fn descendants_with_key_value_test() {
 }
 
 pub fn descendants_with_tag_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // create a nested structure for testing
   // <div class="parent">
@@ -383,7 +383,7 @@ pub fn descendants_with_tag_test() {
 }
 
 pub fn children_with_class_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // create a parent with children having different classes
   // <div class="parent">
@@ -472,7 +472,7 @@ pub fn children_with_class_test() {
 }
 
 pub fn descendants_with_class_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // create a nested structure for testing
   // <div class="parent">
@@ -563,7 +563,7 @@ pub fn descendants_with_class_test() {
 }
 
 pub fn excise_children_test() {
-  let blame = Blame("test", 1, 0, [])
+  let blame = Src([], "test", 1, 0)
   
   // create a parent with multiple children
   // <div class="parent">

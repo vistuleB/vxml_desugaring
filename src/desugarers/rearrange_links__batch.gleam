@@ -7,11 +7,9 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import blamedlines.{type Blame, Blame}
 import vxml.{type VXML, T, V, BlamedAttribute, BlamedContent}
 import xmlm
-
-const desugarer_blame = Blame("rearrange_links", 0, 0, [])
+import blamedlines.{type Blame} as bl
 
 type PatternToken {
   EndT
@@ -877,22 +875,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
       use unique_href_vars <- result.try(
         collect_unique_href_vars(pattern1)
-        |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> p.0 <>" has duplicate declaration of href variable: " <> ins(var) ) })
+        |> result.map_error(fn(var){ DesugaringError(infra.no_blame, "Source pattern " <> p.0 <>" has duplicate declaration of href variable: " <> ins(var) ) })
       )
 
       use unique_content_vars <- result.try(
         collect_unique_content_vars(pattern1)
-        |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Source pattern " <> p.0 <>" has duplicate declaration of content variable: " <> ins(var)) })
+        |> result.map_error(fn(var){ DesugaringError(infra.no_blame, "Source pattern " <> p.0 <>" has duplicate declaration of content variable: " <> ins(var)) })
       )
 
       use _ <- result.try(
         check_each_href_var_is_sourced(pattern2, unique_href_vars)
-        |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> p.1 <> " has a declaration of unsourced href variable: " <> ins(var)) })
+        |> result.map_error(fn(var){ DesugaringError(infra.no_blame, "Target pattern " <> p.1 <> " has a declaration of unsourced href variable: " <> ins(var)) })
       )
 
       use _ <- result.try(
         check_each_content_var_is_sourced(pattern2, unique_content_vars)
-        |> result.map_error(fn(var){ DesugaringError(infra.blame_us("..."), "Target pattern " <> p.1 <> " has a declaration of unsourced content variable: " <> ins(var)) })
+        |> result.map_error(fn(var){ DesugaringError(infra.no_blame, "Target pattern " <> p.1 <> " has a declaration of unsourced content variable: " <> ins(var)) })
       )
 
       Ok(#(pattern1, pattern2))
@@ -908,6 +906,7 @@ type InnerParam = List(#(LinkPattern, LinkPattern))
 
 const name = "rearrange_links__batch"
 const constructor = rearrange_links__batch
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

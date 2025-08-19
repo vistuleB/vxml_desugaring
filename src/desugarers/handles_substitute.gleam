@@ -1,4 +1,3 @@
-import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, Some, None}
@@ -8,6 +7,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import blamedlines.{type Blame} as bl
 
 type HandlesDict =
   Dict(String, #(String,   String,   String))
@@ -241,13 +241,12 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("handles_substitute")
   #(
     param.0,
     param.1,
     param.2,
-    param.3 |> infra.string_pairs_2_blamed_attributes(blame),
-    param.4 |> infra.string_pairs_2_blamed_attributes(blame),
+    param.3 |> infra.string_pairs_2_blamed_attributes(desugarer_blame),
+    param.4 |> infra.string_pairs_2_blamed_attributes(desugarer_blame),
   )
   |> Ok
 }
@@ -262,6 +261,7 @@ type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAt
 
 const name = "handles_substitute"
 const constructor = handles_substitute
+const desugarer_blame = bl.Des([], "handles_substitute")
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

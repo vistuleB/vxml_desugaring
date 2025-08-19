@@ -5,6 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, T}
+import blamedlines as bl
 
 fn nodemap(
   vxml: VXML,
@@ -39,7 +40,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       let #(old_tag, new_tag, attrs) = renaming
       let attrs_converted = list.map(attrs, fn(attr) {
         let #(key, value) = attr
-        vxml.BlamedAttribute(infra.blame_us(name), key, value)
+        vxml.BlamedAttribute(desugarer_blame, key, value)
       })
       #(old_tag, #(new_tag, attrs_converted))
     })
@@ -57,6 +58,7 @@ type InnerParam =
 
 const name = "rename_with_attributes"
 const constructor = rename_with_attributes
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

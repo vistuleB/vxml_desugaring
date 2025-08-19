@@ -1,18 +1,18 @@
-import blamedlines.{type Blame} as bl
 import gleam/list
 import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import blamedlines.{type Blame, Src} as bl
 
 fn pairing_msg(
   local: Blame,
   remote: Blame,
 ) -> String {
-  case local.filename == remote.filename {
-    True -> "paired with --:" <> ins(remote.line_no) <> ":" <> ins(remote.char_no)
-    False -> "p.w. " <> bl.blame_digest(remote)
+  case local, remote {
+    Src(_, l, _, _), Src(_, r, _, _) if l == r -> "paired with --:" <> ins(remote.line_no) <> ":" <> ins(remote.char_no)
+    _, _ -> "p.w. " <> bl.blame_digest(remote)
   }
 }
 

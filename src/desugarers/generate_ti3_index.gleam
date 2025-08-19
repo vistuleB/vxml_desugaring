@@ -4,6 +4,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
+import blamedlines as bl
 
 type ChapterNo = Int
 type SubChapterNo = Int
@@ -66,7 +67,7 @@ fn all_subchapters(chapters: List(#(VXML, ChapterNo, ChapterTitle))) -> List(#(C
 }
 
 fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, chapter_number: Int) -> VXML {
-  let blame = infra.blame_us("construct_index")
+  let blame = desugarer_blame
   V(
     blame,
     "li",
@@ -84,7 +85,8 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
 }
 
 fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapters: List(#(SubChapterNo, SubchapterTitle))) -> VXML {
-  let blame = infra.blame_us("construct_index")
+  let blame = desugarer_blame
+
   let subchapters_ol = case subchapters {
     [] -> []
     _ -> [
@@ -120,7 +122,7 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
 }
 
 fn construct_header(document: VXML) -> VXML {
-  let blame = infra.blame_us("construct_header")
+  let blame = desugarer_blame
 
   let title =
     case infra.v_attribute_with_key(document, "title") {
@@ -174,7 +176,8 @@ fn construct_header(document: VXML) -> VXML {
 }
 
 fn construct_right_menu(document: VXML) -> VXML {
-  let blame = infra.blame_us("construct_right_menu")
+  let blame = desugarer_blame
+
   let first_chapter_title =
     document
     |> infra.children_with_tag("Chapter")
@@ -204,7 +207,8 @@ fn construct_right_menu(document: VXML) -> VXML {
 }
 
 fn construct_menu(document: VXML) -> VXML {
-  let blame = infra.blame_us("construct_menu")
+  let blame = desugarer_blame
+
   let course_homepage_link =
     case infra.v_attribute_with_key(document, "course_homepage") {
       None -> "no url for course homepage"
@@ -232,7 +236,8 @@ fn construct_menu(document: VXML) -> VXML {
 }
 
 fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo, SubchapterTitle))))) -> VXML {
-  let blame = infra.blame_us("construct_index")
+  let blame = desugarer_blame
+
   V(
     blame,
     "section",
@@ -262,7 +267,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
           |> construct_index
 
   let index_node = V(
-    infra.blame_us("construct_index"),
+    desugarer_blame,
     "Index",
     [],
     [menu_node, header_node, index_list_node]
@@ -285,6 +290,7 @@ type InnerParam = Nil
 
 const name = "generate_ti3_index"
 const constructor = generate_ti3_index
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

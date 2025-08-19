@@ -4,7 +4,9 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
-import blamedlines.{type Blame}
+import blamedlines.{type Blame} as bl
+
+const desugarer_blame = bl.Des([], "group_consecutive_children_outside")
 
 fn is_forbidden(elem: VXML, forbidden: List(String)) {
   case elem {
@@ -50,9 +52,8 @@ fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTrans
 }
 
 fn param_to_inner_param(param: Param, outside: List(String)) -> Result(InnerParam, DesugaringError) {
-  let blame = infra.blame_us("group_consecutive_cildren")
   case list.contains(outside, param.0) {
-    True -> Ok(#(param.0, param.1, blame))
+    True -> Ok(#(param.0, param.1, desugarer_blame))
     False -> Error(DesugaringError(infra.no_blame, "the wrapper must be included either in the list of things not to be contained in in order to avoid infinite recursion"))
   }
 }

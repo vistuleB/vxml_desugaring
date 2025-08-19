@@ -4,6 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type LatexDelimiterPair, DoubleDollar} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, type BlamedContent, BlamedContent, V, T}
+import blamedlines as bl
 
 fn do_if(f, b) {
   case b {
@@ -18,7 +19,7 @@ fn split_and_insert_before_unless_allowable_ending_found_ez_version(
   allowable_endings: List(String),       // this will almost always be ["$$"], but could be ["\[", "$$"] for ex
   if_no_allowable_found_insert: String,  // will almost always be "$$"
 ) -> List(BlamedContent) {
-  let blame = infra.blame_us("split_and_insert_before_unless_allowable_ending_found")
+  let blame = desugarer_blame
 
   let add_prescribed_to_end_if_missing = fn(lines) {
     let trimmed =
@@ -98,7 +99,7 @@ fn split_and_insert_after_unless_allowable_beginning_found_ez_version(
   allowable_beginnings: List(String),    // this will almost always be ["$$"], but could be ["\]", "$$"] for ex
   if_no_allowable_found_insert: String,  // this will almost always be "$$"
 ) -> List(BlamedContent) {
-  let blame = infra.blame_us("split_and_insert_after_unless_allowable_beginning_found")
+  let blame = desugarer_blame
 
   let add_prescribed_to_start_if_missing = fn(lines) {
     let trimmed = infra.lines_trim_start(lines)
@@ -302,6 +303,7 @@ type InnerParam =
 
 const name = "normalize_begin_end_align"
 const constructor = normalize_begin_end_align
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

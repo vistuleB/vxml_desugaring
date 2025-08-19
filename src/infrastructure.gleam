@@ -1,6 +1,6 @@
 import gleam/float
 import gleam/int
-import blamedlines.{type Blame, Blame, type OutputLine, OutputLine}
+import blamedlines.{type Blame, type OutputLine, OutputLine}
 import gleam/dict.{type Dict}
 import gleam/io
 import gleam/list
@@ -373,12 +373,12 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
   }
 }
 
-pub fn blame_tag_attrs_2_v(
+pub fn emitter_and_tag_and_attrs_2_v(
   blamestring: String,
   tag: String,
   attrs: List(#(String, String)),
 ) -> VXML {
-  let blame = blame_us(blamestring)
+  let blame = blamedlines.Des([], blamestring)
   let attrs = list.map(attrs, fn(pair) { BlamedAttribute(blame, pair.0, pair.1) })
   V(
     blame,
@@ -829,14 +829,14 @@ pub fn find_replace_in_node_no_list(
 //* blame-related                                              *
 //**************************************************************
 
-pub const no_blame = Blame("", -1, -1, [])
+pub const no_blame = blamedlines.no_blame
 
-pub fn blame_us(message: String) -> Blame {
-    Blame(message, 0, 0, [])
+pub fn desugarer_blame(emitter_name: String) -> Blame {
+  blamedlines.Des([], emitter_name)
 }
 
-pub fn comment_blame(c: String) -> Blame {
-  Blame("", 0, 0, [c])
+pub fn emitter_blame(emitter_name: String) -> Blame {
+  blamedlines.Em([], emitter_name)
 }
 
 pub fn get_blame(vxml: VXML) -> Blame {
@@ -852,13 +852,10 @@ pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
 }
 
 pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
-  let Blame(filename, indent, char_no, comments) = blame
-  Blame(filename, indent, char_no, [comment, ..comments])
+  blamedlines.append_comment(blame, comment)
 }
 
-pub fn advance(blame: Blame, chars: Int) -> Blame {
-  Blame(..blame, char_no: blame.char_no + chars)
-}
+pub const advance = blamedlines.advance
 
 //**************************************************************
 //* string
@@ -1118,7 +1115,7 @@ pub fn line_wrap_rearrangement_internal(
     )
     [Either(some_string), ..rest] -> {
       let length = string.length(some_string)
-      let current_blame = Blame(..current_blame, char_no: current_blame.char_no + length + 1)
+      let current_blame = advance(current_blame, length + 1)
       case some_string == "" || chars_left > 0 || is_very_first_token {
         True -> line_wrap_rearrangement_internal(
           False,
@@ -2476,7 +2473,7 @@ pub fn selected_lines_to_output_lines(lines: List(SelectedPigeonLine)) -> List(O
             #(
               True,
               None, 
-              [line |> s2l, OutputLine(comment_blame(ins(num_lines)), indentation, "..."), ..acc.2],
+              [line |> s2l, OutputLine(blamedlines.NoBlame([ins(num_lines)]), indentation, "..."), ..acc.2],
             )
         }
         False -> case acc.0, acc.1 {

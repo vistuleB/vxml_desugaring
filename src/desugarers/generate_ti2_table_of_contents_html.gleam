@@ -1,4 +1,4 @@
-import blamedlines.{type Blame}
+import blamedlines.{type Blame} as bl
 import gleam/int
 import gleam/list
 import gleam/option
@@ -10,7 +10,7 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
 fn blame_us(note: String) -> Blame {
-  infra.blame_us("(generate_ti2_table_of_contents_html.gleam:" <> note <> ")")
+  bl.Des([], "generate_ti2_table_of_contents_html.gleam:" <> note)
 }
 
 fn prepend_0(number: String) {
@@ -34,8 +34,8 @@ fn chapter_link(
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
-        <> tp
-        <> " missing title_gr attribute",
+      <> tp
+      <> " missing title_gr attribute",
     )),
   )
 
@@ -44,8 +44,8 @@ fn chapter_link(
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
-        <> tp
-        <> " missing title_en attribute",
+      <> tp
+      <> " missing title_en attribute",
     )),
   )
 
@@ -54,8 +54,8 @@ fn chapter_link(
     with_on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
-        <> tp
-        <> " missing number attribute",
+      <> tp
+      <> " missing number attribute",
     )),
   )
 

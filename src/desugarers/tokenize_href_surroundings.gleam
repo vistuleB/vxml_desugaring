@@ -1,12 +1,11 @@
-import blamedlines.{type Blame, Blame}
 import gleam/list
 import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V, T}
+import blamedlines.{type Blame} as bl
 
-const desugarer_blame = Blame("tokenize_href_surroundings", 0, 0, [])
 const had_href_child = BlamedAttribute(desugarer_blame, "had_href_child", "true")
 
 fn start_node(blame: Blame) {
@@ -120,6 +119,7 @@ type InnerParam = Param
 
 const name = "tokenize_href_surroundings"
 const constructor = tokenize_href_surroundings
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

@@ -4,13 +4,18 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Desugarer, Desugarer} as infra
 import vxml.{type VXML, V}
+import blamedlines as bl
 
 fn matches_a_selector(vxml: VXML, inner: InnerParam) -> Bool {
-  let assert V(b, _, attrs, _) = vxml
+  let assert V(blame, _, attrs, _) = vxml
+  let v_path = case blame {
+    bl.Src(_, v_path, _, _) -> v_path
+    _ -> ""
+  }
   list.any(inner, fn(selector) {
     let #(path, key, value) = selector
     {
-      string.contains(b.filename, path)
+      string.contains(v_path, path)
       && {
         key == ""
         || list.any(attrs, fn(attr) {

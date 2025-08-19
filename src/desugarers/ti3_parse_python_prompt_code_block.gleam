@@ -1,12 +1,11 @@
-import blamedlines.{Blame}
 import gleam/list
 import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import blamedlines as bl
 
-const desugarer_blame = Blame("ti3_parse_python_prompt_code_block", 0, 0, [])
 const newline_t =
   T(
     desugarer_blame,
@@ -154,6 +153,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 const name = "ti3_parse_python_prompt_code_block"
 const constructor = ti3_parse_python_prompt_code_block
+const desugarer_blame = bl.Des([], "ti3_parse_python_prompt_code_block")
 
 type Param = Nil
 type InnerParam = Param

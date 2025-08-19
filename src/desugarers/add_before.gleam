@@ -40,7 +40,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let v = infra.blame_tag_attrs_2_v(
+  let v = infra.emitter_and_tag_and_attrs_2_v(
     "add_before",
     param.1,
     param.2,

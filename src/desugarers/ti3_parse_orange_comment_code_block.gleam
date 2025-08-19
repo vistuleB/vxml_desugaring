@@ -1,12 +1,12 @@
-import blamedlines.{Blame}
 import gleam/list
 import gleam/option.{None}
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import blamedlines as bl
 
-const desugarer_blame = Blame("ti3_parse_orange_comment", 0, 0, [])
+
 const t_1_empty_line = T(desugarer_blame, [BlamedContent(desugarer_blame, "")])
 const orange = V(desugarer_blame, "span", [BlamedAttribute(desugarer_blame, "class", "orange-comment")], [])
 
@@ -70,6 +70,7 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
 
 const name = "ti3_parse_orange_comment_code_block"
 const constructor = ti3_parse_orange_comment_code_block
+const desugarer_blame = bl.Des([], "ti3_parse_orange_comment_code_block")
 
 type Param = Nil
 type InnerParam = Nil

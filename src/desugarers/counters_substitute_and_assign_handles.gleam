@@ -9,6 +9,9 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import roman
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import blamedlines as bl
+
+const desugarer_blame = bl.Des([], "counters_substitute_and_...")
 
 type CounterType {
   Arabic
@@ -297,7 +300,7 @@ fn handle_assignment_blamed_attributes_from_handle_assignments(
   handles
   |> list.map(fn(handle) {
     let #(name, value) = handle
-    BlamedAttribute(infra.blame_us("..."), "handle", name <> " " <> value)
+    BlamedAttribute(desugarer_blame, "handle", name <> " " <> value)
   })
 }
 

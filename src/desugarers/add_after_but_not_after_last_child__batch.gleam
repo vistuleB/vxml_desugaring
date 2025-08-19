@@ -51,7 +51,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     fn(triple) { 
       #(
         triple.0,
-        infra.blame_tag_attrs_2_v(
+        infra.emitter_and_tag_and_attrs_2_v(
           "add_after_but_not_after_last_child__batch",
           triple.1,
           triple.2,
