@@ -40,7 +40,7 @@ find "$TARGET_DIR" -maxdepth 1 -type f | while read -r file; do
         if [[ "$line" =~ desugarer_blame\([0-9]+\) ]]; then
             # Replace all occurrences of "desugarer_blame(digits)" with "desugarer_blame(line_number)" on this line
             # Using sed to handle multiple occurrences on the same line
-            modified_line=$(echo "$line" | sed "s/desugarer_blame([0-9]\+)/desugarer_blame($line_number)/g")
+            modified_line=$(echo "$line" | sed -E 's/desugarer_blame\([0-9]+\)/desugarer_blame('"$line_number"')/g')
             echo "$modified_line" >> "$temp_file"
             replacements_made=true
         else
