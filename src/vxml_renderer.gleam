@@ -1,22 +1,25 @@
-import gleam/float
-import gleam/time/duration
-import blamedlines.{Em, type InputLine, type OutputLine, OutputLine} as bl
+import blamedlines.{type InputLine, type OutputLine, Em, OutputLine} as bl
 import desugarer_library as dl
-import selector_library as sl
 import gleam/dict.{type Dict}
+import gleam/float
 import gleam/int
 import gleam/io
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type InSituDesugaringError, InSituDesugaringError, type Desugarer, On, Off, OnChange, type Pipe, type Pipeline} as infra
-import star_block
+import gleam/time/duration
+import gleam/time/timestamp.{type Timestamp}
+import infrastructure.{
+  type Desugarer, type InSituDesugaringError, type Pipe, type Pipeline,
+  InSituDesugaringError, Off, On, OnChange,
+} as infra
+import selector_library as sl
 import shellout
 import simplifile
+import star_block
 import vxml.{type VXML, V} as vp
 import writerly as wp
-import gleam/time/timestamp.{type Timestamp}
 
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
@@ -27,18 +30,19 @@ pub type BlamedLinesAssembler(a) =
   fn(String) -> Result(List(InputLine), a)
 
 pub type BlamedLinesAssemblerDebugOptions {
-  BlamedLinesAssemblerDebugOptions(
-    debug_print: Bool,
-  )
+  BlamedLinesAssemblerDebugOptions(debug_print: Bool)
 }
 
 pub fn default_input_lines_assembler(
-  spotlight_paths: List(String)
+  spotlight_paths: List(String),
 ) -> BlamedLinesAssembler(wp.AssemblyError) {
   let spaces = string.repeat(" ", string.length("• assembling "))
-  fn (input_dir) {
-    use #(directory_tree, assembled) <- result.try(wp.assemble_input_lines_advanced_mode(input_dir, spotlight_paths))
-    let directory_tree = list.map(directory_tree, fn(line){spaces <> line}) |> list.drop(1)
+  fn(input_dir) {
+    use #(directory_tree, assembled) <- result.try(
+      wp.assemble_input_lines_advanced_mode(input_dir, spotlight_paths),
+    )
+    let directory_tree =
+      list.map(directory_tree, fn(line) { spaces <> line }) |> list.drop(1)
     io.println(input_dir)
     io.println(string.join(directory_tree, "\n"))
     Ok(assembled)
@@ -54,9 +58,7 @@ pub type SourceParser(c) =
   fn(List(InputLine)) -> Result(VXML, c)
 
 pub type SourceParserDebugOptions {
-  SourceParserDebugOptions(
-    debug_print: Bool,
-  )
+  SourceParserDebugOptions(debug_print: Bool)
 }
 
 // ******************************
@@ -66,7 +68,7 @@ pub type SourceParserDebugOptions {
 pub fn default_writerly_source_parser(
   spotlight_args: List(#(String, String, String)),
 ) -> SourceParser(String) {
-  fn (lines) {
+  fn(lines) {
     use writerlys <- result.try(
       wp.parse_input_lines(lines)
       |> result.map_error(fn(e) { ins(e) }),
@@ -75,7 +77,7 @@ pub fn default_writerly_source_parser(
     use vxml <- result.try(
       writerlys
       |> wp.writerlys_to_vxmls
-      |> infra.get_root
+      |> infra.get_root,
     )
 
     use filtered_vxml <- result.try(
@@ -90,7 +92,7 @@ pub fn default_writerly_source_parser(
 pub fn default_html_source_parser(
   spotlight_args: List(#(String, String, String)),
 ) -> SourceParser(String) {
-  fn (lines: List(InputLine)) {
+  fn(lines: List(InputLine)) {
     // we don't have our own html parser that can give
     // proper blames, we have to resort to this nonsense
     let assert [first_line, ..] = lines
@@ -98,17 +100,19 @@ pub fn default_html_source_parser(
       bl.Src(_, path, _, _) -> path
       _ -> "vr::default_html_source_parser"
     }
-    let s = lines |> bl.input_lines_to_output_lines |> bl.output_lines_to_string |> string.trim
-    use nonempty_string <- result.try(
-      case s {
-        "" -> Error("empty content")
-        _ -> Ok(s)
-      }
-    )
+    let s =
+      lines
+      |> bl.input_lines_to_output_lines
+      |> bl.output_lines_to_string
+      |> string.trim
+    use nonempty_string <- result.try(case s {
+      "" -> Error("empty content")
+      _ -> Ok(s)
+    })
     use vxml <- result.try(
       nonempty_string
       |> vp.xmlm_based_html_parser(path)
-      |> result.map_error(fn(e) { ins(e) })
+      |> result.map_error(fn(e) { ins(e) }),
     )
     dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
     |> result.map_error(fn(e) { ins(e) })
@@ -125,18 +129,11 @@ pub fn default_html_source_parser(
 // *************
 
 pub type OutputFragment(d, z) {
-  OutputFragment(
-    path: String,
-    payload: z,
-    classifier: d,
-  )
+  OutputFragment(path: String, payload: z, classifier: d)
 }
 
 pub type GhostOfOutputFragment(d) {
-  GhostOfOutputFragment(
-    path: String,
-    classifier: d,
-  )
+  GhostOfOutputFragment(path: String, classifier: d)
 }
 
 // *************
@@ -148,9 +145,7 @@ pub type Splitter(d, e) =
   fn(VXML) -> Result(List(OutputFragment(d, VXML)), e)
 
 pub type SplitterDebugOptions(d) {
-  SplitterDebugOptions(
-    debug_print: fn(OutputFragment(d, VXML)) -> Bool,
-  )
+  SplitterDebugOptions(debug_print: fn(OutputFragment(d, VXML)) -> Bool)
 }
 
 // ************************
@@ -160,16 +155,10 @@ pub type SplitterDebugOptions(d) {
 /// emits 1 fragment whose 'path' is the tag
 /// of the VXML root concatenated with a provided
 /// suffix, e.g., "<> Book" -> "Book.html"
-pub fn stub_splitter(
-  suffix: String,
-) -> Splitter(Nil, Nil) {
-  fn (root) {
+pub fn stub_splitter(suffix: String) -> Splitter(Nil, Nil) {
+  fn(root) {
     let assert V(_, tag, _, _) = root
-    Ok([OutputFragment(
-      path: tag <> suffix,
-      payload: root,
-      classifier: Nil,
-    )])
+    Ok([OutputFragment(path: tag <> suffix, payload: root, classifier: Nil)])
   }
 }
 
@@ -215,18 +204,34 @@ pub fn stub_html_emitter(
         OutputLine(Em([], "stub_html_emitter"), 0, "<!DOCTYPE html>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "<html>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "<head>"),
-        OutputLine(Em([], "stub_html_emitter"), 2, "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">"),
+        OutputLine(
+          Em([], "stub_html_emitter"),
+          2,
+          "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">",
+        ),
         OutputLine(Em([], "stub_html_emitter"), 2, "<meta charset=\"utf-8\">"),
-        OutputLine(Em([], "stub_html_emitter"), 2, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"),
-        OutputLine(Em([], "stub_html_emitter"), 2, "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>"),
-        OutputLine(Em([], "stub_html_emitter"), 2, "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>"),
+        OutputLine(
+          Em([], "stub_html_emitter"),
+          2,
+          "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+        ),
+        OutputLine(
+          Em([], "stub_html_emitter"),
+          2,
+          "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>",
+        ),
+        OutputLine(
+          Em([], "stub_html_emitter"),
+          2,
+          "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>",
+        ),
         OutputLine(Em([], "stub_html_emitter"), 0, "</head>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "<body>"),
       ],
       fragment.payload
-      |> infra.get_children
-      |> list.map(fn(vxml) { vp.vxml_to_html_output_lines(vxml, 2, 2) })
-      |> list.flatten,
+        |> infra.get_children
+        |> list.map(fn(vxml) { vp.vxml_to_html_output_lines(vxml, 2, 2) })
+        |> list.flatten,
       [
         OutputLine(Em([], "stub_html_emitter"), 0, "</body>"),
         OutputLine(Em([], "stub_html_emitter"), 0, ""),
@@ -241,9 +246,17 @@ pub fn stub_jsx_emitter(
   let lines =
     list.flatten([
       [
-        OutputLine(Em([], "panel_emitter"), 0, "import Something from \"./Somewhere\";"),
+        OutputLine(
+          Em([], "panel_emitter"),
+          0,
+          "import Something from \"./Somewhere\";",
+        ),
         OutputLine(Em([], "panel_emitter"), 0, ""),
-        OutputLine(Em([], "panel_emitter"), 0, "const OurSuperComponent = () => {"),
+        OutputLine(
+          Em([], "panel_emitter"),
+          0,
+          "const OurSuperComponent = () => {",
+        ),
         OutputLine(Em([], "panel_emitter"), 2, "return ("),
         OutputLine(Em([], "panel_emitter"), 4, "<>"),
       ],
@@ -253,7 +266,11 @@ pub fn stub_jsx_emitter(
         OutputLine(Em([], "panel_emitter"), 2, ");"),
         OutputLine(Em([], "panel_emitter"), 0, "};"),
         OutputLine(Em([], "panel_emitter"), 0, ""),
-        OutputLine(Em([], "panel_emitter"), 0, "export default OurSuperComponent;"),
+        OutputLine(
+          Em([], "panel_emitter"),
+          0,
+          "export default OurSuperComponent;",
+        ),
       ],
     ])
   Ok(OutputFragment(..fragment, payload: lines))
@@ -294,6 +311,30 @@ pub fn run_prettier(in: String, path: String) -> Result(String, #(Int, String)) 
   )
 }
 
+pub fn run_prettier_check(
+  in: String,
+  path: String,
+) -> Result(String, #(Int, String)) {
+  let result =
+    shellout.command(
+      run: "npx",
+      in: in,
+      with: ["prettier", "--check", path],
+      opt: [],
+    )
+  case result {
+    Ok(_) -> {
+      Ok("prettier check passed - no formatting issues found")
+    }
+    Error(#(1, _)) -> {
+      Ok("prettier check found formatting issues (this is informational)")
+    }
+    Error(#(code, err)) -> {
+      Error(#(code, err))
+    }
+  }
+}
+
 pub fn default_prettier_prettifier(
   output_dir: String,
   ghost: GhostOfOutputFragment(d),
@@ -302,8 +343,63 @@ pub fn default_prettier_prettifier(
   |> result.map(fn(_) { "prettified [" <> output_dir <> "/]" <> ghost.path })
 }
 
-pub fn empty_prettifier(_: String, _: #(String, d)) -> Result(String, Nil) {
+pub fn prettier_prettifier_with_custom_dir(
+  prettier_dir: Option(String),
+  output_dir: String,
+  ghost: GhostOfOutputFragment(d),
+) -> Result(String, #(Int, String)) {
+  case prettier_dir {
+    Some(dir) -> {
+      // First ensure the target directory exists
+      let source_path = output_dir <> "/" <> ghost.path
+      let dest_path = dir <> "/" <> ghost.path
+      case shellout.command(run: "mkdir", in: ".", with: ["-p", dir], opt: []) {
+        Ok(_) -> {
+          case
+            shellout.command(
+              run: "cp",
+              in: ".",
+              with: [source_path, dest_path],
+              opt: [],
+            )
+          {
+            Ok(_) -> {
+              run_prettier(".", dest_path)
+              |> result.map(fn(_) {
+                "prettified [" <> dir <> "/]" <> ghost.path
+              })
+            }
+            Error(e) -> Error(e)
+          }
+        }
+        Error(e) -> Error(e)
+      }
+    }
+    None -> {
+      run_prettier_check(".", output_dir <> "/" <> ghost.path)
+      |> result.map(fn(msg) {
+        msg <> " for [" <> output_dir <> "/]" <> ghost.path
+      })
+    }
+  }
+}
+
+pub fn empty_prettifier(
+  _: String,
+  _: GhostOfOutputFragment(d),
+) -> Result(String, #(Int, String)) {
   Ok("")
+}
+
+pub fn create_prettifier_from_parameters(
+  parameters: RendererParameters,
+) -> Prettifier(d, #(Int, String)) {
+  case parameters.prettifier_on_by_default, parameters.prettier_dir {
+    False, _ -> empty_prettifier
+    True, prettier_dir -> fn(output_dir, ghost) {
+      prettier_prettifier_with_custom_dir(prettier_dir, output_dir, ghost)
+    }
+  }
 }
 
 // *************
@@ -311,20 +407,32 @@ pub fn empty_prettifier(_: String, _: #(String, d)) -> Result(String, Nil) {
 // *************
 
 pub type Renderer(
-  a, // BlamedLinesAssembler error type
-  c, // SourceParser error type
-  d, // VXML Fragment enum type
-  e, // Splitter error type
-  f, // Emitter error type
-  h, // Prettifier error type
+  a,
+  c,
+  d,
+  e,
+  f,
+  h,
+  // BlamedLinesAssembler error type
+  // SourceParser error type
+  // VXML Fragment enum type
+  // Splitter error type
+  // Emitter error type
+  // Prettifier error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),     // file/directory -> List(OutputLine)                     Result w/ error type a
-    source_parser: SourceParser(c),         // List(OutputLine) -> VXML                               Result w/ error type c
-    pipeline: List(Pipe),                   // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
-    splitter: Splitter(d, e),               // VXML -> List(#(String, VXML, d))                       Result w/ error type e
-    emitter: Emitter(d, f),                 // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
-    prettifier: Prettifier(d, h),           // String, #(String, d) -> Nil                            Result w/ error type h
+    assembler: BlamedLinesAssembler(a),
+    // file/directory -> List(OutputLine)                     Result w/ error type a
+    source_parser: SourceParser(c),
+    // List(OutputLine) -> VXML                               Result w/ error type c
+    pipeline: List(Pipe),
+    // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
+    splitter: Splitter(d, e),
+    // VXML -> List(#(String, VXML, d))                       Result w/ error type e
+    emitter: Emitter(d, f),
+    // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
+    prettifier: Prettifier(d, h),
+    // String, #(String, d) -> Nil                            Result w/ error type h
   )
 }
 
@@ -352,6 +460,7 @@ pub type RendererParameters {
     input_dir: String,
     output_dir: String,
     prettifier_on_by_default: Bool,
+    prettier_dir: Option(String),
   )
 }
 
@@ -363,7 +472,11 @@ fn run_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
 ) -> Result(#(VXML, List(#(Int, Timestamp))), InSituDesugaringError) {
-  let print_star_block = fn(printed_before: Bool, desugarer: Desugarer, step_no: Int) {
+  let print_star_block = fn(
+    printed_before: Bool,
+    desugarer: Desugarer,
+    step_no: Int,
+  ) {
     case printed_before {
       False -> io.println("")
       True -> Nil
@@ -372,86 +485,70 @@ fn run_pipeline(
   }
 
   pipeline
-  |> list.try_fold(
-    #(vxml, 1, "", [], False),
-    fn(acc, pipe) {
-      let #(vxml, step_no, last_debug_output, times, printed_before) = acc
-      let #(mode, selector, desugarer) = pipe
-      let times = case desugarer.name == "timer" {
-        True -> [#(step_no, timestamp.system_time()), ..times]
-        False -> times
-      }
-      case mode == On {
-        True -> print_star_block(printed_before, desugarer, step_no)
-        _ -> Nil
-      }
-      use vxml <- infra.on_error_on_ok(
-        desugarer.transform(vxml),
-        fn(error) {
-          Error(InSituDesugaringError(
-            desugarer: desugarer,
-            step_no: step_no,
-            blame: error.blame,
-            message: error.message,
-          ))
-        }
-      )
-      let #(selected, next_debug_output) = case mode == Off {
-        True -> #([], last_debug_output)
-        False -> {
-          let selected = selector(vxml)
-          #(selected, selected |> infra.selected_lines_to_string(""))
-        }
-      }
-      let must_print = mode == On || { mode == OnChange && next_debug_output != last_debug_output }
-      case mode != On && must_print {
-        True -> print_star_block(printed_before, desugarer, step_no)
-        _ -> Nil
-      }
-      case must_print {
-        True -> io.println(selected |> infra.selected_lines_to_string(""))
-        _ -> Nil
-      }
-      #(
-        vxml,
-        step_no + 1,
-        next_debug_output,
-        times,
-        printed_before || must_print,
-      )
-      |> Ok
+  |> list.try_fold(#(vxml, 1, "", [], False), fn(acc, pipe) {
+    let #(vxml, step_no, last_debug_output, times, printed_before) = acc
+    let #(mode, selector, desugarer) = pipe
+    let times = case desugarer.name == "timer" {
+      True -> [#(step_no, timestamp.system_time()), ..times]
+      False -> times
     }
-  )
-  |> result.map(fn(acc){#(acc.0, acc.3)}) 
+    case mode == On {
+      True -> print_star_block(printed_before, desugarer, step_no)
+      _ -> Nil
+    }
+    use vxml <- infra.on_error_on_ok(desugarer.transform(vxml), fn(error) {
+      Error(InSituDesugaringError(
+        desugarer: desugarer,
+        step_no: step_no,
+        blame: error.blame,
+        message: error.message,
+      ))
+    })
+    let #(selected, next_debug_output) = case mode == Off {
+      True -> #([], last_debug_output)
+      False -> {
+        let selected = selector(vxml)
+        #(selected, selected |> infra.selected_lines_to_string(""))
+      }
+    }
+    let must_print =
+      mode == On
+      || { mode == OnChange && next_debug_output != last_debug_output }
+    case mode != On && must_print {
+      True -> print_star_block(printed_before, desugarer, step_no)
+      _ -> Nil
+    }
+    case must_print {
+      True -> io.println(selected |> infra.selected_lines_to_string(""))
+      _ -> Nil
+    }
+    #(vxml, step_no + 1, next_debug_output, times, printed_before || must_print)
+    |> Ok
+  })
+  |> result.map(fn(acc) { #(acc.0, acc.3) })
 }
 
-pub fn sanitize_output_dir(
-  parameters: RendererParameters
-) -> RendererParameters {
+pub fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
   RendererParameters(
     ..parameters,
-    output_dir: infra.drop_ending_slash(parameters.output_dir)
+    output_dir: infra.drop_ending_slash(parameters.output_dir),
   )
 }
 
 fn create_intermediate_dirs(output_dir: String, local_path: String) {
   let pieces = local_path |> string.split("/")
   let pieces = infra.drop_last(pieces)
-  list.fold(
-    pieces,
-    output_dir,
-    fn(acc, piece) {
-      let acc = acc <> "/" <> piece
-      case simplifile.is_directory(acc) {
-        Ok(_) -> {
-          let _ = simplifile.create_directory(acc)
-          Nil
-        }
-        Error(_) -> Nil
+  list.fold(pieces, output_dir, fn(acc, piece) {
+    let acc = acc <> "/" <> piece
+    case simplifile.is_directory(acc) {
+      Ok(_) -> {
+        let _ = simplifile.create_directory(acc)
+        Nil
       }
-      acc
+      Error(_) -> Nil
     }
-  )
+    acc
+  })
 }
 
 pub fn output_dir_local_path_printer(
@@ -505,25 +602,23 @@ fn desugarer_to_list_lines(
   let name = desugarer.name
   let param_lines = case desugarer.stringified_param {
     None -> [none_string]
-    Some(thing) -> case string.split(thing, "\n") {
-      [] -> panic as "stringified param is empty string?"
-      lines -> lines |> list.map(ddd_truncate(_, max_param_cols))
-    }
+    Some(thing) ->
+      case string.split(thing, "\n") {
+        [] -> panic as "stringified param is empty string?"
+        lines -> lines |> list.map(ddd_truncate(_, max_param_cols))
+      }
   }
   let outside = case desugarer.stringified_outside {
     None -> none_string
     Some(thing) -> thing |> ddd_truncate(max_outside_cols)
   }
-  list.index_map(
-    param_lines,
-    fn (p, i) {
-      case i == 0 {
-        True -> #(number, name, p, outside)
-        False -> #("", star_block.spaces(string.length(name)), p, "⋮")
-        // False -> #("", "", p, "⋮")
-      }
+  list.index_map(param_lines, fn(p, i) {
+    case i == 0 {
+      True -> #(number, name, p, outside)
+      False -> #("", star_block.spaces(string.length(name)), p, "⋮")
+      // False -> #("", "", p, "⋮")
     }
-  )
+  })
 }
 
 fn print_pipeline(desugarers: List(Desugarer)) {
@@ -533,18 +628,19 @@ fn print_pipeline(desugarers: List(Desugarer)) {
 
   let lines =
     desugarers
-    |> list.index_map(
-      fn(d, i) {
-        desugarer_to_list_lines(d, i, max_param_cols, max_outside_cols, none_string)
-      }
-    )
+    |> list.index_map(fn(d, i) {
+      desugarer_to_list_lines(
+        d,
+        i,
+        max_param_cols,
+        max_outside_cols,
+        none_string,
+      )
+    })
     |> list.flatten
 
   star_block.four_column_table(
-    [
-      #("#.", "name", "param", "outside"),
-      ..lines,
-    ],
+    [#("#.", "name", "param", "outside"), ..lines],
     2,
   )
 }
@@ -561,7 +657,12 @@ pub fn run_renderer(
   io.println("")
 
   let parameters = sanitize_output_dir(parameters)
-  let RendererParameters(input_dir, output_dir, prettifier) = parameters
+  let RendererParameters(
+    input_dir,
+    output_dir,
+    prettifier_on_by_default,
+    _prettier_dir,
+  ) = parameters
 
   io.println("• pipeline:")
   print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
@@ -611,19 +712,21 @@ pub fn run_renderer(
       let z = [
         "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
         "🏯🏯pipeline step:   " <> ins(e.step_no),
-        "🏯🏯blame:           " <> bl.blame_digest(e.blame) <> " " <> bl.comments_digest(e.blame),
+        "🏯🏯blame:           "
+          <> bl.blame_digest(e.blame)
+          <> " "
+          <> bl.comments_digest(e.blame),
         "🏯🏯message:         " <> e.message,
       ]
       let lengths = list.map(z, string.length)
-      let width = list.fold(lengths, 0, fn (acc, n) { int.max(acc, n) }) + 2
+      let width = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
       io.println("")
       io.println("")
       io.println(string.repeat("🏯", width * 6 / 11))
       io.println(string.repeat("🏯", width * 6 / 11))
-      list.each(
-        list.zip(z, lengths),
-        fn(pair) { io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯") }
-      )
+      list.each(list.zip(z, lengths), fn(pair) {
+        io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯")
+      })
       io.println(string.repeat("🏯", width * 6 / 11))
       io.println(string.repeat("🏯", width * 6 / 11))
       io.println("")
@@ -632,7 +735,8 @@ pub fn run_renderer(
   )
 
   let t1 = timestamp.system_time()
-  let seconds = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
+  let seconds =
+    timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
   io.println("...ended pipeline (" <> ins(seconds) <> "s);")
 
@@ -640,17 +744,24 @@ pub fn run_renderer(
     False -> Nil
     True -> {
       let times = [#(list.length(renderer.pipeline), t1), ..times]
-      list.fold(
-        times |> list.reverse,
-        #(0, t0),
-        fn (acc, next) {
-          let #(step0, t0) = acc
-          let #(step1, t1) = next
-          let seconds = timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(3)
-          io.println("  steps " <> ins(step0) <> " to " <> ins(step1) <> ": " <> ins(seconds) <> "s")
-          next
-        }
-      )
+      list.fold(times |> list.reverse, #(0, t0), fn(acc, next) {
+        let #(step0, t0) = acc
+        let #(step1, t1) = next
+        let seconds =
+          timestamp.difference(t0, t1)
+          |> duration.to_seconds
+          |> float.to_precision(3)
+        io.println(
+          "  steps "
+          <> ins(step0)
+          <> " to "
+          <> ins(step1)
+          <> ": "
+          <> ins(seconds)
+          <> "s",
+        )
+        next
+      })
       Nil
     }
   }
@@ -667,19 +778,21 @@ pub fn run_renderer(
   )
 
   let prefix = "[" <> output_dir <> "/]"
-  let fragments_types_and_paths_4_table = list.map(
-    fragments,
-    fn(fr) { #(ins(fr.classifier), prefix <> fr.path) }
-  )
+  let fragments_types_and_paths_4_table =
+    list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
 
   io.println("-> obtained " <> ins(list.length(fragments)) <> " fragments:")
-  star_block.two_column_table(fragments_types_and_paths_4_table, "type", "path", 2)
+  star_block.two_column_table(
+    fragments_types_and_paths_4_table,
+    "type",
+    "path",
+    2,
+  )
 
   // fragments debug printing
   fragments
   |> list.each(fn(fr) {
-    case debug_options.splitter_debug_options.debug_print(fr)
-    {
+    case debug_options.splitter_debug_options.debug_print(fr) {
       False -> Nil
       True -> {
         fr.payload
@@ -705,8 +818,7 @@ pub fn run_renderer(
     case result {
       Error(_) -> Nil
       Ok(fr) -> {
-        case debug_options.emitter_debug_options.debug_print(fr)
-        {
+        case debug_options.emitter_debug_options.debug_print(fr) {
           False -> Nil
           True -> {
             fr.payload
@@ -730,7 +842,9 @@ pub fn run_renderer(
           Error(C1(error))
         }
         Ok(fr) -> {
-          Ok(OutputFragment(..fr, payload: bl.output_lines_to_string(fr.payload)))
+          Ok(
+            OutputFragment(..fr, payload: bl.output_lines_to_string(fr.payload)),
+          )
         }
       }
     })
@@ -744,11 +858,13 @@ pub fn run_renderer(
     case result {
       Error(_) -> Nil
       Ok(fr) -> {
-        case debug_options.printer_debug_options.debug_print(fr)
-        {
+        case debug_options.printer_debug_options.debug_print(fr) {
           False -> Nil
           True -> {
-            let header = "----------------- printer_debug_options: " <> fr.path <> " -----------------"
+            let header =
+              "----------------- printer_debug_options: "
+              <> fr.path
+              <> " -----------------"
             io.println(header)
             io.println(fr.payload)
             io.println(star_block.dashes(string.length(header)))
@@ -774,24 +890,20 @@ pub fn run_renderer(
         }
         Error(file_error) ->
           Error(C2(
-            { file_error |> ins }
-            <> " on path "
-            <> output_dir
-            <> "/"
-            <> fr.path,
+            { file_error |> ins } <> " on path " <> output_dir <> "/" <> fr.path,
           ))
       }
     })
 
   // running prettifier (list.map to record erros)
-  case prettifier {
+  case prettifier_on_by_default {
     True -> io.println("• prettifying")
     False -> Nil
   }
   let fragments =
     fragments
     |> list.map(fn(result) {
-      use <- infra.on_false_on_true(prettifier, result)
+      use <- infra.on_false_on_true(prettifier_on_by_default, result)
       use fr <- result.try(result)
       case renderer.prettifier(output_dir, fr) {
         Error(e) -> Error(C3(e))
@@ -809,8 +921,7 @@ pub fn run_renderer(
   fragments
   |> list.each(fn(result) {
     use fr <- infra.on_error_on_ok(result, fn(_) { Nil })
-    case debug_options.prettifier_debug_options.debug_print(fr)
-    {
+    case debug_options.prettifier_debug_options.debug_print(fr) {
       False -> Nil
       True -> {
         let path = output_dir <> "/" <> fr.path
@@ -818,11 +929,16 @@ pub fn run_renderer(
           simplifile.read(path),
           fn(error) {
             io.println("")
-            io.println("could not read back printed file " <> path <> ":" <> ins(error))
+            io.println(
+              "could not read back printed file " <> path <> ":" <> ins(error),
+            )
           },
         )
         io.println("")
-        let header = "----------------- printer_debug_options: " <> fr.path <> " -----------------"
+        let header =
+          "----------------- printer_debug_options: "
+          <> fr.path
+          <> " -----------------"
         io.println(header)
         io.println(file_contents)
         io.println(star_block.dashes(string.length(header)))
@@ -895,7 +1011,8 @@ pub type CommandLineAmendments {
     debug_prettified_string_fragments_local_paths: Option(List(String)),
     spotlight_key_values: List(#(String, String, String)),
     spotlight_paths: List(String),
-    prettier: Option(Bool),
+    prettier: Bool,
+    prettier_dir: Option(String),
     user_args: Dict(String, List(String)),
   )
 }
@@ -917,7 +1034,8 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     debug_prettified_string_fragments_local_paths: None,
     spotlight_key_values: [],
     spotlight_paths: [],
-    prettier: None,
+    prettier: False,
+    prettier_dir: None,
     user_args: dict.from_list([]),
   )
 }
@@ -967,57 +1085,114 @@ pub fn cli_usage() {
   io.println(margin <> "  -> print this message")
   io.println("")
   io.println(margin <> "--only <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> restrict source to paths that match one of the given subpaths")
+  io.println(
+    margin
+    <> "  -> restrict source to paths that match one of the given subpaths",
+  )
   io.println("")
   io.println(margin <> "--only <key1=val1> <key2=val2> ...")
-  io.println(margin <> "  -> restrict source to elements that have one of the given key-value")
+  io.println(
+    margin
+    <> "  -> restrict source to elements that have one of the given key-value",
+  )
   io.println(margin <> "     pairs as attributes")
   io.println("")
   io.println(margin <> "--echo-assembled-source | --echo-assembled")
   io.println(margin <> "  -> print the assembled input lines of source")
   io.println("")
-  io.println(margin <> "--show-changes-near-[text|tag|keyval] <payload> +<p>-<m> <step numbers>")
-  io.println(margin <> "  -> track changes near text, tag, or key=val pair as given by")
+  io.println(
+    margin
+    <> "--show-changes-near-[text|tag|keyval] <payload> +<p>-<m> <step numbers>",
+  )
+  io.println(
+    margin <> "  -> track changes near text, tag, or key=val pair as given by",
+  )
   io.println(margin <> "     <payload> argument, e.g.:")
   io.println("")
-  io.println(margin <> "     gleam run -- --show-changes-near-text \"lorem ipsum\"")
+  io.println(
+    margin <> "     gleam run -- --show-changes-near-text \"lorem ipsum\"",
+  )
   io.println("")
-  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before marker")
-  io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
+  io.println(
+    margin <> "     • +<p>-<m>: track p lines beyond and m lines before marker",
+  )
+  io.println(
+    margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before",
+  )
   io.println(margin <> "       marker")
   io.println("")
-  io.println(margin <> "     • <step numbers> specificy which desugaring steps to track:")
-  io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
-  io.println(margin <> "         • !x to force a printout at desugaring step x whether or")
+  io.println(
+    margin <> "     • <step numbers> specificy which desugaring steps to track:",
+  )
+  io.println(
+    margin
+    <> "         • <x-y> to track changes in desugaring steps x to y only",
+  )
+  io.println(
+    margin
+    <> "         • !x to force a printout at desugaring step x whether or",
+  )
   io.println(margin <> "           not changes in selection occur")
-  io.println(margin <> "       leave empty to track all steps and use negative arguments")
+  io.println(
+    margin <> "       leave empty to track all steps and use negative arguments",
+  )
   io.println(margin <> "       to denote steps from end of list")
   io.println("")
   io.println(margin <> "--show-changes-at-steps")
-  io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
-  io.println(margin <> "     --show-changes-near-[] option, with the same semantics")
+  io.println(
+    margin
+    <> "  -> takes arguments in the same form as <step numbers> option of",
+  )
+  io.println(
+    margin <> "     --show-changes-near-[] option, with the same semantics",
+  )
   io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     before conversion to output lines, list none to match all")
+  io.println(
+    margin
+    <> "  -> print fragments whose paths contain one of the given subpaths",
+  )
+  io.println(
+    margin <> "     before conversion to output lines, list none to match all",
+  )
   io.println("")
   io.println(margin <> "--echo-fragments-ol <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     after conversion to output lines, list none to match all")
+  io.println(
+    margin
+    <> "  -> print fragments whose paths contain one of the given subpaths",
+  )
+  io.println(
+    margin <> "     after conversion to output lines, list none to match all",
+  )
   io.println("")
   io.println(margin <> "--echo-fragments-printed <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     in string form before prettifying, list none to match all")
+  io.println(
+    margin
+    <> "  -> print fragments whose paths contain one of the given subpaths",
+  )
+  io.println(
+    margin <> "     in string form before prettifying, list none to match all",
+  )
   io.println("")
-  io.println(margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...")
-  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     in string form after prettifying, list none to match all")
+  io.println(
+    margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...",
+  )
+  io.println(
+    margin
+    <> "  -> print fragments whose paths contain one of the given subpaths",
+  )
+  io.println(
+    margin <> "     in string form after prettifying, list none to match all",
+  )
   io.println("")
-  io.println(margin <> "--prettier0")
-  io.println(margin <> "  -> turn the prettifier off if on by default")
+  io.println(margin <> "--prettier")
+  io.println(margin <> "  -> turn the prettifier on")
   io.println("")
-  io.println(margin <> "--prettier1")
-  io.println(margin <> "  -> turn the prettifier on if off by default")
+  io.println(margin <> "--prettier-dir <dir>")
+  io.println(margin <> "  -> specify directory to write prettier output to")
+  io.println(
+    margin <> "     if not specified, prettier runs in check mode only",
+  )
   io.println("")
 }
 
@@ -1036,46 +1211,38 @@ fn apply_show_changes_near_cli_args_to_pipeline(
   let force = list.map(cli.force_output_at_steps, wraparound)
   let apply_to_all = restrict == [] && force == []
   let cli_selector = case cli.selector {
-    Some(some) -> Some(
-      fn (vxml) {
+    Some(some) ->
+      Some(fn(vxml) {
         vxml
         |> infra.vxml_to_pigeon_lines
         |> some
-      }
-    )
+      })
     None -> None
   }
   case apply_to_all {
     True -> {
-      list.map(
-        pipeline,
-        fn (pipe) { #(infra.OnChange, option.unwrap(cli_selector, pipe.1), pipe.2) }
-      )
+      list.map(pipeline, fn(pipe) {
+        #(infra.OnChange, option.unwrap(cli_selector, pipe.1), pipe.2)
+      })
     }
     False -> {
-      list.index_map(
-        pipeline,
-        fn (pipe, i) {
-          let step_no = i + 1
-          let on_change = list.contains(restrict, step_no)
-          let on = list.contains(force, step_no)
-          let mode = case on_change, on {
-            _, True -> infra.On
-            True, _ -> infra.OnChange
-            _, _ -> infra.Off
-          }
-          #(mode, option.unwrap(cli_selector, pipe.1), pipe.2)
+      list.index_map(pipeline, fn(pipe, i) {
+        let step_no = i + 1
+        let on_change = list.contains(restrict, step_no)
+        let on = list.contains(force, step_no)
+        let mode = case on_change, on {
+          _, True -> infra.On
+          True, _ -> infra.OnChange
+          _, _ -> infra.Off
         }
-      )
+        #(mode, option.unwrap(cli_selector, pipe.1), pipe.2)
+      })
     }
   }
 }
 
 pub type PlusMinusRange {
-  PlusMinusRange(
-    plus: Int,
-    minus: Int,
-  )
+  PlusMinusRange(plus: Int, minus: Int)
 }
 
 pub type PipelineCliArgsModifier {
@@ -1087,9 +1254,7 @@ pub type PipelineCliArgsModifier {
   )
 }
 
-fn parse_plus_minus(
-  s: String,
-) -> Result(PlusMinusRange, Nil) {
+fn parse_plus_minus(s: String) -> Result(PlusMinusRange, Nil) {
   case string.starts_with(s, "+"), string.starts_with(s, "-") {
     True, _ -> {
       let s = string.drop_start(s, 1)
@@ -1100,10 +1265,11 @@ fn parse_plus_minus(
             _, _ -> Error(Nil)
           }
         }
-        _ -> case int.parse(s) {
-          Ok(p) -> Ok(PlusMinusRange(plus: p, minus: 0))
-          _ -> Error(Nil)
-        }
+        _ ->
+          case int.parse(s) {
+            Ok(p) -> Ok(PlusMinusRange(plus: p, minus: 0))
+            _ -> Error(Nil)
+          }
       }
     }
 
@@ -1116,10 +1282,11 @@ fn parse_plus_minus(
             _, _ -> Error(Nil)
           }
         }
-        _ -> case int.parse(s) {
-          Ok(m) -> Ok(PlusMinusRange(plus: 0, minus: m))
-          _ -> Error(Nil)
-        }
+        _ ->
+          case int.parse(s) {
+            Ok(m) -> Ok(PlusMinusRange(plus: 0, minus: m))
+            _ -> Error(Nil)
+          }
       }
     }
 
@@ -1145,17 +1312,16 @@ fn cleanup_step_numbers(
   force: List(Int),
 ) -> #(List(Int), List(Int)) {
   let force = force |> unique_ints
-  let restrict = restrict |> unique_ints |> list.filter(fn(x){!list.contains(force, x)})
+  let restrict =
+    restrict |> unique_ints |> list.filter(fn(x) { !list.contains(force, x) })
   #(restrict, force)
 }
 
 fn parse_step_numbers(
-  values: List(String)
+  values: List(String),
 ) -> Result(#(List(Int), List(Int)), CommandLineError) {
-  use #(restrict, force) <- result.try(list.try_fold(
-    values,
-    #([], []),
-    fn (acc, val) {
+  use #(restrict, force) <- result.try(
+    list.try_fold(values, #([], []), fn(acc, val) {
       let original_val = val
       let #(forced, val) = case string.starts_with(val, "!") {
         True -> #(True, string.drop_start(val, 1))
@@ -1172,27 +1338,35 @@ fn parse_step_numbers(
         }
       }
       use ints <- result.try(case string.split_once(val, "-") {
-        Ok(#(before, after)) -> case int.parse(before), int.parse(after) {
-          Ok(lo), Ok(hi) -> Ok(lo_hi_ints(lo |> multiply_first, hi))
-          _, _ -> Error(StepNoValues("unable to parse '" <> original_val <> "' as integer range (1)"))
-        }
-        Error(Nil) -> case int.parse(val) {
-          Ok(guy) -> Ok([guy |> multiply_first])
-          Error(Nil) -> Error(StepNoValues("unable to parse '" <> original_val <> "' as integer range (2)"))
-        }
+        Ok(#(before, after)) ->
+          case int.parse(before), int.parse(after) {
+            Ok(lo), Ok(hi) -> Ok(lo_hi_ints(lo |> multiply_first, hi))
+            _, _ ->
+              Error(StepNoValues(
+                "unable to parse '" <> original_val <> "' as integer range (1)",
+              ))
+          }
+        Error(Nil) ->
+          case int.parse(val) {
+            Ok(guy) -> Ok([guy |> multiply_first])
+            Error(Nil) ->
+              Error(StepNoValues(
+                "unable to parse '" <> original_val <> "' as integer range (2)",
+              ))
+          }
       })
       case forced {
         False -> Ok(#(list.append(acc.0, ints), acc.1))
         True -> Ok(#(acc.0, list.append(acc.1, ints)))
       }
-    }
-  ))
+    }),
+  )
   Ok(cleanup_step_numbers(restrict, force))
 }
 
 fn parse_show_changes_near_args(
   option: String,
-  values: List(String)
+  values: List(String),
 ) -> Result(PipelineCliArgsModifier, CommandLineError) {
   let assert True = string.starts_with(option, "--show-changes-near")
 
@@ -1203,40 +1377,52 @@ fn parse_show_changes_near_args(
 
   let assert True = first_payload != ""
 
-  use selector <- result.try(
-    case option {
-      "--show-changes-near-keyval" -> case string.split_once(first_payload, "=") {
-        Ok(#(before, after)) if before != "" -> Ok(sl.keyval_pigeon_selector(_, before, after))
-        _ -> Error(SelectorValues("expecting key=val after --show-changes-near-keyval"))
+  use selector <- result.try(case option {
+    "--show-changes-near-keyval" ->
+      case string.split_once(first_payload, "=") {
+        Ok(#(before, after)) if before != "" ->
+          Ok(sl.keyval_pigeon_selector(_, before, after))
+        _ ->
+          Error(SelectorValues(
+            "expecting key=val after --show-changes-near-keyval",
+          ))
       }
-      "--show-changes-near-text" -> Ok(sl.text_pigeon_selector(_, first_payload))
-      "--show-changes-near-tag" -> Ok(sl.tag_pigeon_selector(_, first_payload))
-      _ -> Error(SelectorValues("expecting '-text', '-tag', or '-keyval' suffix to --show-changes-near option"))
-    }
-  )
-
+    "--show-changes-near-text" -> Ok(sl.text_pigeon_selector(_, first_payload))
+    "--show-changes-near-tag" -> Ok(sl.tag_pigeon_selector(_, first_payload))
+    _ ->
+      Error(SelectorValues(
+        "expecting '-text', '-tag', or '-keyval' suffix to --show-changes-near option",
+      ))
+  })
 
   use second_payload, values <- infra.on_empty_on_nonempty(
     values,
-    Ok(PipelineCliArgsModifier(
-      selector: Some(list.map(_, infra.apply_pigeon_selector_to_line(_, selector))),
-      restrict_on_change_check_to_steps: [],
-      force_output_at_steps: [],
-    )),
+    Ok(
+      PipelineCliArgsModifier(
+        selector: Some(
+          list.map(_, infra.apply_pigeon_selector_to_line(_, selector)),
+        ),
+        restrict_on_change_check_to_steps: [],
+        force_output_at_steps: [],
+      ),
+    ),
   )
 
   use plus_minus <- infra.on_error_on_ok(
     parse_plus_minus(second_payload),
-    fn(_){Error(SelectorValues("2nd argument to --show-changes-near should have form +<p>-<m> or -<m>+<p> where p, m are integers"))},
+    fn(_) {
+      Error(SelectorValues(
+        "2nd argument to --show-changes-near should have form +<p>-<m> or -<m>+<p> where p, m are integers",
+      ))
+    },
   )
 
-  let selector =
-    fn (lines) {
-      lines
-      |> list.map(infra.apply_pigeon_selector_to_line(_, selector))
-      |> infra.extend_selection_up(plus_minus.minus)
-      |> infra.extend_selection_down(plus_minus.plus)
-    }
+  let selector = fn(lines) {
+    lines
+    |> list.map(infra.apply_pigeon_selector_to_line(_, selector))
+    |> infra.extend_selection_up(plus_minus.minus)
+    |> infra.extend_selection_down(plus_minus.plus)
+  }
 
   use #(restrict, force) <- result.try(parse_step_numbers(values))
 
@@ -1263,10 +1449,14 @@ fn join_pipeline_modifiers(
   pm2: PipelineCliArgsModifier,
 ) -> PipelineCliArgsModifier {
   use pm1 <- infra.on_none_on_some(pm1, pm2)
-  let #(restrict, force) = cleanup_step_numbers(
-    list.append(pm1.force_output_at_steps, pm2.force_output_at_steps),
-    list.append(pm1.restrict_on_change_check_to_steps, pm2.restrict_on_change_check_to_steps),
-  )
+  let #(restrict, force) =
+    cleanup_step_numbers(
+      list.append(pm1.force_output_at_steps, pm2.force_output_at_steps),
+      list.append(
+        pm1.restrict_on_change_check_to_steps,
+        pm2.restrict_on_change_check_to_steps,
+      ),
+    )
   PipelineCliArgsModifier(
     selector: case pm1.selector, pm2.selector {
       Some(s1), Some(s2) -> Some(infra.or_pigeon_2_selected_selectors(s1, s2))
@@ -1298,10 +1488,12 @@ fn parse_attribute_value_args_in_filename(
       }
     }
     // did contain '&'
-    _ -> list.map(args, fn(arg) {
-      let assert [key, value] = string.split(arg, "=") // <- this should be generating a CommandLineError instead of asserting
-      #(path, key, value)
-    })
+    _ ->
+      list.map(args, fn(arg) {
+        let assert [key, value] = string.split(arg, "=")
+        // <- this should be generating a CommandLineError instead of asserting
+        #(path, key, value)
+      })
   }
 }
 
@@ -1318,77 +1510,125 @@ pub fn process_command_line_arguments(
   |> list.fold(
     Ok(empty_command_line_amendments()),
     fn(
-      result : Result(CommandLineAmendments, CommandLineError), 
-      pair : #(String, List(String)),
+      result: Result(CommandLineAmendments, CommandLineError),
+      pair: #(String, List(String)),
     ) {
-    use amendments <- result.try(result)
-    let #(option, values) = pair
-    case option {
-      "--help" -> {
-        cli_usage()
-        io.println("")
-        case list.is_empty(values) {
-          True -> Ok(CommandLineAmendments(..amendments, help: True))
-          False -> Error(UnexpectedArgumentsToOption("option"))
+      use amendments <- result.try(result)
+      let #(option, values) = pair
+      case option {
+        "--help" -> {
+          cli_usage()
+          io.println("")
+          case list.is_empty(values) {
+            True -> Ok(CommandLineAmendments(..amendments, help: True))
+            False -> Error(UnexpectedArgumentsToOption("option"))
+          }
         }
+
+        "--only" -> {
+          let args =
+            values
+            |> list.map(parse_attribute_value_args_in_filename)
+            |> list.flatten()
+          Ok(amendments |> amend_spotlight_args(args))
+        }
+
+        "--prettier" ->
+          case list.is_empty(values) {
+            True ->
+              Ok(CommandLineAmendments(..amendments, prettier: True))
+            False -> Error(UnexpectedArgumentsToOption("--prettier"))
+          }
+
+        "--prettier-dir" ->
+          case values {
+            [dir] ->
+              Ok(CommandLineAmendments(..amendments, prettier_dir: Some(dir)))
+            [] ->
+              Error(UnexpectedArgumentsToOption(
+                "--prettier-dir requires a directory argument",
+              ))
+            _ -> Error(UnexpectedArgumentsToOption("--prettier-dir"))
+          }
+
+        "--echo-assembled-input" | "--echo-assembled" ->
+          case list.is_empty(values) {
+            True -> Ok(amendments |> amend_debug_assembled_input(True))
+            False -> Error(UnexpectedArgumentsToOption(option))
+          }
+
+        "--echo-fragments" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              debug_vxml_fragments_local_paths: Some(values),
+            ),
+          )
+
+        "--echo-fragments-ol" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              debug_output_lines_fragments_local_paths: Some(values),
+            ),
+          )
+
+        "--echo-fragments-printed" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              debug_printed_string_fragments_local_paths: Some(values),
+            ),
+          )
+
+        "--echo-fragments-prettified" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              debug_prettified_string_fragments_local_paths: Some(values),
+            ),
+          )
+
+        "--show-changes-at-steps" -> {
+          use pipeline_mod <- result.try(parse_show_change_at_steps_args(values))
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              show_changes_near: Some(join_pipeline_modifiers(
+                amendments.show_changes_near,
+                pipeline_mod,
+              )),
+            ),
+          )
+        }
+
+        _ ->
+          case string.starts_with(option, "--show-changes-near") {
+            True -> {
+              use pipeline_mod <- result.try(parse_show_changes_near_args(
+                option,
+                values,
+              ))
+              Ok(
+                CommandLineAmendments(
+                  ..amendments,
+                  show_changes_near: Some(join_pipeline_modifiers(
+                    amendments.show_changes_near,
+                    pipeline_mod,
+                  )),
+                ),
+              )
+            }
+
+            False ->
+              case list.contains(xtra_keys, option) {
+                True -> Ok(amendments |> amend_user_args(option, values))
+                False -> Error(UnwantedOptionArgument(option))
+              }
+          }
       }
-
-      "--only" -> {
-        let args =
-          values
-          |> list.map(parse_attribute_value_args_in_filename)
-          |> list.flatten()
-        Ok(amendments |> amend_spotlight_args(args))
-      }
-
-      "--prettier0" ->
-        case list.is_empty(values) {
-          True -> Ok(CommandLineAmendments(..amendments, prettier: Some(False)))
-          False -> Error(UnexpectedArgumentsToOption("--prettier0"))
-        }
-
-      "--prettier1" ->
-        case list.is_empty(values) {
-          True -> Ok(CommandLineAmendments(..amendments, prettier: Some(True)))
-          False -> Error(UnexpectedArgumentsToOption("--prettier1"))
-        }
-
-      "--echo-assembled-input" | "--echo-assembled" ->
-        case list.is_empty(values) {
-          True -> Ok(amendments |> amend_debug_assembled_input(True))
-          False -> Error(UnexpectedArgumentsToOption(option))
-        }
-
-      "--echo-fragments" ->
-        Ok(CommandLineAmendments(..amendments, debug_vxml_fragments_local_paths: Some(values)))
-
-      "--echo-fragments-ol" ->
-        Ok(CommandLineAmendments(..amendments, debug_output_lines_fragments_local_paths: Some(values)))
-
-      "--echo-fragments-printed" ->
-        Ok(CommandLineAmendments(..amendments, debug_printed_string_fragments_local_paths: Some(values)))
-
-      "--echo-fragments-prettified" ->
-        Ok(CommandLineAmendments(..amendments, debug_prettified_string_fragments_local_paths: Some(values)))
-
-      "--show-changes-at-steps" -> {
-        use pipeline_mod <- result.try(parse_show_change_at_steps_args(values))
-        Ok(CommandLineAmendments(..amendments, show_changes_near: Some(join_pipeline_modifiers(amendments.show_changes_near, pipeline_mod))))
-      }
-
-      _ -> case string.starts_with(option, "--show-changes-near") {
-        True -> {
-          use pipeline_mod <- result.try(parse_show_changes_near_args(option, values))
-          Ok(CommandLineAmendments(..amendments, show_changes_near: Some(join_pipeline_modifiers(amendments.show_changes_near, pipeline_mod))))
-        }
-
-        False -> case list.contains(xtra_keys, option) {
-          True -> Ok(amendments |> amend_user_args(option, values))
-          False -> Error(UnwantedOptionArgument(option))
-        }
-      }
-    }
-  })
+    },
+  )
 }
 
 //********************
@@ -1406,10 +1646,24 @@ pub fn amend_renderer_paramaters_by_command_line_amendments(
   parameters: RendererParameters,
   amendments: CommandLineAmendments,
 ) -> RendererParameters {
+  // Enable prettier if --prettier flag is present or if --prettier-dir is specified
+  let prettifier_enabled = case amendments.prettier, amendments.prettier_dir {
+    True, _ -> True
+    // --prettier flag specified
+    False, Some(_) -> True
+    // --prettier-dir specified, so enable prettier
+    False, None -> False
+    // No prettier flags, so disable
+  }
+
   RendererParameters(
     input_dir: override_if_some(parameters.input_dir, amendments.input_dir),
-    output_dir: override_if_some(parameters.output_dir, amendments.input_dir),
-    prettifier_on_by_default: override_if_some(parameters.prettifier_on_by_default, amendments.prettier),
+    output_dir: override_if_some(parameters.output_dir, amendments.output_dir),
+    prettifier_on_by_default: prettifier_enabled,
+    prettier_dir: case amendments.prettier_dir {
+      None -> parameters.prettier_dir
+      Some(dir) -> Some(dir)
+    },
   )
 }
 
@@ -1438,56 +1692,52 @@ pub fn db_amend_splitter_debug_options(
   previous: SplitterDebugOptions(d),
   amendments: CommandLineAmendments,
 ) -> SplitterDebugOptions(d) {
-  SplitterDebugOptions(
-    debug_print: fn(fr: OutputFragment(d, VXML)) {
-      previous.debug_print(fr) || is_some_and_any_or_is_empty(
-        amendments.debug_vxml_fragments_local_paths,
-        string.contains(fr.path, _),
-      )
-    },
-  )
+  SplitterDebugOptions(debug_print: fn(fr: OutputFragment(d, VXML)) {
+    previous.debug_print(fr)
+    || is_some_and_any_or_is_empty(
+      amendments.debug_vxml_fragments_local_paths,
+      string.contains(fr.path, _),
+    )
+  })
 }
 
 pub fn db_amend_emitter_debug_options(
   previous: EmitterDebugOptions(d),
   amendments: CommandLineAmendments,
 ) -> EmitterDebugOptions(d) {
-  EmitterDebugOptions(
-    debug_print: fn(fr: OutputFragment(d, List(OutputLine))) {
-      previous.debug_print(fr) || is_some_and_any_or_is_empty(
-        amendments.debug_output_lines_fragments_local_paths,
-        string.contains(fr.path, _),
-      )
-    },
-  )
+  EmitterDebugOptions(debug_print: fn(fr: OutputFragment(d, List(OutputLine))) {
+    previous.debug_print(fr)
+    || is_some_and_any_or_is_empty(
+      amendments.debug_output_lines_fragments_local_paths,
+      string.contains(fr.path, _),
+    )
+  })
 }
 
 pub fn db_amend_printed_debug_options(
   previous: PrinterDebugOptions(d),
   amendments: CommandLineAmendments,
 ) -> PrinterDebugOptions(d) {
-  PrinterDebugOptions(
-    fn(fr: OutputFragment(d, String)) {
-      previous.debug_print(fr) || is_some_and_any_or_is_empty(
-        amendments.debug_printed_string_fragments_local_paths,
-        string.contains(fr.path, _),
-      )
-    }
-  )
+  PrinterDebugOptions(fn(fr: OutputFragment(d, String)) {
+    previous.debug_print(fr)
+    || is_some_and_any_or_is_empty(
+      amendments.debug_printed_string_fragments_local_paths,
+      string.contains(fr.path, _),
+    )
+  })
 }
 
 pub fn db_amend_prettifier_debug_options(
   previous: PrettifierDebugOptions(d),
   amendments: CommandLineAmendments,
 ) -> PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(
-    fn(fr: GhostOfOutputFragment(d)) {
-      previous.debug_print(fr) || is_some_and_any_or_is_empty(
-        amendments.debug_prettified_string_fragments_local_paths,
-        string.contains(fr.path, _),
-      )
-    }
-  )
+  PrettifierDebugOptions(fn(fr: GhostOfOutputFragment(d)) {
+    previous.debug_print(fr)
+    || is_some_and_any_or_is_empty(
+      amendments.debug_prettified_string_fragments_local_paths,
+      string.contains(fr.path, _),
+    )
+  })
 }
 
 pub fn amend_renderer_by_command_line_amendments(
@@ -1496,8 +1746,39 @@ pub fn amend_renderer_by_command_line_amendments(
 ) -> Renderer(a, c, d, e, f, h) {
   case amendments.show_changes_near {
     None -> renderer
-    Some(cli) -> Renderer(..renderer, pipeline: apply_show_changes_near_cli_args_to_pipeline(renderer.pipeline, cli))
+    Some(cli) ->
+      Renderer(
+        ..renderer,
+        pipeline: apply_show_changes_near_cli_args_to_pipeline(
+          renderer.pipeline,
+          cli,
+        ),
+      )
   }
+}
+
+pub fn update_renderer_prettifier_from_parameters(
+  renderer: Renderer(a, c, d, e, f, h),
+  parameters: RendererParameters,
+) -> Renderer(a, c, d, e, f, #(Int, String)) {
+  let prettifier = case
+    parameters.prettifier_on_by_default,
+    parameters.prettier_dir
+  {
+    False, _ -> empty_prettifier
+    True, prettier_dir -> fn(output_dir, ghost) {
+      prettier_prettifier_with_custom_dir(prettier_dir, output_dir, ghost)
+    }
+  }
+
+  Renderer(
+    assembler: renderer.assembler,
+    source_parser: renderer.source_parser,
+    pipeline: renderer.pipeline,
+    splitter: renderer.splitter,
+    emitter: renderer.emitter,
+    prettifier: prettifier,
+  )
 }
 
 pub fn amend_renderer_debug_options_by_command_line_amendments(
@@ -1533,18 +1814,12 @@ pub fn amend_renderer_debug_options_by_command_line_amendments(
 // EMPTY RENDERER DEBUG OPTIONS
 //********************
 
-pub fn empty_assembler_debug_options(
-) -> BlamedLinesAssemblerDebugOptions {
-  BlamedLinesAssemblerDebugOptions(
-    debug_print: False,
-  )
+pub fn empty_assembler_debug_options() -> BlamedLinesAssemblerDebugOptions {
+  BlamedLinesAssemblerDebugOptions(debug_print: False)
 }
 
-pub fn empty_source_parser_debug_options(
-) -> SourceParserDebugOptions {
-  SourceParserDebugOptions(
-    debug_print: False,
-  )
+pub fn empty_source_parser_debug_options() -> SourceParserDebugOptions {
+  SourceParserDebugOptions(debug_print: False)
 }
 
 // pub fn empty_pipeline_debug_options(
@@ -1554,34 +1829,23 @@ pub fn empty_source_parser_debug_options(
 //   )
 // }
 
-pub fn empty_splitter_debug_options(
-) -> SplitterDebugOptions(d) {
-  SplitterDebugOptions(
-    debug_print: fn(_fr) { False },
-  )
+pub fn empty_splitter_debug_options() -> SplitterDebugOptions(d) {
+  SplitterDebugOptions(debug_print: fn(_fr) { False })
 }
 
-pub fn empty_emitter_debug_options(
-) -> EmitterDebugOptions(d) {
-  EmitterDebugOptions(
-    debug_print: fn(_fr) { False },
-  )
+pub fn empty_emitter_debug_options() -> EmitterDebugOptions(d) {
+  EmitterDebugOptions(debug_print: fn(_fr) { False })
 }
 
 pub fn empty_printer_debug_options() -> PrinterDebugOptions(d) {
-  PrinterDebugOptions(
-    debug_print: fn(_fr) { False }
-  )
+  PrinterDebugOptions(debug_print: fn(_fr) { False })
 }
 
 pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(
-    debug_print: fn(_fr) { False }
-  )
+  PrettifierDebugOptions(debug_print: fn(_fr) { False })
 }
 
-pub fn default_renderer_debug_options(
-) -> RendererDebugOptions(d) {
+pub fn default_renderer_debug_options() -> RendererDebugOptions(d) {
   RendererDebugOptions(
     assembler_debug_options: empty_assembler_debug_options(),
     source_parser_debug_options: empty_source_parser_debug_options(),

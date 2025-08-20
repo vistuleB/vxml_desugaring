@@ -1,5 +1,6 @@
 import shellout
 import gleam/list
+import gleam/option.{None}
 import argv
 import gleam/io
 import gleam/string.{inspect as ins}
@@ -47,14 +48,19 @@ fn test_renderer() {
       input_dir: "test/sample.wly",
       output_dir: "test/output",
       prettifier_on_by_default: False,
+      prettier_dir: None,
     )
     |> vr.amend_renderer_paramaters_by_command_line_amendments(amendments)
+
+  let final_renderer =
+    renderer
+    |> vr.update_renderer_prettifier_from_parameters(parameters)
 
   let debug_options =
     vr.default_renderer_debug_options()
     |> vr.amend_renderer_debug_options_by_command_line_amendments(amendments)
 
-  let _ = vr.run_renderer(renderer, parameters, debug_options)
+  let _ = vr.run_renderer(final_renderer, parameters, debug_options)
 
   Nil
 }
