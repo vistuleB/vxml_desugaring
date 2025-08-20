@@ -11,8 +11,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "counters_substitute_and_...")
-
 type CounterType {
   Arabic
   Roman
@@ -613,6 +611,7 @@ type InnerParam = Nil
 
 const name = "counters_substitute_and_assign_handles"
 const constructor = counters_substitute_and_assign_handles
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

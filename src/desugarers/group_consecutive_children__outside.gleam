@@ -6,8 +6,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
 import blamedlines.{type Blame} as bl
 
-const desugarer_blame = bl.Des([], "group_consecutive_children_outside")
-
 fn is_forbidden(elem: VXML, forbidden: List(String)) {
   case elem {
     T(_, _) -> False
@@ -54,7 +52,10 @@ fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTrans
 fn param_to_inner_param(param: Param, outside: List(String)) -> Result(InnerParam, DesugaringError) {
   case list.contains(outside, param.0) {
     True -> Ok(#(param.0, param.1, desugarer_blame))
-    False -> Error(DesugaringError(infra.no_blame, "the wrapper must be included either in the list of things not to be contained in in order to avoid infinite recursion"))
+    False -> Error(DesugaringError(
+      infra.no_blame,
+      "the wrapper must be included either in the list of things not to be contained in in order to avoid infinite recursion")
+    )
   }
 }
 
@@ -67,6 +68,7 @@ type InnerParam = #(String, List(String), Blame)
 
 const name = "group_consecutive_children__outside"
 const constructor = group_consecutive_children__outside
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

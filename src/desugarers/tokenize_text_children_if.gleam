@@ -1,17 +1,17 @@
-import blamedlines.{type Blame}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V, T}
+import blamedlines.{type Blame} as bl
 
 fn start_node(blame: Blame) {
   V(blame, "__StartTokenizedT", [], [])
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(infra.no_blame, "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame, "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -108,6 +108,7 @@ type InnerParam = Param
 
 const name = "tokenize_text_children_if"
 const constructor = tokenize_text_children_if
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

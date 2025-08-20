@@ -1,4 +1,3 @@
-import blamedlines.{type Blame}
 import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
@@ -6,6 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedContent, T, V}
+import blamedlines.{type Blame} as bl
 
 fn substitute_blames_in(node: VXML, new_blame: Blame) -> VXML {
   let assert T(_, blamed_contents) = node
@@ -82,16 +82,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     let contents2 = string.split(t2, "\n")
     let v1 =
       T(
-        infra.no_blame,
+        desugarer_blame,
         list.map(contents1, fn(content) {
-          BlamedContent(infra.no_blame, content)
+          BlamedContent(desugarer_blame, content)
         }),
       )
     let v2 =
       T(
-        infra.no_blame,
+        desugarer_blame,
         list.map(contents2, fn(content) {
-          BlamedContent(infra.no_blame, content)
+          BlamedContent(desugarer_blame, content)
         }),
       )
     #(tag, #(v1, v2))
@@ -112,6 +112,7 @@ type InnerParam =
 
 const name = "prepend_append_to_text_children_of"
 const constructor = prepend_append_to_text_children_of
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

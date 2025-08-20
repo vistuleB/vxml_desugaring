@@ -1,4 +1,4 @@
-import blamedlines.{type Blame} as bl
+import blamedlines as bl
 import gleam/int
 import gleam/list
 import gleam/option
@@ -8,10 +8,6 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
-
-fn blame_us(note: String) -> Blame {
-  bl.Des([], "generate_ti2_table_of_contents_html.gleam:" <> note)
-}
 
 fn prepend_0(number: String) {
   case string.length(number) {
@@ -27,7 +23,7 @@ fn chapter_link(
 ) -> Result(VXML, DesugaringError) {
   let tp = "Chapter"
 
-  let item_blame = infra.get_blame(item)
+  let item_blame = item.blame
 
   use label_attr <- infra.on_none_on_some(
     infra.v_attribute_with_key(item, "title_gr"),
@@ -74,37 +70,46 @@ fn chapter_link(
 
   let number_span =
     V(item_blame, "span", [], [
-      T(blame_us("L53"), [
-        BlamedContent(
-          blame_us("L53"),
-          chapter_number <> "." <> ins(section_index) <> " - ",
-        ),
-      ]),
+      T(
+        desugarer_blame,
+        [
+          BlamedContent(
+            desugarer_blame,
+            chapter_number <> "." <> ins(section_index) <> " - ",
+          ),
+        ]
+      ),
     ])
 
   let a =
-    V(item_blame, "a", [BlamedAttribute(blame_us("L57"), "href", link)], [
-      T(item_blame, [BlamedContent(item_blame, label_attr.value)]),
-    ])
+    V(
+      item_blame,
+      "a",
+      [
+        BlamedAttribute(desugarer_blame, "href", link)
+      ],
+      [
+        T(item_blame, [BlamedContent(item_blame, label_attr.value)]),
+      ]
+    )
 
   let sub_chapter_number = ins(section_index)
   let margin_left =
     infra.on_true_on_false(sub_chapter_number == "0", "0", fn() { "40px" })
 
   let style_attr =
-    BlamedAttribute(blame_us("L68"), "style", "margin-left: " <> margin_left)
+    BlamedAttribute(desugarer_blame, "style", "margin-left: " <> margin_left)
 
   Ok(V(item_blame, chapter_link_component_name, [style_attr], [number_span, a]))
 }
 
 fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
   let tp = "Chapter"
-  let item_blame = infra.get_blame(item)
 
   use number_attribute <- infra.on_none_on_some(
     infra.v_attribute_with_key(item, "number"),
     with_on_none: Error(DesugaringError(
-      item_blame,
+      item.blame,
       "(generate_ti2_table_of_contents_html) "
         <> tp
         <> " missing number attribute (b)",
@@ -122,11 +127,11 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(blame_us("57"), "div", [BlamedAttribute(blame_us("L60"), "id", id)], [
+  V(desugarer_blame, "div", [BlamedAttribute(desugarer_blame, "id", id)], [
     V(
-      blame_us("L64"),
+      desugarer_blame,
       "ul",
-      [BlamedAttribute(blame_us("68"), "style", "list-style: none")],
+      [BlamedAttribute(desugarer_blame, "style", "list-style: none")],
       menu_items,
     ),
   ])
@@ -161,7 +166,7 @@ fn nodemap(
 
   Ok(infra.prepend_child(
     root,
-    V(blame_us("L164"), table_of_contents_tag, [], [chapters_div]),
+    V(desugarer_blame, table_of_contents_tag, [], [chapters_div]),
   ))
 }
 
@@ -177,20 +182,15 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String, String)
-//  ↖       ↖
-//  tag     tag name
-//  name    for
-//  for     individual
-//  table   chapter
-//  of      links
-//  contents
-
+type Param = #(String,              String)
+//             ↖                    ↖
+//             tag name for         tag name for
+//             table of contents    individual chapter links
 type InnerParam = Param
 
 const name = "generate_ti2_table_of_contents_html"
 const constructor = generate_ti2_table_of_contents_html
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

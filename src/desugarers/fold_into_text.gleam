@@ -5,25 +5,8 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedContent, T, V}
 
-// fn last_line_concatenate_with_first_line(node1: VXML, node2: VXML) -> VXML {
-//   let assert T(blame1, lines1) = node1
-//   let assert T(_, lines2) = node2
-//   let assert [BlamedContent(blame_last, content_last), ..other_lines1] =
-//     lines1 |> list.reverse
-//   let assert [BlamedContent(_, content_first), ..other_lines2] = lines2
-//   T(
-//     blame1,
-//     list.flatten([
-//       other_lines1 |> list.reverse,
-//       [BlamedContent(blame_last, content_last <> content_first)],
-//       other_lines2,
-//     ]),
-//   )
-// }
-
 fn turn_into_text_node(node: VXML, text: String) -> VXML {
-  let blame = infra.get_blame(node)
-  T(blame, [BlamedContent(blame, text)])
+  T(node.blame, [BlamedContent(node.blame, text)])
 }
 
 fn accumulator(

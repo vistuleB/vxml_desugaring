@@ -1,4 +1,3 @@
-import blamedlines.{type Blame} as bl
 import gleam/list
 import gleam/option
 import gleam/result
@@ -6,10 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
-
-fn blame_us(note: String) -> Blame {
-  bl.Des([], "generate_ti2_toc:" <> note)
-}
+import blamedlines as bl
 
 fn prepand_0(number: String) {
   case string.length(number) {
@@ -76,7 +72,7 @@ fn chapter_link(
           "number",
           number_attribute.value,
         ),
-        BlamedAttribute(blame_us("L45"), "href", link),
+        BlamedAttribute(desugarer_blame, "href", link),
       ],
       [],
     ),
@@ -84,11 +80,11 @@ fn chapter_link(
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(blame_us("57"), "div", [BlamedAttribute(blame_us("L60"), "id", id)], [
+  V(desugarer_blame, "div", [BlamedAttribute(desugarer_blame, "id", id)], [
     V(
-      blame_us("L64"),
+      desugarer_blame,
       "ul",
-      [BlamedAttribute(blame_us("68"), "style", "list-style: none")],
+      [BlamedAttribute(desugarer_blame, "style", "list-style: none")],
       menu_items,
     ),
   ])
@@ -116,7 +112,7 @@ fn nodemap(
 
   Ok(infra.prepend_child(
     root,
-    V(blame_us("L104"), table_of_contents_tag, [], [chapters_div]),
+    V(desugarer_blame, table_of_contents_tag, [], [chapters_div]),
   ))
 }
 
@@ -133,17 +129,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param =
-  #(String, String)
-//  ↖       ↖
-//  table   chapter
-//  of      link
-//  contents component
-//  tag     name
+  #(String,         String)
+//  ↖               ↖
+//  table of        chapter
+//  contents tag    component name
 
 type InnerParam = Param
 
 const name = "generate_ti2_table_of_contents"
 const constructor = generate_ti2_table_of_contents
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

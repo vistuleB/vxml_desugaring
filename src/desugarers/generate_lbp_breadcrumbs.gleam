@@ -6,8 +6,6 @@ import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "generate_lbp_breadcrumbs")
-
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use #(head, last) <- infra.on_error_on_ok(
     infra.head_last(nodes),
@@ -158,6 +156,7 @@ type InnerParam = Nil
 
 const name = "generate_lbp_breadcrumbs"
 const constructor = generate_lbp_breadcrumbs
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

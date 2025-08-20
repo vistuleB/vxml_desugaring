@@ -6,8 +6,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "append_attribute_if_child_of")
-
 fn child_mapper(
   vxml: VXML,
   inner: InnerParam
@@ -62,6 +60,7 @@ type InnerParam = Param
 
 const name = "append_attribute_if_child_of"
 const constructor = append_attribute_if_child_of
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

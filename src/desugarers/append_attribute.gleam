@@ -7,8 +7,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "append_attribute")
-
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
@@ -51,6 +49,7 @@ type InnerParam = #(String, BlamedAttribute)
 
 const name = "append_attribute"
 const constructor = append_attribute
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

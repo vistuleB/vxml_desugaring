@@ -13,7 +13,7 @@ fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
       case dict.get(inner, #(first_tag, second_tag)) {
         Error(Nil) -> [first, ..add_in_list([second, ..rest], inner)]
         Ok(#(new_element_tag, new_element_attributes)) -> {
-          let blame = infra.get_blame(first)
+          let blame = first.blame
           [
             first,
             V(

@@ -49,11 +49,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
     param.1,
-    infra.emitter_and_tag_and_attrs_2_v(
-      "add_between",
-      param.2,
-      param.3,
-    ),
+    infra.desugarer_and_tag_and_attrs_2_v(name, param.2, param.3),
   )
   |> Ok
 }

@@ -261,7 +261,7 @@ type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAt
 
 const name = "handles_substitute"
 const constructor = handles_substitute
-const desugarer_blame = bl.Des([], "handles_substitute")
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

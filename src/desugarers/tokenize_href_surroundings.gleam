@@ -13,7 +13,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(infra.no_blame, "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame, "val", word)], [])
 }
 
 fn space_node(blame: Blame) {

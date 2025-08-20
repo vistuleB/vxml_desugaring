@@ -45,11 +45,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
-    infra.emitter_and_tag_and_attrs_2_v(
-      "add_between_tag_and_text_node",
-      param.1,
-      param.2,
-    ),
+    infra.desugarer_and_tag_and_attrs_2_v(name, param.1, param.2),
   )
   |> Ok
 }

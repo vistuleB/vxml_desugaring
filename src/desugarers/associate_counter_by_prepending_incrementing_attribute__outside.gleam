@@ -6,8 +6,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, V}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "associate_counter_by_...__outside")
-
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
@@ -78,6 +76,7 @@ type InnerParam = #(String, String, BlamedAttribute, TrafficLight)
 
 const name = "associate_counter_by_prepending_incrementing_attribute__outside"
 const constructor = associate_counter_by_prepending_incrementing_attribute__outside
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

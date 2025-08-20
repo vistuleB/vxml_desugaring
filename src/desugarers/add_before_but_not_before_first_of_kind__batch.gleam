@@ -55,11 +55,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     fn(p) {
       #(
         p.0,
-        infra.emitter_and_tag_and_attrs_2_v(
-          "add_before_but_not_before_first_child__batch",
-          p.1,
-          p.2,
-        )
+        infra.desugarer_and_tag_and_attrs_2_v(name, p.1, p.2)
       )
     }
   )

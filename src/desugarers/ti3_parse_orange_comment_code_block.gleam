@@ -70,7 +70,7 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
 
 const name = "ti3_parse_orange_comment_code_block"
 const constructor = ti3_parse_orange_comment_code_block
-const desugarer_blame = bl.Des([], "ti3_parse_orange_comment_code_block")
+const desugarer_blame = bl.Des([], name)
 
 type Param = Nil
 type InnerParam = Nil

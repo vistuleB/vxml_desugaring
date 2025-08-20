@@ -7,7 +7,7 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedContent, T, V}
 
 fn turn_into_text_node(node: VXML, text: String) -> VXML {
-  let blame = infra.get_blame(node)
+  let blame = node.blame
   T(blame, [BlamedContent(blame, text)])
 }
 

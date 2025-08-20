@@ -6,9 +6,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "append_attribute__batc")
-
-
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
@@ -64,6 +61,7 @@ type InnerParam = Dict(String, List(BlamedAttribute))
 
 const name = "append_attribute__batch"
 const constructor = append_attribute__batch
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

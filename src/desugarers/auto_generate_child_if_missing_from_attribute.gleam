@@ -6,8 +6,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, T, BlamedContent}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "append_attribute")
-
 fn nodemap(
   node: VXML,
   inner: InnerParam,
@@ -68,6 +66,7 @@ type InnerParam = Param
 
 const name = "auto_generate_child_if_missing_from_attribute"
 const constructor = auto_generate_child_if_missing_from_attribute
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

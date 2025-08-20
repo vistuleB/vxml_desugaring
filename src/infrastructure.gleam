@@ -373,19 +373,14 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
   }
 }
 
-pub fn emitter_and_tag_and_attrs_2_v(
-  blamestring: String,
+pub fn desugarer_and_tag_and_attrs_2_v(
+  name: String,
   tag: String,
   attrs: List(#(String, String)),
 ) -> VXML {
-  let blame = blamedlines.Des([], blamestring)
+  let blame = blamedlines.desugarer_blame(name)
   let attrs = list.map(attrs, fn(pair) { BlamedAttribute(blame, pair.0, pair.1) })
-  V(
-    blame,
-    tag,
-    attrs,
-    [],
-  )
+  V(blame, tag, attrs, [])
 }
 
 //**************************************************************
@@ -831,28 +826,21 @@ pub fn find_replace_in_node_no_list(
 
 pub const no_blame = blamedlines.no_blame
 
-pub fn desugarer_blame(emitter_name: String) -> Blame {
-  blamedlines.Des([], emitter_name)
+pub fn desugarer_blame(name: String) -> Blame {
+  blamedlines.desugarer_blame(name)
 }
 
-pub fn emitter_blame(emitter_name: String) -> Blame {
-  blamedlines.Em([], emitter_name)
+pub fn emitter_blame(name: String) -> Blame {
+  blamedlines.emitter_blame(name)
 }
 
 pub fn get_blame(vxml: VXML) -> Blame {
-  case vxml {
-    T(blame, _) -> blame
-    V(blame, _, _, _) -> blame
-  }
+  vxml.blame
 }
 
 pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
   let assert [first, ..] = vxmls
-  get_blame(first)
-}
-
-pub fn append_blame_comment(blame: Blame, comment: String) -> Blame {
-  blamedlines.append_comment(blame, comment)
+  first.blame
 }
 
 pub const advance = blamedlines.advance
@@ -1319,7 +1307,9 @@ pub fn total_chars( // yeah yeah it's not t-... ...relax a bit...
   vxml: VXML
 ) -> Int {
   case vxml {
-    T(_, lines) -> lines_total_chars(lines)
+    T(_, lines) ->
+      lines_total_chars(lines)
+
     V(_, _, _, children) -> 
       children
       |> list.map(total_chars)

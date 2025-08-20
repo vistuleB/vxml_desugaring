@@ -6,8 +6,6 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import vxml.{type VXML, BlamedAttribute, V}
 import blamedlines as bl
 
-const desugarer_blame = bl.Des([], "generate_lbp_table_of_contents")
-
 fn chapter_link(
   chapter_link_component_name: String,
   item: VXML,
@@ -155,6 +153,7 @@ type InnerParam = Param
 
 const name = "generate_lbp_table_of_contents"
 const constructor =  generate_lbp_table_of_contents
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

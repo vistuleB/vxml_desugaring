@@ -351,7 +351,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(infra.no_blame, "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame, "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -715,9 +715,9 @@ fn xmlm_tag_to_link_pattern(
   use href_attribute <- result.try(
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "href"))
-    |> result.map_error(
-      fn(_) {DesugaringError(infra.no_blame, "<a> pattern tag missing 'href' attribute")}
-    ),
+    |> result.map_error(fn(_) {
+      DesugaringError(infra.no_blame, "<a> pattern tag missing 'href' attribute")
+    }),
   )
 
   let xmlm.Attribute(_, value) = href_attribute
@@ -759,9 +759,7 @@ fn extra_string_to_link_pattern(
       xmlm_tag_to_link_pattern,
       xlml_text_to_link_pattern(_, re),
     ),
-    fn(input_error) {
-      Error(DesugaringError(infra.no_blame, "xmlm input error: " <> ins(input_error)))
-    },
+    fn(e) {Error(DesugaringError(infra.no_blame, "xmlm input error: " <> ins(e)))},
   )
 
   use pattern <- result.try(pattern) // pattern was a Result(TokenPatter, DesugaringError)

@@ -4,6 +4,19 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import blamedlines.{type Blame, Src} as bl
+
+fn pairing_msg(
+  local: Blame,
+  remote: Blame,
+) -> String {
+  case local, remote {
+    Src(_, l, _, _), Src(_, r, _, _) if l == r -> 
+      "paired with --:" <> ins(remote.line_no) <> ":" <> ins(remote.char_no)
+    _, _ ->
+      "p.w. " <> bl.blame_digest(remote)
+  }
+}
 
 fn accumulator(
   opening: List(String),
@@ -151,10 +164,7 @@ fn accumulator(
                 enclosing,
                 [
                   V(
-                    infra.get_blame(dude)
-                      |> infra.append_blame_comment(
-                        "paired with " <> ins(infra.get_blame(first)),
-                      ),
+                    dude.blame |> bl.append_comment(pairing_msg(dude.blame, first.blame)),
                     enclosing,
                     [],
                     after_last_opening |> list.reverse,
@@ -193,10 +203,7 @@ fn accumulator(
                 enclosing,
                 [
                   V(
-                    infra.get_blame(dude)
-                      |> infra.append_blame_comment(
-                        "paired with " <> ins(infra.get_blame(first)),
-                      ),
+                    dude.blame |> bl.append_comment(pairing_msg(dude.blame, first.blame)),
                     enclosing,
                     [],
                     after_last_opening |> list.reverse,

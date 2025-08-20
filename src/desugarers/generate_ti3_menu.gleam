@@ -5,8 +5,6 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V, T}
 
-const desugarer_blame = bl.Des([], "generate_ti3_menu")
-
 fn an_attribute(key: String, value: String) -> BlamedAttribute {
   BlamedAttribute(desugarer_blame, key, value)
 }
@@ -248,6 +246,7 @@ type InnerParam = Nil
 
 const name = "generate_ti3_menu"
 const constructor = generate_ti3_menu
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
