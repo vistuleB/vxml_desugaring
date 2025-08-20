@@ -53,7 +53,8 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triples_to_dict(param))
+  infra.triples_to_dict(param)
+  |> Ok
 }
 
 type Param = List(#(#(String,          String), String,             List(#(String, String))))

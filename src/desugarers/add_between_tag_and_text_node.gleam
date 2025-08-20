@@ -3,6 +3,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import blamedlines as bl
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
@@ -45,7 +46,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
-    infra.desugarer_and_tag_and_attrs_2_v(name, param.1, param.2),
+    infra.v_attrs_constructor(desugarer_blame, param.1, param.2),
   )
   |> Ok
 }
@@ -59,6 +60,7 @@ type InnerParam = #(String, VXML)
 
 const name = "add_between_tag_and_text_node"
 const constructor = add_between_tag_and_text_node
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

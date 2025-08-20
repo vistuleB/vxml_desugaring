@@ -373,12 +373,11 @@ pub fn is_tag(vxml: VXML, tag: String) -> Bool {
   }
 }
 
-pub fn desugarer_and_tag_and_attrs_2_v(
-  name: String,
+pub fn v_attrs_constructor(
+  blame: Blame,
   tag: String,
   attrs: List(#(String, String)),
 ) -> VXML {
-  let blame = blamedlines.desugarer_blame(name)
   let attrs = list.map(attrs, fn(pair) { BlamedAttribute(blame, pair.0, pair.1) })
   V(blame, tag, attrs, [])
 }
@@ -826,13 +825,13 @@ pub fn find_replace_in_node_no_list(
 
 pub const no_blame = blamedlines.no_blame
 
-pub fn desugarer_blame(name: String) -> Blame {
-  blamedlines.desugarer_blame(name)
-}
+// pub fn desugarer_blame(name: String) -> Blame {
+//   blamedlines.desugarer_blame(name)
+// }
 
-pub fn emitter_blame(name: String) -> Blame {
-  blamedlines.emitter_blame(name)
-}
+// pub fn emitter_blame(name: String) -> Blame {
+//   blamedlines.emitter_blame(name)
+// }
 
 pub fn get_blame(vxml: VXML) -> Blame {
   vxml.blame

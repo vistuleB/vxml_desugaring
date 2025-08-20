@@ -3,6 +3,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V}
+import blamedlines as bl
 
 fn add_in_list(
   vxmls: List(VXML),
@@ -38,8 +39,11 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let v = infra.desugarer_and_tag_and_attrs_2_v(name, param.1, param.2)
-  Ok(#(param.0, v))
+  #(
+    param.0,
+    infra.v_attrs_constructor(desugarer_blame, param.1, param.2),
+  )
+  |> Ok
 }
 
 type Param = #(String,        String,          List(#(String, String)))
@@ -52,6 +56,7 @@ type InnerParam = #(String, VXML)
 
 const name = "add_before_but_not_before_first_child"
 const constructor = add_before_but_not_before_first_child
+const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
