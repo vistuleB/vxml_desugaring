@@ -14,6 +14,7 @@ fn nodemap(
         [] -> {
           // get all src attributes
           let src_attrs = list.filter(attrs, fn(attr) { attr.key == "src" })
+
           // get width and height attributes if they exist
           let img_width_attr = list.filter(attrs, fn(attr) { attr.key == "width" })
           let img_height_attr = list.filter(attrs, fn(attr) { attr.key == "height" })
@@ -21,13 +22,13 @@ fn nodemap(
           // validate only one img width attribute
           use <- infra.on_true_on_false(
             list.length(img_width_attr) > 1,
-            Error (DesugaringError(blame, "Carousel should have only one width attribute."))
+            Error (DesugaringError(blame, "Carousel should have only one width attribute"))
           )
 
           // validate only one img height attribute
           use <- infra.on_true_on_false(
             list.length(img_height_attr) > 1,
-            Error (DesugaringError(blame, "Carousel should have only one height attribute."))
+            Error (DesugaringError(blame, "Carousel should have only one height attribute"))
           )
 
           // create CarouselItem children with img tags
@@ -40,7 +41,7 @@ fn nodemap(
               [width_attr], [] -> "width: " <> width_attr.value <> ";"
               [], [height_attr] -> "height: " <> height_attr.value <> ";"
               [width_attr], [height_attr] -> "width: " <> width_attr.value <> "; height: " <> height_attr.value <> ";"
-              _, _ -> ""
+              _, _ -> panic as "shouldn't be here"
             }
 
             let final_attrs = case style_value {
@@ -51,15 +52,17 @@ fn nodemap(
             let img = V(blame, "img", final_attrs, [])
             V(blame, "CarouselItem", [], [img])
           })
+
           Ok(V(blame, "Carousel", [], carousel_items))
         }
+
         _ -> {
           // check if there are any src attributes - error if there are
           case list.any(attrs, fn(attr) { attr.key == "src" }) {
             True ->
               Error(DesugaringError(
                 blame,
-                "Carousel cannot have src attribute and children at the same time."
+                "Carousel cannot have src attribute and children at the same time"
               ))
             False -> Ok(vxml)
           }
