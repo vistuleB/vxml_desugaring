@@ -204,27 +204,11 @@ pub fn stub_html_emitter(
         OutputLine(Em([], "stub_html_emitter"), 0, "<!DOCTYPE html>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "<html>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "<head>"),
-        OutputLine(
-          Em([], "stub_html_emitter"),
-          2,
-          "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">",
-        ),
+        OutputLine(Em([], "stub_html_emitter"), 2, "<link rel=\"icon\" type=\"image/x-icon\" href=\"logo.png\">"),
         OutputLine(Em([], "stub_html_emitter"), 2, "<meta charset=\"utf-8\">"),
-        OutputLine(
-          Em([], "stub_html_emitter"),
-          2,
-          "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
-        ),
-        OutputLine(
-          Em([], "stub_html_emitter"),
-          2,
-          "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>",
-        ),
-        OutputLine(
-          Em([], "stub_html_emitter"),
-          2,
-          "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>",
-        ),
+        OutputLine(Em([], "stub_html_emitter"), 2, "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"),
+        OutputLine(Em([], "stub_html_emitter"), 2, "<script type=\"text/javascript\" src=\"./mathjax_setup.js\"></script>"),
+        OutputLine(Em([], "stub_html_emitter"), 2, "<script type=\"text/javascript\" id=\"MathJax-script\" async src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js\"></script>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "</head>"),
         OutputLine(Em([], "stub_html_emitter"), 0, "<body>"),
       ],
@@ -246,17 +230,9 @@ pub fn stub_jsx_emitter(
   let lines =
     list.flatten([
       [
-        OutputLine(
-          Em([], "panel_emitter"),
-          0,
-          "import Something from \"./Somewhere\";",
-        ),
+        OutputLine(Em([], "panel_emitter"), 0, "import Something from \"./Somewhere\";",),
         OutputLine(Em([], "panel_emitter"), 0, ""),
-        OutputLine(
-          Em([], "panel_emitter"),
-          0,
-          "const OurSuperComponent = () => {",
-        ),
+        OutputLine(Em([], "panel_emitter"), 0, "const OurSuperComponent = () => {"),
         OutputLine(Em([], "panel_emitter"), 2, "return ("),
         OutputLine(Em([], "panel_emitter"), 4, "<>"),
       ],
@@ -266,11 +242,7 @@ pub fn stub_jsx_emitter(
         OutputLine(Em([], "panel_emitter"), 2, ");"),
         OutputLine(Em([], "panel_emitter"), 0, "};"),
         OutputLine(Em([], "panel_emitter"), 0, ""),
-        OutputLine(
-          Em([], "panel_emitter"),
-          0,
-          "export default OurSuperComponent;",
-        ),
+        OutputLine(Em([], "panel_emitter"), 0, "export default OurSuperComponent;"),
       ],
     ])
   Ok(OutputFragment(..fragment, payload: lines))
@@ -350,7 +322,6 @@ pub fn prettier_prettifier_with_custom_dir(
 ) -> Result(String, #(Int, String)) {
   case prettier_dir {
     Some(dir) -> {
-      // First ensure the target directory exists
       let source_path = output_dir <> "/" <> ghost.path
       let dest_path = dir <> "/" <> ghost.path
       case shellout.command(run: "mkdir", in: ".", with: ["-p", dir], opt: []) {
@@ -407,32 +378,20 @@ pub fn create_prettifier_from_parameters(
 // *************
 
 pub type Renderer(
-  a,
-  c,
-  d,
-  e,
-  f,
-  h,
-  // BlamedLinesAssembler error type
-  // SourceParser error type
-  // VXML Fragment enum type
-  // Splitter error type
-  // Emitter error type
-  // Prettifier error type
+  a, // BlamedLinesAssembler error type
+  c, // SourceParser error type
+  d, // VXML Fragment enum type
+  e, // Splitter error type
+  f, // Emitter error type
+  h, // Prettifier error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),
-    // file/directory -> List(OutputLine)                     Result w/ error type a
-    source_parser: SourceParser(c),
-    // List(OutputLine) -> VXML                               Result w/ error type c
-    pipeline: List(Pipe),
-    // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
-    splitter: Splitter(d, e),
-    // VXML -> List(#(String, VXML, d))                       Result w/ error type e
-    emitter: Emitter(d, f),
-    // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
-    prettifier: Prettifier(d, h),
-    // String, #(String, d) -> Nil                            Result w/ error type h
+    assembler: BlamedLinesAssembler(a),  // file/directory -> List(OutputLine)                     Result w/ error type a
+    source_parser: SourceParser(c),      // List(OutputLine) -> VXML                               Result w/ error type c
+    pipeline: List(Pipe),                // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
+    splitter: Splitter(d, e),            // VXML -> List(#(String, VXML, d))                       Result w/ error type e
+    emitter: Emitter(d, f),              // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
+    prettifier: Prettifier(d, h),        // String, #(String, d) -> Nil                            Result w/ error type h  
   )
 }
 
@@ -616,7 +575,6 @@ fn desugarer_to_list_lines(
     case i == 0 {
       True -> #(number, name, p, outside)
       False -> #("", star_block.spaces(string.length(name)), p, "⋮")
-      // False -> #("", "", p, "⋮")
     }
   })
 }
@@ -712,10 +670,7 @@ pub fn run_renderer(
       let z = [
         "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
         "🏯🏯pipeline step:   " <> ins(e.step_no),
-        "🏯🏯blame:           "
-          <> bl.blame_digest(e.blame)
-          <> " "
-          <> bl.comments_digest(e.blame),
+        "🏯🏯blame:           " <> bl.blame_digest(e.blame) <> " " <> bl.comments_digest(e.blame),
         "🏯🏯message:         " <> e.message,
       ]
       let lengths = list.map(z, string.length)
@@ -724,9 +679,7 @@ pub fn run_renderer(
       io.println("")
       io.println(string.repeat("🏯", width * 6 / 11))
       io.println(string.repeat("🏯", width * 6 / 11))
-      list.each(list.zip(z, lengths), fn(pair) {
-        io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯")
-      })
+      list.each(list.zip(z, lengths), fn(pair) {io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯")})
       io.println(string.repeat("🏯", width * 6 / 11))
       io.println(string.repeat("🏯", width * 6 / 11))
       io.println("")
@@ -751,15 +704,7 @@ pub fn run_renderer(
           timestamp.difference(t0, t1)
           |> duration.to_seconds
           |> float.to_precision(3)
-        io.println(
-          "  steps "
-          <> ins(step0)
-          <> " to "
-          <> ins(step1)
-          <> ": "
-          <> ins(seconds)
-          <> "s",
-        )
+        io.println("  steps " <> ins(step0) <> " to " <> ins(step1) <> ": " <> ins(seconds) <> "s")
         next
       })
       Nil
@@ -1085,114 +1030,58 @@ pub fn cli_usage() {
   io.println(margin <> "  -> print this message")
   io.println("")
   io.println(margin <> "--only <subpath1> <subpath2> ...")
-  io.println(
-    margin
-    <> "  -> restrict source to paths that match one of the given subpaths",
-  )
+  io.println(margin <> "  -> restrict source to paths that match one of the given subpaths")
   io.println("")
   io.println(margin <> "--only <key1=val1> <key2=val2> ...")
-  io.println(
-    margin
-    <> "  -> restrict source to elements that have one of the given key-value",
-  )
+  io.println(margin <> "  -> restrict source to elements that have one of the given key-value")
   io.println(margin <> "     pairs as attributes")
   io.println("")
   io.println(margin <> "--echo-assembled-source | --echo-assembled")
   io.println(margin <> "  -> print the assembled input lines of source")
   io.println("")
-  io.println(
-    margin
-    <> "--show-changes-near-[text|tag|keyval] <payload> +<p>-<m> <step numbers>",
-  )
-  io.println(
-    margin <> "  -> track changes near text, tag, or key=val pair as given by",
-  )
+  io.println(margin <> "--show-changes-near-[text|tag|keyval] <payload> +<p>-<m> <step numbers>")
+  io.println(margin <> "  -> track changes near text, tag, or key=val pair as given by")
   io.println(margin <> "     <payload> argument, e.g.:")
   io.println("")
-  io.println(
-    margin <> "     gleam run -- --show-changes-near-text \"lorem ipsum\"",
-  )
+  io.println(margin <> "     gleam run -- --show-changes-near-text \"lorem ipsum\"")
   io.println("")
-  io.println(
-    margin <> "     • +<p>-<m>: track p lines beyond and m lines before marker",
-  )
-  io.println(
-    margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before",
-  )
+  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before marker")
+  io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
   io.println(margin <> "       marker")
   io.println("")
-  io.println(
-    margin <> "     • <step numbers> specificy which desugaring steps to track:",
-  )
-  io.println(
-    margin
-    <> "         • <x-y> to track changes in desugaring steps x to y only",
-  )
-  io.println(
-    margin
-    <> "         • !x to force a printout at desugaring step x whether or",
-  )
+  io.println(margin <> "     • <step numbers> specificy which desugaring steps to track:")
+  io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
+  io.println(margin <> "         • !x to force a printout at desugaring step x whether or")
   io.println(margin <> "           not changes in selection occur")
-  io.println(
-    margin <> "       leave empty to track all steps and use negative arguments",
-  )
+  io.println(margin <> "       leave empty to track all steps and use negative arguments")
   io.println(margin <> "       to denote steps from end of list")
   io.println("")
   io.println(margin <> "--show-changes-at-steps")
-  io.println(
-    margin
-    <> "  -> takes arguments in the same form as <step numbers> option of",
-  )
-  io.println(
-    margin <> "     --show-changes-near-[] option, with the same semantics",
-  )
+  io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
+  io.println(margin <> "     --show-changes-near-[] option, with the same semantics", )
   io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
-  io.println(
-    margin
-    <> "  -> print fragments whose paths contain one of the given subpaths",
-  )
-  io.println(
-    margin <> "     before conversion to output lines, list none to match all",
-  )
+  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     before conversion to output lines, list none to match all", )
   io.println("")
   io.println(margin <> "--echo-fragments-ol <subpath1> <subpath2> ...")
-  io.println(
-    margin
-    <> "  -> print fragments whose paths contain one of the given subpaths",
-  )
-  io.println(
-    margin <> "     after conversion to output lines, list none to match all",
-  )
+  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     after conversion to output lines, list none to match all", )
   io.println("")
   io.println(margin <> "--echo-fragments-printed <subpath1> <subpath2> ...")
-  io.println(
-    margin
-    <> "  -> print fragments whose paths contain one of the given subpaths",
-  )
-  io.println(
-    margin <> "     in string form before prettifying, list none to match all",
-  )
+  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     in string form before prettifying, list none to match all", )
   io.println("")
-  io.println(
-    margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...",
-  )
-  io.println(
-    margin
-    <> "  -> print fragments whose paths contain one of the given subpaths",
-  )
-  io.println(
-    margin <> "     in string form after prettifying, list none to match all",
-  )
+  io.println(margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...", )
+  io.println(margin <> "  -> print fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     in string form after prettifying, list none to match all", )
   io.println("")
   io.println(margin <> "--prettier")
   io.println(margin <> "  -> turn the prettifier on")
   io.println("")
   io.println(margin <> "--prettier-dir <dir>")
   io.println(margin <> "  -> specify directory to write prettier output to")
-  io.println(
-    margin <> "     if not specified, prettier runs in check mode only",
-  )
+  io.println(margin <> "     if not specified, prettier runs in check mode only", )
   io.println("")
 }
 
@@ -1646,14 +1535,11 @@ pub fn amend_renderer_paramaters_by_command_line_amendments(
   parameters: RendererParameters,
   amendments: CommandLineAmendments,
 ) -> RendererParameters {
-  // Enable prettier if --prettier flag is present or if --prettier-dir is specified
+  // enable prettier if --prettier flag is present or if --prettier-dir is specified
   let prettifier_enabled = case amendments.prettier, amendments.prettier_dir {
-    True, _ -> True
-    // --prettier flag specified
-    False, Some(_) -> True
-    // --prettier-dir specified, so enable prettier
-    False, None -> False
-    // No prettier flags, so disable
+    True, _ -> True          // --prettier flag specified
+    False, Some(_) -> True   // --prettier-dir specified, so enable prettier
+    False, None -> False     // no prettier flags, so disable
   }
 
   RendererParameters(
