@@ -30,8 +30,8 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
-    BlamedContent(desugarer_blame, param.1.0),
-    BlamedContent(desugarer_blame, param.1.1),
+    BlamedContent(dblame(33), param.1.0),
+    BlamedContent(dblame(34), param.1.1),
   )
   |> Ok
 }
@@ -44,7 +44,7 @@ type InnerParam = #(String, BlamedContent, BlamedContent)
 
 const name = "insert_line_start_end"
 const constructor = insert_line_start_end
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

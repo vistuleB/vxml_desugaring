@@ -8,10 +8,10 @@ import blamedlines as bl
 
 const newline_t =
   T(
-    desugarer_blame,
+    bl.Des([], name, 11),
     [
-      BlamedContent(desugarer_blame, ""),
-      BlamedContent(desugarer_blame, ""),
+      BlamedContent(bl.Des([], name, 13), ""),
+      BlamedContent(bl.Des([], name, 14), ""),
     ]
   )
 
@@ -28,9 +28,9 @@ fn python_prompt_chunk_to_vxmls(
     PromptLine(bc) -> {
       [
         V(
-          desugarer_blame,
+          dblame(31),
           "span",
-          [BlamedAttribute(desugarer_blame, "class", "python-prompt-carets")],
+          [BlamedAttribute(dblame(33), "class", "python-prompt-carets")],
           [
             T(
               bc.blame,
@@ -39,9 +39,9 @@ fn python_prompt_chunk_to_vxmls(
           ]
         ),
         V(
-          desugarer_blame,
+          dblame(42),
           "span",
-          [BlamedAttribute(desugarer_blame, "class", "python-prompt-content")],
+          [BlamedAttribute(dblame(44), "class", "python-prompt-content")],
           [
             T(
               infra.advance(bc.blame, 3),
@@ -54,9 +54,9 @@ fn python_prompt_chunk_to_vxmls(
     OkResponseLines(lines) -> {
       [
         V(
-          desugarer_blame,
+          dblame(57),
           "span",
-          [BlamedAttribute(desugarer_blame, "class", "python-prompt-ok-response")],
+          [BlamedAttribute(dblame(59), "class", "python-prompt-ok-response")],
           [
             T(
               lines |> infra.lines_first_blame,
@@ -69,9 +69,9 @@ fn python_prompt_chunk_to_vxmls(
     ErrorResponseLines(lines) -> {
       [
         V(
-          desugarer_blame,
+          dblame(72),
           "span",
-          [BlamedAttribute(desugarer_blame, "class", "python-prompt-error-response")],
+          [BlamedAttribute(dblame(74), "class", "python-prompt-error-response")],
           [
             T(
               lines |> infra.lines_first_blame,
@@ -127,7 +127,7 @@ fn nodemap(
           V(
             blame,
             "pre",
-            [BlamedAttribute(desugarer_blame, "class", "python-prompt")],
+            [BlamedAttribute(dblame(130), "class", "python-prompt")],
             children,
           )
         }
@@ -153,7 +153,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
 const name = "ti3_parse_python_prompt_code_block"
 const constructor = ti3_parse_python_prompt_code_block
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 type Param = Nil
 type InnerParam = Param

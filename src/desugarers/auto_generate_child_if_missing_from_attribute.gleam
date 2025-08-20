@@ -30,7 +30,7 @@ fn nodemap(
           ..node,
           children: [
             V(
-              desugarer_blame,
+              dblame(33),
               child_tag,
               [],
               [T(attribute.blame, [BlamedContent(attribute.blame, attribute.value)])],
@@ -66,7 +66,7 @@ type InnerParam = Param
 
 const name = "auto_generate_child_if_missing_from_attribute"
 const constructor = auto_generate_child_if_missing_from_attribute
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

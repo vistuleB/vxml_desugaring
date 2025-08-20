@@ -13,7 +13,7 @@ fn nodemap(
 ) -> Result(VXML, DesugaringError) {
   case node, previous_unmapped_siblings {
     V(_, tag, attrs, _), [V(_, prev_tag, _, _), ..] if tag == inner.0 && prev_tag == inner.0 -> {
-      let new_attr = BlamedAttribute(desugarer_blame, inner.1, inner.2)
+      let new_attr = BlamedAttribute(dblame(16), inner.1, inner.2)
       Ok(V(..node, attributes: list.append(attrs, [new_attr])))
     }
     _, _ -> Ok(node)
@@ -42,7 +42,7 @@ type InnerParam = Param
 
 const name = "append_attribute_to_second_of_kind"
 const constructor = append_attribute_to_second_of_kind
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

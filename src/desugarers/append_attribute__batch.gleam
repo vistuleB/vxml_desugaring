@@ -44,7 +44,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   |> list.map(
     fn(t) {
       #(t.0, BlamedAttribute(
-        desugarer_blame,
+        dblame(47),
         t.1,
         t.2,
       ))
@@ -61,7 +61,7 @@ type InnerParam = Dict(String, List(BlamedAttribute))
 
 const name = "append_attribute__batch"
 const constructor = append_attribute__batch
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

@@ -86,18 +86,18 @@ fn transform_children(children: List(VXML)) -> List(VXML){
 
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
   let link = V(
-    desugarer_blame, 
+    dblame(89), 
     "InChapterLink",
-    [BlamedAttribute(desugarer_blame, "href", "?id=" <> target_id)],
+    [BlamedAttribute(dblame(91), "href", "?id=" <> target_id)],
     children
   )
 
   V(
-    desugarer_blame,
+    dblame(96),
     "BreadcrumbItem",
     [
-      BlamedAttribute(desugarer_blame, "class", "breadcrumb"),
-      BlamedAttribute(desugarer_blame, "id", "breadcrumb-" <> ins(index)),
+      BlamedAttribute(dblame(99), "class", "breadcrumb"),
+      BlamedAttribute(dblame(100), "id", "breadcrumb-" <> ins(index)),
     ],
     [
       link
@@ -137,7 +137,7 @@ fn generate_sections_list(sections: List(VXML), exercises: List(VXML)) -> Result
   }
 
   Ok(V(
-    desugarer_blame,
+    dblame(140),
     "SectionsBreadcrumbs",
     [],
     list.flatten([sections_nodes, exercises_node])
@@ -185,7 +185,7 @@ type InnerParam = Nil
 
 const name = "generate_lbp_sections_breadcrumbs"
 const constructor = generate_lbp_sections_breadcrumbs
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

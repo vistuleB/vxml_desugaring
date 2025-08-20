@@ -30,7 +30,7 @@ fn convert_handles_to_attributes(
     fn (key, values) {
       let #(value, id, filename) = values
       BlamedAttribute(
-        blame: desugarer_blame,
+        blame: dblame(33),
         key: "handle",
         value: key <> "|" <> value <> "|" <> id <> "|" <> filename,
       )
@@ -157,7 +157,7 @@ fn v_after_transforming_children(
     False -> Ok(#(vxml, state))
     True -> {
       let grand_wrapper = V(
-        desugarer_blame,
+        dblame(160),
         "GrandWrapper",
         convert_handles_to_attributes(state.handles),
         [vxml],
@@ -200,7 +200,7 @@ type InnerParam = Param
 
 const name = "handles_generate_dictionary"
 const constructor = handles_generate_dictionary
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

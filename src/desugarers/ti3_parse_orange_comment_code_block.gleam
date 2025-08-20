@@ -7,8 +7,17 @@ import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V
 import blamedlines as bl
 
 
-const t_1_empty_line = T(desugarer_blame, [BlamedContent(desugarer_blame, "")])
-const orange = V(desugarer_blame, "span", [BlamedAttribute(desugarer_blame, "class", "orange-comment")], [])
+const t_1_empty_line = T(
+  bl.Des([], name, 11),
+  [BlamedContent(bl.Des([], name, 12), "")]
+)
+const orange = 
+  V(
+    bl.Des([], name, 16),
+    "span",
+    [BlamedAttribute(bl.Des([], name, 18), "class", "orange-comment")],
+    [],
+  )
 
 fn blamed_content_2_t(line: BlamedContent) -> VXML {
   T(line.blame, [line])
@@ -70,7 +79,6 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
 
 const name = "ti3_parse_orange_comment_code_block"
 const constructor = ti3_parse_orange_comment_code_block
-const desugarer_blame = bl.Des([], name)
 
 type Param = Nil
 type InnerParam = Nil

@@ -115,25 +115,25 @@ fn generate_replacement_vxml_internal(
     [p, ..pattern_rest] -> {
       case p {
         StartT -> generate_replacement_vxml_internal(
-          [start_node(desugarer_blame), ..already_ready],
+          [start_node(dblame(118)), ..already_ready],
           pattern_rest,
           match_data,
         )
 
         EndT -> generate_replacement_vxml_internal(
-          [end_node(desugarer_blame), ..already_ready],
+          [end_node(dblame(124)), ..already_ready],
           pattern_rest,
           match_data,
         )
 
         Space -> generate_replacement_vxml_internal(
-          [space_node(desugarer_blame), ..already_ready],
+          [space_node(dblame(130)), ..already_ready],
           pattern_rest,
           match_data,
         )
 
         Word(word) -> generate_replacement_vxml_internal(
-          [word_node(desugarer_blame, word), ..already_ready],
+          [word_node(dblame(136), word), ..already_ready],
           pattern_rest,
           match_data,
         )
@@ -350,7 +350,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame, "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(dblame(353), "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -906,7 +906,7 @@ type InnerParam = List(#(LinkPattern, LinkPattern))
 
 const name = "rearrange_links__batch"
 const constructor = rearrange_links__batch
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

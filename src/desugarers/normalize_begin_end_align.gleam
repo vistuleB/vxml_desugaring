@@ -19,7 +19,7 @@ fn split_and_insert_before_unless_allowable_ending_found_ez_version(
   allowable_endings: List(String),       // this will almost always be ["$$"], but could be ["\[", "$$"] for ex
   if_no_allowable_found_insert: String,  // will almost always be "$$"
 ) -> List(BlamedContent) {
-  let blame = desugarer_blame
+  let blame = dblame(22)
 
   let add_prescribed_to_end_if_missing = fn(lines) {
     let trimmed =
@@ -99,7 +99,7 @@ fn split_and_insert_after_unless_allowable_beginning_found_ez_version(
   allowable_beginnings: List(String),    // this will almost always be ["$$"], but could be ["\]", "$$"] for ex
   if_no_allowable_found_insert: String,  // this will almost always be "$$"
 ) -> List(BlamedContent) {
-  let blame = desugarer_blame
+  let blame = dblame(102)
 
   let add_prescribed_to_start_if_missing = fn(lines) {
     let trimmed = infra.lines_trim_start(lines)
@@ -303,7 +303,7 @@ type InnerParam =
 
 const name = "normalize_begin_end_align"
 const constructor = normalize_begin_end_align
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

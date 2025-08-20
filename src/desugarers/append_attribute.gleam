@@ -34,7 +34,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
     BlamedAttribute(
-      desugarer_blame,
+      dblame(37),
       param.1,
       param.2,
     )
@@ -49,7 +49,7 @@ type InnerParam = #(String, BlamedAttribute)
 
 const name = "append_attribute"
 const constructor = append_attribute
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Script to replace "desugarer_blame(X)" where X is any integer with "desugarer_blame(line_number)"
-# Usage: ./renumber_desugarer_blame.sh [directory_path]
+# Script to replace "desugarer_blame" with "desugarer_blame(line_number)" in all files in a directory
 
 # Set default directory to current directory if no argument provided
 TARGET_DIR=src/desugarers/
@@ -13,7 +12,7 @@ if [ ! -d "$TARGET_DIR" ]; then
 fi
 
 echo "Processing files in directory: $TARGET_DIR"
-echo "Renumbering 'desugarer_blame(X)' patterns with correct line numbers..."
+echo "Replacing 'desugarer_blame' with 'desugarer_blame(line_number)' in each file..."
 echo
 
 # Counter for processed files
@@ -21,11 +20,7 @@ processed_files=0
 
 # Process all files in the directory (not subdirectories)
 find "$TARGET_DIR" -maxdepth 1 -type f | while read -r file; do
-    # Skip binary files using the file command
-    if ! file -b --mime-type "$file" | grep -q '^text/'; then
-        echo "Skipping non-text file: $(basename "$file")"
-        continue
-    fi
+    # Skip binary files by checking if file contains null bytes
     
     # Create a temporary file
     temp_file=$(mktemp)
@@ -36,11 +31,10 @@ find "$TARGET_DIR" -maxdepth 1 -type f | while read -r file; do
     # Process the file line by line
     line_number=1
     while IFS= read -r line || [ -n "$line" ]; do
-        # Check if line contains "desugarer_blame(" followed by digits and ")"
-        if [[ "$line" =~ desugarer_blame\([0-9]+\) ]]; then
-            # Replace all occurrences of "desugarer_blame(digits)" with "desugarer_blame(line_number)" on this line
-            # Using sed to handle multiple occurrences on the same line
-            modified_line=$(echo "$line" | sed "s/desugarer_blame([0-9]\+)/desugarer_blame($line_number)/g")
+        # Check if line contains "desugarer_blame"
+        if [[ "$line" == *"desugarer_blame"* ]]; then
+            # Replace all occurrences of "desugarer_blame" with "desugarer_blame(line_number)" on this line
+            modified_line="${line//desugarer_blame/dblame($line_number)}"
             echo "$modified_line" >> "$temp_file"
             replacements_made=true
         else
@@ -60,9 +54,9 @@ find "$TARGET_DIR" -maxdepth 1 -type f | while read -r file; do
     fi
 done
 
-# Count files that were actually modified
+# Note: The counter won't work correctly due to subshell, so we'll do a final count
 final_count=$(find "$TARGET_DIR" -maxdepth 1 -type f -exec grep -l "desugarer_blame([0-9]\+)" {} \; 2>/dev/null | wc -l)
 
 echo
 echo "Script completed!"
-echo "Files with renumbered desugarer_blame patterns: $final_count"
+echo "Files with replacements: $final_count"

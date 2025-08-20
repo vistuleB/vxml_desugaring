@@ -71,10 +71,10 @@ fn chapter_link(
   let number_span =
     V(item_blame, "span", [], [
       T(
-        desugarer_blame,
+        dblame(74),
         [
           BlamedContent(
-            desugarer_blame,
+            dblame(77),
             chapter_number <> "." <> ins(section_index) <> " - ",
           ),
         ]
@@ -86,7 +86,7 @@ fn chapter_link(
       item_blame,
       "a",
       [
-        BlamedAttribute(desugarer_blame, "href", link)
+        BlamedAttribute(dblame(89), "href", link)
       ],
       [
         T(item_blame, [BlamedContent(item_blame, label_attr.value)]),
@@ -98,7 +98,7 @@ fn chapter_link(
     infra.on_true_on_false(sub_chapter_number == "0", "0", fn() { "40px" })
 
   let style_attr =
-    BlamedAttribute(desugarer_blame, "style", "margin-left: " <> margin_left)
+    BlamedAttribute(dblame(101), "style", "margin-left: " <> margin_left)
 
   Ok(V(item_blame, chapter_link_component_name, [style_attr], [number_span, a]))
 }
@@ -127,11 +127,11 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(desugarer_blame, "div", [BlamedAttribute(desugarer_blame, "id", id)], [
+  V(dblame(130), "div", [BlamedAttribute(dblame(130), "id", id)], [
     V(
-      desugarer_blame,
+      dblame(132),
       "ul",
-      [BlamedAttribute(desugarer_blame, "style", "list-style: none")],
+      [BlamedAttribute(dblame(134), "style", "list-style: none")],
       menu_items,
     ),
   ])
@@ -166,7 +166,7 @@ fn nodemap(
 
   Ok(infra.prepend_child(
     root,
-    V(desugarer_blame, table_of_contents_tag, [], [chapters_div]),
+    V(dblame(169), table_of_contents_tag, [], [chapters_div]),
   ))
 }
 
@@ -190,7 +190,7 @@ type InnerParam = Param
 
 const name = "generate_ti2_table_of_contents_html"
 const constructor = generate_ti2_table_of_contents_html
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

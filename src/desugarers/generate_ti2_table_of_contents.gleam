@@ -72,7 +72,7 @@ fn chapter_link(
           "number",
           number_attribute.value,
         ),
-        BlamedAttribute(desugarer_blame, "href", link),
+        BlamedAttribute(dblame(75), "href", link),
       ],
       [],
     ),
@@ -80,11 +80,11 @@ fn chapter_link(
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(desugarer_blame, "div", [BlamedAttribute(desugarer_blame, "id", id)], [
+  V(dblame(83), "div", [BlamedAttribute(dblame(83), "id", id)], [
     V(
-      desugarer_blame,
+      dblame(85),
       "ul",
-      [BlamedAttribute(desugarer_blame, "style", "list-style: none")],
+      [BlamedAttribute(dblame(87), "style", "list-style: none")],
       menu_items,
     ),
   ])
@@ -112,7 +112,7 @@ fn nodemap(
 
   Ok(infra.prepend_child(
     root,
-    V(desugarer_blame, table_of_contents_tag, [], [chapters_div]),
+    V(dblame(115), table_of_contents_tag, [], [chapters_div]),
   ))
 }
 
@@ -138,7 +138,7 @@ type InnerParam = Param
 
 const name = "generate_ti2_table_of_contents"
 const constructor = generate_ti2_table_of_contents
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

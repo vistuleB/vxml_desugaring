@@ -67,7 +67,7 @@ fn all_subchapters(chapters: List(#(VXML, ChapterNo, ChapterTitle))) -> List(#(C
 }
 
 fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, chapter_number: Int) -> VXML {
-  let blame = desugarer_blame
+  let blame = dblame(70)
   V(
     blame,
     "li",
@@ -85,7 +85,7 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
 }
 
 fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapters: List(#(SubChapterNo, SubchapterTitle))) -> VXML {
-  let blame = desugarer_blame
+  let blame = dblame(88)
 
   let subchapters_ol = case subchapters {
     [] -> []
@@ -122,7 +122,7 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
 }
 
 fn construct_header(document: VXML) -> VXML {
-  let blame = desugarer_blame
+  let blame = dblame(125)
 
   let title =
     case infra.v_attribute_with_key(document, "title") {
@@ -176,7 +176,7 @@ fn construct_header(document: VXML) -> VXML {
 }
 
 fn construct_right_menu(document: VXML) -> VXML {
-  let blame = desugarer_blame
+  let blame = dblame(179)
 
   let first_chapter_title =
     document
@@ -207,7 +207,7 @@ fn construct_right_menu(document: VXML) -> VXML {
 }
 
 fn construct_menu(document: VXML) -> VXML {
-  let blame = desugarer_blame
+  let blame = dblame(210)
 
   let course_homepage_link =
     case infra.v_attribute_with_key(document, "course_homepage") {
@@ -236,7 +236,7 @@ fn construct_menu(document: VXML) -> VXML {
 }
 
 fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo, SubchapterTitle))))) -> VXML {
-  let blame = desugarer_blame
+  let blame = dblame(239)
 
   V(
     blame,
@@ -267,7 +267,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
           |> construct_index
 
   let index_node = V(
-    desugarer_blame,
+    dblame(270),
     "Index",
     [],
     [menu_node, header_node, index_list_node]
@@ -290,7 +290,7 @@ type InnerParam = Nil
 
 const name = "generate_ti3_index"
 const constructor = generate_ti3_index
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

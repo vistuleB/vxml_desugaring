@@ -6,14 +6,14 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V, T}
 import blamedlines.{type Blame} as bl
 
-const had_href_child = BlamedAttribute(desugarer_blame, "had_href_child", "true")
+const had_href_child = BlamedAttribute(bl.Des([], name, 9), "had_href_child", "true")
 
 fn start_node(blame: Blame) {
   V(blame, "__StartTokenizedT", [], [])
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame, "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(blame, "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -119,7 +119,6 @@ type InnerParam = Param
 
 const name = "tokenize_href_surroundings"
 const constructor = tokenize_href_surroundings
-const desugarer_blame = bl.Des([], name)
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

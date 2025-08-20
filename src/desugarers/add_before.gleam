@@ -43,7 +43,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
-    infra.v_attrs_constructor(desugarer_blame, param.1, param.2),
+    infra.v_attrs_constructor(dblame(46), param.1, param.2),
   )
   |> Ok
 }
@@ -57,7 +57,7 @@ type InnerParam = #(String, VXML)
 
 const name = "add_before"
 const constructor = add_before
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

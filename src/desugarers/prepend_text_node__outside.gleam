@@ -31,7 +31,7 @@ fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTrans
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  let blame = desugarer_blame
+  let blame = dblame(34)
   #(
     param.0,
     T(
@@ -52,7 +52,7 @@ type InnerParam = #(String, VXML)
 
 const name = "prepend_text_node__outside"
 const constructor = prepend_text_node__outside
-const desugarer_blame = bl.Des([], name)
+fn dblame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
