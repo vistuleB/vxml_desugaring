@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{None}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V}
+import vxml.{type VXML, T, V, BlamedAttribute}
 
 fn nodemap(
   vxml: VXML,
@@ -14,55 +14,44 @@ fn nodemap(
         [] -> {
           // get all src attributes
           let src_attrs = list.filter(attrs, fn(attr) { attr.key == "src" })
-          // get img-width and img-height attributes if they exist
-          let img_width_attr = list.filter(attrs, fn(attr) { attr.key == "img-width" })
-          let img_height_attr = list.filter(attrs, fn(attr) { attr.key == "img-height" })
+          // get width and height attributes if they exist
+          let img_width_attr = list.filter(attrs, fn(attr) { attr.key == "width" })
+          let img_height_attr = list.filter(attrs, fn(attr) { attr.key == "height" })
 
-          // validate only one img-width attribute
-          case list.length(img_width_attr) > 1 {
-            True -> Error(DesugaringError(
-              blame,
-              "Carousel should have only one img-width attribute."
-            ))
-            False -> case list.length(img_height_attr) > 1 {
-              True -> Error(DesugaringError(
-                blame,
-                "Carousel should have only one img-height attribute."
-              ))
-              False -> {
-                // create CarouselItem children with img tags
-                let carousel_items = list.map(src_attrs, fn(src_attr) {
-                  let base_attrs = [src_attr]
+          // validate only one img width attribute
+          use <- infra.on_true_on_false(
+            list.length(img_width_attr) > 1,
+            Error (DesugaringError(blame, "Carousel should have only one width attribute."))
+          )
 
-                  // build style attribute from img-width and img-height
-                  let style_value = case img_width_attr, img_height_attr {
-                    [], [] -> ""
-                    [width_attr], [] -> "width: " <> width_attr.value <> ";"
-                    [], [height_attr] -> "height: " <> height_attr.value <> ";"
-                    [width_attr], [height_attr] -> "width: " <> width_attr.value <> "; height: " <> height_attr.value <> ";"
-                    _, _ -> "" // should never happen due to validation above
-                  }
+          // validate only one img height attribute
+          use <- infra.on_true_on_false(
+            list.length(img_height_attr) > 1,
+            Error (DesugaringError(blame, "Carousel should have only one height attribute."))
+          )
 
-                  let final_attrs = case style_value {
-                    "" -> base_attrs
-                    _ -> {
-                      let style_blame = case img_width_attr, img_height_attr {
-                        [width_attr], _ -> width_attr.blame
-                        [], [height_attr] -> height_attr.blame
-                        _, _ -> blame
-                      }
-                      list.append(base_attrs, [vxml.BlamedAttribute(style_blame, "style", style_value)])
-
-                    }
-                  }
-
-                  let img = V(blame, "img", final_attrs, [])
-                  V(blame, "CarouselItem", [], [img])
-                })
-                Ok(V(blame, "Carousel", [], carousel_items))
-              }
+          // create CarouselItem children with img tags
+          let carousel_items = list.map(
+            src_attrs,
+            fn(src_attr) {
+            let base_attrs = [src_attr]
+            let style_value = case img_width_attr, img_height_attr {
+              [], [] -> ""
+              [width_attr], [] -> "width: " <> width_attr.value <> ";"
+              [], [height_attr] -> "height: " <> height_attr.value <> ";"
+              [width_attr], [height_attr] -> "width: " <> width_attr.value <> "; height: " <> height_attr.value <> ";"
+              _, _ -> ""
             }
-          }
+
+            let final_attrs = case style_value {
+              "" -> base_attrs
+              style_value -> list.append(base_attrs, [BlamedAttribute (infra.no_blame, "style", style_value)])
+            }
+
+            let img = V(blame, "img", final_attrs, [])
+            V(blame, "CarouselItem", [], [img])
+          })
+          Ok(V(blame, "Carousel", [], carousel_items))
         }
         _ -> {
           // check if there are any src attributes - error if there are
@@ -111,6 +100,8 @@ type InnerParam = Nil
 /// |> Carousel
 ///     src=blabla
 ///     src=bloblo
+///     width=200px
+///     height=150px
 /// ```
 ///
 /// To:
@@ -119,14 +110,18 @@ type InnerParam = Nil
 ///     |> CarouselItem
 ///         |> img
 ///             src=blabla
+///             width=200px
+///             height=150px
 ///     |> CarouselItem
 ///         |> img
 ///             src=bloblo
+///             width=200px
+///             height=150px
 /// ```
 ///
 /// Validates that compressed Carousel has:
 /// - No children
-/// - Only src, img-width, and img-height attributes
+/// - Only src, width, and height attributes
 /// - At least one src attribute
 pub fn expand_ti3_carousel() -> Desugarer {
   Desugarer(
@@ -141,6 +136,8 @@ pub fn expand_ti3_carousel() -> Desugarer {
 /// |> Carousel
 ///     src=blabla
 ///     src=bloblo
+///     width=200px
+///     height=150px
 /// ```
 ///
 /// To:
@@ -149,14 +146,18 @@ pub fn expand_ti3_carousel() -> Desugarer {
 ///     |> CarouselItem
 ///         |> img
 ///             src=blabla
+///             width=200px
+///             height=150px
 ///     |> CarouselItem
 ///         |> img
 ///             src=bloblo
+///             width=200px
+///             height=150px
 /// ```
 ///
 /// Validates that compressed Carousel has:
 /// - No children
-/// - Only src, img-width, and img-height attributes
+/// - Only src, width, and height attributes
 /// - At least one src attribute
     ",
     case param_to_inner_param(Nil) {
@@ -196,33 +197,35 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
                 <> Carousel
                   src=\"image1.jpg\"
                   src=\"image2.jpg\"
-                  img-width=200px
-                  img-height=150px
+                  width=\"200px\"
+                  height=\"150px\"
                 ",
       expected: "
                 <> Carousel
                   <> CarouselItem
                     <> img
                       src=\"image1.jpg\"
-                      style=width: 200px; height: 150px;
+                      width=\"200px\"
+                      height=\"150px\"
                   <> CarouselItem
                     <> img
                       src=\"image2.jpg\"
-                      style=width: 200px; height: 150px;
+                      width=\"200px\"
+                      height=\"150px\"
                 ",
     ),
     infra.AssertiveTestDataNoParam(
       source:   "
                 <> Carousel
                   src=\"only.jpg\"
-                  img-width=100px
+                  width=\"100px\"
                 ",
       expected: "
                 <> Carousel
                   <> CarouselItem
                     <> img
                       src=\"only.jpg\"
-                      style=width: 100px;
+                      width=\"100px\"
                 ",
     ),
     infra.AssertiveTestDataNoParam(
@@ -261,6 +264,14 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
     ),
   ]
 }
+
+
+// Note: Error testing infrastructure is not available,
+// so we only include assertive tests for valid cases.
+// Invalid cases that would result in DesugaringError at runtime:
+// - Multiple width attributes: "Carousel should have only one width attribute."
+// - Multiple height attributes: "Carousel should have only one height attribute."
+// - src attributes with children: "Carousel cannot have src attribute and children at the same time."
 
 pub fn assertive_tests() {
   infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
