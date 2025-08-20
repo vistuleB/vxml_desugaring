@@ -82,16 +82,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     let contents2 = string.split(t2, "\n")
     let v1 =
       T(
-        dblame(85),
+        desugarer_blame(85),
         list.map(contents1, fn(content) {
-          BlamedContent(dblame(87), content)
+          BlamedContent(desugarer_blame(87), content)
         }),
       )
     let v2 =
       T(
-        dblame(92),
+        desugarer_blame(92),
         list.map(contents2, fn(content) {
-          BlamedContent(dblame(94), content)
+          BlamedContent(desugarer_blame(94), content)
         }),
       )
     #(tag, #(v1, v2))
@@ -112,7 +112,7 @@ type InnerParam =
 
 const name = "prepend_append_to_text_children_of"
 const constructor = prepend_append_to_text_children_of
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

@@ -18,7 +18,7 @@ fn child_mapper(
           True -> attributes
           False -> list.append(
             attributes,
-            [BlamedAttribute(dblame(21), inner.2, inner.3)],
+            [BlamedAttribute(desugarer_blame(21), inner.2, inner.3)],
           )
         }
       V(..vxml, attributes: attributes)
@@ -60,7 +60,7 @@ type InnerParam = Param
 
 const name = "append_attribute_if_child_of"
 const constructor = append_attribute_if_child_of
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

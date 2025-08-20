@@ -6,7 +6,6 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 import blamedlines as bl
 
-
 const t_1_empty_line = T(
   bl.Des([], name, 11),
   [BlamedContent(bl.Des([], name, 12), "")]

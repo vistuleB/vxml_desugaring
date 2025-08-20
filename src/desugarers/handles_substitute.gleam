@@ -245,8 +245,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     param.0,
     param.1,
     param.2,
-    param.3 |> infra.string_pairs_2_blamed_attributes(dblame(248)),
-    param.4 |> infra.string_pairs_2_blamed_attributes(dblame(249)),
+    param.3 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(248)),
+    param.4 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(249)),
   )
   |> Ok
 }
@@ -261,7 +261,7 @@ type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAt
 
 const name = "handles_substitute"
 const constructor = handles_substitute
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

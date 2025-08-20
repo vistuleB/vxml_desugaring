@@ -6,11 +6,11 @@ import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V, T}
 
 fn an_attribute(key: String, value: String) -> BlamedAttribute {
-  BlamedAttribute(dblame(9), key, value)
+  BlamedAttribute(desugarer_blame(9), key, value)
 }
 
 fn a_1_line_text_node(content: String) -> VXML {
-  T(dblame(13), [BlamedContent(dblame(13), content)])
+  T(desugarer_blame(13), [BlamedContent(desugarer_blame(13), content)])
 }
 
 fn into_list(a: a) -> List(a) {
@@ -59,7 +59,7 @@ fn a_tag_with_href_and_content(
   content: String,
 ) -> VXML {
   V(
-    dblame(62),
+    desugarer_blame(62),
     "a",
     an_attribute("href", href) |> into_list,
     a_1_line_text_node(content) |> into_list,
@@ -102,7 +102,7 @@ fn info_2_left_menu(
   let ch_link_option = prev_info |> option.map(info_2_link(_, LeftMenu))
 
   V(
-    dblame(105),
+    desugarer_blame(105),
     "LeftMenu",
     an_attribute("class", "menu-left") |> into_list,
     option.values([
@@ -122,7 +122,7 @@ fn info_2_right_menu(
   let ch_link_option = prev_info |> option.map(info_2_link(_, RightMenu))
 
   V(
-    dblame(125),
+    desugarer_blame(125),
     "RightMenu",
     an_attribute("class", "menu-right") |> into_list,
     option.values([
@@ -137,7 +137,7 @@ fn infos_2_menu(
   homepage_url: String,
 ) -> VXML {
   V(
-    dblame(140),
+    desugarer_blame(140),
     "Menu",
     [],
     [
@@ -246,7 +246,7 @@ type InnerParam = Nil
 
 const name = "generate_ti3_menu"
 const constructor = generate_ti3_menu
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

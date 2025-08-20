@@ -298,7 +298,7 @@ fn handle_assignment_blamed_attributes_from_handle_assignments(
   handles
   |> list.map(fn(handle) {
     let #(name, value) = handle
-    BlamedAttribute(dblame(301), "handle", name <> " " <> value)
+    BlamedAttribute(desugarer_blame(301), "handle", name <> " " <> value)
   })
 }
 
@@ -611,7 +611,7 @@ type InnerParam = Nil
 
 const name = "counters_substitute_and_assign_handles"
 const constructor = counters_substitute_and_assign_handles
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

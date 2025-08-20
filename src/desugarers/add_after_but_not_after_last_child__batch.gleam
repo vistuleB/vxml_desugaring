@@ -52,7 +52,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     fn(triple) { 
       #(
         triple.0,
-        infra.v_attrs_constructor(dblame(55), triple.1, triple.2),
+        infra.v_attrs_constructor(desugarer_blame(55), triple.1, triple.2),
       )
     }
   )
@@ -69,7 +69,7 @@ type InnerParam = Dict(String, VXML)
 
 const name = "add_after_but_not_after_last_child__batch"
 const constructor = add_after_but_not_after_last_child__batch
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

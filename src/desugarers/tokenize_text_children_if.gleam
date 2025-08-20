@@ -11,7 +11,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(dblame(14), "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame(14), "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -108,7 +108,7 @@ type InnerParam = Param
 
 const name = "tokenize_text_children_if"
 const constructor = tokenize_text_children_if
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

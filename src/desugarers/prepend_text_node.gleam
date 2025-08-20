@@ -32,10 +32,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
     T(
-      dblame(35),
+      desugarer_blame(35),
       param.1
       |> string.split("\n")
-      |> list.map(BlamedContent(dblame(38), _))
+      |> list.map(BlamedContent(desugarer_blame(38), _))
     )
   )
   |> Ok
@@ -48,7 +48,7 @@ type InnerParam = #(String, VXML)
 
 const name = "prepend_text_node"
 const constructor = prepend_text_node
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

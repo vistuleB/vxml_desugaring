@@ -71,10 +71,10 @@ fn chapter_link(
   let number_span =
     V(item_blame, "span", [], [
       T(
-        dblame(74),
+        desugarer_blame(74),
         [
           BlamedContent(
-            dblame(77),
+            desugarer_blame(77),
             chapter_number <> "." <> ins(section_index) <> " - ",
           ),
         ]
@@ -86,7 +86,7 @@ fn chapter_link(
       item_blame,
       "a",
       [
-        BlamedAttribute(dblame(89), "href", link)
+        BlamedAttribute(desugarer_blame(89), "href", link)
       ],
       [
         T(item_blame, [BlamedContent(item_blame, label_attr.value)]),
@@ -98,7 +98,7 @@ fn chapter_link(
     infra.on_true_on_false(sub_chapter_number == "0", "0", fn() { "40px" })
 
   let style_attr =
-    BlamedAttribute(dblame(101), "style", "margin-left: " <> margin_left)
+    BlamedAttribute(desugarer_blame(101), "style", "margin-left: " <> margin_left)
 
   Ok(V(item_blame, chapter_link_component_name, [style_attr], [number_span, a]))
 }
@@ -127,11 +127,11 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(dblame(130), "div", [BlamedAttribute(dblame(130), "id", id)], [
+  V(desugarer_blame(130), "div", [BlamedAttribute(desugarer_blame(130), "id", id)], [
     V(
-      dblame(132),
+      desugarer_blame(132),
       "ul",
-      [BlamedAttribute(dblame(134), "style", "list-style: none")],
+      [BlamedAttribute(desugarer_blame(134), "style", "list-style: none")],
       menu_items,
     ),
   ])
@@ -166,7 +166,7 @@ fn nodemap(
 
   Ok(infra.prepend_child(
     root,
-    V(dblame(169), table_of_contents_tag, [], [chapters_div]),
+    V(desugarer_blame(169), table_of_contents_tag, [], [chapters_div]),
   ))
 }
 
@@ -190,7 +190,7 @@ type InnerParam = Param
 
 const name = "generate_ti2_table_of_contents_html"
 const constructor = generate_ti2_table_of_contents_html
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

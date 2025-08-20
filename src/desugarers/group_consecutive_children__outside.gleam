@@ -51,7 +51,7 @@ fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTrans
 
 fn param_to_inner_param(param: Param, outside: List(String)) -> Result(InnerParam, DesugaringError) {
   case list.contains(outside, param.0) {
-    True -> Ok(#(param.0, param.1, dblame(54)))
+    True -> Ok(#(param.0, param.1, desugarer_blame(54)))
     False -> Error(DesugaringError(
       infra.no_blame,
       "the wrapper must be included either in the list of things not to be contained in in order to avoid infinite recursion")
@@ -68,7 +68,7 @@ type InnerParam = #(String, List(String), Blame)
 
 const name = "group_consecutive_children__outside"
 const constructor = group_consecutive_children__outside
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

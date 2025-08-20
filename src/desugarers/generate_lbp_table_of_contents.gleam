@@ -35,8 +35,8 @@ fn chapter_link(
       blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(dblame(38), "article_type", ins(count)),
-        BlamedAttribute(dblame(39), "href", tp <> ins(count)),
+        BlamedAttribute(desugarer_blame(38), "article_type", ins(count)),
+        BlamedAttribute(desugarer_blame(39), "href", tp <> ins(count)),
       ],
       title_element.children,
     ),
@@ -48,9 +48,9 @@ fn type_of_chapters_title(
   label: String,
 ) -> VXML {
   V(
-    dblame(51),
+    desugarer_blame(51),
     type_of_chapters_title_component_name,
-    [BlamedAttribute(dblame(53), "label", label)],
+    [BlamedAttribute(desugarer_blame(53), "label", label)],
     [],
   )
 }
@@ -62,14 +62,14 @@ fn div_with_id_title_and_menu_items(
   menu_items: List(VXML),
 ) -> VXML {
   V(
-    dblame(65),
+    desugarer_blame(65),
     "div",
     [
-      BlamedAttribute(dblame(68), "id", id)
+      BlamedAttribute(desugarer_blame(68), "id", id)
     ], 
     [
       type_of_chapters_title(type_of_chapters_title_component_name, title_label),
-      V(dblame(72), "ul", [], menu_items),
+      V(desugarer_blame(72), "ul", [], menu_items),
     ],
   )
 }
@@ -119,7 +119,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
       False -> []
     },
     case exists_bootcamps, exists_chapters, maybe_spacer {
-      True, True, Some(spacer_tag) -> [V(dblame(122), spacer_tag, [], [])]
+      True, True, Some(spacer_tag) -> [V(desugarer_blame(122), spacer_tag, [], [])]
       _, _, _ -> []
     },
     case exists_bootcamps {
@@ -130,7 +130,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
 
   Ok(infra.prepend_child(
     root,
-    V(dblame(133), table_of_contents_tag, [], children),
+    V(desugarer_blame(133), table_of_contents_tag, [], children),
   ))
 }
 
@@ -153,7 +153,7 @@ type InnerParam = Param
 
 const name = "generate_lbp_table_of_contents"
 const constructor =  generate_lbp_table_of_contents
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

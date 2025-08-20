@@ -115,25 +115,25 @@ fn generate_replacement_vxml_internal(
     [p, ..pattern_rest] -> {
       case p {
         StartT -> generate_replacement_vxml_internal(
-          [start_node(dblame(118)), ..already_ready],
+          [start_node(desugarer_blame(118)), ..already_ready],
           pattern_rest,
           match_data,
         )
 
         EndT -> generate_replacement_vxml_internal(
-          [end_node(dblame(124)), ..already_ready],
+          [end_node(desugarer_blame(124)), ..already_ready],
           pattern_rest,
           match_data,
         )
 
         Space -> generate_replacement_vxml_internal(
-          [space_node(dblame(130)), ..already_ready],
+          [space_node(desugarer_blame(130)), ..already_ready],
           pattern_rest,
           match_data,
         )
 
         Word(word) -> generate_replacement_vxml_internal(
-          [word_node(dblame(136), word), ..already_ready],
+          [word_node(desugarer_blame(136), word), ..already_ready],
           pattern_rest,
           match_data,
         )
@@ -351,7 +351,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(dblame(354), "val", word)], [])
+  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame(354), "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -868,22 +868,22 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 
   use unique_href_vars <- result.try(
     collect_unique_href_vars(pattern1)
-    |> result.map_error(fn(var){ DesugaringError(dblame(871), "Source pattern " <> param.0 <>" has duplicate declaration of href variable: " <> ins(var) ) })
+    |> result.map_error(fn(var){ DesugaringError(desugarer_blame(871), "Source pattern " <> param.0 <>" has duplicate declaration of href variable: " <> ins(var) ) })
   )
 
   use unique_content_vars <- result.try(
     collect_unique_content_vars(pattern1)
-    |> result.map_error(fn(var){ DesugaringError(dblame(876), "Source pattern " <> param.0 <>" has duplicate declaration of content variable: " <> ins(var)) })
+    |> result.map_error(fn(var){ DesugaringError(desugarer_blame(876), "Source pattern " <> param.0 <>" has duplicate declaration of content variable: " <> ins(var)) })
   )
 
   use _ <- result.try(
     check_each_href_var_is_sourced(pattern2, unique_href_vars)
-    |> result.map_error(fn(var){ DesugaringError(dblame(881), "Target pattern " <> param.1 <> " has a declaration of unsourced href variable: " <> ins(var)) })
+    |> result.map_error(fn(var){ DesugaringError(desugarer_blame(881), "Target pattern " <> param.1 <> " has a declaration of unsourced href variable: " <> ins(var)) })
   )
 
   use _ <- result.try(
     check_each_content_var_is_sourced(pattern2, unique_content_vars)
-    |> result.map_error(fn(var){ DesugaringError(dblame(886), "Target pattern " <> param.1 <> " has a declaration of unsourced content variable: " <> ins(var)) })
+    |> result.map_error(fn(var){ DesugaringError(desugarer_blame(886), "Target pattern " <> param.1 <> " has a declaration of unsourced content variable: " <> ins(var)) })
   )
 
   Ok(#(pattern1, pattern2))
@@ -898,7 +898,7 @@ type InnerParam = #(LinkPattern, LinkPattern)
 
 const name = "rearrange_links"
 const constructor = rearrange_links
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

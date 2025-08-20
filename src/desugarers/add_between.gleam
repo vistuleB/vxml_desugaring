@@ -50,7 +50,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
     param.1,
-    infra.v_attrs_constructor(dblame(53), param.2, param.3),
+    infra.v_attrs_constructor(desugarer_blame(53), param.2, param.3),
   )
   |> Ok
 }
@@ -65,7 +65,7 @@ type InnerParam = #(String, String, VXML)
 
 const name = "add_between"
 const constructor = add_between
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

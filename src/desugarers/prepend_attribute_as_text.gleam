@@ -15,8 +15,8 @@ fn nodemap(
         Some(BlamedAttribute(_, _, value)) if value != "" ->
           V(..vxml, children: [
             T(
-              dblame(18),
-              [BlamedContent(dblame(19), value)]
+              desugarer_blame(18),
+              [BlamedContent(desugarer_blame(19), value)]
             ),
             ..children
           ])
@@ -47,7 +47,7 @@ type InnerParam = Param
 
 const name = "prepend_attribute_as_text"
 const constructor = prepend_attribute_as_text
-fn dblame(line_no: Int) {bl.Des([], name, line_no)}
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
