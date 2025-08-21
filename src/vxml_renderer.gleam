@@ -466,8 +466,8 @@ fn run_pipeline(
     let #(selected, next_debug_output) = case mode == Off {
       True -> #([], last_debug_output)
       False -> {
-        let selected = selector(vxml)
-        #(selected, selected |> infra.selected_lines_to_string(""))
+        let selected = vxml |> infra.vxml_to_s_lines |> selector
+        #(selected, selected |> infra.s_lines_to_string(""))
       }
     }
     let must_print =
@@ -478,7 +478,7 @@ fn run_pipeline(
       _ -> Nil
     }
     case must_print {
-      True -> io.println(selected |> infra.selected_lines_to_string(""))
+      True -> io.println(selected |> infra.s_lines_to_string(""))
       _ -> Nil
     }
     #(vxml, step_no + 1, next_debug_output, times, printed_before || must_print)
@@ -1099,19 +1099,10 @@ fn apply_show_changes_near_cli_args_to_pipeline(
   let restrict = list.map(cli.restrict_on_change_check_to_steps, wraparound)
   let force = list.map(cli.force_output_at_steps, wraparound)
   let apply_to_all = restrict == [] && force == []
-  let cli_selector = case cli.selector {
-    Some(some) ->
-      Some(fn(vxml) {
-        vxml
-        |> infra.vxml_to_pigeon_lines
-        |> some
-      })
-    None -> None
-  }
   case apply_to_all {
     True -> {
       list.map(pipeline, fn(pipe) {
-        #(infra.OnChange, option.unwrap(cli_selector, pipe.1), pipe.2)
+        #(infra.OnChange, option.unwrap(cli.selector, pipe.1), pipe.2)
       })
     }
     False -> {
@@ -1124,7 +1115,7 @@ fn apply_show_changes_near_cli_args_to_pipeline(
           True, _ -> infra.OnChange
           _, _ -> infra.Off
         }
-        #(mode, option.unwrap(cli_selector, pipe.1), pipe.2)
+        #(mode, option.unwrap(cli.selector, pipe.1), pipe.2)
       })
     }
   }
@@ -1136,8 +1127,7 @@ pub type PlusMinusRange {
 
 pub type PipelineCliArgsModifier {
   PipelineCliArgsModifier(
-    selector: Option(infra.Pigeon2SelectedSelector),
-    // plus_minus: PlusMinusRange,
+    selector: Option(infra.Selector),
     restrict_on_change_check_to_steps: List(Int),
     force_output_at_steps: List(Int),
   )
@@ -1254,11 +1244,8 @@ fn parse_step_numbers(
 }
 
 fn parse_show_changes_near_args(
-  option: String,
   values: List(String),
 ) -> Result(PipelineCliArgsModifier, CommandLineError) {
-  let assert True = string.starts_with(option, "--show-changes-near")
-
   use first_payload, values <- infra.on_empty_on_nonempty(
     values,
     Error(SelectorValues("missing 1st argument")),
@@ -1266,31 +1253,13 @@ fn parse_show_changes_near_args(
 
   let assert True = first_payload != ""
 
-  use selector <- result.try(case option {
-    "--show-changes-near-keyval" ->
-      case string.split_once(first_payload, "=") {
-        Ok(#(before, after)) if before != "" ->
-          Ok(sl.keyval_pigeon_selector(_, before, after))
-        _ ->
-          Error(SelectorValues(
-            "expecting key=val after --show-changes-near-keyval",
-          ))
-      }
-    "--show-changes-near-text" -> Ok(sl.text_pigeon_selector(_, first_payload))
-    "--show-changes-near-tag" -> Ok(sl.tag_pigeon_selector(_, first_payload))
-    _ ->
-      Error(SelectorValues(
-        "expecting '-text', '-tag', or '-keyval' suffix to --show-changes-near option",
-      ))
-  })
+  let selector = sl.verbatim(first_payload)
 
   use second_payload, values <- infra.on_empty_on_nonempty(
     values,
     Ok(
       PipelineCliArgsModifier(
-        selector: Some(
-          list.map(_, infra.apply_pigeon_selector_to_line(_, selector)),
-        ),
+        selector: Some(selector),
         restrict_on_change_check_to_steps: [],
         force_output_at_steps: [],
       ),
@@ -1306,12 +1275,10 @@ fn parse_show_changes_near_args(
     },
   )
 
-  let selector = fn(lines) {
-    lines
-    |> list.map(infra.apply_pigeon_selector_to_line(_, selector))
-    |> infra.extend_selection_up(plus_minus.minus)
-    |> infra.extend_selection_down(plus_minus.plus)
-  }
+  let selector = 
+    selector
+    |> infra.extend_selector_up(plus_minus.minus)
+    |> infra.extend_selector_down(plus_minus.plus)
 
   use #(restrict, force) <- result.try(parse_step_numbers(values))
 
@@ -1348,7 +1315,7 @@ fn join_pipeline_modifiers(
     )
   PipelineCliArgsModifier(
     selector: case pm1.selector, pm2.selector {
-      Some(s1), Some(s2) -> Some(infra.or_pigeon_2_selected_selectors(s1, s2))
+      Some(s1), Some(s2) -> Some(infra.or_selectors(s1, s2))
       _, _ -> option.or(pm1.selector, pm2.selector)
     },
     restrict_on_change_check_to_steps: restrict,
@@ -1491,30 +1458,25 @@ pub fn process_command_line_arguments(
           )
         }
 
-        _ ->
-          case string.starts_with(option, "--show-changes-near") {
-            True -> {
-              use pipeline_mod <- result.try(parse_show_changes_near_args(
-                option,
-                values,
-              ))
-              Ok(
-                CommandLineAmendments(
-                  ..amendments,
-                  show_changes_near: Some(join_pipeline_modifiers(
-                    amendments.show_changes_near,
-                    pipeline_mod,
-                  )),
-                ),
-              )
-            }
+        "--show-changes-near" -> {
+          use pipeline_mod <- result.try(parse_show_changes_near_args(values))
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              show_changes_near: Some(join_pipeline_modifiers(
+                amendments.show_changes_near,
+                pipeline_mod,
+              )),
+            ),
+          )
+        }
 
-            False ->
-              case list.contains(xtra_keys, option) {
-                True -> Ok(amendments |> amend_user_args(option, values))
-                False -> Error(UnwantedOptionArgument(option))
-              }
+        _ -> {
+          case list.contains(xtra_keys, option) {
+            True -> Ok(amendments |> amend_user_args(option, values))
+            False -> Error(UnwantedOptionArgument(option))
           }
+        }
       }
     },
   )

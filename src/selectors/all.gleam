@@ -1,12 +1,12 @@
-import infrastructure.{type Selector, type PigeonLine} as infra
+import infrastructure.{type Selector, type SLine, type SMode} as infra
 
-pub fn pigeon_selector(
-  _pigeon: PigeonLine
-) -> Bool {
-  True
+fn line_selector(
+  _line: SLine,
+) -> SMode {
+  infra.OGS
 }
 
-pub fn all() -> Selector {
-  pigeon_selector(_)
-  |> infra.pigeon_selector_to_selector()
+pub fn selector() -> Selector {
+  line_selector(_)
+  |> infra.line_selector_to_selector()
 }

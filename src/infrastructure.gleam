@@ -2373,6 +2373,89 @@ pub type InSituDesugaringError {
 }
 
 //*********
+//* Selector(s)
+//*********
+
+pub type SMode {
+  NotS
+  OGS
+  ByproductS
+}
+
+pub type SLine {
+  VSLine(blame: Blame, indent: Int, content: String, selected: SMode, tag: String)
+  ASLine(blame: Blame, indent: Int, content: String, selected: SMode, key: String, val: String)
+  TSLine(blame: Blame, indent: Int, content: String, selected: SMode)
+  LSLine(blame: Blame, indent: Int, content: String, selected: SMode)
+}
+
+fn v_s_line(blame: Blame, indent: Int, tag: String) {
+  VSLine(blame, indent, "<> " <> tag, NotS, tag)
+}
+
+fn a_s_line(blame: Blame, indent: Int, key: String, val: String) {
+  ASLine(blame, indent, key <> "=" <> val, NotS, key, val)
+}
+
+fn t_s_line(blame: Blame, indent: Int) {
+  TSLine(blame, indent, "<>", NotS)
+}
+
+fn l_s_line(blame: Blame, indent: Int, content: String) {
+  TSLine(blame, indent, "\"" <> content <> "\"", NotS)
+}
+
+fn v_s_lines(
+  vxml: VXML,
+  indent: Int,
+) -> List(SLine) {
+  let assert V(blame, tag, attributes, _) = vxml
+  let attributes =
+    attributes
+    |> list.map(fn(a) {a_s_line(a.blame, indent + 2, a.key, a.value)})
+  [v_s_line(blame, indent, tag), ..attributes]
+}
+
+fn t_s_lines(
+  vxml: VXML,
+  indent: Int,
+) -> List(SLine) {
+  let assert T(blame, lines) = vxml
+  let lines =
+    lines
+    |> list.map(fn(bc) { l_s_line(bc.blame, indent + 2, bc.content) })
+  [t_s_line(blame, indent), ..lines]
+}
+
+fn vxml_to_s_lines_internal(
+  previous_lines: List(SLine),
+  vxml: VXML,
+  indent: Int,
+) -> List(SLine) {
+  case vxml {
+    V(_, _, _, children) -> {
+      list.fold(
+        children,
+        pour(v_s_lines(vxml, indent), previous_lines),
+        fn(acc, child) {
+          vxml_to_s_lines_internal(acc, child, indent + 2)
+        }
+      )
+    }
+    T(_, _) -> {
+      pour(t_s_lines(vxml, indent), previous_lines)
+    }
+  }
+}
+
+pub fn vxml_to_s_lines(
+  vxml: VXML,
+) -> List(SLine) {
+  vxml_to_s_lines_internal([], vxml, 0)
+  |> list.reverse
+}
+
+//*********
 //* Selector-related
 //*********
 
@@ -2382,24 +2465,11 @@ pub type EchoMode {
   OnChange
 }
 
-pub type PigeonLine {
-  PigeonV(blame: Blame, indent: Int, tag: String)
-  PigeonA(blame: Blame, indent: Int, key: String, value: String)
-  PigeonT(blame: Blame, indent: Int)
-  PigeonL(blame: Blame, indent: Int, content: String)
-}
-
-pub type SelectedPigeonLine {
-  NotSelected(payload: PigeonLine)
-  OG(payload: PigeonLine)
-  Byproduct(payload: PigeonLine)
-}
-
-pub type PigeonSelector =
-  fn(PigeonLine) -> Bool
+pub type LineSelector =
+  fn(SLine) -> SMode
 
 pub type Selector =
-  fn(VXML) -> List(SelectedPigeonLine)
+  fn(List(SLine)) -> List(SLine)
 
 pub type Pipe = 
   #(EchoMode, Selector, Desugarer)
@@ -2423,34 +2493,20 @@ pub fn wrap_desugarers(
   |> list.map(fn (d) {#(echo_mode, selector, d)})
 }
 
-pub fn is_selected_pigeon_line(line: SelectedPigeonLine) -> Bool {
-  case line {
-    NotSelected(_) -> False
-    _ -> True
-  }
+pub fn s_line_2_output_line(line: SLine) -> OutputLine {
+  OutputLine(line.blame, line.indent, line.content)
 }
 
-pub fn pigeon_line_2_blamed_line(line: PigeonLine) -> OutputLine {
-  case line {
-    PigeonV(blame, indent, tag) -> OutputLine(blame, indent, "<> " <> tag)
-    PigeonA(blame, indent, key, val) -> OutputLine(blame, indent, key <> "=" <> val)
-    PigeonT(blame, indent) -> OutputLine(blame, indent, "<>")
-    PigeonL(blame, indent, content) -> OutputLine(blame, indent, "\"" <> content <> "\"")
-  }
-}
-
-pub fn selected_pigeon_line_2_blamed_line(line: SelectedPigeonLine) -> OutputLine {
-  line.payload |> pigeon_line_2_blamed_line
-}
-
-pub fn selected_lines_to_output_lines(lines: List(SelectedPigeonLine)) -> List(OutputLine) {
-  let s2l = selected_pigeon_line_2_blamed_line
+pub fn s_lines_2_output_lines(
+  lines: List(SLine)
+) -> List(OutputLine) {
+  let s2l = s_line_2_output_line
   lines
   |> list.fold(
     #(False, None, []),
     fn (acc, line) {
-      case is_selected_pigeon_line(line) {
-        True -> case acc.1 {
+      case line.selected {
+        OGS | ByproductS -> case acc.1 {
           None -> 
             #(
               True,
@@ -2465,7 +2521,7 @@ pub fn selected_lines_to_output_lines(lines: List(SelectedPigeonLine)) -> List(O
               [line |> s2l, OutputLine(blamedlines.NoBlame([ins(num_lines)]), indentation, "..."), ..acc.2],
             )
         }
-        False -> case acc.0, acc.1 {
+        NotS -> case acc.0, acc.1 {
           False, None -> 
             #(
               False,
@@ -2473,18 +2529,17 @@ pub fn selected_lines_to_output_lines(lines: List(SelectedPigeonLine)) -> List(O
               acc.2
             )
 
-          True, None -> {
+          True, None ->
             #(
               True,
-              Some(#(line.payload.indent, 1)),
+              Some(#(line.indent, 1)),
               acc.2,
             )
-          }
 
           True, Some(#(indentation, num_lines)) -> 
             #(
               True,
-              Some(#(int.min(line.payload.indent, indentation), num_lines + 1)),
+              Some(#(int.min(line.indent, indentation), num_lines + 1)),
               acc.2,
             )
 
@@ -2497,53 +2552,55 @@ pub fn selected_lines_to_output_lines(lines: List(SelectedPigeonLine)) -> List(O
   |> list.reverse
 }
 
-pub fn selected_lines_to_string(lines: List(SelectedPigeonLine), banner: String) -> String {
+pub fn s_lines_to_string(lines: List(SLine), banner: String) -> String {
   lines
-  |> selected_lines_to_output_lines
+  |> s_lines_2_output_lines
   |> blamedlines.output_lines_pretty_printer_no1(banner)
 }
 
-fn bring_to_byproduct_level(line: SelectedPigeonLine) -> SelectedPigeonLine {
-  case line {
-    OG(_) -> line
-    _ -> Byproduct(line.payload)
+fn bring_to_byproduct_level(line: SLine) -> SLine {
+  case line.selected {
+    OGS | ByproductS -> line
+    _ -> case line {
+      VSLine(_, _, _, _, _) -> VSLine(..line, selected: ByproductS)
+      ASLine(_, _, _, _, _, _) -> ASLine(..line, selected: ByproductS)
+      TSLine(_, _, _, _) -> TSLine(..line, selected: ByproductS)
+      LSLine(_, _, _, _) -> LSLine(..line, selected: ByproductS)
+    }
   }
 }
 
-fn is_pigeon_v(line: PigeonLine) -> Bool {
+fn is_v_s_line(line: SLine) -> Bool {
   case line {
-    PigeonV(_, _, _) -> True
+    VSLine(_, _, _, _, _) -> True
     _ -> False
   }
 }
 
-fn is_pigeon_a(line: PigeonLine) -> Bool {
+fn is_a_s_line(line: SLine) -> Bool {
   case line {
-    PigeonA(_, _, _, _) -> True
+    ASLine(_, _, _, _, _, _) -> True
     _ -> False
   }
 }
 
-fn is_og(line: SelectedPigeonLine) -> Bool {
-  case line {
-    OG(_) -> True
-    _ -> False
-  }
+fn is_og(line: SLine) -> Bool {
+  line.selected == OGS
 }
 
 fn extend_selection_down_no_reverse(
-  lines: List(SelectedPigeonLine),
+  lines: List(SLine),
   amt: Int,
-) -> List(SelectedPigeonLine) {
+) -> List(SLine) {
   let assert True = amt >= 0
   list.fold(
     lines,
     #(0, []),
     fn(acc, line) {
       let #(gas, lines) = acc
-      let gas = case line {
-        OG(_) -> amt + 1
-        _ -> gas - 1
+      let gas = case line.selected == OGS {
+        True -> amt + 1
+        False -> gas - 1
       }
       let lines = case gas > 0 {
         True -> [line |> bring_to_byproduct_level, ..lines]
@@ -2556,52 +2613,52 @@ fn extend_selection_down_no_reverse(
 }
 
 pub fn extend_selection_down(
-  lines: List(SelectedPigeonLine),
+  lines: List(SLine),
   amt: Int,
-) -> List(SelectedPigeonLine) {
+) -> List(SLine) {
   lines
   |> extend_selection_down_no_reverse(amt)
   |> list.reverse
 }
 
 pub fn extend_selection_up(
-  lines: List(SelectedPigeonLine),
+  lines: List(SLine),
   amt: Int,
-) -> List(SelectedPigeonLine) {
+) -> List(SLine) {
   lines
   |> list.reverse
   |> extend_selection_down_no_reverse(amt)
 }
 
 pub fn extend_selection_to_ancestors(
-  lines: List(SelectedPigeonLine),
+  lines: List(SLine),
   with_elder_siblings with_siblings: Bool,
   with_attributes with_attributes: Bool,
-) -> List(SelectedPigeonLine) {
+) -> List(SLine) {
   lines
   |> list.reverse
   |> list.fold(
     #(-1, []),
     fn (acc, line) {
       let #(indent, lines) = acc
-      let is_v = is_pigeon_v(line.payload)
-      let is_a = is_pigeon_a(line.payload)
+      let is_v = is_v_s_line(line)
+      let is_a = is_a_s_line(line)
       let line = case {
-        line.payload.indent < indent
+        line.indent < indent
       } || {
-        line.payload.indent == indent && { {is_v && with_siblings} || {is_a && with_attributes} }
+        line.indent == indent && { {is_v && with_siblings} || {is_a && with_attributes} }
       } || {
-        line.payload.indent == indent + 2 && with_siblings && is_a && with_attributes
+        line.indent == indent + 2 && with_siblings && is_a && with_attributes
       } {
         True -> line |> bring_to_byproduct_level
         False -> line
       }
       let indent = case {
-        line.payload.indent < indent && is_v
+        line.indent < indent && is_v
       } || {
-        line.payload.indent > indent && is_og(line)
+        line.indent > indent && is_og(line)
       } {
-        True -> line.payload.indent
+        True -> line.indent
         False -> indent
       }
       #(indent, [line, ..lines])
@@ -2614,8 +2671,8 @@ pub fn extend_selector_up(
   f: Selector,
   amt: Int,
 ) -> Selector {
-  fn (vxml) {
-    vxml
+  fn (lines) {
+    lines
     |> f
     |> extend_selection_up(amt)
   }
@@ -2625,8 +2682,8 @@ pub fn extend_selector_down(
   f: Selector,
   amt: Int,
 ) -> Selector {
-  fn (vxml) {
-    vxml
+  fn (lines) {
+    lines
     |> f
     |> extend_selection_down(amt)
   }
@@ -2637,120 +2694,66 @@ pub fn extend_selector_to_ancestors(
   with_elder_siblings with_siblings: Bool,
   with_attributes with_attributes: Bool,
 ) -> Selector {
-  fn (vxml) {
-    vxml
+  fn (lines) {
+    lines
     |> f
-    |> extend_selection_to_ancestors(
-      with_siblings,
-      with_attributes,
-    )
+    |> extend_selection_to_ancestors(with_siblings, with_attributes)
   }
 }
 
-fn v_pigeon_lines(
-  vxml: VXML,
-  indent: Int,
-) -> List(PigeonLine) {
-  let assert V(_, tag, attributes, _) = vxml
-  let attrs = attributes |> list.map(fn(a) { PigeonA(a.blame, indent + 2, a.key, a.value) })
-  [PigeonV(vxml.blame, indent, tag), ..attrs]
-}
-
-fn t_pigeon_lines(
-  vxml: VXML,
-  indent: Int,
-) -> List(PigeonLine) {
-  let assert T(_, lines) = vxml
-  let lines = lines |> list.map(fn(bc) { PigeonL(bc.blame, indent + 2, bc.content) })
-  [PigeonT(vxml.blame, indent), ..lines]
-}
-
-fn vxml_to_pigeon_lines_internal(
-  previous_lines: List(PigeonLine),
-  vxml: VXML,
-  indent: Int,
-) -> List(PigeonLine) {
-  case vxml {
-    V(_, _, _, children) -> {
-      list.fold(
-        children,
-        pour(v_pigeon_lines(vxml, indent), previous_lines),
-        fn(acc, child) {
-          vxml_to_pigeon_lines_internal(acc, child, indent + 2)
-        }
-      )
-    }
-    T(_, _) ->
-      pour(t_pigeon_lines(vxml, indent), previous_lines)
-  }
-}
-
-pub fn vxml_to_pigeon_lines(
-  vxml: VXML,
-) -> List(PigeonLine) {
-  vxml_to_pigeon_lines_internal([], vxml, 0)
-  |> list.reverse
-}
-
-pub fn pigeon_selector_to_selector(
-  pigeon_selector: PigeonSelector,
-) -> Selector {
-  fn (vxml) {
-    vxml
-    |> vxml_to_pigeon_lines
-    |> list.map(
-      fn (pigeon) {
-        case pigeon_selector(pigeon) {
-          True -> OG(pigeon)
-          False -> NotSelected(pigeon)
-        }
-      }
-    )
-  }
-}
-
-fn or_selected_pigeon_line(
-  l1: SelectedPigeonLine,
-  l2: SelectedPigeonLine,
-) -> SelectedPigeonLine {
-  let assert True = l1.payload == l2.payload
-  case l1, l2 {
-    OG(pigeon), _ -> OG(pigeon)
-    _, OG(pigeon) -> OG(pigeon)
-    Byproduct(pigeon), _ -> Byproduct(pigeon)
-    _, Byproduct(pigeon) -> Byproduct(pigeon)
+fn or_a_pair_of_s_lines(
+  l1: SLine,
+  l2: SLine,
+) -> SLine {
+  // let assert True = l1.content == l2.content
+  // let assert True = l1.indent == l2.indent
+  // let assert True = l1.blame == l2.blame
+  case l1.selected, l2.selected {
+    OGS, _ -> l1
+    _, OGS -> l2
+    ByproductS, _ -> l1
+    _, ByproductS -> l2
     _, _ -> l1
   }
 }
 
-pub fn or_selected_pigeon_lines(
-  l1: List(SelectedPigeonLine),
-  l2: List(SelectedPigeonLine),
-) -> List(SelectedPigeonLine) {
+fn or_two_lists_of_s_lines(
+  l1: List(SLine),
+  l2: List(SLine),
+) -> List(SLine) {
   let assert True = list.length(l1) == list.length(l2)
-  list.map2(l1, l2, or_selected_pigeon_line)
+  list.map2(l1, l2, or_a_pair_of_s_lines)
 }
 
-pub type Pigeon2SelectedSelector =
-  fn(List(PigeonLine)) -> List(SelectedPigeonLine)
-
-pub fn or_pigeon_2_selected_selectors(
-  s1: Pigeon2SelectedSelector,
-  s2: Pigeon2SelectedSelector,
-) -> Pigeon2SelectedSelector {
+pub fn or_selectors(
+  s1: Selector,
+  s2: Selector,
+) -> Selector {
   fn (pigeons) {
     let l1 = pigeons |> s1
     let l2 = pigeons |> s2
-    or_selected_pigeon_lines(l1, l2)
+    or_two_lists_of_s_lines(l1, l2)
   }
 }
 
-pub fn apply_pigeon_selector_to_line(
-  pigeon: PigeonLine,
-  pigeon_selector: PigeonSelector,
-) -> SelectedPigeonLine {
-  case pigeon_selector(pigeon) {
-    True -> OG(pigeon)
-    False -> NotSelected(pigeon)
+pub fn apply_line_selector_to_line(
+  line: SLine,
+  line_selector: LineSelector,
+) -> SLine {
+  let sel = line_selector(line)
+  case line {
+    VSLine(_, _, _, _, _) -> VSLine(..line, selected: sel)
+    ASLine(_, _, _, _, _, _) -> ASLine(..line, selected: sel)
+    TSLine(_, _, _, _) -> TSLine(..line, selected: sel)
+    LSLine(_, _, _, _) -> LSLine(..line, selected: sel)
   }
+}
+
+pub fn line_selector_to_selector(
+  line_selector: LineSelector,
+) -> Selector {
+  list.map(
+    _,
+    apply_line_selector_to_line(_, line_selector)
+  )
 }
