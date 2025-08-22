@@ -66,7 +66,7 @@ fn warning_element(
   V(
     desugarer_blame(0),
     "span",
-    [BlamedAttribute(desugarer_blame(0), "style", "color:red;font-style:bold;text-decoration:underline;background-color:yellow;")],
+    [BlamedAttribute(desugarer_blame(0), "style", "color:red;background-color:yellow;")],
     [T(desugarer_blame(0), [BlamedContent(desugarer_blame(0), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
   )
 }

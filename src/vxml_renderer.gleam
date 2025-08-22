@@ -698,7 +698,7 @@ pub fn run_renderer(
       let z = [
         "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
         "🏯🏯pipeline step:   " <> ins(e.step_no),
-        "🏯🏯blame:           " <> bl.blame_digest(e.blame) <> " " <> bl.comments_digest(e.blame),
+        "🏯🏯blame:           " <> bl.blame_digest(e.blame),
         "🏯🏯message:         " <> e.message,
       ]
       let lengths = list.map(z, string.length)
