@@ -36,8 +36,8 @@ fn chapter_link(
       blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(desugarer_blame(38), "article_type", ins(count)),
-        BlamedAttribute(desugarer_blame(39), "href", tp <> ins(count)),
+        BlamedAttribute(desugarer_blame(39), "article_type", ins(count)),
+        BlamedAttribute(desugarer_blame(40), "href", tp <> ins(count)),
       ],
       title_element.children,
     ),
@@ -49,9 +49,9 @@ fn type_of_chapters_title(
   label: String,
 ) -> VXML {
   V(
-    desugarer_blame(51),
+    desugarer_blame(52),
     type_of_chapters_title_component_name,
-    [BlamedAttribute(desugarer_blame(53), "label", label)],
+    [BlamedAttribute(desugarer_blame(54), "label", label)],
     [],
   )
 }
@@ -63,14 +63,14 @@ fn div_with_id_title_and_menu_items(
   menu_items: List(VXML),
 ) -> VXML {
   V(
-    desugarer_blame(65),
+    desugarer_blame(66),
     "div",
     [
-      BlamedAttribute(desugarer_blame(68), "id", id)
+      BlamedAttribute(desugarer_blame(69), "id", id)
     ], 
     [
       type_of_chapters_title(type_of_chapters_title_component_name, title_label),
-      V(desugarer_blame(72), "ul", [], menu_items),
+      V(desugarer_blame(73), "ul", [], menu_items),
     ],
   )
 }
@@ -120,7 +120,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(#(VXML, List(DesugaringWarni
       False -> []
     },
     case exists_bootcamps, exists_chapters, maybe_spacer {
-      True, True, Some(spacer_tag) -> [V(desugarer_blame(122), spacer_tag, [], [])]
+      True, True, Some(spacer_tag) -> [V(desugarer_blame(123), spacer_tag, [], [])]
       _, _, _ -> []
     },
     case exists_bootcamps {
@@ -129,7 +129,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(#(VXML, List(DesugaringWarni
     },
   ])
 
-  infra.prepend_child(root, V(desugarer_blame(133), table_of_contents_tag, [], children))
+  infra.prepend_child(root, V(desugarer_blame(132), table_of_contents_tag, [], children))
   |> n2t.add_warnings
   |> Ok
 }

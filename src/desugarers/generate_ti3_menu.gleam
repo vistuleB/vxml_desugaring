@@ -7,11 +7,11 @@ import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V,
 import nodemaps_2_desugarer_transforms as n2t
 
 fn an_attribute(key: String, value: String) -> BlamedAttribute {
-  BlamedAttribute(desugarer_blame(9), key, value)
+  BlamedAttribute(desugarer_blame(10), key, value)
 }
 
 fn a_1_line_text_node(content: String) -> VXML {
-  T(desugarer_blame(13), [BlamedContent(desugarer_blame(13), content)])
+  T(desugarer_blame(14), [BlamedContent(desugarer_blame(14), content)])
 }
 
 fn into_list(a: a) -> List(a) {
@@ -60,7 +60,7 @@ fn a_tag_with_href_and_content(
   content: String,
 ) -> VXML {
   V(
-    desugarer_blame(62),
+    desugarer_blame(63),
     "a",
     an_attribute("href", href) |> into_list,
     a_1_line_text_node(content) |> into_list,
@@ -103,7 +103,7 @@ fn info_2_left_menu(
   let ch_link_option = prev_info |> option.map(info_2_link(_, LeftMenu))
 
   V(
-    desugarer_blame(105),
+    desugarer_blame(106),
     "LeftMenu",
     an_attribute("class", "menu-left") |> into_list,
     option.values([
@@ -123,7 +123,7 @@ fn info_2_right_menu(
   let ch_link_option = prev_info |> option.map(info_2_link(_, RightMenu))
 
   V(
-    desugarer_blame(125),
+    desugarer_blame(126),
     "RightMenu",
     an_attribute("class", "menu-right") |> into_list,
     option.values([
@@ -138,7 +138,7 @@ fn infos_2_menu(
   homepage_url: String,
 ) -> VXML {
   V(
-    desugarer_blame(140),
+    desugarer_blame(141),
     "Menu",
     [],
     [

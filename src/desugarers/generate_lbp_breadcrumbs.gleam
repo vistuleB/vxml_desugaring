@@ -56,14 +56,14 @@ fn cleanup_children(children: List(VXML)) -> List(VXML){
 
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
   V(
-    desugarer_blame(58),
+    desugarer_blame(59),
     "BreadcrumbItem",
-    [BlamedAttribute(desugarer_blame(60), "id", "breadcrumb-" <> ins(index))],
+    [BlamedAttribute(desugarer_blame(61), "id", "breadcrumb-" <> ins(index))],
     [
       V(
-        desugarer_blame(63),
+        desugarer_blame(64),
         "InChapterLink",
-        [BlamedAttribute(desugarer_blame(65), "href", "?id=" <> target_id)],
+        [BlamedAttribute(desugarer_blame(66), "href", "?id=" <> target_id)],
         children |> cleanup_children,
       ),
     ]
@@ -101,7 +101,7 @@ fn generate_sections_list(
   }
 
   Ok(V(
-    desugarer_blame(103),
+    desugarer_blame(104),
     "SectionsBreadcrumbs",
     [],
     list.flatten([sections_nodes, exercises_node])

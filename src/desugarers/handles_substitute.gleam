@@ -64,10 +64,10 @@ fn warning_element(
   blame: Blame,
 ) -> VXML {
   V(
-    desugarer_blame(0),
+    desugarer_blame(67),
     "span",
-    [BlamedAttribute(desugarer_blame(0), "style", "color:red;background-color:yellow;")],
-    [T(desugarer_blame(0), [BlamedContent(desugarer_blame(0), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
+    [BlamedAttribute(desugarer_blame(69), "style", "color:red;background-color:yellow;")],
+    [T(desugarer_blame(70), [BlamedContent(desugarer_blame(70), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
   )
 }
 
@@ -317,8 +317,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     param.0,
     param.1,
     param.2,
-    param.3 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(248)),
-    param.4 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(249)),
+    param.3 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(320)),
+    param.4 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(321)),
   )
   |> Ok
 }

@@ -87,18 +87,18 @@ fn transform_children(children: List(VXML)) -> List(VXML){
 
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
   let link = V(
-    desugarer_blame(89), 
+    desugarer_blame(90), 
     "InChapterLink",
-    [BlamedAttribute(desugarer_blame(91), "href", "?id=" <> target_id)],
+    [BlamedAttribute(desugarer_blame(92), "href", "?id=" <> target_id)],
     children
   )
 
   V(
-    desugarer_blame(96),
+    desugarer_blame(97),
     "BreadcrumbItem",
     [
-      BlamedAttribute(desugarer_blame(99), "class", "breadcrumb"),
-      BlamedAttribute(desugarer_blame(100), "id", "breadcrumb-" <> ins(index)),
+      BlamedAttribute(desugarer_blame(100), "class", "breadcrumb"),
+      BlamedAttribute(desugarer_blame(101), "id", "breadcrumb-" <> ins(index)),
     ],
     [
       link
@@ -138,7 +138,7 @@ fn generate_sections_list(sections: List(VXML), exercises: List(VXML)) -> Result
   }
 
   Ok(V(
-    desugarer_blame(140),
+    desugarer_blame(141),
     "SectionsBreadcrumbs",
     [],
     list.flatten([sections_nodes, exercises_node])
