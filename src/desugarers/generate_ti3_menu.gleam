@@ -2,8 +2,9 @@ import blamedlines as bl
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V, T}
+import nodemaps_2_desugarer_transforms as n2t
 
 fn an_attribute(key: String, value: String) -> BlamedAttribute {
   BlamedAttribute(desugarer_blame(9), key, value)
@@ -210,7 +211,7 @@ fn collect_all_page_infos(root: VXML) -> List(PageInfo) {
   )
 }
 
-fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let assert V(_, "Document", _, children) = root
   let homepage_url = get_course_homepage(root)
   let page_infos = collect_all_page_infos(root)
@@ -230,7 +231,9 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
       }
     }
   )
-  Ok(V(..root, children: children))
+  V(..root, children: children)
+  |> n2t.add_warnings
+  |> Ok
 }
 
 fn transform_factory(_: InnerParam) -> infra.DesugarerTransform {

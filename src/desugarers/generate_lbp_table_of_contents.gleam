@@ -2,9 +2,10 @@ import gleam/list
 import gleam/option.{type Option, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 import blamedlines as bl
+import nodemaps_2_desugarer_transforms as n2t
 
 fn chapter_link(
   chapter_link_component_name: String,
@@ -74,7 +75,7 @@ fn div_with_id_title_and_menu_items(
   )
 }
 
-fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML, param: InnerParam) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let #(
     table_of_contents_tag,
     type_of_chapters_title_component_name,
@@ -128,10 +129,9 @@ fn at_root(root: VXML, param: InnerParam) -> Result(VXML, DesugaringError) {
     },
   ])
 
-  Ok(infra.prepend_child(
-    root,
-    V(desugarer_blame(133), table_of_contents_tag, [], children),
-  ))
+  infra.prepend_child(root, V(desugarer_blame(133), table_of_contents_tag, [], children))
+  |> n2t.add_warnings
+  |> Ok
 }
 
 fn desugarer_factory(param: InnerParam) -> infra.DesugarerTransform {
@@ -142,13 +142,11 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  #(String,   String,                String,        Option(String))
-//  ↖         ↖                      ↖              ↖
-//  tag name  tag name               tag name       optional tag name
-//  table of  of 'big title'         individual     for spacer between
-//  contents  (Chapters, Bootcamps)  chapter links  two groups of chapter links
-
+type Param = #(String,   String,                String,        Option(String))
+//             ↖         ↖                      ↖              ↖
+//             tag name  tag name               tag name       optional tag name
+//             table of  of 'big title'         individual     for spacer between
+//             contents  (Chapters, Bootcamps)  chapter links  two groups of chapter links
 type InnerParam = Param
 
 const name = "generate_lbp_table_of_contents"

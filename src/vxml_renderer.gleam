@@ -1,25 +1,41 @@
-import blamedlines.{type InputLine, type OutputLine, Em, OutputLine} as bl
+import blamedlines.{type InputLine, type OutputLine, Em, OutputLine, type Blame} as bl
 import desugarer_library as dl
 import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/io
+import gleam/pair
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
 import gleam/time/duration
 import gleam/time/timestamp.{type Timestamp}
-import infrastructure.{
-  type Desugarer, type InSituDesugaringError, type Pipe, type Pipeline,
-  InSituDesugaringError, Off, On, OnChange,
-} as infra
+import infrastructure.{type Desugarer, type Pipe, type Pipeline, Off, On, OnChange} as infra
 import selector_library as sl
 import shellout
 import simplifile
 import star_block
 import vxml.{type VXML, V} as vp
 import writerly as wp
+
+pub type InSituDesugaringError {
+  InSituDesugaringError(
+    desugarer: Desugarer,
+    step_no: Int,
+    message: String,
+    blame: Blame,
+  )
+}
+
+pub type InSituDesugaringWarning {
+  InSituDesugaringWarning(
+    desugarer: Desugarer,
+    step_no: Int,
+    message: String,
+    blame: Blame,
+  )
+}
 
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
@@ -80,7 +96,7 @@ pub fn default_writerly_source_parser(
       |> infra.get_root,
     )
 
-    use filtered_vxml <- result.try(
+    use #(filtered_vxml, _) <- result.try(
       dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
       |> result.map_error(fn(e) { ins(e) }),
     )
@@ -112,10 +128,11 @@ pub fn default_html_source_parser(
     use vxml <- result.try(
       nonempty_string
       |> vp.xmlm_based_html_parser(path)
-      |> result.map_error(fn(e) { ins(e) }),
+      |> result.map_error(ins),
     )
     dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
-    |> result.map_error(fn(e) { ins(e) })
+    |> result.map_error(ins)
+    |> result.map(pair.first)
   }
 }
 
@@ -430,7 +447,7 @@ pub type RendererParameters {
 fn run_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
-) -> Result(#(VXML, List(#(Int, Timestamp))), InSituDesugaringError) {
+) -> Result(#(VXML, List(InSituDesugaringWarning), List(#(Int, Timestamp))), InSituDesugaringError) {
   let print_star_block = fn(
     printed_before: Bool,
     desugarer: Desugarer,
@@ -444,47 +461,58 @@ fn run_pipeline(
   }
 
   pipeline
-  |> list.try_fold(#(vxml, 1, "", [], False), fn(acc, pipe) {
-    let #(vxml, step_no, last_debug_output, times, printed_before) = acc
-    let #(mode, selector, desugarer) = pipe
-    let times = case desugarer.name == "timer" {
-      True -> [#(step_no, timestamp.system_time()), ..times]
-      False -> times
-    }
-    case mode == On {
-      True -> print_star_block(printed_before, desugarer, step_no)
-      _ -> Nil
-    }
-    use vxml <- infra.on_error_on_ok(desugarer.transform(vxml), fn(error) {
-      Error(InSituDesugaringError(
-        desugarer: desugarer,
-        step_no: step_no,
-        blame: error.blame,
-        message: error.message,
-      ))
-    })
-    let #(selected, next_debug_output) = case mode == Off {
-      True -> #([], last_debug_output)
-      False -> {
-        let selected = vxml |> infra.vxml_to_s_lines |> selector
-        #(selected, selected |> infra.s_lines_to_string(""))
+  |> list.try_fold(
+    #(vxml, 1, "", [], False, []),
+    fn(acc, pipe) {
+      let #(vxml, step_no, last_debug_output, times, printed_before, warnings) = acc
+      let #(mode, selector, desugarer) = pipe
+      let times = case desugarer.name == "timer" {
+        True -> [#(step_no, timestamp.system_time()), ..times]
+        False -> times
       }
+      case mode == On {
+        True -> print_star_block(printed_before, desugarer, step_no)
+        _ -> Nil
+      }
+      use #(vxml, new_warnings) <- infra.on_error_on_ok(desugarer.transform(vxml), fn(error) {
+        Error(InSituDesugaringError(
+          desugarer: desugarer,
+          step_no: step_no,
+          blame: error.blame,
+          message: error.message,
+        ))
+      })
+      let new_warnings = list.map(new_warnings, fn(warning) {
+        InSituDesugaringWarning(
+          desugarer: desugarer,
+          step_no: step_no,
+          blame: warning.blame,
+          message: warning.message,
+        )
+      })
+      let #(selected, next_debug_output) = case mode == Off {
+        True -> #([], last_debug_output)
+        False -> {
+          let selected = vxml |> infra.vxml_to_s_lines |> selector
+          #(selected, selected |> infra.s_lines_to_string(""))
+        }
+      }
+      let must_print =
+        mode == On
+        || { mode == OnChange && next_debug_output != last_debug_output }
+      case mode != On && must_print {
+        True -> print_star_block(printed_before, desugarer, step_no)
+        _ -> Nil
+      }
+      case must_print {
+        True -> io.println(selected |> infra.s_lines_to_string(""))
+        _ -> Nil
+      }
+      #(vxml, step_no + 1, next_debug_output, times, printed_before || must_print, list.append(warnings, new_warnings))
+      |> Ok
     }
-    let must_print =
-      mode == On
-      || { mode == OnChange && next_debug_output != last_debug_output }
-    case mode != On && must_print {
-      True -> print_star_block(printed_before, desugarer, step_no)
-      _ -> Nil
-    }
-    case must_print {
-      True -> io.println(selected |> infra.s_lines_to_string(""))
-      _ -> Nil
-    }
-    #(vxml, step_no + 1, next_debug_output, times, printed_before || must_print)
-    |> Ok
-  })
-  |> result.map(fn(acc) { #(acc.0, acc.3) })
+  )
+  |> result.map(fn(acc) { #(acc.0, acc.5, acc.3) })
 }
 
 pub fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
@@ -664,7 +692,7 @@ pub fn run_renderer(
   io.print("• starting pipeline... ")
   let t0 = timestamp.system_time()
 
-  use #(desugared, times) <- infra.on_error_on_ok(
+  use #(desugared, warnings, times) <- infra.on_error_on_ok(
     over: run_pipeline(parsed, renderer.pipeline),
     with_on_error: fn(e: InSituDesugaringError) {
       let z = [
@@ -675,13 +703,17 @@ pub fn run_renderer(
       ]
       let lengths = list.map(z, string.length)
       let width = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
+      let width = case width % 2 == 0 {
+        True -> width
+        False -> width + 1
+      }
       io.println("")
       io.println("")
-      io.println(string.repeat("🏯", width * 6 / 11))
-      io.println(string.repeat("🏯", width * 6 / 11))
+      io.println(string.repeat("🏯", 2 + width / 2))
+      io.println(string.repeat("🏯", 2 + width / 2))
       list.each(list.zip(z, lengths), fn(pair) {io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯")})
-      io.println(string.repeat("🏯", width * 6 / 11))
-      io.println(string.repeat("🏯", width * 6 / 11))
+      io.println(string.repeat("🏯", 2 + width / 2))
+      io.println(string.repeat("🏯", 2 + width / 2))
       io.println("")
       Error(PipelineError(e))
     },
@@ -891,6 +923,42 @@ pub fn run_renderer(
       }
     }
   })
+
+  case list.length(warnings) {
+    0 -> Nil
+    1 -> {
+      io.println("")
+      io.println("1 warning:")
+    }
+    _ -> {
+      io.println("")
+      io.println(ins(list.length(warnings)) <> " warnings:")
+    }
+  }
+
+  list.each(
+    warnings,
+    fn (w) {
+      let z = [
+        "🚨🚨from:          " <> w.desugarer.name <> ".gleam desugarer",
+        "🚨🚨pipeline step: " <> ins(w.step_no),
+        "🚨🚨blame:         " <> bl.blame_digest(w.blame),
+        "🚨🚨message:       " <> w.message,
+      ]
+      let lengths = list.map(z, string.length)
+      let width = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
+      let width = case width % 2 == 0 {
+        True -> width
+        False -> width + 1
+      }
+      io.println("")
+      io.println(string.repeat("🚨", 2 + width / 2))
+      io.println(string.repeat("🚨", 2 + width / 2))
+      list.each(list.zip(z, lengths), fn(pair) {io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🚨🚨")})
+      io.println(string.repeat("🚨", 2 + width / 2))
+      io.println(string.repeat("🚨", 2 + width / 2))
+    }
+  )
 
   let #(_, errors) = result.partition(fragments)
 

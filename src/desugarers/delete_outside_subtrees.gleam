@@ -69,8 +69,8 @@ pub fn delete_outside_subtrees(param: Param) -> Desugarer {
 /// the predicate function
     ",
     case param_to_inner_param(param) {
-      Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
+      Error(error) -> fn(_) { Error(error) }
     }
   )
 }

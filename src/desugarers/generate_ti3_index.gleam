@@ -2,9 +2,10 @@ import gleam/list
 import gleam/option.{Some,None}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
 import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
 import blamedlines as bl
+import nodemaps_2_desugarer_transforms as n2t
 
 type ChapterNo = Int
 type SubChapterNo = Int
@@ -256,7 +257,7 @@ fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo
   )
 }
 
-fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let assert V(_, "Document", _attrs, _children) = root
   let menu_node = construct_menu(root)
   let header_node = construct_header(root)
@@ -274,6 +275,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
   )
 
   infra.prepend_child(root, index_node)
+  |> n2t.add_warnings
   |> Ok
 }
 

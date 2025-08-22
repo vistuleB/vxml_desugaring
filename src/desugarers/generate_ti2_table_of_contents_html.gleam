@@ -5,7 +5,7 @@ import gleam/option
 import gleam/pair
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
 
@@ -137,10 +137,10 @@ fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML 
   ])
 }
 
-fn nodemap(
+fn at_root(
   root: VXML,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
+) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let #(table_of_contents_tag, chapter_link_component_name) = inner
   let sections = infra.descendants_with_tag(root, "section")
   use chapter_menu_items <- infra.on_error_on_ok(
@@ -164,18 +164,16 @@ fn nodemap(
   let chapters_div =
     div_with_id_title_and_menu_items("Chapters", chapter_menu_items)
 
-  Ok(infra.prepend_child(
+  infra.prepend_child(
     root,
     V(desugarer_blame(169), table_of_contents_tag, [], [chapters_div]),
-  ))
-}
-
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNodeMap {
-  nodemap(_, inner)
+  )
+  |> n2t.add_warnings
+  |> Ok
 }
 
 fn transform_factory(inner: InnerParam) -> infra.DesugarerTransform {
-  nodemap_factory(inner)
+  at_root(_, inner)
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

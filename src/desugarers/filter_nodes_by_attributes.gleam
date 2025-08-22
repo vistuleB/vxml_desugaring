@@ -5,6 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Desugarer, Desugarer} as infra
 import vxml.{type VXML, V}
 import blamedlines as bl
+import nodemaps_2_desugarer_transforms as n2t
 
 fn matches_a_selector(vxml: VXML, inner: InnerParam) -> Bool {
   let assert V(blame, _, attrs, _) = vxml
@@ -30,11 +31,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, String, String))
-//       ↖      ↖       ↖
-//       path   key     value
-
+type Param = List(#(String,  String,  String))
+//                  ↖        ↖        ↖
+//                  path     key      value
 type InnerParam = Param
 
 const name = "filter_nodes_by_attributes"
@@ -65,7 +64,7 @@ pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
-        [] -> fn(vxml) { Ok(vxml) }
+        [] -> n2t.identity_transform
         _ -> delete_outside_subtrees(#(matches_a_selector(_, inner), "")).transform
       }
     }

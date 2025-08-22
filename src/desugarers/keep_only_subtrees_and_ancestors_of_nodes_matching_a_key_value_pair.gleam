@@ -4,6 +4,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Desugarer, Desugarer} as infra
 import vxml.{type VXML, V}
+import nodemaps_2_desugarer_transforms as n2t
 
 fn matches_a_key_value_pair(vxml: VXML, inner: InnerParam) -> Bool {
   let assert V(_, _, attrs, _) = vxml
@@ -53,7 +54,7 @@ pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
-        [] -> fn(vxml) { Ok(vxml) }
+        [] -> n2t.identity_transform
         _ -> delete_outside_subtrees(#(matches_a_key_value_pair(_, inner), "")).transform
       }
     }

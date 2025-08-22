@@ -1,10 +1,11 @@
 import gleam/string.{inspect as ins}
 import gleam/result
 import gleam/list
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 import blamedlines as bl
+import nodemaps_2_desugarer_transforms as n2t
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
   use last <- infra.on_error_on_ok(
@@ -162,14 +163,16 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
   }
 }
 
-fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
+fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let assert V(_, _, _, children) = root
   use children <- result.try(
     children
     |> list.map(map_chapter)
     |> result.all
   )
-  Ok(infra.replace_children_with(root, children))
+  infra.replace_children_with(root, children)
+  |> n2t.add_warnings
+  |> Ok
 }
 
 fn transform_factory(_: InnerParam) -> DesugarerTransform {

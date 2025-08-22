@@ -4,7 +4,7 @@ import gleam/option.{type Option, Some, None}
 import gleam/regexp.{type Regexp, type Match, Match}
 import gleam/result
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError, DesugaringWarning} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 import blamedlines.{type Blame} as bl
@@ -53,15 +53,48 @@ fn hyperlink_constructor(
   ))
 }
 
+type TripleThreat(a, b, c) {
+  Success(a)
+  Warning(b)
+  Failure(c)
+}
+
+fn warning_element(
+  handle_name: String,
+  blame: Blame,
+) -> VXML {
+  V(
+    desugarer_blame(0),
+    "span",
+    [BlamedAttribute(desugarer_blame(0), "style", "color:red;font-style:bold;text-decoration:underline;background-color:yellow;")],
+    [T(desugarer_blame(0), [BlamedContent(desugarer_blame(0), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
+  )
+}
+
 fn hyperlink_maybe(
   handle_name: String,
   blame: Blame,
   state: State,
   inner: InnerParam,
-) -> Result(VXML, DesugaringError) {
+) -> TripleThreat(VXML, #(VXML, DesugaringWarning), DesugaringError) {
   case dict.get(state.handles, handle_name) {
-    Ok(triple) -> hyperlink_constructor(triple, blame, state, inner)
-    _ -> Error(DesugaringError(blame, "handle '" <> handle_name <> "' is not assigned"))
+    Ok(triple) -> case hyperlink_constructor(triple, blame, state, inner) {
+      Ok(vxml) -> Success(vxml)
+      Error(e) -> Failure(e)
+    }
+    _ -> {
+      Warning(#(
+        warning_element(handle_name, blame),
+        DesugaringWarning(blame, "handle '" <> handle_name <> "' is not assigned"),
+      ))
+    }
+  }
+}
+
+fn is_failure(threat: TripleThreat(a, b, c)) -> Bool {
+  case threat {
+    Failure(_) -> True
+    _ -> False
   }
 }
 
@@ -70,11 +103,32 @@ fn matches_2_hyperlinks(
   blame: Blame,
   state: State,
   inner: InnerParam,
-) -> Result(List(VXML), DesugaringError) {
-  matches
-  |> list.map(extract_handle_name)
-  |> list.map(hyperlink_maybe(_, blame, state, inner))
-  |> result.all
+) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
+  let threats =
+    matches
+    |> list.map(extract_handle_name)
+    |> list.map(hyperlink_maybe(_, blame, state, inner))
+
+  use _ <- infra.on_ok_on_error(
+    list.find(threats, is_failure),
+    fn (f) {
+      let assert Failure(desugaring_error) = f
+      Error(desugaring_error)
+    },
+  )
+
+  list.fold(
+    threats,
+    #([], []),
+    fn (acc, t) {
+      case t {
+        Failure(_) -> panic as "bug"
+        Success(link_element) -> #([link_element, ..acc.0], acc.1)
+        Warning(#(warning_span, warning)) -> #([warning_span, ..acc.0], [warning, ..acc.1])
+      }
+    }
+  )
+  |> Ok
 }
 
 fn augment_to_1_mod_3(
@@ -127,13 +181,15 @@ fn process_blamed_content(
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,
-) -> Result(List(VXML), DesugaringError) {
+) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
   let BlamedContent(blame, content) = blamed_content
   let matches = regexp.scan(handle_regexp, content)
   let splits = regexp.split(handle_regexp, content)
-  use hyperlinks <- result.try(matches_2_hyperlinks(matches, blame, state, inner))
+  use #(hyperlinks, warnings) <- result.try(
+    matches_2_hyperlinks(matches, blame, state, inner)
+  )
   let text_nodes = splits_2_ts(splits, blame)
-  Ok(list.interleave([text_nodes, hyperlinks]))
+  Ok(#(list.interleave([text_nodes, hyperlinks]), warnings))
 }
 
 fn process_blamed_contents(
@@ -141,12 +197,26 @@ fn process_blamed_contents(
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,
-) -> Result(List(VXML), DesugaringError) {
-  contents
-  |> list.map(process_blamed_content(_, state, inner, handle_regexp))
-  |> result.all
-  |> result.map(list.flatten)                      // you now have a list of t-nodes and of hyperlinks
-  |> result.map(infra.plain_concatenation_in_list) // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
+) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
+  use big_list <- result.try(
+    contents
+    |> list.map(process_blamed_content(_, state, inner, handle_regexp))
+    |> result.all
+  )
+
+  let #(list_list_vxml, list_list_warnings) = big_list |> list.unzip
+
+  let vxmls = 
+    list_list_vxml
+    |> list.flatten                          // you now have a list of t-nodes and of hyperlinks
+    |> infra.plain_concatenation_in_list     // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
+
+  let warnings =
+    list_list_warnings
+    |> list.flatten
+
+  #(vxmls, warnings)
+  |> Ok
 }
 
 fn get_handles_instances_from_grand_wrapper(
@@ -189,24 +259,24 @@ fn v_before_transform(
   vxml: VXML,
   state: State,
   inner: InnerParam,
-) -> Result(#(VXML, State), DesugaringError) {
+) -> Result(#(VXML, State, List(DesugaringWarning)), DesugaringError) {
   let state = state
     |> update_path(vxml, inner)
     |> update_handles(vxml)
-  Ok(#(vxml, state))
+  Ok(#(vxml, state, []))
 }
 
 fn v_after_transform(
   vxml: VXML,
   state: State,
-) -> Result(#(List(VXML), State), DesugaringError) {
+) -> Result(#(List(VXML), State, List(DesugaringWarning)), DesugaringError) {
   let assert V(_, tag, _, children)  = vxml
   case tag == "GrandWrapper" {
     True -> {
       let assert [V(_, _, _, _) as root] = children
-      Ok(#([root], state))
+      Ok(#([root], state, []))
     }
-    False -> Ok(#([vxml], state))
+    False -> Ok(#([vxml], state, []))
   }
 }
 
@@ -215,20 +285,22 @@ fn t_transform(
   state: State,
   inner: InnerParam,
   handles_regexp: Regexp,
-) -> Result(#(List(VXML), State), DesugaringError) {
+) -> Result(#(List(VXML), State, List(DesugaringWarning)), DesugaringError) {
   let assert T(_, contents)  = vxml
-  use updated_contents <- result.try(process_blamed_contents(
-    contents,
-    state,
-    inner,
-    handles_regexp,
-  ))
-  Ok(#(updated_contents, state))
+  use #(updated_contents, warnings) <- result.try(
+    process_blamed_contents(
+      contents,
+      state,
+      inner,
+      handles_regexp,
+    )
+  )
+  Ok(#(updated_contents, state, warnings))
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMap(State) {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMapWithWarnings(State) {
   let assert Ok(handles_regexp) = regexp.from_string("(>>)([\\w\\^-]+)")
-  n2t.OneToManyBeforeAndAfterStatefulNodeMap(
+  n2t.OneToManyBeforeAndAfterStatefulNodeMapWithWarnings(
     v_before_transforming_children: fn(vxml, state) {v_before_transform(vxml, state, inner)},
     v_after_transforming_children: fn(vxml, _, new) {v_after_transform(vxml, new)},
     t_nodemap: fn(vxml, state) { t_transform(vxml, state, inner, handles_regexp) },
@@ -237,7 +309,7 @@ fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNode
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
   nodemap_factory(inner)
-  |> n2t.one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(State(dict.new(), None))
+  |> n2t.one_to_many_before_and_after_stateful_nodemap_with_warnings_2_desufarer_transform(State(dict.new(), None))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {

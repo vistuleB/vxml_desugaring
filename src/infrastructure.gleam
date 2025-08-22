@@ -2275,7 +2275,7 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
 
   let assert [expected] = vxmls
 
-  use output <- result.try(
+  use #(output, _) <- result.try(
     desugarer.transform(input)
     |> result.map_error(fn(e) { TestDesugaringError(e) })
   )
@@ -2350,8 +2350,12 @@ pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
 }
 
+pub type DesugaringWarning {
+  DesugaringWarning(blame: Blame, message: String)
+}
+
 pub type DesugarerTransform =
-  fn(VXML) -> Result(VXML, DesugaringError)
+  fn(VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError)
 
 pub type Desugarer {
   Desugarer(
@@ -2360,15 +2364,6 @@ pub type Desugarer {
     stringified_outside: Option(String),
     docs: String,
     transform: DesugarerTransform,
-  )
-}
-
-pub type InSituDesugaringError {
-  InSituDesugaringError(
-    desugarer: Desugarer,
-    step_no: Int,
-    message: String,
-    blame: Blame,
   )
 }
 
