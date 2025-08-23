@@ -320,13 +320,16 @@ pub fn default_prettier_prettifier(
       let dest_path = dir <> "/" <> ghost.path
       use _ <- infra.on_error_on_ok(
         create_dirs_on_path_to_file(dest_path),
-        fn(e) { Error(#(0, "error creating directories on path: " <> ins(e))) },
+        fn(e) {Error(#(0, "error creating directories on path: " <> ins(e)))},
       )
-      use _ <- result.try(shellout.command(run: "cp", in: ".", with: [source_path, dest_path],opt: []))
+      use _ <- result.try(
+        case source_path != dest_path {
+          True -> shellout.command(run: "cp", in: ".", with: [source_path, dest_path], opt: [])
+          False -> Ok("")
+        }
+      )
       run_prettier(".", dest_path, False)
-      |> result.map(fn(_) {
-        "prettified [" <> dir <> "/]" <> ghost.path
-      })
+      |> result.map(fn(_) {"prettified [" <> dir <> "/]" <> ghost.path})
     }
     None -> {
       run_prettier(".", source_path, True)
@@ -850,12 +853,12 @@ pub fn run_renderer(
         PrettifierToBespokeDir(dir) -> Some(dir)
       }
       case renderer.prettifier(output_dir, fr, dest_dir) {
-        Error(e) -> Error(C3(e))
+        Error(e) -> {
+          io.println("  prettifying error: " <> ins(e))
+          Error(C3(e))
+        }
         Ok(message) -> {
-          case message != "" {
-            True -> io.println("  " <> message)
-            False -> Nil
-          }
+          io.println("  " <> message)
           result
         }
       }
@@ -930,7 +933,13 @@ pub fn run_renderer(
   let #(_, errors) = result.partition(fragments)
 
   case list.length(errors) > 0 {
-    True -> Error(EmittingOrPrintingOrPrettifyingErrors(errors))
+    True -> {
+      // list.each(
+      //   errors,
+      //   fn(e){io.println("error: " <> ins(e))}
+      // )
+      Error(EmittingOrPrintingOrPrettifyingErrors(errors))
+    }
     False -> Ok(Nil)
   }
 }
@@ -1675,13 +1684,6 @@ pub fn empty_assembler_debug_options() -> BlamedLinesAssemblerDebugOptions {
 pub fn empty_source_parser_debug_options() -> SourceParserDebugOptions {
   SourceParserDebugOptions(debug_print: False)
 }
-
-// pub fn empty_pipeline_debug_options(
-// ) -> PipelineDebugOptions {
-//   PipelineDebugOptions(
-//     debug_print: fn(_step, _pipe) { False },
-//   )
-// }
 
 pub fn empty_splitter_debug_options() -> SplitterDebugOptions(d) {
   SplitterDebugOptions(debug_print: fn(_fr) { False })
