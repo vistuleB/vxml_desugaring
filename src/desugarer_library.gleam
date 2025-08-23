@@ -125,6 +125,7 @@ import desugarers/strip_delimiters_inside
 import desugarers/strip_delimiters_inside_if
 import desugarers/surround_elements_by
 import desugarers/ti2_carousel_component
+import desugarers/ti3_parse_arbitrary_prompt_response_code_block
 import desugarers/ti3_parse_orange_comment_code_block
 import desugarers/ti3_parse_python_prompt_code_block
 import desugarers/timer
@@ -281,6 +282,7 @@ pub const strip_delimiters_inside = strip_delimiters_inside.strip_delimiters_ins
 pub const strip_delimiters_inside_if = strip_delimiters_inside_if.strip_delimiters_inside_if
 pub const surround_elements_by = surround_elements_by.surround_elements_by
 pub const ti2_carousel_component = ti2_carousel_component.ti2_carousel_component
+pub const ti3_parse_arbitrary_prompt_response_code_block = ti3_parse_arbitrary_prompt_response_code_block.ti3_parse_arbitrary_prompt_response_code_block
 pub const ti3_parse_orange_comment_code_block = ti3_parse_orange_comment_code_block.ti3_parse_orange_comment_code_block
 pub const ti3_parse_python_prompt_code_block = ti3_parse_python_prompt_code_block.ti3_parse_python_prompt_code_block
 pub const timer = timer.timer
@@ -438,6 +440,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   strip_delimiters_inside_if.assertive_tests,
   surround_elements_by.assertive_tests,
   ti2_carousel_component.assertive_tests,
+  ti3_parse_arbitrary_prompt_response_code_block.assertive_tests,
   ti3_parse_orange_comment_code_block.assertive_tests,
   ti3_parse_python_prompt_code_block.assertive_tests,
   timer.assertive_tests,
