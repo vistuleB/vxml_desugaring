@@ -37,6 +37,8 @@ pub type InSituDesugaringWarning {
   )
 }
 
+
+
 // *************
 // SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
 // file/directory -> List(BlamedLine)
@@ -281,7 +283,7 @@ pub type PrinterDebugOptions(d) {
 // *************
 
 pub type Prettifier(d, h) =
-  fn(String, GhostOfOutputFragment(d)) -> Result(String, h)
+  fn(String, GhostOfOutputFragment(d), Option(String)) -> Result(String, h)
 
 pub type PrettifierDebugOptions(d) {
   PrettifierDebugOptions(debug_print: fn(GhostOfOutputFragment(d)) -> Bool)
@@ -291,80 +293,43 @@ pub type PrettifierDebugOptions(d) {
 // the standard prettifier (for jsx)
 //********************
 
-pub fn run_prettier(in: String, path: String) -> Result(String, #(Int, String)) {
+pub fn run_prettier(in: String, path: String, check: Bool) -> Result(String, #(Int, String)) {
   shellout.command(
     run: "npx",
     in: in,
-    with: ["prettier", "--write", path],
+    with: [
+      "prettier",
+      case check {
+        True -> "--check"
+        False -> "--write"
+      },
+      path
+    ],
     opt: [],
   )
-}
-
-pub fn run_prettier_check(
-  in: String,
-  path: String,
-) -> Result(String, #(Int, String)) {
-  let result =
-    shellout.command(
-      run: "npx",
-      in: in,
-      with: ["prettier", "--check", path],
-      opt: [],
-    )
-  case result {
-    Ok(_) -> {
-      Ok("prettier check passed - no formatting issues found")
-    }
-    Error(#(1, _)) -> {
-      Ok("prettier check found formatting issues (this is informational)")
-    }
-    Error(#(code, err)) -> {
-      Error(#(code, err))
-    }
-  }
 }
 
 pub fn default_prettier_prettifier(
   output_dir: String,
   ghost: GhostOfOutputFragment(d),
-) -> Result(String, #(Int, String)) {
-  run_prettier(".", output_dir <> "/" <> ghost.path)
-  |> result.map(fn(_) { "prettified [" <> output_dir <> "/]" <> ghost.path })
-}
-
-pub fn prettier_prettifier_with_custom_dir(
   prettier_dir: Option(String),
-  output_dir: String,
-  ghost: GhostOfOutputFragment(d),
 ) -> Result(String, #(Int, String)) {
+  let source_path = output_dir <> "/" <> ghost.path
   case prettier_dir {
     Some(dir) -> {
-      let source_path = output_dir <> "/" <> ghost.path
       let dest_path = dir <> "/" <> ghost.path
-      case shellout.command(run: "mkdir", in: ".", with: ["-p", dir], opt: []) {
-        Ok(_) -> {
-          case
-            shellout.command(
-              run: "cp",
-              in: ".",
-              with: [source_path, dest_path],
-              opt: [],
-            )
-          {
-            Ok(_) -> {
-              run_prettier(".", dest_path)
-              |> result.map(fn(_) {
-                "prettified [" <> dir <> "/]" <> ghost.path
-              })
-            }
-            Error(e) -> Error(e)
-          }
-        }
-        Error(e) -> Error(e)
-      }
+      use _ <- infra.on_error_on_ok(
+        create_dirs_on_path_to_file(dest_path),
+        fn(e) { Error(#(0, "error creating directories on path: " <> ins(e))) },
+      )
+      use _ <- result.try(shellout.command(run: "cp", in: ".", with: [source_path, dest_path],opt: []))
+      run_prettier(".", dest_path, False)
+      |> result.map(fn(_) {
+        "prettified [" <> dir <> "/]" <> ghost.path
+      })
     }
     None -> {
-      run_prettier_check(".", output_dir <> "/" <> ghost.path)
+      run_prettier(".", source_path, True)
       |> result.map(fn(msg) {
         msg <> " for [" <> output_dir <> "/]" <> ghost.path
       })
@@ -375,19 +340,9 @@ pub fn prettier_prettifier_with_custom_dir(
 pub fn empty_prettifier(
   _: String,
   _: GhostOfOutputFragment(d),
+  _: Option(String)
 ) -> Result(String, #(Int, String)) {
   Ok("")
-}
-
-pub fn create_prettifier_from_parameters(
-  parameters: RendererParameters,
-) -> Prettifier(d, #(Int, String)) {
-  case parameters.prettifier_on_by_default, parameters.prettier_dir {
-    False, _ -> empty_prettifier
-    True, prettier_dir -> fn(output_dir, ghost) {
-      prettier_prettifier_with_custom_dir(prettier_dir, output_dir, ghost)
-    }
-  }
 }
 
 // *************
@@ -408,7 +363,7 @@ pub type Renderer(
     pipeline: List(Pipe),                // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
     splitter: Splitter(d, e),            // VXML -> List(#(String, VXML, d))                       Result w/ error type e
     emitter: Emitter(d, f),              // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
-    prettifier: Prettifier(d, h),        // String, #(String, d) -> Nil                            Result w/ error type h  
+    prettifier: Prettifier(d, h),        // String, #(String, d) -> Nil                            Result w/ error type h
   )
 }
 
@@ -431,12 +386,18 @@ pub type RendererDebugOptions(d) {
 // RENDERER PARAMETERS(g)
 // *************
 
+pub type PrettifierMode {
+  PrettifierOff
+  PrettifierCheck
+  PrettifierOverwriteOutputDir
+  PrettifierToBespokeDir(String)
+}
+
 pub type RendererParameters {
   RendererParameters(
     input_dir: String,
     output_dir: String,
-    prettifier_on_by_default: Bool,
-    prettier_dir: Option(String),
+    prettifier_behavior: PrettifierMode,
   )
 }
 
@@ -522,20 +483,21 @@ pub fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters
   )
 }
 
-fn create_intermediate_dirs(output_dir: String, local_path: String) {
-  let pieces = local_path |> string.split("/")
+fn create_dirs_on_path_to_file(path_to_file: String) -> Result(Nil, simplifile.FileError) {
+  let pieces = path_to_file |> string.split("/")
   let pieces = infra.drop_last(pieces)
-  list.fold(pieces, output_dir, fn(acc, piece) {
+  list.try_fold(pieces, ".", fn(acc, piece) {
     let acc = acc <> "/" <> piece
-    case simplifile.is_directory(acc) {
-      Ok(_) -> {
-        let _ = simplifile.create_directory(acc)
-        Nil
+    use exists <- result.try(simplifile.is_directory(acc))
+    use _ <- result.try(
+      case exists {
+        True  -> Ok(Nil)
+        False -> simplifile.create_directory(acc)
       }
-      Error(_) -> Nil
-    }
-    acc
+    )
+    Ok(acc)
   })
+  |> result.map(fn(_) { Nil })
 }
 
 pub fn output_dir_local_path_printer(
@@ -545,8 +507,8 @@ pub fn output_dir_local_path_printer(
 ) -> Result(Nil, simplifile.FileError) {
   let assert False = string.starts_with(local_path, "/")
   let assert False = string.ends_with(output_dir, "/")
-  create_intermediate_dirs(output_dir, local_path)
   let path = output_dir <> "/" <> local_path
+  use _ <- result.try(create_dirs_on_path_to_file(path))
   simplifile.write(path, content)
 }
 
@@ -646,8 +608,7 @@ pub fn run_renderer(
   let RendererParameters(
     input_dir,
     output_dir,
-    prettifier_on_by_default,
-    _prettier_dir,
+    prettifier_mode,
   ) = parameters
 
   io.println("• pipeline:")
@@ -873,16 +834,22 @@ pub fn run_renderer(
     })
 
   // running prettifier (list.map to record erros)
-  case prettifier_on_by_default {
+  case prettifier_mode != PrettifierOff {
     True -> io.println("• prettifying")
     False -> Nil
   }
   let fragments =
     fragments
     |> list.map(fn(result) {
-      use <- infra.on_false_on_true(prettifier_on_by_default, result)
       use fr <- result.try(result)
-      case renderer.prettifier(output_dir, fr) {
+      use <- infra.on_true_on_false(prettifier_mode == PrettifierOff, result)
+      let dest_dir = case prettifier_mode {
+        PrettifierCheck -> None
+        PrettifierOff -> panic as "bug"
+        PrettifierOverwriteOutputDir -> Some(output_dir)
+        PrettifierToBespokeDir(dir) -> Some(dir)
+      }
+      case renderer.prettifier(output_dir, fr, dest_dir) {
         Error(e) -> Error(C3(e))
         Ok(message) -> {
           case message != "" {
@@ -1024,8 +991,7 @@ pub type CommandLineAmendments {
     debug_prettified_string_fragments_local_paths: Option(List(String)),
     spotlight_key_values: List(#(String, String, String)),
     spotlight_paths: List(String),
-    prettier: Bool,
-    prettier_dir: Option(String),
+    prettier: Option(PrettifierMode),
     user_args: Dict(String, List(String)),
   )
 }
@@ -1047,8 +1013,7 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     debug_prettified_string_fragments_local_paths: None,
     spotlight_key_values: [],
     spotlight_paths: [],
-    prettier: False,
-    prettier_dir: None,
+    prettier: None,
     user_args: dict.from_list([]),
   )
 }
@@ -1350,7 +1315,7 @@ fn parse_show_changes_near_args(
     },
   )
 
-  let selector = 
+  let selector =
     selector
     |> infra.extend_selector_up(plus_minus.minus)
     |> infra.extend_selector_down(plus_minus.plus)
@@ -1464,22 +1429,23 @@ pub fn process_command_line_arguments(
           Ok(amendments |> amend_spotlight_args(args))
         }
 
-        "--prettier" ->
+        "--prettier0" ->
           case list.is_empty(values) {
-            True ->
-              Ok(CommandLineAmendments(..amendments, prettier: True))
-            False -> Error(UnexpectedArgumentsToOption("--prettier"))
+            True -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierOff)))
+            False -> Error(UnexpectedArgumentsToOption("--prettier0"))
           }
 
-        "--prettier-dir" ->
+        "--prettier1" ->
+          case list.is_empty(values) {
+            True -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierCheck)))
+            False -> Error(UnexpectedArgumentsToOption("--prettier1"))
+          }
+
+        "--prettier2" ->
           case values {
-            [dir] ->
-              Ok(CommandLineAmendments(..amendments, prettier_dir: Some(dir)))
-            [] ->
-              Error(UnexpectedArgumentsToOption(
-                "--prettier-dir requires a directory argument",
-              ))
-            _ -> Error(UnexpectedArgumentsToOption("--prettier-dir"))
+            [dir] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierToBespokeDir(dir))))
+            [] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierOverwriteOutputDir)))
+            _ -> Error(UnexpectedArgumentsToOption("--prettier2"))
           }
 
         "--echo-assembled-input" | "--echo-assembled" ->
@@ -1572,21 +1538,10 @@ pub fn amend_renderer_paramaters_by_command_line_amendments(
   parameters: RendererParameters,
   amendments: CommandLineAmendments,
 ) -> RendererParameters {
-  // enable prettier if --prettier flag is present or if --prettier-dir is specified
-  let prettifier_enabled = case amendments.prettier, amendments.prettier_dir {
-    True, _ -> True          // --prettier flag specified
-    False, Some(_) -> True   // --prettier-dir specified, so enable prettier
-    False, None -> False     // no prettier flags, so disable
-  }
-
   RendererParameters(
     input_dir: override_if_some(parameters.input_dir, amendments.input_dir),
     output_dir: override_if_some(parameters.output_dir, amendments.output_dir),
-    prettifier_on_by_default: prettifier_enabled,
-    prettier_dir: case amendments.prettier_dir {
-      None -> parameters.prettier_dir
-      Some(dir) -> Some(dir)
-    },
+    prettifier_behavior: override_if_some(parameters.prettifier_behavior, amendments.prettier),
   )
 }
 
@@ -1678,30 +1633,6 @@ pub fn amend_renderer_by_command_line_amendments(
         ),
       )
   }
-}
-
-pub fn update_renderer_prettifier_from_parameters(
-  renderer: Renderer(a, c, d, e, f, h),
-  parameters: RendererParameters,
-) -> Renderer(a, c, d, e, f, #(Int, String)) {
-  let prettifier = case
-    parameters.prettifier_on_by_default,
-    parameters.prettier_dir
-  {
-    False, _ -> empty_prettifier
-    True, prettier_dir -> fn(output_dir, ghost) {
-      prettier_prettifier_with_custom_dir(prettier_dir, output_dir, ghost)
-    }
-  }
-
-  Renderer(
-    assembler: renderer.assembler,
-    source_parser: renderer.source_parser,
-    pipeline: renderer.pipeline,
-    splitter: renderer.splitter,
-    emitter: renderer.emitter,
-    prettifier: prettifier,
-  )
 }
 
 pub fn amend_renderer_debug_options_by_command_line_amendments(
