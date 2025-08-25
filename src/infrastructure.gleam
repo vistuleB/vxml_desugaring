@@ -2540,10 +2540,16 @@ pub fn s_lines_2_output_lines(
   |> list.reverse
 }
 
-pub fn s_lines_to_string(lines: List(SLine), banner: String) -> String {
+pub fn s_lines_to_strings(lines: List(SLine), banner: String) -> List(String) {
   lines
   |> s_lines_2_output_lines
   |> bl.output_lines_annotated_table(banner)
+}
+
+pub fn s_lines_to_string(lines: List(SLine), banner: String) -> String {
+  lines
+  |> s_lines_to_strings(banner)
+  |> string.join("\n")
 }
 
 fn bring_to_byproduct_level(line: SLine) -> SLine {

@@ -205,11 +205,11 @@ pub fn print_table_at_indent(
 const star_line_length = 53
 
 fn star_header() -> String {
-  "/" <> string.repeat("*", star_line_length - 1) <> "\n"
+  "/" <> string.repeat("*", star_line_length - 1)
 }
 
 fn star_footer() -> String {
-  " " <> string.repeat("*", star_line_length - 1) <> "/\n"
+  " " <> string.repeat("*", star_line_length - 1) <> "/"
 }
 
 fn star_line(content: String) -> String {
@@ -220,32 +220,33 @@ fn star_line(content: String) -> String {
     True -> string.repeat(" ", chars_left - 1) <> "*"
     False -> ""
   }
-  <> "\n"
 }
 
 fn star_block(
   first_finger: Bool,
   lines: List(String),
   second_finger: Bool,
-) -> String {
-  case first_finger {
-    True -> "👇\n"
-    False -> ""
-  }
-  <> star_header()
-  <> string.concat(list.map(lines, star_line))
-  <> star_footer()
-  <> case second_finger {
-    True -> "👇\n"
-    False -> ""
-  }
+) -> List(String) {
+  [
+    case first_finger {
+      True -> ["👇"]
+      False -> []
+    },
+    [star_header()],
+    list.map(lines, star_line),
+    [star_footer()],
+    case second_finger {
+      True -> ["👇"]
+      False -> []
+    }
+  ]
+  |> list.flatten
 }
 
-pub fn desugarer_name_star_block(
+pub fn name_and_param_string(
   desugarer: Desugarer,
   step_no: Int,
 ) -> String {
-  let name_and_param =
     ins(step_no)
     <> ". "
     <> desugarer.name
@@ -258,18 +259,31 @@ pub fn desugarer_name_star_block(
         |> string.replace("\\\"", "\"")
       None -> ""
     }
+}
 
-  star_block(
-    True,
-    [name_and_param],
-    True,
-  )
+pub fn desugarer_name_star_block(
+  desugarer: Desugarer,
+  step_no: Int,
+) -> List(String) {
+  let name_and_param = name_and_param_string(desugarer, step_no)
+
+  // star_block(
+  //   True,
+  //   [name_and_param],
+  //   True,
+  // )
+
+  [
+    "  " <> "⬇",
+    "  " <> name_and_param,
+    "  " <> "⬇",
+  ]
 }
 
 pub fn desugarer_description_star_block(
   desugarer: Desugarer,
   step_no: Int,
-) -> String {
+) -> List(String) {
   let name_and_param =
     desugarer.name
     <> case desugarer.stringified_param {

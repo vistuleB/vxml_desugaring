@@ -412,31 +412,25 @@ fn run_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
 ) -> Result(#(VXML, List(InSituDesugaringWarning), List(#(Int, Timestamp))), InSituDesugaringError) {
-  let print_star_block = fn(
-    printed_before: Bool,
-    desugarer: Desugarer,
-    step_no: Int,
-  ) {
-    case printed_before {
-      False -> io.println("")
-      True -> Nil
-    }
-    io.print(star_block.desugarer_name_star_block(desugarer, step_no))
-  }
+  let track_any = list.any(pipeline, fn(p){p.0 != Off})
+  let last_step = list.length(pipeline)
 
   pipeline
   |> list.try_fold(
-    #(vxml, 1, "", [], False, []),
+    #(vxml, 1, "", [], [], False),
     fn(acc, pipe) {
-      let #(vxml, step_no, last_debug_output, times, printed_before, warnings) = acc
+      let #(vxml, step_no, last_debug_output, times, warnings, got_arrow) = acc
       let #(mode, selector, desugarer) = pipe
       let times = case desugarer.name == "timer" {
         True -> [#(step_no, timestamp.system_time()), ..times]
         False -> times
       }
-      case mode == On {
-        True -> print_star_block(printed_before, desugarer, step_no)
-        _ -> Nil
+      let printed_arrow = case track_any && !got_arrow {
+        True -> {
+          io.println("    ⬇")
+          True
+        }
+        False -> False
       }
       use #(vxml, new_warnings) <- infra.on_error_on_ok(desugarer.transform(vxml), fn(error) {
         Error(InSituDesugaringError(
@@ -461,22 +455,29 @@ fn run_pipeline(
           #(selected, selected |> infra.s_lines_to_string(""))
         }
       }
-      let must_print =
-        mode == On
-        || { mode == OnChange && next_debug_output != last_debug_output }
-      case mode != On && must_print {
-        True -> print_star_block(printed_before, desugarer, step_no)
-        _ -> Nil
+      let must_print = mode == On || { mode == OnChange && next_debug_output != last_debug_output }
+      let got_arrow = case must_print {
+        True -> {
+          io.println("    " <> star_block.name_and_param_string(desugarer, step_no))
+          io.println("    ⬇")
+          selected
+          |> infra.s_lines_to_strings("")
+          |> star_block.print_table_at_indent(2)
+          False
+        }
+        False -> case printed_arrow && step_no < last_step {
+          True -> {
+            io.println("    ⋮")
+            True
+          }
+          False -> True
+        }
       }
-      case must_print {
-        True -> io.println(selected |> infra.s_lines_to_string(""))
-        _ -> Nil
-      }
-      #(vxml, step_no + 1, next_debug_output, times, printed_before || must_print, list.append(warnings, new_warnings))
+      #(vxml, step_no + 1, next_debug_output, times, list.append(warnings, new_warnings), got_arrow)
       |> Ok
     }
   )
-  |> result.map(fn(acc) { #(acc.0, acc.5, acc.3) })
+  |> result.map(fn(acc) { #(acc.0, acc.4, acc.3) })
 }
 
 pub fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
@@ -652,7 +653,7 @@ pub fn run_renderer(
 
   io.println("")
 
-  io.print("• starting pipeline... ")
+  io.println("• starting pipeline...")
   let t0 = timestamp.system_time()
 
   use #(desugared, warnings, times) <- infra.on_error_on_ok(
@@ -686,7 +687,7 @@ pub fn run_renderer(
   let seconds =
     timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
 
-  io.println("...ended pipeline (" <> ins(seconds) <> "s);")
+  io.println("  ...ended pipeline (" <> ins(seconds) <> "s);")
 
   case list.length(times) > 0 {
     False -> Nil
@@ -706,7 +707,7 @@ pub fn run_renderer(
     }
   }
 
-  io.print("• splitting the vxml... ")
+  io.println("• splitting the vxml...")
 
   // vxml fragments generation
   use fragments <- infra.on_error_on_ok(
@@ -721,7 +722,7 @@ pub fn run_renderer(
   let fragments_types_and_paths_4_table =
     list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
 
-  io.println("-> obtained " <> ins(list.length(fragments)) <> " fragments:")
+  io.println("  -> obtained " <> ins(list.length(fragments)) <> " fragments:")
   
   [#("type", "path"), ..fragments_types_and_paths_4_table]
   |> star_block.two_column_table
