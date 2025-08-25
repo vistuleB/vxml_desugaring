@@ -590,10 +590,9 @@ fn print_pipeline(desugarers: List(Desugarer)) {
     })
     |> list.flatten
 
-  star_block.four_column_table(
-    [#("#.", "name", "param", "outside"), ..lines],
-    2,
-  )
+  [#("#.", "name", "param", "outside"), ..lines]
+  |> star_block.four_column_table
+  |> star_block.print_table_at_indent(2)
 }
 
 // *************
@@ -723,12 +722,10 @@ pub fn run_renderer(
     list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
 
   io.println("-> obtained " <> ins(list.length(fragments)) <> " fragments:")
-  star_block.two_column_table(
-    fragments_types_and_paths_4_table,
-    "type",
-    "path",
-    2,
-  )
+  
+  [#("type", "path"), ..fragments_types_and_paths_4_table]
+  |> star_block.two_column_table
+  |> star_block.print_table_at_indent(2)
 
   // fragments debug printing
   fragments

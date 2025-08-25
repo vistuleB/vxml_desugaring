@@ -6,22 +6,26 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer}
 
 pub fn dashes(num: Int) -> String { string.repeat("-", num) }
+pub fn solid_dashes(num: Int) -> String { string.repeat("─", num) }
 pub fn spaces(num: Int) -> String { string.repeat(" ", num) }
 pub fn dots(num: Int) -> String { string.repeat(".", num) }
 pub fn threedots(num: Int) -> String { string.repeat("…", num) }
+pub fn twodots(num: Int) -> String { string.repeat("‥", num) }
 
 // ************************
 // 2-column table printer
 // ************************
 
-pub fn two_column_maxes(lines: List(#(String, String))) {
+pub fn two_column_maxes(
+  lines: List(#(String, String))
+) -> #(Int, Int) {
   list.fold(
     lines,
     #(0, 0),
     fn(acc, pair) {
       #(
         int.max(acc.0, string.length(pair.0)),
-        int.max(acc.1, string.length(pair.1))
+        int.max(acc.1, string.length(pair.1)),
       )
     }
   )
@@ -29,32 +33,35 @@ pub fn two_column_maxes(lines: List(#(String, String))) {
 
 pub fn two_column_table(
   lines: List(#(String, String)),
-  col1: String,
-  col2: String,
-  indentation: Int,
-) -> Nil {
-  let #(max_col1, max_col2) = two_column_maxes(lines)
-  let header_left = spaces(indentation) <> "|-"
-  let left = spaces(indentation) <> "| "
-  let one_line = fn(pair: #(String, String),  index: Int) {
-    io.println(
-        left
-        <> pair.0
-        <> case index % 2 {
-          1 -> spaces(max_col1 - string.length(pair.0) + 2)
-          _ -> spaces(max_col1 - string.length(pair.0) + 2)
-        }
-        <> "| "
-        <> pair.1
-        <> spaces(max_col2 - string.length(pair.1) + 2)
-        <> "|"
-    )
+) -> List(String) {
+  let maxes = two_column_maxes(lines)
+  let padding = #(2, 2)
+  let one_line = fn(tuple: #(String, String)) -> String {
+    "│ "
+    <> tuple.0
+    <> spaces(maxes.0 - string.length(tuple.0) + padding.0)
+    <> "│ "
+    <> tuple.1
+    <> spaces(maxes.1 - string.length(tuple.1) + padding.1)
+    <> "│ "
   }
-  io.println(header_left <> dashes(max_col1 + 2) <> "|-" <> dashes(max_col2 + 2) <> "|")
-  one_line(#(col1, col2), 0)
-  io.println(header_left <> dashes(max_col1 + 2) <> "|-" <> dashes(max_col2 + 2) <> "|")
-  list.index_map(lines, one_line)
-  io.println(header_left <> dashes(max_col1 + 2) <> "|-" <> dashes(max_col2 + 2) <> "|")
+  let sds = #(
+    solid_dashes(maxes.0 + padding.0),
+    solid_dashes(maxes.1 + padding.1),
+  )
+  let assert [first, ..rest] = lines
+  [
+    [
+      "┌─" <> sds.0 <> "┬─" <> sds.1 <> "┐",
+      one_line(first),
+      "├─" <> sds.0 <> "┼─" <> sds.1 <> "┤"
+    ],
+    list.map(rest, one_line),
+    [
+      "└─" <> sds.0 <> "┴─" <> sds.1 <> "┘"
+    ],
+  ]
+  |> list.flatten
 }
 
 // ************************
@@ -79,39 +86,39 @@ pub fn three_column_maxes(
 
 pub fn three_column_table(
   lines: List(#(String, String, String)),
-  col1: String,
-  col2: String,
-  col3: String,
-  indentation: Int,
-) -> Nil {
+) -> List(String) {
   let maxes = three_column_maxes(lines)
-  let padding = #(1, 2, 1)
-  let header_left = spaces(indentation) <> "|-"
-  let left = spaces(indentation) <> "| "
-
-  let one_line = fn(triple: #(String, String, String), index: Int) {
-    io.println(
-      left
-      <> triple.0
-      <> spaces(maxes.0 - string.length(triple.0) + padding.0)
-      <> "| "
-      <> triple.1
-      <> case index % 2 {
-        1 -> dots(maxes.1 - string.length(triple.1) + padding.1)
-        _ -> dots(maxes.1 - string.length(triple.1) + padding.1)
-      }
-      <> "| "
-      <> triple.2
-      <> spaces(maxes.2 - string.length(triple.2) + padding.2)
-      <> "|"
-    )
+  let padding = #(1, 1, 1)
+  let one_line = fn(tuple: #(String, String, String)) -> String {
+    "│ "
+    <> tuple.0
+    <> spaces(maxes.0 - string.length(tuple.0) + padding.0)
+    <> "│ "
+    <> tuple.1
+    <> spaces(maxes.1 - string.length(tuple.1) + padding.1)
+    <> "│ "
+    <> tuple.2
+    <> spaces(maxes.2 - string.length(tuple.2) + padding.2)
+    <> "│ "
   }
-
-  io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|")
-  one_line(#(col1, col2, col3), 0)
-  io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|")
-  list.index_map(lines, one_line)
-  io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|")
+  let sds = #(
+    solid_dashes(maxes.0 + padding.0),
+    solid_dashes(maxes.1 + padding.1),
+    solid_dashes(maxes.2 + padding.2),
+  )
+  let assert [first, ..rest] = lines
+  [
+    [
+      "┌─" <> sds.0 <> "┬─" <> sds.1 <> "┬─" <> sds.2 <> "┐",
+      one_line(first),
+      "├─" <> sds.0 <> "┼─" <> sds.1 <> "┼─" <> sds.2 <> "┤"
+    ],
+    list.map(rest, one_line),
+    [
+      "└─" <> sds.0 <> "┴─" <> sds.1 <> "┴─" <> sds.2 <> "┘"
+    ],
+  ]
+  |> list.flatten
 }
 
 // ************************
@@ -137,46 +144,58 @@ pub fn four_column_maxes(
 
 pub fn four_column_table(
   lines: List(#(String, String, String, String)),
-  // col1: String,
-  // col2: String,
-  // col3: String,
-  // col4: String,
-  indentation: Int,
-) -> Nil {
+) -> List(String) {
   let maxes = four_column_maxes(lines)
   let padding = #(1, 2, 1, 1)
-  let header_left = spaces(indentation) <> "|-"
-  let left = spaces(indentation) <> "| "
-
-  let one_line = fn(tuple: #(String, String, String, String), index: Int) {
-    io.println(
-      left
-      <> tuple.0
-      <> spaces(maxes.0 - string.length(tuple.0) + padding.0)
-      <> "| "
-      <> tuple.1
-      <> case index % 2 {
-        1 -> dots(maxes.1 - string.length(tuple.1) + padding.1)
-        _ if index >= 0 -> threedots(maxes.1 - string.length(tuple.1) + padding.1)
-        _ -> spaces(maxes.1 - string.length(tuple.1) + padding.1)
-      }
-      <> "| "
-      <> tuple.2
-      <> spaces(maxes.2 - string.length(tuple.2) + padding.2)
-      <> "| "
-      <> tuple.3
-      <> spaces(maxes.3 - string.length(tuple.3) + padding.3)
-      <> "|"
-    )
+  let one_line = fn(tuple: #(String, String, String, String), index: Int) -> String {
+    "│ "
+    <> tuple.0
+    <> spaces(maxes.0 - string.length(tuple.0) + padding.0)
+    <> "│ "
+    <> tuple.1
+    <> case index % 2 {
+      1 -> dots(maxes.1 - string.length(tuple.1) + padding.1)
+      _ if index >= 0 -> twodots(maxes.1 - string.length(tuple.1) + padding.1)
+      _ -> spaces(maxes.1 - string.length(tuple.1) + padding.1)
+    }
+    <> "│ "
+    <> tuple.2
+    <> spaces(maxes.2 - string.length(tuple.2) + padding.2)
+    <> "│ "
+    <> tuple.3
+    <> spaces(maxes.3 - string.length(tuple.3) + padding.3)
+    <> "│"
   }
-
+  let sds = #(
+    solid_dashes(maxes.0 + padding.0),
+    solid_dashes(maxes.1 + padding.1),
+    solid_dashes(maxes.2 + padding.2),
+    solid_dashes(maxes.3 + padding.3),
+  )
   let assert [first, ..rest] = lines
+  [
+    [
+      "┌─" <> sds.0 <> "┬─" <> sds.1 <> "┬─" <> sds.2 <> "┬─" <> sds.3 <> "┐",
+      one_line(first, -1),
+      "├─" <> sds.0 <> "┼─" <> sds.1 <> "┼─" <> sds.2 <> "┼─" <> sds.3 <> "┤"
+    ],
+    list.index_map(rest, one_line),
+    [
+      "└─" <> sds.0 <> "┴─" <> sds.1 <> "┴─" <> sds.2 <> "┴─" <> sds.3 <> "┘"
+    ],
+  ]
+  |> list.flatten
+}
 
-  io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|-" <> dashes(maxes.3 + padding.3) <> "|")
-  one_line(first, -1)
-  io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|-" <> dashes(maxes.3 + padding.3) <> "|")
-  list.index_map(rest, one_line)
-  io.println(header_left <> dashes(maxes.0 + padding.0) <> "|-" <> dashes(maxes.1 + padding.1) <> "|-" <> dashes(maxes.2 + padding.2) <> "|-" <> dashes(maxes.3 + padding.3) <> "|")
+pub fn print_table_at_indent(
+  lines: List(String),
+  indent: Int,
+) -> Nil {
+  let margin = spaces(indent)
+  list.each(
+    lines,
+    fn(l) {io.println(margin <> l)}
+  )
 }
 
 // ************************

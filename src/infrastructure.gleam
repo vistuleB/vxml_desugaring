@@ -1,6 +1,6 @@
 import gleam/float
 import gleam/int
-import blamedlines.{type Blame, type OutputLine, OutputLine}
+import blamedlines.{type Blame, type OutputLine, OutputLine} as bl
 import gleam/dict.{type Dict}
 import gleam/io
 import gleam/list
@@ -459,7 +459,8 @@ pub fn list_set(ze_list: List(a), index: Int, element: a) -> List(a) {
     prefix,
     [element],
     suffix,
-  ] |> list.flatten
+  ]
+  |> list.flatten
 }
 
 pub fn get_at(ze_list: List(a), index: Int) -> Result(a, Nil) {
@@ -823,15 +824,7 @@ pub fn find_replace_in_node_no_list(
 //* blame-related                                              *
 //**************************************************************
 
-pub const no_blame = blamedlines.no_blame
-
-// pub fn desugarer_blame(name: String) -> Blame {
-//   blamedlines.desugarer_blame(name)
-// }
-
-// pub fn emitter_blame(name: String) -> Blame {
-//   blamedlines.emitter_blame(name)
-// }
+pub const no_blame = bl.no_blame
 
 pub fn get_blame(vxml: VXML) -> Blame {
   vxml.blame
@@ -842,7 +835,7 @@ pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
   first.blame
 }
 
-pub const advance = blamedlines.advance
+pub const advance = bl.advance
 
 //**************************************************************
 //* string
@@ -2513,7 +2506,7 @@ pub fn s_lines_2_output_lines(
             #(
               True,
               None, 
-              [line |> s2l, OutputLine(blamedlines.NoBlame([ins(num_lines)]), indentation, "..."), ..acc.2],
+              [line |> s2l, OutputLine(bl.NoBlame([ins(num_lines)]), indentation, "..."), ..acc.2],
             )
         }
         NotS -> case acc.0, acc.1 {
@@ -2550,7 +2543,7 @@ pub fn s_lines_2_output_lines(
 pub fn s_lines_to_string(lines: List(SLine), banner: String) -> String {
   lines
   |> s_lines_2_output_lines
-  |> blamedlines.output_lines_pretty_printer_no1(banner)
+  |> bl.output_lines_annotated_table(banner)
 }
 
 fn bring_to_byproduct_level(line: SLine) -> SLine {
