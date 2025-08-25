@@ -59,8 +59,7 @@ type Param = #(String,         String,          List(#(String, String)))
 //             of this name    element
 type InnerParam = #(String, VXML)
 
-const name = "add_before_but_not_before_first_of_kind"
-const constructor = add_before_but_not_before_first_of_kind
+pub const name = "add_before_but_not_before_first_of_kind"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -71,7 +70,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// some specified other tag, except when the latter
 /// tag is occurring for the first time with respect
 /// to the current group of siblings
-pub fn add_before_but_not_before_first_of_kind(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

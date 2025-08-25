@@ -42,7 +42,7 @@ type Param = #(String, #(String,    String))
 //                       at start   at end
 type InnerParam = #(String, BlamedContent, BlamedContent)
 
-const name = "insert_line_start_end"
+pub const name = "insert_line_start_end"
 const constructor = insert_line_start_end
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

@@ -46,7 +46,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "replace_in_attribute_values"
+pub const name = "replace_in_attribute_values"
 const constructor = replace_in_attribute_values
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

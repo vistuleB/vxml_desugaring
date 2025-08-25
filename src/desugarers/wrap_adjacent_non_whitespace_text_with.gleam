@@ -115,7 +115,7 @@ type Param = #(String,     String)
 //             be wrapped
 type InnerParam = Param
 
-const name = "wrap_adjacent_non_whitespace_text_with"
+pub const name = "wrap_adjacent_non_whitespace_text_with"
 const constructor = wrap_adjacent_non_whitespace_text_with
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

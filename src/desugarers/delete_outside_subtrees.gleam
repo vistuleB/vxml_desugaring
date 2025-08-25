@@ -50,7 +50,7 @@ type Param = #(fn(VXML) -> Bool,      String)
 //             this condition
 type InnerParam = fn(VXML) -> Bool
 
-const name = "delete_outside_subtrees"
+pub const name = "delete_outside_subtrees"
 const constructor = delete_outside_subtrees
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

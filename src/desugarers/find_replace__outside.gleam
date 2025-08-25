@@ -23,7 +23,7 @@ type Param = #(String, String)
 //             from    to    
 type InnerParam = Param
 
-const name = "find_replace__outside"
+pub const name = "find_replace__outside"
 const constructor = find_replace__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

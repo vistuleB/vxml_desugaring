@@ -57,7 +57,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "cut_paste_attribute_from_first_child_to_self"
+pub const name = "cut_paste_attribute_from_first_child_to_self"
 const constructor = cut_paste_attribute_from_first_child_to_self
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -126,7 +126,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "merge_parent_attributes_into_child"
+pub const name = "merge_parent_attributes_into_child"
 const constructor = merge_parent_attributes_into_child
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

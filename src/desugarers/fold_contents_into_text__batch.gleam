@@ -385,7 +385,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-const name = "fold_contents_into_text__batch"
+pub const name = "fold_contents_into_text__batch"
 const constructor = fold_contents_into_text__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

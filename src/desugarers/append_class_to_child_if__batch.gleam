@@ -63,7 +63,7 @@ type Param = List(#(String,  String,     fn(VXML) -> Bool, String))
 //                                                         (e.g. 'infra.has_class(_, "my-foot")')
 type InnerParam = Dict(String, List(#(String, fn(VXML) -> Bool)))
 
-const name = "append_class_to_child_if__batch"
+pub const name = "append_class_to_child_if__batch"
 const constructor = append_class_to_child_if__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

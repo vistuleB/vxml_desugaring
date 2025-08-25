@@ -80,7 +80,7 @@ type Param = List(#(String, String, TrafficLight))
 type InnerParam =
   Dict(String, List(String))
 
-const name = "associate_counter_by_prepending_incrementing_attribute__batch"
+pub const name = "associate_counter_by_prepending_incrementing_attribute__batch"
 const constructor = associate_counter_by_prepending_incrementing_attribute__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

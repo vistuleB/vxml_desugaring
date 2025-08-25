@@ -264,7 +264,7 @@ type Param =
 //  tag        tag         tag
 type InnerParam = Param
 
-const name = "pair"
+pub const name = "pair"
 const constructor = pair
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

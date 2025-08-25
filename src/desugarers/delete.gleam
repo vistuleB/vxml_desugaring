@@ -35,7 +35,7 @@ type Param = List(String)
 
 type InnerParam = Param
 
-const name = "delete"
+pub const name = "delete"
 const constructor = delete
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

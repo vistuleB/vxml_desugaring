@@ -30,7 +30,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "concatenate_text_nodes"
+pub const name = "concatenate_text_nodes"
 const constructor = concatenate_text_nodes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -37,7 +37,7 @@ type Param = #(String,   String)
 //             parent    text to search for
 type InnerParam = Param
 
-const name = "echo_if_see_text"
+pub const name = "echo_if_see_text"
 const constructor = echo_if_see_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

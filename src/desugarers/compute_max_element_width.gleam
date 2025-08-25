@@ -81,7 +81,7 @@ type Param = List(String)
 //           max width calculation
 type InnerParam = Param
 
-const name = "compute_max_element_width"
+pub const name = "compute_max_element_width"
 const constructor = compute_max_element_width
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

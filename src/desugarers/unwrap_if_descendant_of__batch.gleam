@@ -53,7 +53,7 @@ type Param = List(#(String,        List(String)))
 //                  be unwrapped   that will cause tag to unwrap
 type InnerParam = Param
 
-const name = "unwrap_if_descendant_of__batch"
+pub const name = "unwrap_if_descendant_of__batch"
 const constructor = unwrap_if_descendant_of__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

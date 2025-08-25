@@ -58,7 +58,7 @@ type Param = #(String, String, String)
 //             parent  child   attribute
 type InnerParam = Param
 
-const name = "cut_paste_attribute_from_self_to_child"
+pub const name = "cut_paste_attribute_from_self_to_child"
 const constructor = cut_paste_attribute_from_self_to_child
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

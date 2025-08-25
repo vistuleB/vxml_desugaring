@@ -48,7 +48,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "find_replace_in_descendants_of"
+pub const name = "find_replace_in_descendants_of"
 const constructor = find_replace_in_descendants_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -37,7 +37,7 @@ type Param = #(String,   fn(VXML) -> Bool,  String)
 //             unwrap                        condition
 type InnerParam = #(String, fn(VXML) -> Bool)
 
-const name = "unwrap_if_no_child_meets_condition"
+pub const name = "unwrap_if_no_child_meets_condition"
 const constructor = unwrap_if_no_child_meets_condition
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

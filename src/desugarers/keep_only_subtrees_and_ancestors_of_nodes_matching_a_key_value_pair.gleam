@@ -25,7 +25,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair"
+pub const name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair"
 const constructor = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

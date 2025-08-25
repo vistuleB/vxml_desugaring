@@ -48,7 +48,7 @@ type Param = List(#(String, String))
 //                          to remove
 type InnerParam = Dict(String, List(String))
 
-const name = "delete_attribute_of__batch"
+pub const name = "delete_attribute_of__batch"
 const constructor = delete_attribute_of__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

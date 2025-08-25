@@ -46,7 +46,7 @@ type Param = #(String, String)
 //             tag     text
 type InnerParam = #(String, VXML)
 
-const name = "prepend_text_node"
+pub const name = "prepend_text_node"
 const constructor = prepend_text_node
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

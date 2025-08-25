@@ -78,7 +78,7 @@ type Param = List(#(String,    String,    String))
 //                  old_name   new_name   parent
 type InnerParam = Dict(String, Dict(String, String))
 
-const name = "rename_if_child_of__batch"
+pub const name = "rename_if_child_of__batch"
 const constructor = rename_if_child_of__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

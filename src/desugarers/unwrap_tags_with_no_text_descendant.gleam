@@ -56,7 +56,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = List(String)
 
-const name = "unwrap_tags_with_no_text_descendant"
+pub const name = "unwrap_tags_with_no_text_descendant"
 const constructor =  unwrap_tags_with_no_text_descendant
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

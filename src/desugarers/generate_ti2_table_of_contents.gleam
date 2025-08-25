@@ -133,7 +133,7 @@ type Param = #(String,         String)
 //             contents tag    component name
 type InnerParam = Param
 
-const name = "generate_ti2_table_of_contents"
+pub const name = "generate_ti2_table_of_contents"
 const constructor = generate_ti2_table_of_contents
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

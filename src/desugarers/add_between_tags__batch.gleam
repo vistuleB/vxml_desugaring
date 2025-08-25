@@ -65,8 +65,7 @@ type Param = List(#(#(String,          String), String,             List(#(Strin
 //                    two names
 type InnerParam = Dict(#(String, String), #(String, List(#(String, String))))
 
-const name = "add_between_tags__batch"
-const constructor = add_between_tags__batch
+pub const name = "add_between_tags__batch"
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -74,7 +73,7 @@ const constructor = add_between_tags__batch
 //------------------------------------------------53
 /// adds new elements between adjacent tags of
 /// specified types
-pub fn add_between_tags__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

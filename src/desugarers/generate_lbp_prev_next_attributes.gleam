@@ -84,7 +84,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "generate_lbp_prev_next_attributes"
+pub const name = "generate_lbp_prev_next_attributes"
 const constructor = generate_lbp_prev_next_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

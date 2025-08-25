@@ -56,7 +56,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "fix_ti2_local_links"
+pub const name = "fix_ti2_local_links"
 const constructor = fix_ti2_local_links
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

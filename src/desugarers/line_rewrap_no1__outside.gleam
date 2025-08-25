@@ -90,7 +90,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = #(Int, fn(VXML) -> Bool)
 type InnerParam = Param
 
-const name = "line_rewrap_no1__outside"
+pub const name = "line_rewrap_no1__outside"
 const constructor = line_rewrap_no1__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

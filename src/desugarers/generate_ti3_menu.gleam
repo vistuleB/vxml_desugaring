@@ -247,7 +247,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "generate_ti3_menu"
+pub const name = "generate_ti3_menu"
 const constructor = generate_ti3_menu
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

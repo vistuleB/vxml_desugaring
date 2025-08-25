@@ -54,7 +54,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "change_attribute_value__batch"
+pub const name = "change_attribute_value__batch"
 const constructor = change_attribute_value__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

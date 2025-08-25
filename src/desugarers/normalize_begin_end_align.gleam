@@ -301,7 +301,7 @@ type Param =
 type InnerParam =
   #(List(String), String, List(String), String)
 
-const name = "normalize_begin_end_align"
+pub const name = "normalize_begin_end_align"
 const constructor = normalize_begin_end_align
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

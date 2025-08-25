@@ -31,7 +31,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "trim_spaces_around_newlines__outside"
+pub const name = "trim_spaces_around_newlines__outside"
 const constructor = trim_spaces_around_newlines__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -35,7 +35,7 @@ type Param = #(String,  String)
 //             tag      tag
 type InnerParam = Param
 
-const name = "wrap"
+pub const name = "wrap"
 const constructor = wrap
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

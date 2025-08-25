@@ -55,8 +55,7 @@ type Param = #(String,        String,          List(#(String, String)))
 //             of this name
 type InnerParam = #(String, VXML)
 
-const name = "add_before"
-const constructor = add_before
+pub const name = "add_before"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -65,7 +64,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// adds a new element before each occurrence of a
 /// specified tag
-pub fn add_before(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

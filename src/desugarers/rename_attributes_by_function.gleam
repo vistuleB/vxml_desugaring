@@ -37,7 +37,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "rename_attributes_by_function"
+pub const name = "rename_attributes_by_function"
 const constructor =  rename_attributes_by_function
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

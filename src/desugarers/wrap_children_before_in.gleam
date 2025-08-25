@@ -56,7 +56,7 @@ type Param = #(String,  String,  String)
 //             tag      tag      tag
 type InnerParam = Param
 
-const name = "wrap_children_before_in"
+pub const name = "wrap_children_before_in"
 const constructor = wrap_children_before_in
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

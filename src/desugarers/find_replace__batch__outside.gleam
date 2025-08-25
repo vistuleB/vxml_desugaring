@@ -21,7 +21,7 @@ type Param = #(List(#(String, String)), List(String))
 //             from/to pairs            keep_out_of
 type InnerParam = Param
 
-const name = "find_replace__batch__outside"
+pub const name = "find_replace__batch__outside"
 const constructor = find_replace__batch__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

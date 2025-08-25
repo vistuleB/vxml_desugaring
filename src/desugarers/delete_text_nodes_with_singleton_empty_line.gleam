@@ -28,7 +28,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "delete_text_nodes_with_singleton_empty_line"
+pub const name = "delete_text_nodes_with_singleton_empty_line"
 const constructor = delete_text_nodes_with_singleton_empty_line
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

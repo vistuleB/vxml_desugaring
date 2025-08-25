@@ -52,7 +52,7 @@ type Param = List(#(String, String))
 
 type InnerParam = Param
 
-const name = "unwrap_tag_when_parent_of_tag"
+pub const name = "unwrap_tag_when_parent_of_tag"
 const constructor = unwrap_tag_when_parent_of_tag
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

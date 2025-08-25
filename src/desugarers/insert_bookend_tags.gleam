@@ -56,7 +56,7 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String)))
 
-const name = "insert_bookend_tags"
+pub const name = "insert_bookend_tags"
 const constructor = insert_bookend_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

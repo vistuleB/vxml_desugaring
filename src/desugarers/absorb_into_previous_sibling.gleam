@@ -56,11 +56,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-const name = "absorb_into_previous_sibling"
-const constructor = absorb_into_previous_sibling
+pub const name = "absorb_into_previous_sibling"
 
 //------------------------------------------------53
-pub fn absorb_into_previous_sibling(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

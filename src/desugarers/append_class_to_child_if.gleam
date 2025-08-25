@@ -35,7 +35,7 @@ type Param = #(String,  String,     fn(VXML) -> Bool, String)
 //                                                    (e.g. 'infra.has_class(_, "my-foot")')
 type InnerParam = Param
 
-const name = "append_class_to_child_if"
+pub const name = "append_class_to_child_if"
 const constructor = append_class_to_child_if
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

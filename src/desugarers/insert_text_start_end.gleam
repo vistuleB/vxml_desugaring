@@ -37,7 +37,7 @@ type Param = #(String, #(String,    String))
 //                       at start   at end
 type InnerParam = #(String, String, String)
 
-const name = "insert_text_start_end"
+pub const name = "insert_text_start_end"
 const constructor = insert_text_start_end
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

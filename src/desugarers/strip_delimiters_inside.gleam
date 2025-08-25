@@ -72,7 +72,7 @@ type Param = #(String,    List(infra.LatexDelimiterPair))
 //             to target  to remove
 type InnerParam = #(String, List(String), List(String))
 
-const name = "strip_delimiters_inside"
+pub const name = "strip_delimiters_inside"
 const constructor = strip_delimiters_inside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

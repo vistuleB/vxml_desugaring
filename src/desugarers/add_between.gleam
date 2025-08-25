@@ -63,8 +63,7 @@ type Param = #(String,          String, String,         List(#(String, String)))
 //             two names
 type InnerParam = #(String, String, VXML)
 
-const name = "add_between"
-const constructor = add_between
+pub const name = "add_between"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -73,7 +72,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// adds new elements between adjacent tags of
 /// specified types
-pub fn add_between(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

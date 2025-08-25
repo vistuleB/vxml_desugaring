@@ -72,7 +72,7 @@ type Param = #(String, String, TrafficLight)
 //             tag     counter   traffic_light
 type InnerParam = #(String, String, BlamedAttribute, TrafficLight)
 
-const name = "associate_counter_by_prepending_incrementing_attribute"
+pub const name = "associate_counter_by_prepending_incrementing_attribute"
 const constructor = associate_counter_by_prepending_incrementing_attribute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

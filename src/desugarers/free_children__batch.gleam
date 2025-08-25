@@ -50,7 +50,7 @@ type Param = List(#(String,      String))
 //                  parent
 type InnerParam = Param
 
-const name = "free_children__batch"
+pub const name = "free_children__batch"
 const constructor = free_children__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

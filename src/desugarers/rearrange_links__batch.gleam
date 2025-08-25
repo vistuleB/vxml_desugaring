@@ -904,7 +904,7 @@ type Param = List(#(String,   String))
 //                  pattern   pattern
 type InnerParam = List(#(LinkPattern, LinkPattern))
 
-const name = "rearrange_links__batch"
+pub const name = "rearrange_links__batch"
 const constructor = rearrange_links__batch
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

@@ -37,7 +37,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = String
 type InnerParam = Param
 
-const name = "delete_attribute"
+pub const name = "delete_attribute"
 const constructor = delete_attribute
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

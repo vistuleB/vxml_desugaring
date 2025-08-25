@@ -896,7 +896,7 @@ type Param = #(String,   String)
 
 type InnerParam = #(LinkPattern, LinkPattern)
 
-const name = "rearrange_links"
+pub const name = "rearrange_links"
 const constructor = rearrange_links
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

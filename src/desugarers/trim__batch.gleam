@@ -36,7 +36,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-const name = "trim__batch"
+pub const name = "trim__batch"
 const constructor = trim__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

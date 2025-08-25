@@ -47,7 +47,7 @@ type Param = #(String, String, String)
 //             tag     attr    value
 type InnerParam = #(String, BlamedAttribute)
 
-const name = "append_attribute"
+pub const name = "append_attribute"
 const constructor = append_attribute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

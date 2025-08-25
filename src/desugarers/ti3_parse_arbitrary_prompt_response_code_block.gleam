@@ -106,7 +106,7 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(Nil)
 }
 
-const name = "ti3_parse_arbitrary_prompt_response_code_block"
+pub const name = "ti3_parse_arbitrary_prompt_response_code_block"
 const constructor = ti3_parse_arbitrary_prompt_response_code_block
 fn desugarer_blame(line_no) {bl.Des([], name, line_no)}
 

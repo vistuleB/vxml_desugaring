@@ -91,7 +91,7 @@ type Param = String
 
 type InnerParam = Param
 
-const name = "break_lines_into_span_tooltips"
+pub const name = "break_lines_into_span_tooltips"
 const constructor = break_lines_into_span_tooltips
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

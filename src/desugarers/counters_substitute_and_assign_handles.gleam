@@ -609,7 +609,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "counters_substitute_and_assign_handles"
+pub const name = "counters_substitute_and_assign_handles"
 const constructor = counters_substitute_and_assign_handles
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

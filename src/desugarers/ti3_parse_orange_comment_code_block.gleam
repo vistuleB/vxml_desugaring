@@ -76,7 +76,7 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(Nil)
 }
 
-const name = "ti3_parse_orange_comment_code_block"
+pub const name = "ti3_parse_orange_comment_code_block"
 const constructor = ti3_parse_orange_comment_code_block
 
 type Param = Nil

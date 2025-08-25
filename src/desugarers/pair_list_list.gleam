@@ -263,7 +263,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "pair_list_list"
+pub const name = "pair_list_list"
 const constructor = pair_list_list
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

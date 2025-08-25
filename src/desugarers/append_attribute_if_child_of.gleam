@@ -58,7 +58,7 @@ type Param = #(String, String, String, String)
 //             tag     parent  key     value
 type InnerParam = Param
 
-const name = "append_attribute_if_child_of"
+pub const name = "append_attribute_if_child_of"
 const constructor = append_attribute_if_child_of
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

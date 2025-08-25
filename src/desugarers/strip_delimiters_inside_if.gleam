@@ -77,7 +77,7 @@ type Param = #(String,    List(infra.LatexDelimiterPair), fn(VXML) -> Bool)
 //             to target  to remove                       
 type InnerParam = #(String, List(String), List(String), fn(VXML) -> Bool)
 
-const name = "strip_delimiters_inside_if"
+pub const name = "strip_delimiters_inside_if"
 const constructor = strip_delimiters_inside_if
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

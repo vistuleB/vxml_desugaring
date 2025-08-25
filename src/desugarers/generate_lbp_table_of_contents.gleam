@@ -149,7 +149,7 @@ type Param = #(String,   String,                String,        Option(String))
 //             contents  (Chapters, Bootcamps)  chapter links  two groups of chapter links
 type InnerParam = Param
 
-const name = "generate_lbp_table_of_contents"
+pub const name = "generate_lbp_table_of_contents"
 const constructor =  generate_lbp_table_of_contents
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

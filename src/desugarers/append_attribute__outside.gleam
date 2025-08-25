@@ -50,8 +50,7 @@ type Param = #(String, String, String)
 //             tag     attr    value
 type InnerParam = #(String, BlamedAttribute)
 
-const name = "append_attribute__outside"
-const constructor = append_attribute__outside
+pub const name = "append_attribute__outside"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -62,7 +61,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// given name and early-return after tag is added,
 /// while not entering subtrees specified by the 
 /// last argument to the desugarer
-pub fn append_attribute__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

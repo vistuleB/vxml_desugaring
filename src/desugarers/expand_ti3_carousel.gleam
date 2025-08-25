@@ -86,7 +86,7 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(Nil)
 }
 
-const name = "expand_ti3_carousel"
+pub const name = "expand_ti3_carousel"
 const constructor = expand_ti3_carousel
 
 type Param = Nil

@@ -37,7 +37,7 @@ type Param =
 type InnerParam =
   Param
 
-const name = "unwrap_when_zero_or_one_children"
+pub const name = "unwrap_when_zero_or_one_children"
 const constructor = unwrap_when_zero_or_one_children
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

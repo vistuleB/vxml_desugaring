@@ -42,7 +42,7 @@ type Param = #(List(String), String)
 //             tags
 type InnerParam = Param
 
-const name = "check_tags"
+pub const name = "check_tags"
 const constructor = check_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

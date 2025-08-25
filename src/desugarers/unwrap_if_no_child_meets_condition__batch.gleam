@@ -37,7 +37,7 @@ type Param = #(List(String), fn(VXML) -> Bool)
 //             unwrap
 type InnerParam = Param
 
-const name = "unwrap_if_no_child_meets_condition__batch"
+pub const name = "unwrap_if_no_child_meets_condition__batch"
 const constructor = unwrap_if_no_child_meets_condition__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

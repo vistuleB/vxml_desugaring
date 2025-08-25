@@ -61,7 +61,7 @@ type Param = #(String, String, String)
 
 type InnerParam = Param
 
-const name = "auto_generate_child_if_missing_from_first_descendant_of_type"
+pub const name = "auto_generate_child_if_missing_from_first_descendant_of_type"
 const constructor = auto_generate_child_if_missing_from_first_descendant_of_type
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

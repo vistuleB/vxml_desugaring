@@ -358,7 +358,7 @@ type Param = List(#(String,      String))
 //                               tag to use
 type InnerParam = Dict(String, String)
 
-const name = "fold_into_text__batch"
+pub const name = "fold_into_text__batch"
 const constructor = fold_into_text__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

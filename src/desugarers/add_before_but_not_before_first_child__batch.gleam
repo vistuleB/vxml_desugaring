@@ -66,8 +66,7 @@ type Param = List(#(String,        String,          List(#(String, String))))
 //                  (except if tag is first child)
 type InnerParam = Dict(String, VXML)
 
-const name = "add_before_but_not_before_first_child__batch"
-const constructor = add_before_but_not_before_first_child__batch
+pub pub const name = "add_before_but_not_before_first_child__batch"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -76,7 +75,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// adds new elements before specified tags but not 
 /// if they are the first child
-pub fn add_before_but_not_before_first_child__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

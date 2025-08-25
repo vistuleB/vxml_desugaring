@@ -49,7 +49,7 @@ type Param = List(#(String, String))
 //                  tag     text
 type InnerParam = Dict(String, String)
 
-const name = "prepend_text_node__batch"
+pub const name = "prepend_text_node__batch"
 const constructor = prepend_text_node__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

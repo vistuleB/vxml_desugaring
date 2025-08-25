@@ -62,7 +62,7 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String, String)))
 
-const name = "prepend_text_node_if_has_ancestor_else__batch"
+pub const name = "prepend_text_node_if_has_ancestor_else__batch"
 const constructor = prepend_text_node_if_has_ancestor_else__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

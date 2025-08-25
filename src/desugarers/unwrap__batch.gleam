@@ -35,7 +35,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-const name = "unwrap__batch"
+pub const name = "unwrap__batch"
 const constructor = unwrap__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

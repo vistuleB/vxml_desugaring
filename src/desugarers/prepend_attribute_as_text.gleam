@@ -45,7 +45,7 @@ type Param = #(String, String)
 //             tag     attribute_key
 type InnerParam = Param
 
-const name = "prepend_attribute_as_text"
+pub const name = "prepend_attribute_as_text"
 const constructor = prepend_attribute_as_text
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

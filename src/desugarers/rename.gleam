@@ -40,7 +40,7 @@ type Param = #(String, String)
 
 type InnerParam = Param
 
-const name = "rename"
+pub const name = "rename"
 const constructor = rename
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

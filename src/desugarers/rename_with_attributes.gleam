@@ -56,7 +56,7 @@ type Param =
 type InnerParam =
   Dict(String, #(String, List(vxml.BlamedAttribute)))
 
-const name = "rename_with_attributes"
+pub const name = "rename_with_attributes"
 const constructor = rename_with_attributes
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

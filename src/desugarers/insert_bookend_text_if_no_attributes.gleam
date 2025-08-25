@@ -49,7 +49,7 @@ type Param =
 type InnerParam =
   List(#(String, #(String, String)))
 
-const name = "insert_bookend_text_if_no_attributes"
+pub const name = "insert_bookend_text_if_no_attributes"
 const constructor = insert_bookend_text_if_no_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

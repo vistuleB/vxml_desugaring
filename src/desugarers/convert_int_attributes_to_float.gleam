@@ -77,7 +77,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "convert_int_attributes_to_float"
+pub const name = "convert_int_attributes_to_float"
 const constructor = convert_int_attributes_to_float
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

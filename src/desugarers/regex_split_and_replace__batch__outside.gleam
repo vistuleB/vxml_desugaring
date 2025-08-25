@@ -22,7 +22,7 @@ type Param = List(grs.RegexpWithGroupReplacementInstructions)
 //           replacement_instructions                         
 type InnerParam = Param
 
-const name = "regex_split_and_replace__batch__outside"
+pub const name = "regex_split_and_replace__batch__outside"
 const constructor = regex_split_and_replace__batch__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

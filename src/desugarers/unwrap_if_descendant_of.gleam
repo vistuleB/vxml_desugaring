@@ -46,7 +46,7 @@ type Param = #(String,        List(String))
 //             be unwrapped   that should cause tag to unwrap
 type InnerParam = Param
 
-const name = "unwrap_if_descendant_of"
+pub const name = "unwrap_if_descendant_of"
 const constructor = unwrap_if_descendant_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

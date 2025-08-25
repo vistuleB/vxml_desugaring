@@ -63,7 +63,7 @@ type Param =
 
 type InnerParam = Dict(String, List(#(String, String)))
 
-const name = "append_class_to_children_with_class"
+pub const name = "append_class_to_children_with_class"
 const constructor = append_class_to_children_with_class
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

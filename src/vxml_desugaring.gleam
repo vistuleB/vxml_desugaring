@@ -7,6 +7,28 @@ import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import desugarer_library as dl
 import selector_library as sl
+import simplifile
+
+fn rename() {
+  let assert Ok(files) = simplifile.read_directory("./src/desugarers")
+  list.each(
+    files,
+    fn (name) {
+      use <- infra.on_true_on_false(
+        string.starts_with(name, "__"),
+        Nil,
+      )
+      case simplifile.read(".src/desugarers/" <> name) {
+        Error(_) -> {
+          io.println("could not read: " <> name)
+        }
+        Ok(contents) -> {
+          
+        }
+      }
+    }
+  )
+}
 
 fn test_pipeline() -> List(Pipe) {
   [
@@ -163,7 +185,8 @@ pub fn test_thing() {
 pub fn main() {
   case argv.load().arguments {
     ["--test-thing"] -> {
-      test_thing()
+      rename()
+      // test_thing()
     }
     ["--test-desugarers", ..names] -> {
       run_desugarer_tests(names)

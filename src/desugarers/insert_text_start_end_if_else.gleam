@@ -45,7 +45,7 @@ type Param = #(String, #(String,    String),   #(String,     String),   fn(VXML)
 //                       if case    if case      else case   else case
 type InnerParam = #(String, String, String, String, String, fn(VXML) -> Bool)
 
-const name = "insert_text_start_end_if_else"
+pub const name = "insert_text_start_end_if_else"
 const constructor = insert_text_start_end_if_else
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

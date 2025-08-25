@@ -39,7 +39,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-const name = "trim_empty_lines__batch"
+pub const name = "trim_empty_lines__batch"
 const constructor = trim_empty_lines__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -106,7 +106,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = fn(VXML) -> Bool
 type InnerParam = Param
 
-const name = "tokenize_text_children_if"
+pub const name = "tokenize_text_children_if"
 const constructor = tokenize_text_children_if
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

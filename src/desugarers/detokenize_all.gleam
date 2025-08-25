@@ -94,7 +94,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Param
 
-const name = "detokenize_all"
+pub const name = "detokenize_all"
 const constructor = detokenize_all
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -39,7 +39,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = Param
 
-const name = "extract_starting_and_ending_spaces"
+pub const name = "extract_starting_and_ending_spaces"
 const constructor = extract_starting_and_ending_spaces
 //------------------------------------------------53
 /// extracts starting and ending spaces from 

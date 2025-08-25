@@ -46,7 +46,7 @@ type Param = #(String,    String,    String)
 //             old_name   new_name   parent
 type InnerParam = #(String, String, String)
 
-const name = "rename_if_child_of"
+pub const name = "rename_if_child_of"
 const constructor = rename_if_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

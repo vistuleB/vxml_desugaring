@@ -67,8 +67,7 @@ type Param = List(#(String,        String,          List(#(String, String))))
 //                  if last child)
 type InnerParam = Dict(String, VXML)
 
-const name = "add_after_but_not_after_last_child__batch"
-const constructor = add_after_but_not_after_last_child__batch
+pub pub const name = "add_after_but_not_after_last_child__batch"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -77,7 +76,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// adds new elements after specified tags but not 
 /// if they are the last child
-pub fn add_after_but_not_after_last_child__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -97,7 +97,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "reinsert_math_dollar"
+pub const name = "reinsert_math_dollar"
 const constructor = reinsert_math_dollar
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

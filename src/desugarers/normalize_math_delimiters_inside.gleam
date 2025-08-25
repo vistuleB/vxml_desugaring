@@ -98,7 +98,7 @@ type InnerParam =
 //  to remove         to remove          delimiter   delimiter     to target
 //                                       to use      to use
 
-const name = "normalize_math_delimiters_inside"
+pub const name = "normalize_math_delimiters_inside"
 const constructor = normalize_math_delimiters_inside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

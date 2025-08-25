@@ -67,7 +67,7 @@ type Param = #(String, String,    String,      String)
 
 type InnerParam = Param
 
-const name = "append_value_to_handle_attribute_if_has_ancestor_else"
+pub const name = "append_value_to_handle_attribute_if_has_ancestor_else"
 const constructor = append_value_to_handle_attribute_if_has_ancestor_else
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

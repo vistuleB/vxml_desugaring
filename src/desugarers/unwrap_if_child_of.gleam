@@ -58,7 +58,7 @@ type Param =
 
 type InnerParam = Param
 
-const name = "unwrap_if_child_of"
+pub const name = "unwrap_if_child_of"
 const constructor = unwrap_if_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

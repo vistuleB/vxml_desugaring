@@ -46,7 +46,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "replace_multiple_spaces_by_one"
+pub const name = "replace_multiple_spaces_by_one"
 const constructor = replace_multiple_spaces_by_one
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

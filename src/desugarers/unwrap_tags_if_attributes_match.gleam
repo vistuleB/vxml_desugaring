@@ -55,7 +55,7 @@ type Param = List(#(String, List(#(String, String))))
 
 type InnerParam = Param
 
-const name = "unwrap_tags_if_attributes_match"
+pub const name = "unwrap_tags_if_attributes_match"
 const constructor = unwrap_tags_if_attributes_match
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

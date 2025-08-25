@@ -36,7 +36,7 @@ type Param = List(#(String,  String,  String))
 //                  path     key      value
 type InnerParam = Param
 
-const name = "filter_nodes_by_attributes"
+pub const name = "filter_nodes_by_attributes"
 const constructor = filter_nodes_by_attributes
 
 //------------------------------------------------53

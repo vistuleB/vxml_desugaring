@@ -45,7 +45,7 @@ type Param = List(String)
 
 type InnerParam = Param
 
-const name = "concatenate_tags"
+pub const name = "concatenate_tags"
 const constructor = concatenate_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

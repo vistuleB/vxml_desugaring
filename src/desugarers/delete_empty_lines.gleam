@@ -34,7 +34,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "delete_empty_lines"
+pub const name = "delete_empty_lines"
 const constructor = delete_empty_lines
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

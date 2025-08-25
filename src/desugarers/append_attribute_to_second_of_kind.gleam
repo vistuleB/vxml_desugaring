@@ -40,7 +40,7 @@ type Param = #(String, String, String)
 
 type InnerParam = Param
 
-const name = "append_attribute_to_second_of_kind"
+pub const name = "append_attribute_to_second_of_kind"
 const constructor = append_attribute_to_second_of_kind
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

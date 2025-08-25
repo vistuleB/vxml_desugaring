@@ -76,7 +76,7 @@ type Param = #(String,        String)
 //             tag            prefix
 type InnerParam = #(String, String, Int)
 
-const name = "split_first_line_after_prefix"
+pub const name = "split_first_line_after_prefix"
 const constructor = split_first_line_after_prefix
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -331,7 +331,7 @@ type Param = #(String,            String,                 String,               
 //                                at point of insertion   at point of insertion
 type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAttribute))
 
-const name = "handles_substitute"
+pub const name = "handles_substitute"
 const constructor = handles_substitute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

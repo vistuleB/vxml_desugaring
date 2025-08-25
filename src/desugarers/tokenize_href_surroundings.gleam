@@ -117,7 +117,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Param
 
-const name = "tokenize_href_surroundings"
+pub const name = "tokenize_href_surroundings"
 const constructor = tokenize_href_surroundings
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

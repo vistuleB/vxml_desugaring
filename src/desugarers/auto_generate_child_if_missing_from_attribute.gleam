@@ -64,7 +64,7 @@ type Param = #(String, String, String)
 //             tag     tag
 type InnerParam = Param
 
-const name = "auto_generate_child_if_missing_from_attribute"
+pub const name = "auto_generate_child_if_missing_from_attribute"
 const constructor = auto_generate_child_if_missing_from_attribute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

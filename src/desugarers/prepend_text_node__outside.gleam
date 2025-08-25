@@ -50,7 +50,7 @@ type Param = #(String, String)
 //                         
 type InnerParam = #(String, VXML)
 
-const name = "prepend_text_node__outside"
+pub const name = "prepend_text_node__outside"
 const constructor = prepend_text_node__outside
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

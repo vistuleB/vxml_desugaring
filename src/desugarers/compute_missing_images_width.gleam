@@ -114,7 +114,7 @@ type Param = Nil
 
 type InnerParam = Nil
 
-const name = "compute_missing_images_width"
+pub const name = "compute_missing_images_width"
 const constructor = compute_missing_images_width
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

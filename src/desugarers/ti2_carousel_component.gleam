@@ -63,7 +63,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-const name = "ti2_carousel_component"
+pub const name = "ti2_carousel_component"
 const constructor = ti2_carousel_component
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

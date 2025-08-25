@@ -370,7 +370,7 @@ type Param = #(String,      String)
 //                          tag to use
 type InnerParam = Param
 
-const name = "fold_into_text"
+pub const name = "fold_into_text"
 const constructor = fold_into_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -59,8 +59,7 @@ type Param = List(#(String, String, String))
 //                  tag     key     value
 type InnerParam = Dict(String, List(BlamedAttribute))
 
-const name = "append_attribute__batch"
-const constructor = append_attribute__batch
+pub const name = "append_attribute__batch"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -75,7 +74,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// of attributes of each v-node of tag 'tag'. The 
 /// 'tag' value can be repeated in the list, and all
 /// attributes for that tag will be added.
-pub fn append_attribute__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

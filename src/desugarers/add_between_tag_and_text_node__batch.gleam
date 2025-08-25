@@ -59,8 +59,7 @@ type Param = List(#(String,                   String,          List(#(String, St
 //                  and following text node
 type InnerParam = Dict(String, VXML)
 
-const name = "add_between_tag_and_text_node__batch"
-const constructor = add_between_tag_and_text_node__batch
+pub const name = "add_between_tag_and_text_node__batch"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -69,7 +68,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// adds new elements between specified tags and 
 /// following text nodes
-pub fn add_between_tag_and_text_node__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

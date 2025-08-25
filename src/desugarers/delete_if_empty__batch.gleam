@@ -34,7 +34,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = List(String)
 type InnerParam = List(String)
 
-const name = "delete_if_empty__batch"
+pub const name = "delete_if_empty__batch"
 const constructor = delete_if_empty__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

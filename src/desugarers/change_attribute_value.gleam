@@ -52,7 +52,7 @@ type Param = #(String,         String)
 //                               result: /image/img.png
 type InnerParam = Param
 
-const name = "change_attribute_value"
+pub const name = "change_attribute_value"
 const constructor = change_attribute_value
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

@@ -76,7 +76,7 @@ type Param = #(String,        String)
 //             tag            suffix
 type InnerParam = #(String, String, Int)
 
-const name = "split_last_line_before_suffix"
+pub const name = "split_last_line_before_suffix"
 const constructor = split_last_line_before_suffix
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

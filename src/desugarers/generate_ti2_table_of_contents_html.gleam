@@ -186,7 +186,7 @@ type Param = #(String,              String)
 //             table of contents    individual chapter links
 type InnerParam = Param
 
-const name = "generate_ti2_table_of_contents_html"
+pub const name = "generate_ti2_table_of_contents_html"
 const constructor = generate_ti2_table_of_contents_html
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 

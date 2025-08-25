@@ -73,7 +73,7 @@ type Param =
 type InnerParam =
   Dict(String, #(String, String))
 
-const name = "surround_elements_by"
+pub const name = "surround_elements_by"
 const constructor = surround_elements_by
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

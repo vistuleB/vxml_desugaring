@@ -43,7 +43,7 @@ type Param = #(String,      String)
 //             parent
 type InnerParam = Param
 
-const name = "free_children"
+pub const name = "free_children"
 const constructor = free_children
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
