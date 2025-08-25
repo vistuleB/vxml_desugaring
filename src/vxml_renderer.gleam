@@ -452,7 +452,7 @@ fn run_pipeline(
         True -> #([], last_debug_output)
         False -> {
           let selected = vxml |> infra.vxml_to_s_lines |> selector
-          #(selected, selected |> infra.s_lines_to_string(""))
+          #(selected, selected |> infra.s_lines_to_string("", True))
         }
       }
       let must_print = mode == On || { mode == OnChange && next_debug_output != last_debug_output }
@@ -461,7 +461,7 @@ fn run_pipeline(
           io.println("    " <> star_block.name_and_param_string(desugarer, step_no))
           io.println("    ⬇")
           selected
-          |> infra.s_lines_to_strings("")
+          |> infra.s_lines_to_strings("", False)
           |> star_block.print_table_at_indent(2)
           False
         }

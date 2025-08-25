@@ -2486,7 +2486,8 @@ pub fn s_line_2_output_line(line: SLine) -> OutputLine {
 }
 
 pub fn s_lines_2_output_lines(
-  lines: List(SLine)
+  lines: List(SLine),
+  dry_run: Bool,
 ) -> List(OutputLine) {
   let s2l = s_line_2_output_line
   lines
@@ -2506,7 +2507,7 @@ pub fn s_lines_2_output_lines(
             #(
               True,
               None, 
-              [line |> s2l, OutputLine(bl.NoBlame([ins(num_lines)]), indentation, "..."), ..acc.2],
+              [line |> s2l, OutputLine(bl.NoBlame([ins(case dry_run {True -> 0 False -> num_lines}) <> " unselected lines"]), indentation, "..."), ..acc.2],
             )
         }
         NotS -> case acc.0, acc.1 {
@@ -2540,15 +2541,19 @@ pub fn s_lines_2_output_lines(
   |> list.reverse
 }
 
-pub fn s_lines_to_strings(lines: List(SLine), banner: String) -> List(String) {
+pub fn s_lines_to_strings(
+  lines: List(SLine),
+  banner: String,
+  dry_run: Bool,  
+) -> List(String) {
   lines
-  |> s_lines_2_output_lines
+  |> s_lines_2_output_lines(dry_run)
   |> bl.output_lines_annotated_table(banner)
 }
 
-pub fn s_lines_to_string(lines: List(SLine), banner: String) -> String {
+pub fn s_lines_to_string(lines: List(SLine), banner: String, dry_run: Bool) -> String {
   lines
-  |> s_lines_to_strings(banner)
+  |> s_lines_to_strings(banner, dry_run)
   |> string.join("\n")
 }
 
