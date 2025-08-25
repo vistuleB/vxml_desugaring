@@ -199,7 +199,6 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "handles_generate_dictionary"
-const constructor = handles_generate_dictionary
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -235,7 +234,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 ///    handle_name
 /// 2. no node found with Param.0 tag Param.1 
 ///    attribute_key
-pub fn handles_generate_dictionary(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

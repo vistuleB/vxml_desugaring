@@ -359,7 +359,6 @@ type Param = List(#(String,      String))
 type InnerParam = Dict(String, String)
 
 pub const name = "fold_into_text__batch"
-const constructor = fold_into_text__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -370,7 +369,7 @@ const constructor = fold_into_text__batch
 /// (in end-of-last-line glued to beginning-of-first-line
 /// fashion), without regards for the tag's contents
 /// or attributes, that are destroyed in the process
-pub fn fold_into_text__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

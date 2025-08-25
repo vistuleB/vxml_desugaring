@@ -291,7 +291,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "generate_ti3_index"
-const constructor = generate_ti3_index
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -299,7 +298,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// Generate ti3 Index element
-pub fn generate_ti3_index() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

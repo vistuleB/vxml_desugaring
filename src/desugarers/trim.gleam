@@ -36,7 +36,6 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "trim"
-const constructor = trim
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -50,7 +49,7 @@ const constructor = trim
 /// lines remain, in which case the process
 /// continues with the next (or previous) T-node, if
 /// any.
-pub fn trim(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

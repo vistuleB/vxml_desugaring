@@ -51,7 +51,6 @@ type Param = List(#(String,      String))
 type InnerParam = Param
 
 pub const name = "free_children__batch"
-const constructor = free_children__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -101,7 +100,7 @@ const constructor = free_children__batch
 /// with the original attribute values of A
 /// copied over to the newly created 'copies' of
 /// A
-pub fn free_children__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

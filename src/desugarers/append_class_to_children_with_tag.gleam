@@ -64,7 +64,6 @@ type Param =
 type InnerParam = Dict(String, List(#(String, String)))
 
 pub const name = "append_class_to_children_with_tag"
-const constructor = append_class_to_children_with_tag
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -73,7 +72,7 @@ const constructor = append_class_to_children_with_tag
 /// appends a class to children with a specific tag
 /// when they are children of a specified parent tag.
 /// takes tuples of (parent_tag, list_of_tag_class_mappings).
-pub fn append_class_to_children_with_tag(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

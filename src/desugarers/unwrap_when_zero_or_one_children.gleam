@@ -38,7 +38,6 @@ type InnerParam =
   Param
 
 pub const name = "unwrap_when_zero_or_one_children"
-const constructor = unwrap_when_zero_or_one_children
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor = unwrap_when_zero_or_one_children
 //------------------------------------------------53
 /// unwraps based on tag name if node
 /// has zero or one children
-pub fn unwrap_when_zero_or_one_children(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

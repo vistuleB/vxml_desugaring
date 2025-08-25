@@ -57,7 +57,6 @@ type InnerParam =
   Dict(String, #(String, String, List(vxml.BlamedAttribute)))
 
 pub const name = "rename_with_appended_attributes_and_prepended_text"
-const constructor = rename_with_appended_attributes_and_prepended_text
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -67,7 +66,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// renames tags while adding attributes and
 /// prepending a new text node as the first child
 /// of the renamed tag
-pub fn rename_with_appended_attributes_and_prepended_text(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

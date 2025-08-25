@@ -96,7 +96,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "handles_generate_ids"
-const constructor = handles_generate_ids
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -122,7 +121,7 @@ const constructor = handles_generate_ids
 /// ```
 ///    while using the empty string for 'handle_value',
 ///    if not present
-pub fn handles_generate_ids() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

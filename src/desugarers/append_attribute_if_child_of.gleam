@@ -59,7 +59,6 @@ type Param = #(String, String, String, String)
 type InnerParam = Param
 
 pub const name = "append_attribute_if_child_of"
-const constructor = append_attribute_if_child_of
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -70,7 +69,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// child of another specified tag; will not 
 /// overwrite if attribute with that key already
 /// exists
-pub fn append_attribute_if_child_of(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

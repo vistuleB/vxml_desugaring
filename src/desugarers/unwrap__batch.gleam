@@ -36,7 +36,6 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "unwrap__batch"
-const constructor = unwrap__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -47,7 +46,7 @@ const constructor = unwrap__batch
 /// its children in the tree); this function unwraps
 /// tags based solely on their name, as given by a
 /// list of names of tags to unwrap
-pub fn unwrap__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

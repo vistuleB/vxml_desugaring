@@ -20,7 +20,7 @@ MODULES=$(find "$SRC_DIR" -maxdepth 1 -type f -name '*.gleam' ! -name '__*' \
 
   # consts
   printf '%s\n' "$MODULES" | while IFS= read -r m; do
-    echo "pub const ${m} = ${m}.${m}"
+    echo "pub const ${m} = ${m}.constructor"
   done
   echo
 

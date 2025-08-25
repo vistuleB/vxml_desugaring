@@ -115,14 +115,13 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "compute_missing_images_width"
-const constructor = compute_missing_images_width
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// compute missing images widths
-pub fn compute_missing_images_width() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

@@ -46,14 +46,13 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "concatenate_tags"
-const constructor = concatenate_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// concatenates adjacent tags with the same name
-pub fn concatenate_tags(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

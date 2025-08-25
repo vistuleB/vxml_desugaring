@@ -51,7 +51,6 @@ type Param = #(fn(VXML) -> Bool,      String)
 type InnerParam = fn(VXML) -> Bool
 
 pub const name = "delete_outside_subtrees"
-const constructor = delete_outside_subtrees
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -59,7 +58,7 @@ const constructor = delete_outside_subtrees
 //------------------------------------------------53
 /// removes nodes that are outside subtrees matching
 /// the predicate function
-pub fn delete_outside_subtrees(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param.1),

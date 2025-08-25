@@ -127,7 +127,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "merge_parent_attributes_into_child"
-const constructor = merge_parent_attributes_into_child
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -135,7 +134,7 @@ const constructor = merge_parent_attributes_into_child
 //------------------------------------------------53
 /// merges parent attributes into child elements for
 /// specified parent-child tag pairs
-pub fn merge_parent_attributes_into_child(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

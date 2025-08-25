@@ -54,7 +54,6 @@ type Param = List(#(String,        List(String)))
 type InnerParam = Param
 
 pub const name = "unwrap_if_descendant_of__batch"
-const constructor = unwrap_if_descendant_of__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -62,7 +61,7 @@ const constructor = unwrap_if_descendant_of__batch
 //------------------------------------------------53
 /// unwraps tags that are the descendant of one of a
 /// stipulated list of tags
-pub fn unwrap_if_descendant_of__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

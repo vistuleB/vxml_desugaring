@@ -31,7 +31,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "concatenate_text_nodes"
-const constructor = concatenate_text_nodes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -39,7 +38,7 @@ const constructor = concatenate_text_nodes
 //------------------------------------------------53
 /// concatenates adjacent text nodes into single
 /// text nodes
-pub fn concatenate_text_nodes() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

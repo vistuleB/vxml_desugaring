@@ -48,7 +48,6 @@ type Param = #(String, String, String)
 type InnerParam = #(String, BlamedAttribute)
 
 pub const name = "append_attribute"
-const constructor = append_attribute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -56,7 +55,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// adds attributes to tags
-pub fn append_attribute(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -38,7 +38,6 @@ type Param = #(List(String), fn(VXML) -> Bool)
 type InnerParam = Param
 
 pub const name = "unwrap_if_no_child_meets_condition__batch"
-const constructor = unwrap_if_no_child_meets_condition__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -47,7 +46,7 @@ const constructor = unwrap_if_no_child_meets_condition__batch
 /// for a specified list of tag strings, unwraps
 /// nodes with tags from the list if the node does
 /// not have any child meeting the boolean condition
-pub fn unwrap_if_no_child_meets_condition__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

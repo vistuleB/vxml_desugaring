@@ -111,7 +111,6 @@ type InnerParam =
   Dict(String, #(VXML, VXML))
 
 pub const name = "prepend_append_to_text_children_of"
-const constructor = prepend_append_to_text_children_of
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -120,7 +119,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// prepends and appends text to all text children
 /// of specified tags
-pub fn prepend_append_to_text_children_of(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

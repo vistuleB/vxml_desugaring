@@ -68,7 +68,6 @@ type Param = #(String, String,    String,      String)
 type InnerParam = Param
 
 pub const name = "append_value_to_handle_attribute_if_has_ancestor_else"
-const constructor = append_value_to_handle_attribute_if_has_ancestor_else
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -77,7 +76,7 @@ const constructor = append_value_to_handle_attribute_if_has_ancestor_else
 /// append value to handle attribute based on
 /// if it has the given ancestor or else append
 /// the else version
-pub fn append_value_to_handle_attribute_if_has_ancestor_else(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

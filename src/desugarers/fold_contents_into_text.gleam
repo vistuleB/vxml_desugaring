@@ -368,7 +368,6 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "fold_contents_into_text"
-const constructor = fold_contents_into_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -384,7 +383,7 @@ const constructor = fold_contents_into_text
 /// 
 /// Throws an error if any instance of the tag fails
 /// to have exactly one text child.
-pub fn fold_contents_into_text(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

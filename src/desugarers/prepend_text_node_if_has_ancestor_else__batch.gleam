@@ -63,7 +63,6 @@ type InnerParam =
   List(#(String, #(String, String, String)))
 
 pub const name = "prepend_text_node_if_has_ancestor_else__batch"
-const constructor = prepend_text_node_if_has_ancestor_else__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -72,7 +71,7 @@ const constructor = prepend_text_node_if_has_ancestor_else__batch
 /// prepend one of two specified text fragments to
 /// nodes of a certain tag depending on wether the 
 /// node has an ancestor of specified type or not
-pub fn prepend_text_node_if_has_ancestor_else__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

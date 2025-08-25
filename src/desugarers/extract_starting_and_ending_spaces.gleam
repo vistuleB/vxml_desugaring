@@ -40,11 +40,10 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "extract_starting_and_ending_spaces"
-const constructor = extract_starting_and_ending_spaces
 //------------------------------------------------53
 /// extracts starting and ending spaces from 
 /// specified tags into separate text nodes
-pub fn extract_starting_and_ending_spaces(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

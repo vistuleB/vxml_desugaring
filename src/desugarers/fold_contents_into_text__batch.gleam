@@ -386,7 +386,6 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "fold_contents_into_text__batch"
-const constructor = fold_contents_into_text__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -398,7 +397,7 @@ const constructor = fold_contents_into_text__batch
 /// nodes (in end-of-last-line to beginning-of-first-line
 /// fashion). Returns an error if any tag doesn't have
 /// exactly one text child.
-pub fn fold_contents_into_text__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

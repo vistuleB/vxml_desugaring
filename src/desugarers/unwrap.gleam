@@ -31,7 +31,6 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "unwrap"
-const constructor = unwrap
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -41,7 +40,7 @@ const constructor = unwrap
 /// tag by its children (replace a V- VXML node by
 /// its children in the tree); this function unwraps
 /// all tags with a given tag name
-pub fn unwrap(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -116,7 +116,6 @@ type Param = #(String,     String)
 type InnerParam = Param
 
 pub const name = "wrap_adjacent_non_whitespace_text_with"
-const constructor = wrap_adjacent_non_whitespace_text_with
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -154,7 +153,7 @@ const constructor = wrap_adjacent_non_whitespace_text_with
 /// 
 /// If no text is found to glob A in, leaves A
 /// unwrapped.
-pub fn wrap_adjacent_non_whitespace_text_with(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

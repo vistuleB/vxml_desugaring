@@ -59,7 +59,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "unwrap_if_child_of"
-const constructor = unwrap_if_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -67,7 +66,7 @@ const constructor = unwrap_if_child_of
 //------------------------------------------------53
 /// unwrap nodes based on parent-child
 /// relationships
-pub fn unwrap_if_child_of(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

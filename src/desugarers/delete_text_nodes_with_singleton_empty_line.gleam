@@ -29,7 +29,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "delete_text_nodes_with_singleton_empty_line"
-const constructor = delete_text_nodes_with_singleton_empty_line
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -37,7 +36,7 @@ const constructor = delete_text_nodes_with_singleton_empty_line
 //------------------------------------------------53
 /// removes text nodes containing a single line
 /// consisting of an empty string
-pub fn delete_text_nodes_with_singleton_empty_line() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

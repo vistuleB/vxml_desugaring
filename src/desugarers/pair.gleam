@@ -265,7 +265,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "pair"
-const constructor = pair
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -274,7 +273,7 @@ const constructor = pair
 /// pairs opening and closing bookend tags by
 /// wrapping content between them in an enclosing
 /// tag
-pub fn pair(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

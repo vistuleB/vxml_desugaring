@@ -752,7 +752,6 @@ type Param = #(String,   String)
 type InnerParam = #(LinkPattern, LinkPattern)
 
 pub const name = "rearrange_links_4_pre_tokenized_src"
-const constructor = rearrange_links_4_pre_tokenized_src
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -763,7 +762,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// considering (x) as a variable and replaces it 
 /// with the second String (x) can be used in second
 /// String to use the variable from first String
-pub fn rearrange_links_4_pre_tokenized_src(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -92,7 +92,6 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "break_lines_into_span_tooltips"
-const constructor = break_lines_into_span_tooltips
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -101,7 +100,7 @@ const constructor = break_lines_into_span_tooltips
 
 /// breaks lines into span tooltips with location
 /// information
-pub fn break_lines_into_span_tooltips(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

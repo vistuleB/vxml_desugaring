@@ -150,7 +150,6 @@ type Param = #(String,   String,                String,        Option(String))
 type InnerParam = Param
 
 pub const name = "generate_lbp_table_of_contents"
-const constructor =  generate_lbp_table_of_contents
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -164,7 +163,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// tag name for the Chapter/Bootcamp category 
 /// banners, and an optional spacer tag name for an
 /// element to be placed between the two categories
-pub fn generate_lbp_table_of_contents(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

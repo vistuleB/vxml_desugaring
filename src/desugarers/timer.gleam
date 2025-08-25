@@ -26,7 +26,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "timer"
-const constructor =  timer
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -34,7 +33,7 @@ const constructor =  timer
 //------------------------------------------------53
 /// desugarer that does nothing but is named 'timer',
 /// for use in timing the desugaring pipeline
-pub fn timer() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

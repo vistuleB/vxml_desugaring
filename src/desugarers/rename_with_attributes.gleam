@@ -57,7 +57,6 @@ type InnerParam =
   Dict(String, #(String, List(vxml.BlamedAttribute)))
 
 pub const name = "rename_with_attributes"
-const constructor = rename_with_attributes
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -65,7 +64,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// renames tags and adds attributes to them
-pub fn rename_with_attributes(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

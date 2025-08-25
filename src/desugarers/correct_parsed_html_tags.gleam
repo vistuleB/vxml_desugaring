@@ -35,7 +35,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "correct_parsed_html_tags"
-const constructor = correct_parsed_html_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -43,7 +42,7 @@ const constructor = correct_parsed_html_tags
 //------------------------------------------------53
 /// corrects parsed HTML tags by removing 
 /// surrounding angle brackets
-pub fn correct_parsed_html_tags() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

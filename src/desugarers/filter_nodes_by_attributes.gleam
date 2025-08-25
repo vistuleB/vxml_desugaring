@@ -1,4 +1,4 @@
-import desugarers/delete_outside_subtrees.{delete_outside_subtrees}
+import desugarers/delete_outside_subtrees.{constructor as delete_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}

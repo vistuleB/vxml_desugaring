@@ -31,14 +31,13 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "delete_if_empty"
-const constructor = delete_if_empty
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// deletes childless nodes of the given tag
-pub fn delete_if_empty(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

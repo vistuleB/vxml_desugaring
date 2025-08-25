@@ -65,7 +65,6 @@ type Param = #(String, String, String)
 type InnerParam = Param
 
 pub const name = "auto_generate_child_if_missing_from_attribute"
-const constructor = auto_generate_child_if_missing_from_attribute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -84,7 +83,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// nothing to the node of tag parent_tag.
 /// 
 /// Early-returns from subtree rooted at parent_tag.
-pub fn auto_generate_child_if_missing_from_attribute(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

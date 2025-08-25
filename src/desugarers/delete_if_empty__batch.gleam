@@ -35,7 +35,6 @@ type Param = List(String)
 type InnerParam = List(String)
 
 pub const name = "delete_if_empty__batch"
-const constructor = delete_if_empty__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -43,7 +42,7 @@ const constructor = delete_if_empty__batch
 //------------------------------------------------53
 /// deletes nodes that have no children for tose 
 /// tags in the given list
-pub fn delete_if_empty__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

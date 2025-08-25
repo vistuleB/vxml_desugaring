@@ -85,13 +85,12 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "generate_lbp_prev_next_attributes"
-const constructor = generate_lbp_prev_next_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-pub fn generate_lbp_prev_next_attributes() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

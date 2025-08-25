@@ -47,7 +47,6 @@ type Param = #(String,    String,    String)
 type InnerParam = #(String, String, String)
 
 pub const name = "rename_if_child_of"
-const constructor = rename_if_child_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -55,7 +54,7 @@ const constructor = rename_if_child_of
 //------------------------------------------------53
 /// renames tags when they appear as children of a
 /// specified parent tag
-pub fn rename_if_child_of(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

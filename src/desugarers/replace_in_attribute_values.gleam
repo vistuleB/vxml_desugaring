@@ -47,7 +47,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "replace_in_attribute_values"
-const constructor = replace_in_attribute_values
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -56,7 +55,7 @@ const constructor = replace_in_attribute_values
 /// performs exact match find-replace in every
 /// attribute value of every node using the
 /// 'string.replace' function
-pub fn replace_in_attribute_values(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

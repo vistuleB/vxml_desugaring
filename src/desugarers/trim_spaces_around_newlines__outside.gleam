@@ -32,7 +32,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "trim_spaces_around_newlines__outside"
-const constructor = trim_spaces_around_newlines__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -41,7 +40,7 @@ const constructor = trim_spaces_around_newlines__outside
 /// trims spaces around newlines in text nodes
 /// outside of subtrees rooted at tags given by the
 /// param argument
-pub fn trim_spaces_around_newlines__outside(outside: List(String)) -> Desugarer {
+pub fn constructor(outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.None,

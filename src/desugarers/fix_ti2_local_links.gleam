@@ -57,7 +57,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "fix_ti2_local_links"
-const constructor = fix_ti2_local_links
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -65,7 +64,7 @@ const constructor = fix_ti2_local_links
 //------------------------------------------------53
 /// fixes local links in TI2 content by converting
 /// relative paths to absolute URLs
-pub fn fix_ti2_local_links(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

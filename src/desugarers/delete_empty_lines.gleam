@@ -35,7 +35,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "delete_empty_lines"
-const constructor = delete_empty_lines
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -44,7 +43,7 @@ const constructor = delete_empty_lines
 /// for each text node, removes each line whose
 /// content is the empty string & destroys
 /// text nodes that end up with 0 lines
-pub fn delete_empty_lines() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

@@ -77,7 +77,6 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 pub const name = "ti3_parse_orange_comment_code_block"
-const constructor = ti3_parse_orange_comment_code_block
 
 type Param = Nil
 type InnerParam = Nil
@@ -89,7 +88,7 @@ type InnerParam = Nil
 /// Processes CodeBlock elements with language=orange-comment
 /// and converts them to pre elements with orange
 /// comment highlighting for text after // markers
-pub fn ti3_parse_orange_comment_code_block() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     None,

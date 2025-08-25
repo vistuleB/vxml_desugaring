@@ -81,7 +81,6 @@ type InnerParam =
   Dict(String, List(String))
 
 pub const name = "associate_counter_by_prepending_incrementing_attribute__batch"
-const constructor = associate_counter_by_prepending_incrementing_attribute__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -104,7 +103,7 @@ const constructor = associate_counter_by_prepending_incrementing_attribute__batc
 /// handles of the attribute list of node 'tag'
 /// to the first counter being incremented in
 /// this fashion, by this desugarer.
-pub fn associate_counter_by_prepending_incrementing_attribute__batch(
+pub fn constructor(
   param: Param,
 ) -> Desugarer {
   Desugarer(

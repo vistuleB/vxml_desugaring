@@ -37,7 +37,6 @@ type Param = #(String,  String)
 type InnerParam = Param
 
 pub const name = "wrap_children_in"
-const constructor = wrap_children_in
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -51,7 +50,7 @@ const constructor = wrap_children_in
 ///
 /// Early-returns when it finds a node of the
 /// specified parent tag to wrap.
-pub fn wrap_children_in(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

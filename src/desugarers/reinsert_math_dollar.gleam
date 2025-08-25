@@ -98,7 +98,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "reinsert_math_dollar"
-const constructor = reinsert_math_dollar
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -106,7 +105,7 @@ const constructor = reinsert_math_dollar
 //------------------------------------------------53
 /// reinserts dollar delimiters into Math and
 /// MathBlock elements
-pub fn reinsert_math_dollar(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

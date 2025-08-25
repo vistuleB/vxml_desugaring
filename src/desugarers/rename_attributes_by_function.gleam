@@ -38,7 +38,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "rename_attributes_by_function"
-const constructor =  rename_attributes_by_function
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor =  rename_attributes_by_function
 //------------------------------------------------53
 /// renames attribute keys using a provided
 /// transformation function
-pub fn rename_attributes_by_function(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

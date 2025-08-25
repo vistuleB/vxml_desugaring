@@ -24,7 +24,6 @@ type Param = #(String, String)
 type InnerParam = Param
 
 pub const name = "find_replace__outside"
-const constructor = find_replace__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -34,7 +33,7 @@ const constructor = find_replace__outside
 /// in text nodes, while avoiding subtrees rooted at
 /// tags appearing in the third argument to the
 /// desugarer
-pub fn find_replace__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

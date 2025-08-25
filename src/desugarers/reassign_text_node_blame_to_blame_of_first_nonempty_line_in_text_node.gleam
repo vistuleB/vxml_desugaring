@@ -38,7 +38,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node"
-const constructor = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor = reassign_text_node_blame_to_blame_of_first_nonempty_line_in_
 //------------------------------------------------53
 /// reassigns text node blame to the blame of the
 /// first nonempty line in the text node
-pub fn reassign_text_node_blame_to_blame_of_first_nonempty_line_in_text_node(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

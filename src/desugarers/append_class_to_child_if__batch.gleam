@@ -64,7 +64,6 @@ type Param = List(#(String,  String,     fn(VXML) -> Bool, String))
 type InnerParam = Dict(String, List(#(String, fn(VXML) -> Bool)))
 
 pub const name = "append_class_to_child_if__batch"
-const constructor = append_class_to_child_if__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -74,7 +73,7 @@ const constructor = append_class_to_child_if__batch
 /// condition when they are children of a specified
 /// parent tag. takes tuples of
 /// (parent_tag, class_to_append, condition_function).
-pub fn append_class_to_child_if__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> list.map(infra.quad_drop_3rd) |> infra.list_param_stringifier),

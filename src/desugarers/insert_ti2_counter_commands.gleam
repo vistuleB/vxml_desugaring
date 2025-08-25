@@ -128,7 +128,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "insert_ti2_counter_commands"
-const constructor = insert_ti2_counter_commands
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -143,7 +142,7 @@ const constructor = insert_ti2_counter_commands
 ///  - list of strings before counter command
 ///  - A wrapper tag to wrap the counter command
 ///    string
-pub fn insert_ti2_counter_commands(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

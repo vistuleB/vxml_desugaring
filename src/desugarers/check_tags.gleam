@@ -43,7 +43,6 @@ type Param = #(List(String), String)
 type InnerParam = Param
 
 pub const name = "check_tags"
-const constructor = check_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -56,7 +55,7 @@ const constructor = check_tags
 /// that is not in the approved list.
 ///
 /// Processes all nodes depth-first.
-pub fn check_tags(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -1,4 +1,4 @@
-import desugarers/delete_outside_subtrees.{delete_outside_subtrees}
+import desugarers/delete_outside_subtrees.{constructor as delete_outside_subtrees}
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
@@ -26,7 +26,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair"
-const constructor = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -37,7 +36,7 @@ const constructor = keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_val
 /// pairs. (OR not AND); keeps only nodes that are
 /// descendants of such nodes, or ancestors of such 
 /// nodes
-pub fn keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair(
+pub fn constructor(
   param: Param,
 ) -> Desugarer {
   Desugarer(

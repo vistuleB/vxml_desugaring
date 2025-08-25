@@ -302,7 +302,6 @@ type InnerParam =
   #(List(String), String, List(String), String)
 
 pub const name = "normalize_begin_end_align"
-const constructor = normalize_begin_end_align
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -311,7 +310,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// adds delimiters around \\begin{align} and
 /// \\end{align} if not already present
-pub fn normalize_begin_end_align(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

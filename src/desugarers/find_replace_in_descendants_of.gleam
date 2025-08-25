@@ -49,7 +49,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "find_replace_in_descendants_of"
-const constructor = find_replace_in_descendants_of
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -57,7 +56,7 @@ const constructor = find_replace_in_descendants_of
 //------------------------------------------------53
 /// find and replace strings in text nodes that are
 /// descendants of specified ancestor tags
-pub fn find_replace_in_descendants_of(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

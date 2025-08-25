@@ -371,7 +371,6 @@ type Param = #(String,      String)
 type InnerParam = Param
 
 pub const name = "fold_into_text"
-const constructor = fold_into_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -382,7 +381,7 @@ const constructor = fold_into_text
 /// (in end-of-last-line glued to beginning-of-first-line
 /// fashion), without regards for the tag's contents
 /// or attributes, that are destroyed in the process
-pub fn fold_into_text(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

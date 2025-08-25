@@ -73,7 +73,6 @@ type Param = #(String,    List(infra.LatexDelimiterPair))
 type InnerParam = #(String, List(String), List(String))
 
 pub const name = "strip_delimiters_inside"
-const constructor = strip_delimiters_inside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -106,7 +105,7 @@ const constructor = strip_delimiters_inside
 ///     "x"
 /// ```
 /// .
-pub fn strip_delimiters_inside(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   let #(opening, closing) = infra.left_right_delim_strings(param.1)
   let inner = #(param.0, opening, closing)
   Desugarer(

@@ -79,7 +79,6 @@ type Param = List(#(String,    String,    String))
 type InnerParam = Dict(String, Dict(String, String))
 
 pub const name = "rename_if_child_of__batch"
-const constructor = rename_if_child_of__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -87,7 +86,7 @@ const constructor = rename_if_child_of__batch
 //------------------------------------------------53
 /// renames tags when they appear as children of a
 /// specified parent tag
-pub fn rename_if_child_of__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

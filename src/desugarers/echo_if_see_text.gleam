@@ -38,7 +38,6 @@ type Param = #(String,   String)
 type InnerParam = Param
 
 pub const name = "echo_if_see_text"
-const constructor = echo_if_see_text
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor = echo_if_see_text
 //------------------------------------------------53
 /// find and replace strings in text nodes that are
 /// descendants of specified ancestor tags
-pub fn echo_if_see_text(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

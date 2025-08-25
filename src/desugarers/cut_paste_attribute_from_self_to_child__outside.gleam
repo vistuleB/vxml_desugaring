@@ -58,7 +58,6 @@ type Param = #(String, String, String)
 type InnerParam = Param
 
 pub const name = "cut_paste_attribute_from_self_to_child__outside"
-const constructor = cut_paste_attribute_from_self_to_child__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -73,7 +72,7 @@ const constructor = cut_paste_attribute_from_self_to_child__outside
 /// 
 /// Returns early after encountering a node of tag
 /// 'parent_tag'.
-pub fn cut_paste_attribute_from_self_to_child__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

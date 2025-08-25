@@ -55,7 +55,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "change_attribute_value__batch"
-const constructor = change_attribute_value__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -68,7 +67,7 @@ const constructor = change_attribute_value__batch
 /// value "images/img.png" with the replacement 
 /// string "/()" will result in the new attribute 
 /// value "/images/img.png"
-pub fn change_attribute_value__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

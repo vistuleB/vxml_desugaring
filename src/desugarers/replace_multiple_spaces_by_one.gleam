@@ -47,14 +47,13 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "replace_multiple_spaces_by_one"
-const constructor = replace_multiple_spaces_by_one
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// replaces multiple consecutive spaces with a single space
-pub fn replace_multiple_spaces_by_one() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

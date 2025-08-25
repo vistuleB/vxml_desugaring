@@ -58,7 +58,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "cut_paste_attribute_from_first_child_to_self"
-const constructor = cut_paste_attribute_from_first_child_to_self
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -73,7 +72,7 @@ const constructor = cut_paste_attribute_from_first_child_to_self
 /// - child tag
 /// - attribute key
 /// ```
-pub fn cut_paste_attribute_from_first_child_to_self(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

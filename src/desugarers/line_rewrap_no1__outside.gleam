@@ -91,7 +91,6 @@ type Param = #(Int, fn(VXML) -> Bool)
 type InnerParam = Param
 
 pub const name = "line_rewrap_no1__outside"
-const constructor = line_rewrap_no1__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -103,7 +102,7 @@ const constructor = line_rewrap_no1__outside
 /// accepts a function that determine which V-nodes
 /// will be "folded" and have contents that should 
 /// be counted as a deficit toward the next T-node
-pub fn line_rewrap_no1__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

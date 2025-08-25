@@ -64,7 +64,6 @@ type Param = #(String, String, String)
 type InnerParam = Param
 
 pub const name = "auto_generate_child_if_missing_from_attribute__outside"
-const constructor = auto_generate_child_if_missing_from_attribute__outside
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -86,7 +85,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// 
 /// Stays outside of trees rooted at tags in last
 /// argument given to function.
-pub fn auto_generate_child_if_missing_from_attribute__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

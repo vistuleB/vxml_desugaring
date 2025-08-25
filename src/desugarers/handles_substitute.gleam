@@ -332,7 +332,6 @@ type Param = #(String,            String,                 String,               
 type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAttribute))
 
 pub const name = "handles_substitute"
-const constructor = handles_substitute
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -375,7 +374,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// is not found in the list of GrandWrapper
 /// 'handle' attributes values, or if unable to
 /// locate a local page path for a given handle.
-pub fn handles_substitute(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

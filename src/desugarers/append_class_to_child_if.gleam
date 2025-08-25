@@ -36,7 +36,6 @@ type Param = #(String,  String,     fn(VXML) -> Bool, String)
 type InnerParam = Param
 
 pub const name = "append_class_to_child_if"
-const constructor = append_class_to_child_if
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor = append_class_to_child_if
 /// condition when they are children of a specified
 /// parent tag. takes tuples of
 /// (parent_tag, class_to_append, condition_function).
-pub fn append_class_to_child_if(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(#(param.0, param.1, param.3))),

@@ -34,7 +34,6 @@ type Param = String
 type InnerParam = Param
 
 pub const name = "trim_empty_lines"
-const constructor = trim_empty_lines
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -47,7 +46,7 @@ const constructor = trim_empty_lines
 /// of lines may destroy a T-node, in which case the
 /// process continues with the next T-node in order,
 /// if any, so that the desugarer is idempotent.
-pub fn trim_empty_lines(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -67,7 +67,7 @@ type Param = List(#(String,        String,          List(#(String, String))))
 //                  if last child)
 type InnerParam = Dict(String, VXML)
 
-pub pub const name = "add_after_but_not_after_last_child__batch"
+pub const name = "add_after_but_not_after_last_child__batch"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️

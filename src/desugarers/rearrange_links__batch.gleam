@@ -905,7 +905,6 @@ type Param = List(#(String,   String))
 type InnerParam = List(#(LinkPattern, LinkPattern))
 
 pub const name = "rearrange_links__batch"
-const constructor = rearrange_links__batch
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -916,7 +915,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// considering (x) as a variable and replaces it 
 /// with the second String (x) can be used in second
 /// String to use the variable from first String
-pub fn rearrange_links__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

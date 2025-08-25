@@ -34,14 +34,13 @@ type Param = Nil
 type InnerParam = Param
 
 pub const name = "check_proper_href_detokenization"
-const constructor = check_proper_href_detokenization
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// 
-pub fn check_proper_href_detokenization() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

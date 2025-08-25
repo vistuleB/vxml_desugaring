@@ -50,14 +50,13 @@ type Param = List(#(String, String))
 type InnerParam = Dict(String, String)
 
 pub const name = "prepend_text_node__batch"
-const constructor = prepend_text_node__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// prepends text to the beginning of specified tags
-pub fn prepend_text_node__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

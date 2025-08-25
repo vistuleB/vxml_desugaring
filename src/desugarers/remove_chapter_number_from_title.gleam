@@ -58,7 +58,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "remove_chapter_number_from_title"
-const constructor = remove_chapter_number_from_title
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -66,7 +65,7 @@ const constructor = remove_chapter_number_from_title
 //------------------------------------------------53
 /// removes chapter numbers from titles in chapter 
 /// and subchapter title elements
-pub fn remove_chapter_number_from_title() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

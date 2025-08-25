@@ -44,7 +44,6 @@ type Param = #(String,      String)
 type InnerParam = Param
 
 pub const name = "free_children"
-const constructor = free_children
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -94,7 +93,7 @@ const constructor = free_children
 /// with the original attribute values of A
 /// copied over to the newly created 'copies' of
 /// A
-pub fn free_children(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

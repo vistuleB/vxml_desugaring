@@ -134,7 +134,6 @@ type Param = #(String,         String)
 type InnerParam = Param
 
 pub const name = "generate_ti2_table_of_contents"
-const constructor = generate_ti2_table_of_contents
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -143,7 +142,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// generates table of contents for TI2 content with
 /// sections
-pub fn generate_ti2_table_of_contents(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

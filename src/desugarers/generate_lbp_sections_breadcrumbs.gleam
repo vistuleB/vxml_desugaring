@@ -187,14 +187,13 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "generate_lbp_sections_breadcrumbs"
-const constructor = generate_lbp_sections_breadcrumbs
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-pub fn generate_lbp_sections_breadcrumbs(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

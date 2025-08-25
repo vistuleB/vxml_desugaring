@@ -78,7 +78,6 @@ type Param =
 type InnerParam = Param
 
 pub const name = "convert_int_attributes_to_float"
-const constructor = convert_int_attributes_to_float
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -87,7 +86,7 @@ const constructor = convert_int_attributes_to_float
 /// converts int to float for all attributes keys
 /// that match one of the entries in 'param', per
 /// the matching rules above
-pub fn convert_int_attributes_to_float(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -46,7 +46,6 @@ type Param = #(String, #(String,    String),   #(String,     String),   fn(VXML)
 type InnerParam = #(String, String, String, String, String, fn(VXML) -> Bool)
 
 pub const name = "insert_text_start_end_if_else"
-const constructor = insert_text_start_end_if_else
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -54,7 +53,7 @@ const constructor = insert_text_start_end_if_else
 //------------------------------------------------53
 /// inserts text at the beginning and end of a
 /// specified tag
-pub fn insert_text_start_end_if_else(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   let assert Ok(inner) = param_to_inner_param(param)
   Desugarer(
     name,

@@ -53,7 +53,6 @@ type Param = #(String,         String)
 type InnerParam = Param
 
 pub const name = "change_attribute_value"
-const constructor = change_attribute_value
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -66,7 +65,7 @@ const constructor = change_attribute_value
 /// value "images/img.png" with the replacement 
 /// string "/()" will result in the new attribute 
 /// value "/images/img.png"
-pub fn change_attribute_value(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

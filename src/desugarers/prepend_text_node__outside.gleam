@@ -51,7 +51,6 @@ type Param = #(String, String)
 type InnerParam = #(String, VXML)
 
 pub const name = "prepend_text_node__outside"
-const constructor = prepend_text_node__outside
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -71,7 +70,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// 
 /// Stays outside of subtrees rooted at tags given
 /// by the third argument.
-pub fn prepend_text_node__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

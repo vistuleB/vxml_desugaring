@@ -37,7 +37,6 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "trim__batch"
-const constructor = trim__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -51,7 +50,7 @@ const constructor = trim__batch
 /// lines remain, in which case the process
 /// continues with the next or previous T-node, if
 /// any.
-pub fn trim__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),

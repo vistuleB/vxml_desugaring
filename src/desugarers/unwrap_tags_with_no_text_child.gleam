@@ -12,14 +12,6 @@ fn is_text(child: VXML) {
   }
 }
 
-// fn has_unique_child_of_tag(node: VXML, tags: List(String)) -> Bool {
-//   let assert V(_, _, _, children) = node
-//   case children {
-//     [singleton] -> infra.is_v_and_tag_is_one_of(singleton, tags)
-//     _ -> False
-//   }
-// }
-
 fn nodemap(
   node: VXML,
   inner: InnerParam,

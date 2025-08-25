@@ -64,7 +64,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "ti2_carousel_component"
-const constructor = ti2_carousel_component
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -72,7 +71,7 @@ const constructor = ti2_carousel_component
 //------------------------------------------------53
 /// converts Bootstrap carousel components to custom
 /// Carousel components
-pub fn ti2_carousel_component(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(Nil)),

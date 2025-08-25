@@ -26,7 +26,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "identity"
-const constructor =  identity
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -34,7 +33,7 @@ const constructor =  identity
 //------------------------------------------------53
 /// idempotent desugarer that leaves the VXML 
 /// unchanged and that never generates an error
-pub fn identity() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

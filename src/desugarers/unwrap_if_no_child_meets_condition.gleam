@@ -38,7 +38,6 @@ type Param = #(String,   fn(VXML) -> Bool,  String)
 type InnerParam = #(String, fn(VXML) -> Bool)
 
 pub const name = "unwrap_if_no_child_meets_condition"
-const constructor = unwrap_if_no_child_meets_condition
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor = unwrap_if_no_child_meets_condition
 //------------------------------------------------53
 /// unwraps nodes of a specified tag if none of its
 /// children meet a boolean condition
-pub fn unwrap_if_no_child_meets_condition(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(infra.triple_drop_2nd(param))),

@@ -64,7 +64,6 @@ type Param =
 type InnerParam = Dict(String, List(#(String, String)))
 
 pub const name = "append_class_to_children_with_class"
-const constructor = append_class_to_children_with_class
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -74,7 +73,7 @@ const constructor = append_class_to_children_with_class
 /// existence of a specific class value and if found,
 /// appends a new class value to the class attribute.
 /// takes tuples of (parent_tag, list_of_class_mappings).
-pub fn append_class_to_children_with_class(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

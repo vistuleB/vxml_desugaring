@@ -78,7 +78,6 @@ type Param = #(String,    List(infra.LatexDelimiterPair), fn(VXML) -> Bool)
 type InnerParam = #(String, List(String), List(String), fn(VXML) -> Bool)
 
 pub const name = "strip_delimiters_inside_if"
-const constructor = strip_delimiters_inside_if
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -111,7 +110,7 @@ const constructor = strip_delimiters_inside_if
 ///     "x"
 /// ```
 /// .
-pub fn strip_delimiters_inside_if(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   let #(opening, closing) = infra.left_right_delim_strings(param.1)
   let inner = #(param.0, opening, closing, param.2)
   Desugarer(

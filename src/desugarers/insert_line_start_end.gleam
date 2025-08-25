@@ -43,7 +43,6 @@ type Param = #(String, #(String,    String))
 type InnerParam = #(String, BlamedContent, BlamedContent)
 
 pub const name = "insert_line_start_end"
-const constructor = insert_line_start_end
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -52,7 +51,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// inserts text at the beginning and end of a
 /// specified tag
-pub fn insert_line_start_end(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   let assert Ok(inner) = param_to_inner_param(param)
   Desugarer(
     name,

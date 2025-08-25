@@ -53,14 +53,13 @@ type Param = List(#(String, String))
 type InnerParam = Param
 
 pub const name = "unwrap_tag_when_parent_of_tag"
-const constructor = unwrap_tag_when_parent_of_tag
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// unwraps parent tag when it contains specified child tag
-pub fn unwrap_tag_when_parent_of_tag(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

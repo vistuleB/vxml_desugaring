@@ -36,7 +36,6 @@ type Param = #(String,  String)
 type InnerParam = Param
 
 pub const name = "wrap"
-const constructor = wrap
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -49,7 +48,7 @@ const constructor = wrap
 /// with the target tag as its only child.
 ///
 /// Processes all matching nodes depth-first.
-pub fn wrap(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

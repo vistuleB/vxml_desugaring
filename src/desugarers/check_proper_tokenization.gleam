@@ -77,14 +77,13 @@ type Param = Nil
 type InnerParam = Param
 
 pub const name = "check_proper_tokenization"
-const constructor = check_proper_tokenization
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// 
-pub fn check_proper_tokenization() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

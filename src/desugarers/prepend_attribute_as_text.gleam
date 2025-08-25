@@ -46,7 +46,6 @@ type Param = #(String, String)
 type InnerParam = Param
 
 pub const name = "prepend_attribute_as_text"
-const constructor = prepend_attribute_as_text
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -65,7 +64,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// attribute values are ignored.
 ///
 /// Processes all matching nodes depth-first.
-pub fn prepend_attribute_as_text(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

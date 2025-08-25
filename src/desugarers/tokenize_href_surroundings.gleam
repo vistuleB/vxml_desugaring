@@ -118,14 +118,13 @@ type Param = Nil
 type InnerParam = Param
 
 pub const name = "tokenize_href_surroundings"
-const constructor = tokenize_href_surroundings
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// 
-pub fn tokenize_href_surroundings() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

@@ -248,7 +248,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "generate_ti3_menu"
-const constructor = generate_ti3_menu
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -259,7 +258,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// menus containing previous/next chapter links,
 /// index link, and course homepage link. The menu
 /// is inserted after each Chapter and Sub element.
-pub fn generate_ti3_menu() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

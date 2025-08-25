@@ -47,7 +47,6 @@ type Param = #(String, String)
 type InnerParam = #(String, VXML)
 
 pub const name = "prepend_text_node"
-const constructor = prepend_text_node
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -64,7 +63,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// >1 BlamedContent.
 /// 
 /// Early-returns from nodes of tag 'tag'.
-pub fn prepend_text_node(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

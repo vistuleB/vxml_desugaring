@@ -57,7 +57,6 @@ type InnerParam =
   List(#(String, #(String, String)))
 
 pub const name = "insert_bookend_tags"
-const constructor = insert_bookend_tags
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -65,7 +64,7 @@ const constructor = insert_bookend_tags
 //------------------------------------------------53
 /// inserts bookend tags at the beginning and end of
 /// specified tags
-pub fn insert_bookend_tags(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

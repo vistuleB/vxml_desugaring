@@ -38,14 +38,13 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "unwrap_tags_if_no_attributes"
-const constructor = unwrap_tags_if_no_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// unwraps specified tags if they have no attributes
-pub fn unwrap_tags_if_no_attributes(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

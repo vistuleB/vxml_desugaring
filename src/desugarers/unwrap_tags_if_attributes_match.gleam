@@ -56,14 +56,13 @@ type Param = List(#(String, List(#(String, String))))
 type InnerParam = Param
 
 pub const name = "unwrap_tags_if_attributes_match"
-const constructor = unwrap_tags_if_attributes_match
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// unwraps tags if all specified attributes match
-pub fn unwrap_tags_if_attributes_match(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

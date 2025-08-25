@@ -41,7 +41,6 @@ type Param = #(String, String, String)
 type InnerParam = Param
 
 pub const name = "append_attribute_to_second_of_kind"
-const constructor = append_attribute_to_second_of_kind
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -51,7 +50,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// Adds the specified attribute-value pair to nodes
 /// with the given tag name when the previous
 /// sibling is also a node with the same tag name
-pub fn append_attribute_to_second_of_kind(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

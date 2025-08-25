@@ -67,7 +67,6 @@ type Param = #(String,   List(String))
 type InnerParam = #(String, List(String), Blame)
 
 pub const name = "group_consecutive_children__outside"
-const constructor = group_consecutive_children__outside
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -85,7 +84,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// dont_wrap_these with a wrapper_tag node, while 
 /// not processing subtrees rooted at nodes of tag 
 /// dont_enter_here untouched; see tests
-pub fn group_consecutive_children__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

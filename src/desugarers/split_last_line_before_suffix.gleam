@@ -77,7 +77,6 @@ type Param = #(String,        String)
 type InnerParam = #(String, String, Int)
 
 pub const name = "split_last_line_before_suffix"
-const constructor = split_last_line_before_suffix
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -85,7 +84,7 @@ const constructor = split_last_line_before_suffix
 //------------------------------------------------53
 /// inserts text at the beginning and end of a
 /// specified tag
-pub fn split_last_line_before_suffix(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

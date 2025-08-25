@@ -23,7 +23,6 @@ type Param = grs.RegexpWithGroupReplacementInstructions
 type InnerParam = Param
 
 pub const name = "regex_split_and_replace__outside"
-const constructor = regex_split_and_replace__outside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -32,7 +31,7 @@ const constructor = regex_split_and_replace__outside
 /// splits text nodes by regexp with group-by-group
 /// replacement instructions; keeps out of subtrees
 /// rooted at tags given by its second argument
-pub fn regex_split_and_replace__outside(param: Param, outside: List(String)) -> Desugarer {
+pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(grs.human_inspect(param)),

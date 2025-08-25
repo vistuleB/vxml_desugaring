@@ -82,14 +82,13 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "compute_max_element_width"
-const constructor = compute_max_element_width
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// compute max element width
-pub fn compute_max_element_width(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,

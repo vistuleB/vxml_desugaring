@@ -610,7 +610,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "counters_substitute_and_assign_handles"
-const constructor = counters_substitute_and_assign_handles
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
@@ -659,7 +658,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 ///
 /// on the parent tag to be later used by the
 /// 'handles_generate_dictionary' desugarer
-pub fn counters_substitute_and_assign_handles() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

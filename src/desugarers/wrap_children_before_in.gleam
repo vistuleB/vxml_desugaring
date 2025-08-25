@@ -57,7 +57,6 @@ type Param = #(String,  String,  String)
 type InnerParam = Param
 
 pub const name = "wrap_children_before_in"
-const constructor = wrap_children_before_in
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -71,7 +70,7 @@ const constructor = wrap_children_before_in
 /// Will create an empty wrapper in case the stop
 /// tag is immediately encountered, or there are no
 /// children.
-pub fn wrap_children_before_in(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

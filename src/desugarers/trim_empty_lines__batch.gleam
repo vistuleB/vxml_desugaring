@@ -40,7 +40,6 @@ type Param = List(String)
 type InnerParam = Param
 
 pub const name = "trim_empty_lines__batch"
-const constructor = trim_empty_lines__batch
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -54,7 +53,7 @@ const constructor = trim_empty_lines__batch
 /// case the process continues with the next T-node
 /// in order, if any, so that the desugarer is
 /// idempotent.
-pub fn trim_empty_lines__batch(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

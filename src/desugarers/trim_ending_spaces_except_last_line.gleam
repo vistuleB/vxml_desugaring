@@ -31,7 +31,6 @@ type Param = Nil
 type InnerParam = Nil
 
 pub const name = "trim_ending_spaces_except_last_line"
-const constructor = trim_ending_spaces_except_last_line
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -40,7 +39,7 @@ const constructor = trim_ending_spaces_except_last_line
 /// trims spaces around newlines in text nodes
 /// outside of subtrees rooted at tags given by the
 /// param argument
-pub fn trim_ending_spaces_except_last_line() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,

@@ -99,7 +99,6 @@ type InnerParam =
 //                                       to use      to use
 
 pub const name = "normalize_math_delimiters_inside"
-const constructor = normalize_math_delimiters_inside
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -116,7 +115,7 @@ const constructor = normalize_math_delimiters_inside
 /// |> Mathblock
 ///     $$math$$
 /// ```
-pub fn normalize_math_delimiters_inside(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

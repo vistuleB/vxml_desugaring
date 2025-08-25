@@ -74,7 +74,6 @@ type InnerParam =
   Dict(String, #(String, String))
 
 pub const name = "surround_elements_by"
-const constructor = surround_elements_by
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -85,7 +84,7 @@ const constructor = surround_elements_by
 ///    - list of tag names to surround
 ///    - name of tag to place above, or "" if none
 ///    - name of tag to place below, or "" if none
-pub fn surround_elements_by(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

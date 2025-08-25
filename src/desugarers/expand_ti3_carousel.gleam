@@ -87,7 +87,6 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 pub const name = "expand_ti3_carousel"
-const constructor = expand_ti3_carousel
 
 type Param = Nil
 type InnerParam = Nil
@@ -126,7 +125,7 @@ type InnerParam = Nil
 /// - No children
 /// - Only src, width, and height attributes
 /// - At least one src attribute
-pub fn expand_ti3_carousel() -> Desugarer {
+pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     None,

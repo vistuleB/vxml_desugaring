@@ -38,7 +38,6 @@ type Param = #(String, #(String,    String))
 type InnerParam = #(String, String, String)
 
 pub const name = "insert_text_start_end"
-const constructor = insert_text_start_end
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -46,7 +45,7 @@ const constructor = insert_text_start_end
 //------------------------------------------------53
 /// inserts text at the beginning and end of a
 /// specified tag
-pub fn insert_text_start_end(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   let assert Ok(inner) = param_to_inner_param(param)
   Desugarer(
     name,

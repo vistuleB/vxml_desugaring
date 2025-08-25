@@ -50,7 +50,6 @@ type InnerParam =
   List(#(String, #(String, String)))
 
 pub const name = "insert_bookend_text_if_no_attributes"
-const constructor = insert_bookend_text_if_no_attributes
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -58,7 +57,7 @@ const constructor = insert_bookend_text_if_no_attributes
 //------------------------------------------------53
 /// inserts bookend text at the beginning and end of
 /// specified tags that have no attributes
-pub fn insert_bookend_text_if_no_attributes(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

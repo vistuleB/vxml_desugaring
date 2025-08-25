@@ -62,7 +62,6 @@ type Param = #(String, String, String)
 type InnerParam = Param
 
 pub const name = "auto_generate_child_if_missing_from_first_descendant_of_type"
-const constructor = auto_generate_child_if_missing_from_first_descendant_of_type
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -80,7 +79,7 @@ const constructor = auto_generate_child_if_missing_from_first_descendant_of_type
 /// of `parent_tag` that has tag `descendant_tag`.
 /// If no such descendant exists, does nothing
 /// to the node of tag `parent_tag`.
-pub fn auto_generate_child_if_missing_from_first_descendant_of_type(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

@@ -18,14 +18,6 @@ fn is_text_or_has_text_descendant(node: VXML) {
   infra.is_text_node(node) || has_text_descendant(node)
 }
 
-// fn has_unique_child_of_tag(node: VXML, tags: List(String)) -> Bool {
-//   let assert V(_, _, _, children) = node
-//   case children {
-//     [singleton] -> infra.is_v_and_tag_is_one_of(singleton, tags)
-//     _ -> False
-//   }
-// }
-
 fn nodemap(
   node: VXML,
   inner: InnerParam,
@@ -57,7 +49,6 @@ type Param = List(String)
 type InnerParam = List(String)
 
 pub const name = "unwrap_tags_with_no_text_descendant"
-const constructor =  unwrap_tags_with_no_text_descendant
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -66,7 +57,7 @@ const constructor =  unwrap_tags_with_no_text_descendant
 /// for a specified list of tag strings, unwraps
 /// nodes with tags from the list if the node does
 /// not have a text child descendant
-pub fn unwrap_tags_with_no_text_descendant(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
