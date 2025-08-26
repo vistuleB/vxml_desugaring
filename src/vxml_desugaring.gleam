@@ -33,8 +33,8 @@ fn test_renderer() {
 
   let renderer =
     vr.Renderer(
-      assembler: vr.default_input_lines_assembler(amendments.spotlight_paths),
-      source_parser: vr.default_writerly_source_parser(amendments.spotlight_key_values),
+      assembler: vr.default_assembler(amendments.spotlight_paths),
+      parser: vr.default_writerly_parser(amendments.spotlight_key_values),
       pipeline: test_pipeline(),
       splitter: vr.stub_splitter(".tsx"),
       emitter: vr.stub_jsx_emitter,

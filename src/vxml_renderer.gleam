@@ -38,23 +38,25 @@ pub type InSituDesugaringWarning {
   )
 }
 
-
-
 // *************
-// SOURCE ASSEMBLER(a)                             // 'a' is assembler error type
-// file/directory -> List(BlamedLine)
+// ASSEMBLER(a)                                    // 'a' is assembler error type; "assembler" = "source assembler"
+// file/directory -> List(InputLine)
 // *************
 
-pub type BlamedLinesAssembler(a) =
+pub type Assembler(a) =
   fn(String) -> Result(List(InputLine), a)
 
-pub type BlamedLinesAssemblerDebugOptions {
-  BlamedLinesAssemblerDebugOptions(debug_print: Bool)
+pub type AssemblerDebugOptions {
+  AssemblerDebugOptions(echo_: Bool)
 }
 
-pub fn default_input_lines_assembler(
+// ******************************
+// default assembler
+// ******************************
+
+pub fn default_assembler(
   spotlight_paths: List(String),
-) -> BlamedLinesAssembler(wp.AssemblyError) {
+) -> Assembler(wp.AssemblyError) {
   let spaces = string.repeat(" ", string.length("• assembling "))
   fn(input_dir) {
     use #(directory_tree, assembled) <- result.try(
@@ -69,24 +71,24 @@ pub fn default_input_lines_assembler(
 }
 
 // *************
-// SOURCE PARSER(c)                                // 'c' is parser error type
-// List(BlamedLines) -> parsed source
+// PARSER(c)                                       // 'c' is parser error type
+// List(InputLine) -> VXML
 // *************
 
-pub type SourceParser(c) =
+pub type Parser(c) =
   fn(List(InputLine)) -> Result(VXML, c)
 
-pub type SourceParserDebugOptions {
-  SourceParserDebugOptions(debug_print: Bool)
+pub type ParserDebugOptions {
+  ParserDebugOptions(echo_: Bool)
 }
 
 // ******************************
-// default source parsers
+// default parsers
 // ******************************
 
-pub fn default_writerly_source_parser(
+pub fn default_writerly_parser(
   spotlight_args: List(#(String, String, String)),
-) -> SourceParser(String) {
+) -> Parser(String) {
   fn(lines) {
     use writerlys <- result.try(
       wp.parse_input_lines(lines)
@@ -108,31 +110,36 @@ pub fn default_writerly_source_parser(
   }
 }
 
-pub fn default_html_source_parser(
+pub fn default_html_parser(
   spotlight_args: List(#(String, String, String)),
-) -> SourceParser(String) {
+) -> Parser(String) {
   fn(lines: List(InputLine)) {
     // we don't have our own html parser that can give
     // proper blames, we have to resort to this nonsense
     let assert [first_line, ..] = lines
     let path = case first_line.blame {
       bl.Src(_, path, _, _) -> path
-      _ -> "vr::default_html_source_parser"
+      _ -> "vr::default_html_parser"
     }
     let s =
       lines
       |> io_l.input_lines_to_output_lines
       |> io_l.output_lines_to_string
       |> string.trim
-    use nonempty_string <- result.try(case s {
-      "" -> Error("empty content")
-      _ -> Ok(s)
-    })
+
+    use nonempty_string <- result.try(
+      case s {
+        "" -> Error("empty content")
+        _ -> Ok(s)
+      }
+    )
+
     use vxml <- result.try(
       nonempty_string
       |> vp.xmlm_based_html_parser(path)
       |> result.map_error(ins),
     )
+
     dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
     |> result.map_error(ins)
     |> result.map(pair.first)
@@ -140,20 +147,15 @@ pub fn default_html_source_parser(
 }
 
 // *************
-// PIPELINE
-// VXML -> ... -> VXML
-// *************
-
-// *************
-// OutputFragment(d, z)                         // 'd' is fragment classifier type, 'z' is payload type
+// OutputFragment(d, z)                         // 'd' is fragment classifier type, 'z' is payload type (VXML or List(OutputLine))
 // *************
 
 pub type OutputFragment(d, z) {
-  OutputFragment(path: String, payload: z, classifier: d)
+  OutputFragment(classifier: d, path: String, payload: z)
 }
 
 pub type GhostOfOutputFragment(d) {
-  GhostOfOutputFragment(path: String, classifier: d)
+  GhostOfOutputFragment(classifier: d, path: String)
 }
 
 // *************
@@ -165,7 +167,7 @@ pub type Splitter(d, e) =
   fn(VXML) -> Result(List(OutputFragment(d, VXML)), e)
 
 pub type SplitterDebugOptions(d) {
-  SplitterDebugOptions(debug_print: fn(OutputFragment(d, VXML)) -> Bool)
+  SplitterDebugOptions(echo_: fn(OutputFragment(d, VXML)) -> Bool)
 }
 
 // ************************
@@ -178,7 +180,7 @@ pub type SplitterDebugOptions(d) {
 pub fn stub_splitter(suffix: String) -> Splitter(Nil, Nil) {
   fn(root) {
     let assert V(_, tag, _, _) = root
-    Ok([OutputFragment(path: tag <> suffix, payload: root, classifier: Nil)])
+    Ok([OutputFragment(classifier: Nil, path: tag <> suffix, payload: root)])
   }
 }
 
@@ -192,7 +194,7 @@ pub type Emitter(d, f) =
 
 pub type EmitterDebugOptions(d) {
   EmitterDebugOptions(
-    debug_print: fn(OutputFragment(d, List(OutputLine))) -> Bool,
+    echo_: fn(OutputFragment(d, List(OutputLine))) -> Bool,
   )
 }
 
@@ -208,6 +210,7 @@ pub fn stub_writerly_emitter(
     |> wp.vxml_to_writerlys
     |> list.map(wp.writerly_to_output_lines)
     |> list.flatten
+
   Ok(OutputFragment(..fragment, payload: lines))
 }
 
@@ -269,13 +272,11 @@ pub fn stub_jsx_emitter(
 }
 
 // *************
-// PRINTER
-// (no function, only a DebugOption for printing
-// what was printed to file before prettifying)
+// Writer (the thing that prints to files; no function supplied; only a debug option)
 // *************
 
-pub type PrinterDebugOptions(d) {
-  PrinterDebugOptions(debug_print: fn(OutputFragment(d, String)) -> Bool)
+pub type WriterDebugOptions(d) {
+  WriterDebugOptions(echo_: fn(OutputFragment(d, String)) -> Bool)
 }
 
 // *************
@@ -287,7 +288,7 @@ pub type Prettifier(d, h) =
   fn(String, GhostOfOutputFragment(d), Option(String)) -> Result(String, h)
 
 pub type PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(debug_print: fn(GhostOfOutputFragment(d)) -> Bool)
+  PrettifierDebugOptions(echo_: fn(GhostOfOutputFragment(d)) -> Bool)
 }
 
 //********************
@@ -354,7 +355,7 @@ pub fn empty_prettifier(
 // *************
 
 pub type Renderer(
-  a, // BlamedLinesAssembler error type
+  a, // SourceAssembler error type
   c, // SourceParser error type
   d, // VXML Fragment enum type
   e, // Splitter error type
@@ -362,8 +363,8 @@ pub type Renderer(
   h, // Prettifier error type
 ) {
   Renderer(
-    assembler: BlamedLinesAssembler(a),  // file/directory -> List(OutputLine)                     Result w/ error type a
-    source_parser: SourceParser(c),      // List(OutputLine) -> VXML                               Result w/ error type c
+    assembler: Assembler(a),             // file/directory -> List(InputLine)                      Result w/ error type a
+    parser: Parser(c),                   // List(InputLine) -> VXML                                Result w/ error type c
     pipeline: List(Pipe),                // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
     splitter: Splitter(d, e),            // VXML -> List(#(String, VXML, d))                       Result w/ error type e
     emitter: Emitter(d, f),              // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
@@ -377,11 +378,11 @@ pub type Renderer(
 
 pub type RendererDebugOptions(d) {
   RendererDebugOptions(
-    assembler_debug_options: BlamedLinesAssemblerDebugOptions,
-    source_parser_debug_options: SourceParserDebugOptions,
+    assembler_debug_options: AssemblerDebugOptions,
+    parser_debug_options: ParserDebugOptions,
     splitter_debug_options: SplitterDebugOptions(d),
     emitter_debug_options: EmitterDebugOptions(d),
-    printer_debug_options: PrinterDebugOptions(d),
+    printer_debug_options: WriterDebugOptions(d),
     prettifier_debug_options: PrettifierDebugOptions(d),
   )
 }
@@ -633,7 +634,7 @@ pub fn run_renderer(
     },
   )
 
-  case debug_options.assembler_debug_options.debug_print {
+  case debug_options.assembler_debug_options.echo_ {
     False -> Nil
     True -> {
       io_l.echo_input_lines(assembled, "assembled")
@@ -644,10 +645,10 @@ pub fn run_renderer(
   io.print("• parsing input lines to VXML")
 
   use parsed: VXML <- infra.on_error_on_ok(
-    over: renderer.source_parser(assembled),
+    over: renderer.parser(assembled),
     with_on_error: fn(error: c) {
       io.println("")
-      io.println("renderer.source_parser error: " <> ins(error))
+      io.println("renderer.parser error: " <> ins(error))
       Error(SourceParserError(error))
     },
   )
@@ -732,7 +733,7 @@ pub fn run_renderer(
   // fragments debug printing
   fragments
   |> list.each(fn(fr) {
-    case debug_options.splitter_debug_options.debug_print(fr) {
+    case debug_options.splitter_debug_options.echo_(fr) {
       False -> Nil
       True -> {
         fr.payload
@@ -758,7 +759,7 @@ pub fn run_renderer(
     case result {
       Error(_) -> Nil
       Ok(fr) -> {
-        case debug_options.emitter_debug_options.debug_print(fr) {
+        case debug_options.emitter_debug_options.echo_(fr) {
           False -> Nil
           True -> {
             fr.payload
@@ -798,7 +799,7 @@ pub fn run_renderer(
     case result {
       Error(_) -> Nil
       Ok(fr) -> {
-        case debug_options.printer_debug_options.debug_print(fr) {
+        case debug_options.printer_debug_options.echo_(fr) {
           False -> Nil
           True -> {
             let header =
@@ -826,7 +827,7 @@ pub fn run_renderer(
       case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
         Ok(Nil) -> {
           io.println("  wrote " <> brackets <> fr.path)
-          Ok(GhostOfOutputFragment(fr.path, fr.classifier))
+          Ok(GhostOfOutputFragment(fr.classifier, fr.path))
         }
         Error(file_error) ->
           Error(C2(
@@ -867,7 +868,7 @@ pub fn run_renderer(
   fragments
   |> list.each(fn(result) {
     use fr <- infra.on_error_on_ok(result, fn(_) { Nil })
-    case debug_options.prettifier_debug_options.debug_print(fr) {
+    case debug_options.prettifier_debug_options.echo_(fr) {
       False -> Nil
       True -> {
         let path = output_dir <> "/" <> fr.path
@@ -1566,11 +1567,11 @@ fn is_some_and_any_or_is_empty(z: Option(List(a)), f: fn(a) -> Bool) -> Bool {
 }
 
 pub fn db_amend_assembler_debug_options(
-  _options: BlamedLinesAssemblerDebugOptions,
+  _options: AssemblerDebugOptions,
   amendments: CommandLineAmendments,
-) -> BlamedLinesAssemblerDebugOptions {
-  BlamedLinesAssemblerDebugOptions(
-    debug_print: amendments.debug_assembled_input,
+) -> AssemblerDebugOptions {
+  AssemblerDebugOptions(
+    echo_: amendments.debug_assembled_input,
   )
 }
 
@@ -1578,8 +1579,8 @@ pub fn db_amend_splitter_debug_options(
   previous: SplitterDebugOptions(d),
   amendments: CommandLineAmendments,
 ) -> SplitterDebugOptions(d) {
-  SplitterDebugOptions(debug_print: fn(fr: OutputFragment(d, VXML)) {
-    previous.debug_print(fr)
+  SplitterDebugOptions(echo_: fn(fr: OutputFragment(d, VXML)) {
+    previous.echo_(fr)
     || is_some_and_any_or_is_empty(
       amendments.debug_vxml_fragments_local_paths,
       string.contains(fr.path, _),
@@ -1591,8 +1592,8 @@ pub fn db_amend_emitter_debug_options(
   previous: EmitterDebugOptions(d),
   amendments: CommandLineAmendments,
 ) -> EmitterDebugOptions(d) {
-  EmitterDebugOptions(debug_print: fn(fr: OutputFragment(d, List(OutputLine))) {
-    previous.debug_print(fr)
+  EmitterDebugOptions(echo_: fn(fr: OutputFragment(d, List(OutputLine))) {
+    previous.echo_(fr)
     || is_some_and_any_or_is_empty(
       amendments.debug_output_lines_fragments_local_paths,
       string.contains(fr.path, _),
@@ -1601,11 +1602,11 @@ pub fn db_amend_emitter_debug_options(
 }
 
 pub fn db_amend_printed_debug_options(
-  previous: PrinterDebugOptions(d),
+  previous: WriterDebugOptions(d),
   amendments: CommandLineAmendments,
-) -> PrinterDebugOptions(d) {
-  PrinterDebugOptions(fn(fr: OutputFragment(d, String)) {
-    previous.debug_print(fr)
+) -> WriterDebugOptions(d) {
+  WriterDebugOptions(fn(fr: OutputFragment(d, String)) {
+    previous.echo_(fr)
     || is_some_and_any_or_is_empty(
       amendments.debug_printed_string_fragments_local_paths,
       string.contains(fr.path, _),
@@ -1618,7 +1619,7 @@ pub fn db_amend_prettifier_debug_options(
   amendments: CommandLineAmendments,
 ) -> PrettifierDebugOptions(d) {
   PrettifierDebugOptions(fn(fr: GhostOfOutputFragment(d)) {
-    previous.debug_print(fr)
+    previous.echo_(fr)
     || is_some_and_any_or_is_empty(
       amendments.debug_prettified_string_fragments_local_paths,
       string.contains(fr.path, _),
@@ -1652,7 +1653,7 @@ pub fn amend_renderer_debug_options_by_command_line_amendments(
       debug_options.assembler_debug_options,
       amendments,
     ),
-    debug_options.source_parser_debug_options,
+    debug_options.parser_debug_options,
     db_amend_splitter_debug_options(
       debug_options.splitter_debug_options,
       amendments,
@@ -1676,37 +1677,37 @@ pub fn amend_renderer_debug_options_by_command_line_amendments(
 // EMPTY RENDERER DEBUG OPTIONS
 //********************
 
-pub fn empty_assembler_debug_options() -> BlamedLinesAssemblerDebugOptions {
-  BlamedLinesAssemblerDebugOptions(debug_print: False)
+pub fn empty_assembler_debug_options() -> AssemblerDebugOptions {
+  AssemblerDebugOptions(echo_: False)
 }
 
-pub fn empty_source_parser_debug_options() -> SourceParserDebugOptions {
-  SourceParserDebugOptions(debug_print: False)
+pub fn empty_parser_debug_options() -> ParserDebugOptions {
+  ParserDebugOptions(echo_: False)
 }
 
 pub fn empty_splitter_debug_options() -> SplitterDebugOptions(d) {
-  SplitterDebugOptions(debug_print: fn(_fr) { False })
+  SplitterDebugOptions(echo_: fn(_fr) { False })
 }
 
 pub fn empty_emitter_debug_options() -> EmitterDebugOptions(d) {
-  EmitterDebugOptions(debug_print: fn(_fr) { False })
+  EmitterDebugOptions(echo_: fn(_fr) { False })
 }
 
-pub fn empty_printer_debug_options() -> PrinterDebugOptions(d) {
-  PrinterDebugOptions(debug_print: fn(_fr) { False })
+pub fn empty_writer_debug_options() -> WriterDebugOptions(d) {
+  WriterDebugOptions(echo_: fn(_fr) { False })
 }
 
 pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(debug_print: fn(_fr) { False })
+  PrettifierDebugOptions(echo_: fn(_fr) { False })
 }
 
 pub fn default_renderer_debug_options() -> RendererDebugOptions(d) {
   RendererDebugOptions(
     assembler_debug_options: empty_assembler_debug_options(),
-    source_parser_debug_options: empty_source_parser_debug_options(),
+    parser_debug_options: empty_parser_debug_options(),
     splitter_debug_options: empty_splitter_debug_options(),
     emitter_debug_options: empty_emitter_debug_options(),
-    printer_debug_options: empty_printer_debug_options(),
+    printer_debug_options: empty_writer_debug_options(),
     prettifier_debug_options: empty_prettifier_debug_options(),
   )
 }
