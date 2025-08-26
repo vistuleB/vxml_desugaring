@@ -147,21 +147,13 @@ pub fn default_html_parser(
 }
 
 // *************
-// OutputFragment(d, z)                         // 'd' is fragment classifier type, 'z' is payload type (VXML or List(OutputLine))
-// *************
-
-pub type OutputFragment(d, z) {
-  OutputFragment(classifier: d, path: String, payload: z)
-}
-
-pub type GhostOfOutputFragment(d) {
-  GhostOfOutputFragment(classifier: d, path: String)
-}
-
-// *************
 // SPLITTER(d, e)                                // 'd' is fragment classifier type, 'e' is splitter error type
 // VXML -> List(OutputFragment)                  // #(local_path, vxml, fragment_type)
 // *************
+
+pub type OutputFragment(d, z) {                  // 'd' is fragment classifier type, 'z' is payload type (VXML or List(OutputLine))
+  OutputFragment(classifier: d, path: String, payload: z)
+}
 
 pub type Splitter(d, e) =
   fn(VXML) -> Result(List(OutputFragment(d, VXML)), e)
@@ -247,6 +239,10 @@ pub fn stub_html_emitter(
   Ok(OutputFragment(..fragment, payload: lines))
 }
 
+// *****************
+// stub jsx emitter
+// *****************
+
 pub fn stub_jsx_emitter(
   fragment: OutputFragment(d, VXML),
 ) -> Result(OutputFragment(d, List(OutputLine)), b) {
@@ -272,7 +268,7 @@ pub fn stub_jsx_emitter(
 }
 
 // *************
-// Writer (the thing that prints to files; no function supplied; only a debug option)
+// WRITER (the thing that prints to files; no function supplied; only a debug option)
 // *************
 
 pub type WriterDebugOptions(d) {
@@ -283,6 +279,10 @@ pub type WriterDebugOptions(d) {
 // PRETTIFIER(d, h)                                          // where 'd' is fragment classifier, 'h' is prettifier error type
 // String, GhostOfOutputFragment(d) -> Result(String, h)     // output_dir, ghost_of_output_fragment
 // *************
+
+pub type GhostOfOutputFragment(d) {
+  GhostOfOutputFragment(classifier: d, path: String)
+}
 
 pub type Prettifier(d, h) =
   fn(String, GhostOfOutputFragment(d), Option(String)) -> Result(String, h)
@@ -400,6 +400,7 @@ pub type PrettifierMode {
 
 pub type RendererParameters {
   RendererParameters(
+    pipeline_table: Bool,
     input_dir: String,
     output_dir: String,
     prettifier_behavior: PrettifierMode,
@@ -593,6 +594,8 @@ fn print_pipeline(desugarers: List(Desugarer)) {
     })
     |> list.flatten
 
+  io.println("• pipeline:")
+
   [#("#.", "name", "param", "outside"), ..lines]
   |> star_block.four_column_table
   |> star_block.print_table_at_indent(2)
@@ -611,13 +614,16 @@ pub fn run_renderer(
 
   let parameters = sanitize_output_dir(parameters)
   let RendererParameters(
+    pipeline_table,
     input_dir,
     output_dir,
     prettifier_mode,
   ) = parameters
 
-  io.println("• pipeline:")
-  print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
+  case pipeline_table {
+    True -> print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
+    False -> Nil
+  }
 
   io.print("• assembling ")
 
@@ -990,6 +996,7 @@ pub fn double_dash_keys(
 pub type CommandLineAmendments {
   CommandLineAmendments(
     help: Bool,
+    pipeline_table: Option(Bool),
     input_dir: Option(String),
     output_dir: Option(String),
     debug_assembled_input: Bool,
@@ -1012,6 +1019,7 @@ pub type CommandLineAmendments {
 pub fn empty_command_line_amendments() -> CommandLineAmendments {
   CommandLineAmendments(
     help: False,
+    pipeline_table: None,
     input_dir: None,
     output_dir: None,
     debug_assembled_input: False,
@@ -1536,21 +1544,15 @@ pub fn process_command_line_arguments(
 // AMENDING RENDERER PARAMETERS BY COMMAND LINE AMENDMENTS
 //********************
 
-fn override_if_some(thing: a, replacement: Option(a)) -> a {
-  case replacement {
-    None -> thing
-    Some(replacement) -> replacement
-  }
-}
-
 pub fn amend_renderer_paramaters_by_command_line_amendments(
   parameters: RendererParameters,
   amendments: CommandLineAmendments,
 ) -> RendererParameters {
   RendererParameters(
-    input_dir: override_if_some(parameters.input_dir, amendments.input_dir),
-    output_dir: override_if_some(parameters.output_dir, amendments.output_dir),
-    prettifier_behavior: override_if_some(parameters.prettifier_behavior, amendments.prettier),
+    pipeline_table: option.unwrap(amendments.pipeline_table, parameters.pipeline_table),
+    input_dir: option.unwrap(amendments.input_dir, parameters.input_dir),
+    output_dir: option.unwrap(amendments.output_dir, parameters.output_dir),
+    prettifier_behavior: option.unwrap(amendments.prettier, parameters.prettifier_behavior),
   )
 }
 

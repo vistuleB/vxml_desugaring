@@ -44,6 +44,7 @@ fn test_renderer() {
 
   let parameters =
     vr.RendererParameters(
+      pipeline_table: True,
       input_dir: "test/sample.wly",
       output_dir: "test/output",
       prettifier_behavior: vr.PrettifierOff,
