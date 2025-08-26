@@ -2506,7 +2506,7 @@ pub fn s_lines_2_output_lines(
           Some(#(indentation, num_lines)) ->
             #(
               True,
-              None, 
+              None,
               [line |> s2l, OutputLine(bl.NoBlame([ins(case dry_run {True -> 0 False -> num_lines}) <> " unselected lines"]), indentation, "..."), ..acc.2],
             )
         }

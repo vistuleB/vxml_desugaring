@@ -28,11 +28,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param = #(String,  String,     fn(VXML) -> Bool, String)
-//             ↖        ↖           ↖                 ↖
-//             parent   class       condition         string description
-//             tag      to append   function          of condition func.
-//                                                    (e.g. 'infra.has_class(_, "my-foot")')
+type Param = #(String,  String,     fn(VXML) -> Bool)
+//             ↖        ↖           ↖        
+//             parent   class       condition
+//             tag      to append   function 
 type InnerParam = Param
 
 pub const name = "append_class_to_child_if"
@@ -48,7 +47,7 @@ pub const name = "append_class_to_child_if"
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(#(param.0, param.1, param.3))),
+    option.Some(ins(param)),
     option.None,
     "
 /// appends a class to children if they meet a
@@ -69,7 +68,7 @@ pub fn constructor(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: #("Chapter", "main-column", infra.tag_equals(_, "p"), "infra.tag_equals(_, \"p\")"),
+      param: #("Chapter", "main-column", infra.tag_equals(_, "p")),
       source:   "
                 <> root
                   <> Chapter
@@ -98,7 +97,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: #("container", "active", infra.has_class(_, "highlight"), "infra.has_class(_, \"highlight\")"),
+      param: #("container", "active", infra.has_class(_, "highlight")),
       source:   "
                 <> root
                   <> container
@@ -121,7 +120,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: #("parent", "new", infra.tag_equals(_, "child"), "infra.tag_equals(_, \"child\")"),
+      param: #("parent", "new", infra.tag_equals(_, "child")),
       source:   "
                 <> root
                   <> parent

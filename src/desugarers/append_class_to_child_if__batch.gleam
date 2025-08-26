@@ -51,16 +51,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   param
-  |> list.map(infra.quad_drop_4th)
   |> infra.triples_to_aggregated_dict
   |> Ok
 }
 
-type Param = List(#(String,  String,     fn(VXML) -> Bool, String))
-//                  ↖        ↖           ↖                 ↖
-//                  parent   class       condition         string description
-//                  tag      to append   function          of condition func.
-//                                                         (e.g. 'infra.has_class(_, "my-foot")')
+type Param = List(#(String,  String,     fn(VXML) -> Bool))
+//                  ↖        ↖           ↖               
+//                  parent   class       condition       
+//                  tag      to append   function        
 type InnerParam = Dict(String, List(#(String, fn(VXML) -> Bool)))
 
 pub const name = "append_class_to_child_if__batch"
@@ -76,7 +74,7 @@ pub const name = "append_class_to_child_if__batch"
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(param |> list.map(infra.quad_drop_3rd) |> infra.list_param_stringifier),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// appends a class to children if they meet a
@@ -97,7 +95,7 @@ pub fn constructor(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [#("Chapter", "main-column", infra.tag_equals(_, "p"), "infra.tag_equals(_, \"p\")")],
+      param: [#("Chapter", "main-column", infra.tag_equals(_, "p"))],
       source:   "
                 <> root
                   <> Chapter
@@ -126,7 +124,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
                 "
     ),
     infra.AssertiveTestData(
-      param: [#("container", "active", infra.has_class(_, "highlight"), "infra.has_class(_, \"highlight\")")],
+      param: [#("container", "active", infra.has_class(_, "highlight"))],
       source:   "
                 <> root
                   <> container
@@ -150,8 +148,8 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
     ),
     infra.AssertiveTestData(
       param: [
-        #("parent", "new", infra.tag_equals(_, "child"), "infra.tag_equals(_, \"child\")"),
-        #("other", "different", infra.has_class(_, "special"), "infra.has_class(_, \"special\")")
+        #("parent", "new", infra.tag_equals(_, "child")),
+        #("other", "different", infra.has_class(_, "special"))
       ],
       source:   "
                 <> root

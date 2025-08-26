@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/string.{inspect as ins}
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
@@ -39,16 +40,16 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(param.0)
+  Ok(param)
 }
 
-type Param = #(fn(VXML) -> Bool,      String)
-//             ↖                      ↖
-//             a node is saved        description of
-//             iff one of its         the condition function
+type Param = fn(VXML) -> Bool
+//             ↖               
+//             a node is saved 
+//             iff one of its  
 //             ancestors fulfills     
 //             this condition
-type InnerParam = fn(VXML) -> Bool
+type InnerParam = Param
 
 pub const name = "delete_outside_subtrees"
 
@@ -61,7 +62,7 @@ pub const name = "delete_outside_subtrees"
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(param.1),
+    option.Some(ins(param)),
     option.None,
     "
 /// removes nodes that are outside subtrees matching
@@ -80,7 +81,7 @@ pub fn constructor(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: #(infra.is_v_and_tag_equals(_, "keep_this"), "is_v_and_tag_equals(_, \"keep_this\")"),
+      param: infra.is_v_and_tag_equals(_, "keep_this"),
       source:   "
                 <> R
                   <>

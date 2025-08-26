@@ -28,14 +28,14 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
-  Ok(infra.triple_drop_3rd(param))
+  Ok(param)
 }
 
-type Param = #(String,   fn(VXML) -> Bool,  String)
-//             ↖         ↖                  ↖
-//             tag to    condition          description of
-//             unwrap                        condition
-type InnerParam = #(String, fn(VXML) -> Bool)
+type Param = #(String,   fn(VXML) -> Bool)
+//             ↖         ↖        
+//             tag to    condition
+//             unwrap             
+type InnerParam = Param
 
 pub const name = "unwrap_if_no_child_meets_condition"
 
@@ -48,7 +48,7 @@ pub const name = "unwrap_if_no_child_meets_condition"
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(infra.triple_drop_2nd(param))),
+    option.Some(ins(param)),
     option.None,
     "
 /// unwraps nodes of a specified tag if none of its

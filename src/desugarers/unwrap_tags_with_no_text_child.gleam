@@ -15,24 +15,24 @@ fn is_text(child: VXML) {
 fn nodemap(
   node: VXML,
   inner: InnerParam,
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   case node {
     V(_, tag, _, children) -> {
       case list.contains(inner, tag), list.any(children, is_text) {
-        True, False -> Ok(children)
-        _, _ -> Ok([node])
+        True, False -> children
+        _, _ -> [node]
       }
     }
-    _ -> Ok([node])
+    _ -> [node]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  n2t.one_to_many_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -40,17 +40,16 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
-type InnerParam = List(String)
+type InnerParam = Param
 
 pub const name = "unwrap_tags_with_no_text_child"
-const constructor = unwrap_tags_with_no_text_child
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// unwraps tags that contain no text children
-pub fn unwrap_tags_with_no_text_child(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),

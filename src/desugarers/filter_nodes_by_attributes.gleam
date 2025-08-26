@@ -37,7 +37,6 @@ type Param = List(#(String,  String,  String))
 type InnerParam = Param
 
 pub const name = "filter_nodes_by_attributes"
-const constructor = filter_nodes_by_attributes
 
 //------------------------------------------------53
 /// filters by identifying nodes whose
@@ -47,7 +46,7 @@ const constructor = filter_nodes_by_attributes
 /// match counting as true if key == ""; keeps only
 /// nodes that are descendants of such nodes, or
 /// ancestors of such nodes
-pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
+pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
@@ -65,7 +64,7 @@ pub fn filter_nodes_by_attributes(param: Param) -> Desugarer {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> n2t.identity_transform
-        _ -> delete_outside_subtrees(#(matches_a_selector(_, inner), "")).transform
+        _ -> delete_outside_subtrees(matches_a_selector(_, inner)).transform
       }
     }
   )

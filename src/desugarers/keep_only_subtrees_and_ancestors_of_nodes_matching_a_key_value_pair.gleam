@@ -18,11 +18,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String, String))
-//       ↖       ↖
-//       key     value
-
+type Param = List(#(String, String))
+//                  ↖       ↖
+//                  key     value
 type InnerParam = Param
 
 pub const name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value_pair"
@@ -54,7 +52,7 @@ pub fn constructor(
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {
         [] -> n2t.identity_transform
-        _ -> delete_outside_subtrees(#(matches_a_key_value_pair(_, inner), "")).transform
+        _ -> delete_outside_subtrees(matches_a_key_value_pair(_, inner)).transform
       }
     }
   )
