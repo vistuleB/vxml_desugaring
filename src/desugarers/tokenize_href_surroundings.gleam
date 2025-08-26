@@ -4,7 +4,7 @@ import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V, T}
-import blamedlines.{type Blame} as bl
+import blame.{type Blame} as bl
 
 const had_href_child = BlamedAttribute(bl.Des([], name, 9), "had_href_child", "true")
 

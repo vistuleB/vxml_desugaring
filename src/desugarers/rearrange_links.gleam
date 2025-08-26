@@ -9,7 +9,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V, BlamedAttribute, BlamedContent}
 import xmlm
-import blamedlines.{type Blame} as bl
+import blame.{type Blame} as bl
 
 type PatternToken {
   EndT

@@ -4,7 +4,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type DesugaringError, type Desugarer, Desugarer} as infra
 import vxml.{type VXML, V}
-import blamedlines as bl
+import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 
 fn matches_a_selector(vxml: VXML, inner: InnerParam) -> Bool {

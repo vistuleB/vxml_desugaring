@@ -4,7 +4,7 @@ import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
-import blamedlines as bl
+import blame as bl
 
 const t_1_empty_line = T(
   bl.Des([], name, 11),

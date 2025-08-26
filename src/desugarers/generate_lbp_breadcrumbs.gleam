@@ -4,7 +4,7 @@ import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
-import blamedlines as bl
+import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {

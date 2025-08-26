@@ -4,7 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{ type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V }
-import blamedlines as bl
+import blame as bl
 
 fn line_to_tooltip_span(
   bc: BlamedContent,

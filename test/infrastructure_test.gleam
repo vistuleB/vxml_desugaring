@@ -3,7 +3,7 @@ import gleeunit/should
 import gleam/list
 import infrastructure as infra
 import vxml.{V, T, BlamedAttribute}
-import blamedlines.{Src}
+import blame.{Src}
 
 pub fn main() {
   gleeunit.main()

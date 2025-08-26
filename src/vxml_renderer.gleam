@@ -1,4 +1,5 @@
-import blamedlines.{type InputLine, type OutputLine, Em, OutputLine, type Blame} as bl
+import blame.{Em, type Blame} as bl
+import io_lines.{type InputLine, type OutputLine, OutputLine} as io_l
 import desugarer_library as dl
 import gleam/dict.{type Dict}
 import gleam/float
@@ -120,8 +121,8 @@ pub fn default_html_source_parser(
     }
     let s =
       lines
-      |> bl.input_lines_to_output_lines
-      |> bl.output_lines_to_string
+      |> io_l.input_lines_to_output_lines
+      |> io_l.output_lines_to_string
       |> string.trim
     use nonempty_string <- result.try(case s {
       "" -> Error("empty content")
@@ -635,7 +636,7 @@ pub fn run_renderer(
   case debug_options.assembler_debug_options.debug_print {
     False -> Nil
     True -> {
-      bl.echo_input_lines(assembled, "assembled")
+      io_l.echo_input_lines(assembled, "assembled")
       Nil
     }
   }
@@ -736,7 +737,7 @@ pub fn run_renderer(
       True -> {
         fr.payload
         |> vp.vxml_to_output_lines
-        |> bl.echo_output_lines("fr:" <> fr.path)
+        |> io_l.echo_output_lines("fr:" <> fr.path)
         Nil
       }
     }
@@ -761,7 +762,7 @@ pub fn run_renderer(
           False -> Nil
           True -> {
             fr.payload
-            |> bl.echo_output_lines("fr-ol:" <> fr.path)
+            |> io_l.echo_output_lines("fr-ol:" <> fr.path)
             Nil
           }
         }
@@ -782,7 +783,7 @@ pub fn run_renderer(
         }
         Ok(fr) -> {
           Ok(
-            OutputFragment(..fr, payload: bl.output_lines_to_string(fr.payload)),
+            OutputFragment(..fr, payload: io_l.output_lines_to_string(fr.payload)),
           )
         }
       }

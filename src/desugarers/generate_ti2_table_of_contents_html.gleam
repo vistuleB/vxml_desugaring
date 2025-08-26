@@ -1,4 +1,4 @@
-import blamedlines as bl
+import blame as bl
 import gleam/int
 import gleam/list
 import gleam/option

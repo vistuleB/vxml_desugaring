@@ -2,7 +2,6 @@ name = "vxml_desugaring"
 version = "1.0.0"
 
 [dependencies]
-blamedlines = { "path" = "../../vistuleB/blamedlines" }
 vxml = { "path" = "../../vistuleB/vxml" }
 writerly = { "path" = "../../vistuleB/writerly" }
 

@@ -4,7 +4,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
 import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
-import blamedlines as bl
+import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 
 type ChapterNo = Int

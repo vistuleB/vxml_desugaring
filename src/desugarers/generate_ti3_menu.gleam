@@ -1,4 +1,4 @@
-import blamedlines as bl
+import blame as bl
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}

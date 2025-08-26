@@ -1,4 +1,4 @@
-import blamedlines
+import blame as bl
 import gleam/list
 import gleam/option
 import gleam/result
@@ -49,7 +49,7 @@ fn merge_one_attribute(
         True ->
           Ok([
             BlamedAttribute(
-              existing.blame |> blamedlines.append_comment(blame |> ins),
+              existing.blame |> bl.append_comment(blame |> ins),
               "style",
               existing.value <> maybe_semicolon(existing.value) <> value,
             ),

@@ -7,10 +7,10 @@ import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugarerTransform} as infra
 import vxml.{type VXML, BlamedAttribute, V}
-import blamedlines.{type Blame}
 import gleam/regexp
 import nodemaps_2_desugarer_transforms as n2t
 import ansel/image.{read, get_width}
+import blame.{type Blame}
 
 fn get_svg_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   let assert Ok(file) = simplifile.read(path)
@@ -111,7 +111,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = Nil
-
 type InnerParam = Nil
 
 pub const name = "compute_missing_images_width"

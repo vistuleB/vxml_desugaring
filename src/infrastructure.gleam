@@ -1,6 +1,7 @@
 import gleam/float
 import gleam/int
-import blamedlines.{type Blame, type OutputLine, OutputLine} as bl
+import blame.{type Blame} as bl
+import io_lines.{type OutputLine, OutputLine} as io_l
 import gleam/dict.{type Dict}
 import gleam/io
 import gleam/list
@@ -2548,7 +2549,7 @@ pub fn s_lines_to_strings(
 ) -> List(String) {
   lines
   |> s_lines_2_output_lines(dry_run)
-  |> bl.output_lines_annotated_table(banner)
+  |> io_l.output_lines_annotated_table(banner)
 }
 
 pub fn s_lines_to_string(lines: List(SLine), banner: String, dry_run: Bool) -> String {
