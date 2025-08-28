@@ -456,7 +456,7 @@ fn run_pipeline(
         True -> #([], last_debug_output)
         False -> {
           let selected = vxml |> infra.vxml_to_s_lines |> selector
-          #(selected, selected |> infra.s_lines_to_string("", True))
+          #(selected, selected |> infra.s_lines_annotated_table("", True, 0))
         }
       }
       let must_print = mode == On || { mode == OnChange && next_debug_output != last_debug_output }
@@ -465,8 +465,7 @@ fn run_pipeline(
           io.println("    " <> star_block.name_and_param_string(desugarer, step_no))
           io.println("    💠")
           selected
-          |> infra.s_lines_to_strings("", False)
-          |> star_block.print_table_at_indent(2)
+          |> infra.s_lines_annotated_table("", False, 2)
           False
         }
         False -> case printed_arrow && step_no < last_step {
@@ -691,7 +690,9 @@ pub fn run_renderer(
   case debug_options.assembler_debug_options.echo_ {
     False -> Nil
     True -> {
-      io_l.echo_input_lines(assembled, "assembled")
+      io_l.input_lines_annotated_table_at_indent(assembled, "",  2)
+      |> string.join("\n")
+      |> io.println
       Nil
     }
   }
@@ -715,7 +716,7 @@ pub fn run_renderer(
   use #(desugared, warnings, times) <- on.error_ok(
     run_pipeline(parsed, renderer.pipeline),
     on_error: fn(e: InSituDesugaringError) {
-      io.println("\nDesugaringError:")
+      io.println("\n  DesugaringError:")
       [
         " ",
         "  thrown by:      " <> e.desugarer.name <> " (desugarer)",
@@ -724,7 +725,7 @@ pub fn run_renderer(
         "  message:        " <> e.message,
         " ",
       ]
-      |> boxed_error_announcer("💥", 0, #(1, 0))
+      |> boxed_error_announcer("💥", 2, #(1, 0))
       Error(PipelineError(e))
     },
   )
@@ -1133,8 +1134,8 @@ pub fn cli_usage() {
   io.println(margin <> "  -> restrict source to elements that have one of the given key-value")
   io.println(margin <> "     pairs as attributes")
   io.println("")
-  io.println(margin <> "--echo-assembled-source | --echo-assembled")
-  io.println(margin <> "  -> print the assembled input lines of source")
+  io.println(margin <> "--table")
+  io.println(margin <> "  -> print the pipeline")
   io.println("")
   io.println(margin <> "--show-changes-near <marker> +<p>-<m> <step numbers>")
   io.println(margin <> "  -> track changes near the verbatim document fragment given by")
@@ -1163,6 +1164,9 @@ pub fn cli_usage() {
   io.println(margin <> "--show-changes-at-steps")
   io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
   io.println(margin <> "     --show-changes-near option, with the same semantics", )
+  io.println("")
+  io.println(margin <> "--echo-assembled")
+  io.println(margin <> "  -> print the assembled input lines of source")
   io.println("")
   io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
   io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
@@ -1492,6 +1496,12 @@ pub fn process_command_line_arguments(
             |> list.flatten()
           Ok(amendments |> amend_spotlight_args(args))
         }
+
+        "--table" ->
+          case list.is_empty(values) {
+            True -> Ok(CommandLineAmendments(..amendments, table: Some(True)))
+            False -> Error(UnexpectedArgumentsToOption("--table"))
+          }
 
         "--prettier0" ->
           case list.is_empty(values) {

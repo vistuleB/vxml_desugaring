@@ -251,7 +251,7 @@ defining ancestor",
       Some(pair) -> {
         fn(vxml) {
           Error(DesugaringError(
-            infra.get_blame(vxml),
+            vxml.blame,
             "duplicate parent-element pair in add_title_counters_and_titles_with_handle_assignments: "
               <> ins(pair),
           ))

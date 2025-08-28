@@ -58,10 +58,10 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
   let assert V(_, _, _, children) = root
   let chapters = infra.children_with_tag(root, "Chapter")
   let bootcamps = infra.children_with_tag(root, "Bootcamp")
-  use toc <- on.zero_many_one(
+  use toc <- on.empty_gt1_singleton(
     infra.children_with_tag(root, "TOC"),
-    on_zero: Error(DesugaringError(root.blame, "TOC missing")),
-    on_many: fn(_, _, _) {Error(DesugaringError(root.blame, "> 1 TOC"))},
+    on_empty: Error(DesugaringError(root.blame, "TOC missing")),
+    on_gt1: fn(_, _, _) {Error(DesugaringError(root.blame, "> 1 TOC"))},
   )
   let num_chapters = list.length(chapters)
   let num_bootcamps = list.length(bootcamps)

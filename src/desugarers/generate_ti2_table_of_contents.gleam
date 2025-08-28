@@ -22,7 +22,7 @@ fn chapter_link(
 ) -> Result(VXML, DesugaringError) {
   let tp = "Chapter"
 
-  let item_blame = infra.get_blame(item)
+  let item_blame = item.blame
 
   use label_attr <- on.none_some(
     infra.v_attribute_with_key(item, "title_gr"),

@@ -143,123 +143,6 @@ pub fn left_right_delim_strings(delimiters: List(LatexDelimiterPair)) -> #(List(
 //* use <- utilities
 //**************************************************************
 
-// pub fn on_false_on_true(
-//   over condition: Bool,
-//   with_on_false f1: b,
-//   with_on_true f2: fn() -> b,
-// ) -> b {
-//   case condition {
-//     False -> f1
-//     True -> f2()
-//   }
-// }
-
-// pub fn on_true_on_false(
-//   over condition: Bool,
-//   with_on_true f1: b,
-//   with_on_false f2: fn() -> b,
-// ) -> b {
-//   case condition {
-//     True -> f1
-//     False -> f2()
-//   }
-// }
-
-// pub fn on_lazy_true_on_false(
-//   over condition: Bool,
-//   with_on_true f1: fn() -> b,
-//   with_on_false f2: fn() -> b,
-// ) -> b {
-//   case condition {
-//     True -> f1()
-//     False -> f2()
-//   }
-// }
-
-// pub fn on_lazy_false_on_true(
-//   over condition: Bool,
-//   with_on_false f1: fn() -> b,
-//   with_on_true f2: fn() -> b,
-// ) -> b {
-//   case condition {
-//     False -> f1()
-//     True -> f2()
-//   }
-// }
-
-// pub fn on_none_on_some(
-//   over option: Option(a),
-//   on_none f1: b,
-//   with_on_some f2: fn(a) -> b,
-// ) -> b {
-//   case option {
-//     None -> f1
-//     Some(z) -> f2(z)
-//   }
-// }
-
-// pub fn on_lazy_none_on_some(
-//   over option: Option(a),
-//   on_none f1: fn() -> b,
-//   with_on_some f2: fn(a) -> b,
-// ) -> b {
-//   case option {
-//     None -> f1()
-//     Some(z) -> f2(z)
-//   }
-// }
-
-// pub fn on_some_on_none(
-//   over option: Option(a),
-//   with_on_some f2: fn(a) -> b,
-//   on_none f1: fn() -> b,
-// ) -> b {
-//   case option {
-//     None -> f1()
-//     Some(z) -> f2(z)
-//   }
-// }
-
-// pub fn on_error_on_ok(
-//   over res: Result(a, b),
-//   with_on_error f1: fn(b) -> c,
-//   with_on_ok f2: fn(a) -> c,
-// ) -> c {
-//   case res {
-//     Error(e) -> f1(e)
-//     Ok(r) -> f2(r)
-//   }
-// }
-
-// pub fn on_ok_on_error(
-//   over res: Result(a, b),
-//   with_on_ok f1: fn(a) -> c,
-//   with_on_error f2: fn(b) -> c,
-// ) -> c {
-//   case res {
-//     Ok(r) -> f1(r)
-//     Error(e) -> f2(e)
-//   }
-// }
-
-// pub fn on_empty_on_nonempty(l: List(a), f1: c, f2: fn(a, List(a)) -> c) -> c {
-//   case l {
-//     [] -> f1
-//     [first, ..rest] -> f2(first, rest)
-//   }
-// }
-
-// pub fn on_lazy_empty_on_nonempty(
-//   l: List(a),
-//   f1: fn() -> c,
-//   f2: fn(a, List(a)) -> c,
-// ) -> c {
-//   case l {
-//     [] -> f1()
-//     [first, ..rest] -> f2(first, rest)
-//   }
-// }
-
 pub fn on_v_on_t(
   node: VXML,
   f1: fn(Blame, String, List(BlamedAttribute), List(VXML)) -> c,
@@ -828,10 +711,6 @@ pub fn find_replace_in_node_no_list(
 //**************************************************************
 
 pub const no_blame = bl.no_blame
-
-pub fn get_blame(vxml: VXML) -> Blame {
-  vxml.blame
-}
 
 pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
   let assert [first, ..] = vxmls
@@ -2544,19 +2423,15 @@ pub fn s_lines_2_output_lines(
   |> list.reverse
 }
 
-pub fn s_lines_to_strings(
+pub fn s_lines_annotated_table(
   lines: List(SLine),
   banner: String,
-  dry_run: Bool,  
-) -> List(String) {
+  dry_run: Bool,
+  indent: Int,
+) -> String {
   lines
   |> s_lines_2_output_lines(dry_run)
-  |> io_l.output_lines_annotated_table(banner)
-}
-
-pub fn s_lines_to_string(lines: List(SLine), banner: String, dry_run: Bool) -> String {
-  lines
-  |> s_lines_to_strings(banner, dry_run)
+  |> io_l.output_lines_annotated_table_at_indent(banner, indent)
   |> string.join("\n")
 }
 

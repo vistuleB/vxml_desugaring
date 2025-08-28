@@ -20,7 +20,7 @@ fn intersperse_children_with_spacers(
           ..intersperse_children_with_spacers([second, ..rest], inner)
         ]
         Ok(classname) -> {
-          let blame = infra.get_blame(first)
+          let blame = first.blame
           [
             first,
             V(blame, "div", [BlamedAttribute(blame, "class", classname)], []),

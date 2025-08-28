@@ -58,7 +58,7 @@ fn nodemap(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
   )
 
   use <- on.lazy_true_false(is_known_inner_element(vxml), fn() {
-    let blame = vxml |> infra.get_blame
+    let blame = vxml.blame
     n2t.GoBack(
       V(blame, "div", [BlamedAttribute(blame, "class", "slice")], [vxml]),
     )
