@@ -4,19 +4,18 @@ import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T}
+import on
 
 fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
-    T(_, contents) -> {
-      use first_non_empty <- infra.on_error_on_ok(
-        over: list.find(contents, fn(blamed_content) {
-          !{ string.is_empty(blamed_content.content) }
-        }),
-        with_on_error: fn(_){ Ok(vxml) }
+    T(_, lines) -> {
+      use first_non_empty <- on.error_ok(
+        list.find(lines, fn(bc) {!{ string.is_empty(bc.content) }}),
+        on_error: fn(_){ Ok(vxml) }
       )
-      Ok(T(first_non_empty.blame, contents))
+      Ok(T(first_non_empty.blame, lines))
     }
     _ -> Ok(vxml)
   }

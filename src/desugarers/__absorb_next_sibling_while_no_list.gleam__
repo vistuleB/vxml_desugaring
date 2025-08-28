@@ -9,7 +9,7 @@ fn update_children(
   children: List(VXML),
   inner: InnerParam,
 ) -> List(VXML) {
-  use #(first, rest) <- infra.on_error_on_ok(
+  use #(first, rest) <- on.error_ok(
     infra.first_rest(children),
     fn(_){[]},
   )

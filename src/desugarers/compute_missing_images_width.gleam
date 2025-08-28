@@ -11,13 +11,14 @@ import gleam/regexp
 import nodemaps_2_desugarer_transforms as n2t
 import ansel/image.{read, get_width}
 import blame.{type Blame}
+import on
 
 fn get_svg_width(blame: Blame, path: String) -> Result(Float, DesugaringError) {
   let assert Ok(file) = simplifile.read(path)
   let assert True = string.starts_with(file, "<svg ") || string.starts_with(file, "<?xml ")
   let assert Ok(width_pattern) = regexp.from_string("width=\"([0-9.]+)(.*)\"")
   
-  use match, _ <- infra.on_empty_on_nonempty(
+  use match, _ <- on.empty_nonempty(
     regexp.scan(width_pattern, file),
     Error(DesugaringError(blame, "Could not find width attribute in SVG file\n file: " <> path))
   )
@@ -80,15 +81,15 @@ fn nodemap(
     V(blame, tag, attributes, _) 
       if tag == "ImageLeft" || tag == "ImageRight" || tag == "Image" -> {
         // if the image has a width attribute, we don't need to do anything
-        use <- infra.on_some_on_none(
-          over: infra.v_attribute_with_key(node, "width"),
-          with_on_some: fn(_) {Ok(node)},
+        use <- on.some_none(
+          infra.v_attribute_with_key(node, "width"),
+          on_some: fn(_) {Ok(node)},
         )
 
         // if the image doesn't have a src attribute, we need to error
-        use attr <- infra.on_none_on_some(
-          over: infra.v_attribute_with_key(node, "src"),
-          with_on_none: Error(DesugaringError(blame, "Image tag must have a src attribute")),
+        use attr <- on.none_some(
+          infra.v_attribute_with_key(node, "src"),
+          on_none: Error(DesugaringError(blame, "Image tag must have a src attribute")),
         )
        
         use width <- result.try(get_image_width(attr.blame, "../../../MrChaker/little-bo-peep-solid/public" <> attr.value))

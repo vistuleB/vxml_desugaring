@@ -8,6 +8,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
+import on
 
 fn prepend_0(number: String) {
   case string.length(number) {
@@ -25,9 +26,9 @@ fn chapter_link(
 
   let item_blame = item.blame
 
-  use label_attr <- infra.on_none_on_some(
+  use label_attr <- on.none_some(
     infra.v_attribute_with_key(item, "title_gr"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
       <> tp
@@ -35,9 +36,9 @@ fn chapter_link(
     )),
   )
 
-  use href_attr <- infra.on_none_on_some(
+  use href_attr <- on.none_some(
     infra.v_attribute_with_key(item, "title_en"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
       <> tp
@@ -45,9 +46,9 @@ fn chapter_link(
     )),
   )
 
-  use number_attribute <- infra.on_none_on_some(
+  use number_attribute <- on.none_some(
     infra.v_attribute_with_key(item, "number"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
       <> tp
@@ -95,7 +96,7 @@ fn chapter_link(
 
   let sub_chapter_number = ins(section_index)
   let margin_left =
-    infra.on_true_on_false(sub_chapter_number == "0", "0", fn() { "40px" })
+    on.true_false(sub_chapter_number == "0", "0", fn() { "40px" })
 
   let style_attr =
     BlamedAttribute(desugarer_blame(101), "style", "margin-left: " <> margin_left)
@@ -106,9 +107,9 @@ fn chapter_link(
 fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
   let tp = "Chapter"
 
-  use number_attribute <- infra.on_none_on_some(
+  use number_attribute <- on.none_some(
     infra.v_attribute_with_key(item, "number"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item.blame,
       "(generate_ti2_table_of_contents_html) "
         <> tp
@@ -143,22 +144,19 @@ fn at_root(
 ) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let #(table_of_contents_tag, chapter_link_component_name) = inner
   let sections = infra.descendants_with_tag(root, "section")
-  use chapter_menu_items <- infra.on_error_on_ok(
-    over: {
-      sections
-      |> list.map_fold(0, fn(acc, chapter: VXML) {
-        case get_section_index(chapter, acc) {
-          Ok(section_index) -> #(
-            section_index,
-            chapter_link(chapter_link_component_name, chapter, section_index),
-          )
-          Error(error) -> #(acc, Error(error))
-        }
-      })
-      |> pair.second
-      |> result.all
-    },
-    with_on_error: Error,
+  use chapter_menu_items <- on.ok(
+    sections
+    |> list.map_fold(0, fn(acc, chapter: VXML) {
+      case get_section_index(chapter, acc) {
+        Ok(section_index) -> #(
+          section_index,
+          chapter_link(chapter_link_component_name, chapter, section_index),
+        )
+        Error(error) -> #(acc, Error(error))
+      }
+    })
+    |> pair.second
+    |> result.all
   )
 
   let chapters_div =

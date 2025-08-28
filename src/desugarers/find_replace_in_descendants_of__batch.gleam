@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/option
-import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
@@ -41,14 +40,12 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   Ok(param)
 }
 
-type Param =
-  List(#(String,   List(#(String, String))))
-//       ↖         ↖
-//       ancestor  from/to pairs
-
+type Param = List(#(String,   List(#(String, String))))
+//                  ↖         ↖
+//                  ancestor  from/to pairs
 type InnerParam = Param
 
-pub const name = "find_replace_in_descendants_of"
+pub const name = "find_replace_in_descendants_of__batch"
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
@@ -59,7 +56,7 @@ pub const name = "find_replace_in_descendants_of"
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
-    option.Some(ins(param)),
+    option.Some(param |> infra.list_param_stringifier),
     option.None,
     "
 /// find and replace strings in text nodes that are

@@ -52,19 +52,19 @@ fn is_known_other_element(vxml: VXML) -> Bool {
 }
 
 fn nodemap(vxml: VXML, _: List(VXML)) -> n2t.EarlyReturn(VXML) {
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     is_known_outer_element(vxml),
     n2t.Continue(vxml),
   )
 
-  use <- infra.on_lazy_true_on_false(is_known_inner_element(vxml), fn() {
+  use <- on.lazy_true_false(is_known_inner_element(vxml), fn() {
     let blame = vxml |> infra.get_blame
     n2t.GoBack(
       V(blame, "div", [BlamedAttribute(blame, "class", "slice")], [vxml]),
     )
   })
 
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     is_known_other_element(vxml),
     n2t.GoBack(vxml),
   )

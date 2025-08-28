@@ -462,11 +462,11 @@ fn match_tag_and_children(
 ) {
   use tag_content_patterns <- result.try(children |> result.all)
   let tag_content_patterns = tag_content_patterns |> list.flatten
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     xmlm_tag_name(xmlm_tag) == "root",
     Ok(tag_content_patterns),
   )
-  use <- infra.on_false_on_true(
+  use <- on.false_true(
     xmlm_tag_name(xmlm_tag) == "a" || xmlm_tag_name(xmlm_tag) == "InChapterLink",
     Error(DesugaringError(
       infra.blame_us(""),
@@ -667,9 +667,9 @@ fn nodemap(
 ) -> VXML {
   case vxml {
     V(b, tag, attributes, children) -> {
-      use atomized <- infra.on_error_on_ok(
+      use atomized <- on.error_ok(
         over: atomize_maybe(children),
-        with_on_error: fn(_) { vxml },
+        on_error: fn(_) { vxml },
       )
       list.fold(
         param,

@@ -4,6 +4,7 @@ import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V}
+import on
 
 fn nodemap(
   node: VXML,
@@ -13,13 +14,13 @@ fn nodemap(
   case node {
     V(_, tag, _, _) if tag == parent_tag -> {
       // return early if we have a child of tag child_tag:
-      use _ <- infra.on_ok_on_error(
+      use _ <- on.ok_error(
         infra.children_with_tag(node, child_tag) |> list.first,
         fn(_) {Ok(node)},
       )
 
       // return early if we don't have a descendant of tag descendant_tag:
-      use descendant <- infra.on_error_on_ok(
+      use descendant <- on.error_ok(
         infra.descendants_with_tag(node, descendant_tag) |> list.first,
         fn (_) {Ok(node)},
       )

@@ -4,16 +4,17 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, type BlamedAttribute}
+import on
 
 /// return option of
 /// - attribute with key `key`
 /// - modified children (with removed attribute)
 fn check_first_child(children: List(VXML), key: String)
 -> Option(#(BlamedAttribute, List(VXML))) {
-  use #(first, rest) <- infra.on_error_on_ok(infra.first_rest(children), fn(_){None})
+  use #(first, rest) <- on.error_ok(infra.first_rest(children), fn(_){None})
   use <- infra.on_t_on_v_no_deconstruct(first, fn(_, _){None})
   let assert V(_, _, _, _) = first
-  use attribute <- infra.on_error_on_ok(
+  use attribute <- on.error_ok(
     list.find(first.attributes, fn(att) {att.key == key}),
     fn(_){None},
   )

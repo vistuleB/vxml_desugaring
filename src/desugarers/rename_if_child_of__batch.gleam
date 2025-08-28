@@ -4,6 +4,7 @@ import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import on
 
 fn nodemap(
   vxml: VXML,
@@ -13,7 +14,7 @@ fn nodemap(
     T(_, _) -> vxml
     V(blame, tag, attrs, children) -> {
 
-      use inner_dict <- infra.on_error_on_ok(
+      use inner_dict <- on.error_ok(
         dict.get(inner, tag),
         fn(_) { vxml },
       )

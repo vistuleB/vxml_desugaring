@@ -10,6 +10,7 @@ import roman
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 import blame as bl
+import on
 
 type CounterType {
   Arabic
@@ -315,27 +316,27 @@ fn handle_non_unary_att_value(
 ) -> Result(#(String, Int, Int), DesugaringError) {
   let splits = string.split(attribute.value, " ")
 
-  use #(counter_name, rest) <- infra.on_error_on_ok(
+  use #(counter_name, rest) <- on.error_ok(
     infra.first_rest(splits),
     fn(_) {Error(DesugaringError(attribute.blame, "counter must have a name"))}
   )
 
-  use #(starting_value, rest) <- infra.on_error_on_ok(
+  use #(starting_value, rest) <- on.error_ok(
     infra.first_rest(rest),
     fn(_) {Ok(#(counter_name, 0, 1))}
   )
 
-  use starting_value <- infra.on_error_on_ok(
+  use starting_value <- on.error_ok(
     int.parse(starting_value),
     fn(_) {Error(DesugaringError(attribute.blame, "counter starting value must be a number"))},
   )
 
-  use #(step, rest) <- infra.on_error_on_ok(
+  use #(step, rest) <- on.error_ok(
     infra.first_rest(rest),
     fn(_) {Ok(#(counter_name, starting_value, 1))}
   )
 
-  use step <- infra.on_error_on_ok(
+  use step <- on.error_ok(
     int.parse(step),
     fn(_) {Error(DesugaringError(attribute.blame, "counter starting value must be a number"))},
   )
@@ -372,7 +373,7 @@ fn attribute_key_is_counter(
 fn read_counter_definition(
   attribute: BlamedAttribute,
 ) -> Result(Option(#(String, CounterInfo)), DesugaringError) {
-  use counter_type <- infra.on_error_on_ok(
+  use counter_type <- on.error_ok(
     attribute_key_is_counter(attribute.key),
     fn(_){Ok(None)},
   )
@@ -409,7 +410,7 @@ fn fancy_one_attribute_processor(
 
   let assert True = key == string.trim(key)
 
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     key == "",
     Error(DesugaringError(
       to_process.blame,
@@ -509,7 +510,7 @@ fn t_nodemap(
     update_blamed_contents(contents, counters, regexes),
   )
 
-  use <- infra.on_some_on_none(
+  use <- on.some_none(
     infra.get_contained(new_handles, old_handles),
     fn(old_handle) {
       Error(DesugaringError(

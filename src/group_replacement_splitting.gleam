@@ -5,6 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure as infra
 import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 import blame.{type Blame} as bl
+import on
 
 pub type GroupReplacementInstruction {
   Keep
@@ -36,7 +37,7 @@ pub fn split_content_with_replacement(
   content: String,
   w: RegexpWithGroupReplacementInstructions,
 ) -> List(VXML) {
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     content == "",
     [T(blame, [BlamedContent(blame, content)])]
   )

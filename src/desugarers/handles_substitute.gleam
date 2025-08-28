@@ -8,6 +8,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
 import blame.{type Blame} as bl
+import on
 
 type HandlesDict =
   Dict(String, #(String,   String,   String))
@@ -32,7 +33,7 @@ fn hyperlink_constructor(
     state: State,
     inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
-  use path <- infra.on_lazy_none_on_some(
+  use path <- on.lazy_none_some(
     state.path,
     fn(){Error(DesugaringError(blame, "handle occurrence when local path is not defined"))},
   )
@@ -109,7 +110,7 @@ fn matches_2_hyperlinks(
     |> list.map(extract_handle_name)
     |> list.map(hyperlink_maybe(_, blame, state, inner))
 
-  use _ <- infra.on_ok_on_error(
+  use _ <- on.ok_error(
     list.find(threats, is_failure),
     fn (f) {
       let assert Failure(desugaring_error) = f

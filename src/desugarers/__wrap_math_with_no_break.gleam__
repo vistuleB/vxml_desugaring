@@ -7,15 +7,15 @@ import vxml.{type VXML, T, V}
 fn wrap_second_element_if_its_math_and_recurse(
   children: List(VXML),
 ) -> List(VXML) {
-  use first, after_first <- infra.on_lazy_empty_on_nonempty(children, fn() {
+  use first, after_first <- on.lazy_empty_nonempty(children, fn() {
     []
   })
 
-  use math, after_second <- infra.on_lazy_empty_on_nonempty(after_first, fn() {
+  use math, after_second <- on.lazy_empty_nonempty(after_first, fn() {
     children
   })
 
-  use <- infra.on_lazy_false_on_true(
+  use <- on.lazy_false_true(
     infra.is_v_and_tag_equals(math, "Math"),
     fn() {
       [
@@ -28,7 +28,7 @@ fn wrap_second_element_if_its_math_and_recurse(
   let #(first, last_word_of_first) =
     infra.extract_last_word_from_t_node_if_t(first)
 
-  use third, after_third <- infra.on_lazy_empty_on_nonempty(after_second, fn() {
+  use third, after_third <- on.lazy_empty_nonempty(after_second, fn() {
     [
       first,
       V(

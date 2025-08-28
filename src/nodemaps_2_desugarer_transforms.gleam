@@ -2,6 +2,7 @@ import gleam/result
 import gleam/list
 import vxml.{type VXML, V, T}
 import infrastructure.{type DesugarerTransform, type DesugaringError, type DesugaringWarning, type TrafficLight, Continue, GoBack} as infra
+import on
 
 pub fn add_warnings(vxml: VXML) {
   #(vxml, [])
@@ -1155,7 +1156,7 @@ fn early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden
   nodemap: EarlyReturnOneToOneNoErrorNodeMap,
   forbidden: List(String),
 ) -> VXML {
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     infra.is_v_and_tag_is_one_of(node, forbidden),
     node,
   )
@@ -1235,7 +1236,7 @@ fn early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidde
   nodemap: EarlyReturnOneToManyNoErrorNodeMap,
   forbidden: List(String),
 ) -> List(VXML) {
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     infra.is_v_and_tag_is_one_of(node, forbidden),
     [node],
   )

@@ -6,14 +6,15 @@ import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
+import on
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
-  use last <- infra.on_error_on_ok(
+  use last <- on.error_ok(
     list.last(nodes),
     fn(_) { nodes }
   )
 
-  use <- infra.on_lazy_false_on_true(
+  use <- on.lazy_false_true(
     infra.is_text_node(last),
     fn(){
       // in case last node is a V node . call remove period recursvaly on it's children
@@ -26,12 +27,12 @@ fn remove_period(nodes: List(VXML)) -> List(VXML) {
   )
 
   let assert T(b, lines) = last
-  use last_line <- infra.on_error_on_ok(
+  use last_line <- on.error_ok(
     list.last(lines),
     fn(_) { nodes }
   )
   // some Text nodes ends with "" . so it should be ignored and remove_period on nodes without last one
-  use <- infra.on_false_on_true(
+  use <- on.false_true(
     last_line.content != "",
     list.take(nodes, list.length(nodes) - 1)
     |> remove_period()

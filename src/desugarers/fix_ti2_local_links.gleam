@@ -4,17 +4,18 @@ import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import on
 
 fn nodemap(
   vxml: VXML,
 ) -> Result(VXML, DesugaringError) {
   case vxml {
     V(blame, tag, atts, children) -> {
-      use href <- infra.on_none_on_some(
+      use href <- on.none_some(
         infra.v_attribute_with_key(vxml, "href"),
         Ok(vxml),
       )
-      use <- infra.on_false_on_true(
+      use <- on.false_true(
         string.starts_with(href.value, "../../demo"),
         Ok(vxml),
       )

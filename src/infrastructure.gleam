@@ -10,19 +10,20 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
 import vxml.{type BlamedAttribute, BlamedAttribute, type BlamedContent, type VXML, BlamedContent, T, V, vxml_to_string}
+import on
 
-//**************************************************************
-//* Traffic Light for early returns
-//**************************************************************
+// ************************************************************
+// Traffic Light for early returns
+// ************************************************************
 
 pub type TrafficLight {
   Continue
   GoBack
 }
 
-//**************************************************************
-//* css-unit parsing
-//**************************************************************
+// *************************************************************
+// css-unit parsing
+// *************************************************************
 
 pub type CSSUnit {
   PX
@@ -39,17 +40,17 @@ pub fn parse_to_float(s: String) -> Result(Float, Nil) {
 }
 
 fn extract_css_unit(s: String) -> #(String, Option(CSSUnit)) {
-  use <- on_true_on_false(
+  use <- on.true_false(
     string.ends_with(s, "rem"),
     #(string.drop_end(s, 3), Some(REM)),
   )
 
-  use <- on_true_on_false(
+  use <- on.true_false(
     string.ends_with(s, "em"),
     #(string.drop_end(s, 2), Some(EM)),
   )
 
-  use <- on_true_on_false(
+  use <- on.true_false(
     string.ends_with(s, "px"),
     #(string.drop_end(s, 2), Some(PX)),
   )
@@ -61,7 +62,7 @@ pub fn parse_number_and_optional_css_unit(
   s: String
 ) -> Result(#(Float, Option(CSSUnit)), Nil) {
   let #(before_unit, unit) = extract_css_unit(s)
-  use number <- result.try(parse_to_float(before_unit))
+  use number <- on.ok(parse_to_float(before_unit))
   Ok(#(number, unit))
 }
 
@@ -142,122 +143,122 @@ pub fn left_right_delim_strings(delimiters: List(LatexDelimiterPair)) -> #(List(
 //* use <- utilities
 //**************************************************************
 
-pub fn on_false_on_true(
-  over condition: Bool,
-  with_on_false f1: b,
-  with_on_true f2: fn() -> b,
-) -> b {
-  case condition {
-    False -> f1
-    True -> f2()
-  }
-}
+// pub fn on_false_on_true(
+//   over condition: Bool,
+//   with_on_false f1: b,
+//   with_on_true f2: fn() -> b,
+// ) -> b {
+//   case condition {
+//     False -> f1
+//     True -> f2()
+//   }
+// }
 
-pub fn on_true_on_false(
-  over condition: Bool,
-  with_on_true f1: b,
-  with_on_false f2: fn() -> b,
-) -> b {
-  case condition {
-    True -> f1
-    False -> f2()
-  }
-}
+// pub fn on_true_on_false(
+//   over condition: Bool,
+//   with_on_true f1: b,
+//   with_on_false f2: fn() -> b,
+// ) -> b {
+//   case condition {
+//     True -> f1
+//     False -> f2()
+//   }
+// }
 
-pub fn on_lazy_true_on_false(
-  over condition: Bool,
-  with_on_true f1: fn() -> b,
-  with_on_false f2: fn() -> b,
-) -> b {
-  case condition {
-    True -> f1()
-    False -> f2()
-  }
-}
+// pub fn on_lazy_true_on_false(
+//   over condition: Bool,
+//   with_on_true f1: fn() -> b,
+//   with_on_false f2: fn() -> b,
+// ) -> b {
+//   case condition {
+//     True -> f1()
+//     False -> f2()
+//   }
+// }
 
-pub fn on_lazy_false_on_true(
-  over condition: Bool,
-  with_on_false f1: fn() -> b,
-  with_on_true f2: fn() -> b,
-) -> b {
-  case condition {
-    False -> f1()
-    True -> f2()
-  }
-}
+// pub fn on_lazy_false_on_true(
+//   over condition: Bool,
+//   with_on_false f1: fn() -> b,
+//   with_on_true f2: fn() -> b,
+// ) -> b {
+//   case condition {
+//     False -> f1()
+//     True -> f2()
+//   }
+// }
 
-pub fn on_none_on_some(
-  over option: Option(a),
-  with_on_none f1: b,
-  with_on_some f2: fn(a) -> b,
-) -> b {
-  case option {
-    None -> f1
-    Some(z) -> f2(z)
-  }
-}
+// pub fn on_none_on_some(
+//   over option: Option(a),
+//   on_none f1: b,
+//   with_on_some f2: fn(a) -> b,
+// ) -> b {
+//   case option {
+//     None -> f1
+//     Some(z) -> f2(z)
+//   }
+// }
 
-pub fn on_lazy_none_on_some(
-  over option: Option(a),
-  with_on_none f1: fn() -> b,
-  with_on_some f2: fn(a) -> b,
-) -> b {
-  case option {
-    None -> f1()
-    Some(z) -> f2(z)
-  }
-}
+// pub fn on_lazy_none_on_some(
+//   over option: Option(a),
+//   on_none f1: fn() -> b,
+//   with_on_some f2: fn(a) -> b,
+// ) -> b {
+//   case option {
+//     None -> f1()
+//     Some(z) -> f2(z)
+//   }
+// }
 
-pub fn on_some_on_none(
-  over option: Option(a),
-  with_on_some f2: fn(a) -> b,
-  with_on_none f1: fn() -> b,
-) -> b {
-  case option {
-    None -> f1()
-    Some(z) -> f2(z)
-  }
-}
+// pub fn on_some_on_none(
+//   over option: Option(a),
+//   with_on_some f2: fn(a) -> b,
+//   on_none f1: fn() -> b,
+// ) -> b {
+//   case option {
+//     None -> f1()
+//     Some(z) -> f2(z)
+//   }
+// }
 
-pub fn on_error_on_ok(
-  over res: Result(a, b),
-  with_on_error f1: fn(b) -> c,
-  with_on_ok f2: fn(a) -> c,
-) -> c {
-  case res {
-    Error(e) -> f1(e)
-    Ok(r) -> f2(r)
-  }
-}
+// pub fn on_error_on_ok(
+//   over res: Result(a, b),
+//   with_on_error f1: fn(b) -> c,
+//   with_on_ok f2: fn(a) -> c,
+// ) -> c {
+//   case res {
+//     Error(e) -> f1(e)
+//     Ok(r) -> f2(r)
+//   }
+// }
 
-pub fn on_ok_on_error(
-  over res: Result(a, b),
-  with_on_ok f1: fn(a) -> c,
-  with_on_error f2: fn(b) -> c,
-) -> c {
-  case res {
-    Ok(r) -> f1(r)
-    Error(e) -> f2(e)
-  }
-}
+// pub fn on_ok_on_error(
+//   over res: Result(a, b),
+//   with_on_ok f1: fn(a) -> c,
+//   with_on_error f2: fn(b) -> c,
+// ) -> c {
+//   case res {
+//     Ok(r) -> f1(r)
+//     Error(e) -> f2(e)
+//   }
+// }
 
-pub fn on_empty_on_nonempty(l: List(a), f1: c, f2: fn(a, List(a)) -> c) -> c {
-  case l {
-    [] -> f1
-    [first, ..rest] -> f2(first, rest)
-  }
-}
+// pub fn on_empty_on_nonempty(l: List(a), f1: c, f2: fn(a, List(a)) -> c) -> c {
+//   case l {
+//     [] -> f1
+//     [first, ..rest] -> f2(first, rest)
+//   }
+// }
 
-pub fn on_lazy_empty_on_nonempty(
-  l: List(a),
-  f1: fn() -> c,
-  f2: fn(a, List(a)) -> c,
-) -> c {
-  case l {
-    [] -> f1()
-    [first, ..rest] -> f2(first, rest)
-  }
-}
+// pub fn on_lazy_empty_on_nonempty(
+//   l: List(a),
+//   f1: fn() -> c,
+//   f2: fn(a, List(a)) -> c,
+// ) -> c {
+//   case l {
+//     [] -> f1()
+//     [first, ..rest] -> f2(first, rest)
+//   }
+// }
 
 pub fn on_v_on_t(
   node: VXML,
@@ -336,8 +337,9 @@ pub fn nillify_error(message: String) -> fn(e) -> Result(a, Nil) {
 
 pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
   case vxmls {
+    [] -> Error("vxml is empty!")
     [root] -> Ok(root)
-    _ -> Error("found " <> ins(list.length(vxmls)) <> " != 1 top-level nodes")
+    _ -> Error("found " <> ins(list.length(vxmls)) <> " > 1 top-level nodes")
   }
 }
 
@@ -445,8 +447,8 @@ pub fn try_map_fold(
   case ze_list {
     [] -> Ok(#([], state))
     [first, ..rest] -> {
-      use #(mapped_first, state) <- result.try(f(state, first))
-      use #(mapped_rest, state) <- result.try(try_map_fold(rest, state, f))
+      use #(mapped_first, state) <- on.ok(f(state, first))
+      use #(mapped_rest, state) <- on.ok(try_map_fold(rest, state, f))
       Ok(#([mapped_first, ..mapped_rest], state))
     }
   }
@@ -761,7 +763,7 @@ fn find_replace_in_blamed_content(
   blamed_content: BlamedContent,
   list_pairs: List(#(String, String)),
 ) -> BlamedContent {
-  use #(first_from, first_to), rest <- on_empty_on_nonempty(
+  use #(first_from, first_to), rest <- on.empty_nonempty(
     list_pairs,
     blamed_content,
   )
@@ -2256,20 +2258,20 @@ pub fn assertive_tests_from_data_with_outside(
 pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
   let desugarer = tst.desugarer_factory()
 
-  use <- on_true_on_false(
+  use <- on.true_false(
     name != desugarer.name,
     Error(NonMatchingDesugarerName(desugarer.name)),
   )
 
-  use vxmls <- result.try(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
+  use vxmls <- on.ok(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
 
   let assert [input] = vxmls
 
-  use vxmls <- result.try(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
+  use vxmls <- on.ok(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
 
   let assert [expected] = vxmls
 
-  use #(output, _) <- result.try(
+  use #(output, _) <- on.ok(
     desugarer.transform(input)
     |> result.map_error(fn(e) { TestDesugaringError(e) })
   )
@@ -2316,7 +2318,7 @@ pub fn run_and_announce_results(
 pub fn run_assertive_tests(test_group: AssertiveTests) -> #(Int, Int) {
   let tests = test_group.tests()
   let total = list.length(tests)
-  use <- on_false_on_true(
+  use <- on.false_true(
     total > 0,
     #(0, 0),
   )

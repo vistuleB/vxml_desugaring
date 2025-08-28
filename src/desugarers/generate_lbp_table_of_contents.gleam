@@ -6,6 +6,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import vxml.{type VXML, BlamedAttribute, V}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
+import on
 
 fn chapter_link(
   chapter_link_component_name: String,
@@ -19,7 +20,7 @@ fn chapter_link(
     _ -> panic as "expecting 'Chapter' or 'Bootcamp'"
   }
 
-  use title_element <- infra.on_error_on_ok(
+  use title_element <- on.error_ok(
     infra.unique_child_with_tag(item, "ArticleTitle"),
     fn (s) {
       case s {

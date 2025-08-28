@@ -62,7 +62,7 @@ import desugarers/extract_starting_and_ending_spaces
 import desugarers/filter_nodes_by_attributes
 import desugarers/find_replace__batch__outside
 import desugarers/find_replace__outside
-import desugarers/find_replace_in_descendants_of
+import desugarers/find_replace_in_descendants_of__batch
 import desugarers/fix_ti2_local_links
 import desugarers/fold_contents_into_text
 import desugarers/fold_contents_into_text__batch
@@ -219,7 +219,7 @@ pub const extract_starting_and_ending_spaces = extract_starting_and_ending_space
 pub const filter_nodes_by_attributes = filter_nodes_by_attributes.constructor
 pub const find_replace__batch__outside = find_replace__batch__outside.constructor
 pub const find_replace__outside = find_replace__outside.constructor
-pub const find_replace_in_descendants_of = find_replace_in_descendants_of.constructor
+pub const find_replace_in_descendants_of__batch = find_replace_in_descendants_of__batch.constructor
 pub const fix_ti2_local_links = fix_ti2_local_links.constructor
 pub const fold_contents_into_text = fold_contents_into_text.constructor
 pub const fold_contents_into_text__batch = fold_contents_into_text__batch.constructor
@@ -377,7 +377,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
   filter_nodes_by_attributes.assertive_tests,
   find_replace__batch__outside.assertive_tests,
   find_replace__outside.assertive_tests,
-  find_replace_in_descendants_of.assertive_tests,
+  find_replace_in_descendants_of__batch.assertive_tests,
   fix_ti2_local_links.assertive_tests,
   fold_contents_into_text.assertive_tests,
   fold_contents_into_text__batch.assertive_tests,

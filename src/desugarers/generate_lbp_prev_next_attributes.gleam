@@ -1,7 +1,8 @@
+import on
 import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
-import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugaringWarning} as infra
 import vxml.{type VXML, BlamedAttribute, V}
 import nodemaps_2_desugarer_transforms as n2t
 
@@ -57,17 +58,17 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
   let assert V(_, _, _, children) = root
   let chapters = infra.children_with_tag(root, "Chapter")
   let bootcamps = infra.children_with_tag(root, "Bootcamp")
-  let assert [toc] = infra.children_with_tag(root, "TOC")
-
+  use toc <- on.zero_many_one(
+    infra.children_with_tag(root, "TOC"),
+    on_zero: Error(DesugaringError(root.blame, "TOC missing")),
+    on_many: fn(_, _, _) {Error(DesugaringError(root.blame, "> 1 TOC"))},
+  )
   let num_chapters = list.length(chapters)
   let num_bootcamps = list.length(bootcamps)
-
   let chapters = list.index_map(chapters, fn(c, i) {add_links_to_chapter(c, i + 1, num_chapters)})
   let bootcamps = list.index_map(bootcamps, fn(c, i) {add_links_to_bootcamp(c, i + 1, num_bootcamps)})
   let toc = add_links_to_toc(toc, num_bootcamps, num_chapters)
-
   let other_children = list.filter(children, fn(c) { !infra.is_v_and_tag_is_one_of(c, ["TOC", "Chapter", "Bootcamp"]) })
-
   V(..root, children: list.flatten([other_children, [toc], chapters, bootcamps]))
   |> n2t.add_warnings
   |> Ok

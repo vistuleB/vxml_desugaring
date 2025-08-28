@@ -4,6 +4,7 @@ import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
+import on
 
 fn nodemap(
   vxml: VXML,
@@ -15,11 +16,11 @@ fn nodemap(
     fn(_, _) {vxml}
   )
 
-  use parent, _ <- infra.on_lazy_empty_on_nonempty(ancestors, fn() { vxml })
+  use parent, _ <- on.lazy_empty_nonempty(ancestors, fn() { vxml })
 
   let assert V(_, parent_tag, _, _) = parent
 
-  use attributes_to_add <- infra.on_error_on_ok(
+  use attributes_to_add <- on.error_ok(
     dict.get(inner, #(tag, parent_tag)),
     fn(_) { vxml }
   )

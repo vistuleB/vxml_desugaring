@@ -4,6 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
+import on
 
 fn updated_node(
   vxml: VXML,
@@ -15,12 +16,12 @@ fn updated_node(
   let assert V(blame, tag, attributes, children) = vxml
   let assert [T(t_blame, blamed_contents), ..] = children
 
-  let prefix = infra.on_none_on_some(prefix, [], fn(p) { [p] })
+  let prefix = on.none_some(prefix, [], fn(p) { [p] })
 
   let #(counter_command, wrapper) = cc
 
   let new_children =
-    infra.on_none_on_some(
+    on.none_some(
       wrapper,
       [
         T(
@@ -58,9 +59,9 @@ fn nodemap(
   case vxml {
     T(_, _) -> Ok(vxml)
     V(_, _, _, children) -> {
-      use <- infra.on_false_on_true(
-        over: infra.v_has_key_value(vxml, key, value),
-        with_on_false: Ok(vxml),
+      use <- on.false_true(
+        infra.v_has_key_value(vxml, key, value),
+        on_false: Ok(vxml),
       )
 
       // get first text node

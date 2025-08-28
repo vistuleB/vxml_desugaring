@@ -3,6 +3,7 @@ import gleam/option.{None}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V, BlamedAttribute}
+import on
 
 fn nodemap(
   vxml: VXML,
@@ -20,13 +21,13 @@ fn nodemap(
           let img_height_attr = list.filter(attrs, fn(attr) { attr.key == "height" })
 
           // validate only one img width attribute
-          use <- infra.on_true_on_false(
+          use <- on.true_false(
             list.length(img_width_attr) > 1,
             Error (DesugaringError(blame, "Carousel should have only one width attribute"))
           )
 
           // validate only one img height attribute
-          use <- infra.on_true_on_false(
+          use <- on.true_false(
             list.length(img_height_attr) > 1,
             Error (DesugaringError(blame, "Carousel should have only one height attribute"))
           )

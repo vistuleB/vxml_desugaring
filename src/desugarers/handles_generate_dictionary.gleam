@@ -7,6 +7,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
 import blame.{type Blame} as bl
+import on
 
 type HandlesDict =
   Dict(String, #(String,       String,     String))
@@ -89,12 +90,12 @@ fn update_handles(
   handle_infos: List(HandleBlamedAttributeInfo),
   inner: InnerParam,
 ) -> Result(State, DesugaringError) {
-  use first, _ <- infra.on_empty_on_nonempty(
+  use first, _ <- on.empty_nonempty(
     handle_infos,
     Ok(state),
   )
 
-  use path <- infra.on_lazy_none_on_some(
+  use path <- on.lazy_none_some(
     state.path,
     fn(){ Error(DesugaringError(first.blame, "no '" <> inner <> "' attribute found leading up to to handle '" <> first.handle_name <> "'")) },
   )

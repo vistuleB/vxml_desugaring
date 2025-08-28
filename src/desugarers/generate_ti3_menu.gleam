@@ -5,6 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
 import vxml.{type VXML, type BlamedAttribute, BlamedAttribute, BlamedContent, V, T}
 import nodemaps_2_desugarer_transforms as n2t
+import on
 
 fn an_attribute(key: String, value: String) -> BlamedAttribute {
   BlamedAttribute(desugarer_blame(10), key, value)
@@ -45,7 +46,7 @@ fn get_prev_next_info(
     page_infos,
     #(current_chapter, current_sub),
   )
-  use <- infra.on_lazy_true_on_false(
+  use <- on.lazy_true_false(
     idx < 0,
     fn(){ panic as "#(current_chapter, current_sub) not found in page_infos" }
   )

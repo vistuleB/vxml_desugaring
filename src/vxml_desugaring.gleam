@@ -7,6 +7,7 @@ import infrastructure.{type Pipe} as infra
 import vxml_renderer as vr
 import desugarer_library as dl
 import selector_library as sl
+import on
 
 fn test_pipeline() -> List(Pipe) {
   [
@@ -17,7 +18,7 @@ fn test_pipeline() -> List(Pipe) {
 }
 
 fn test_renderer() {
-  use amendments <- infra.on_error_on_ok(
+  use amendments <- on.error_ok(
     vr.process_command_line_arguments(argv.load().arguments, []),
     fn(e) {
       io.println("")
@@ -26,7 +27,7 @@ fn test_renderer() {
     },
   )
 
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     amendments.help,
     io.println("test_renderer exiting on '--help' option"),
   )
@@ -44,7 +45,7 @@ fn test_renderer() {
 
   let parameters =
     vr.RendererParameters(
-      pipeline_table: True,
+      table: True,
       input_dir: "test/sample.wly",
       output_dir: "test/output",
       prettifier_behavior: vr.PrettifierOff,

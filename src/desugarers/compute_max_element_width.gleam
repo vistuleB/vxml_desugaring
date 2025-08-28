@@ -5,6 +5,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugarerTransform} as infra
 import vxml.{type VXML, BlamedAttribute, T, V}
 import nodemaps_2_desugarer_transforms as n2t
+import on
 
 fn v_before_transforming_children(
   node: VXML,
@@ -18,9 +19,9 @@ fn v_before_transforming_children(
       case infra.v_attribute_with_key(node, "width") {
         None -> Error(DesugaringError(blame, tag <> " tag must have width attribute"))
         Some(attr) -> {
-          use #(width, _) <- infra.on_error_on_ok(
-            over: infra.parse_number_and_optional_css_unit(attr.value),
-            with_on_error: fn(_) {
+          use #(width, _) <- on.error_ok(
+            infra.parse_number_and_optional_css_unit(attr.value),
+            on_error: fn(_) {
               Error(DesugaringError(attr.blame, "Could not parse digits in width attribute"))
             }
           )

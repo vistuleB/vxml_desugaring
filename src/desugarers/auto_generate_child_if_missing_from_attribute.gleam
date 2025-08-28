@@ -5,6 +5,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, T, BlamedContent}
 import blame as bl
+import on
 
 fn nodemap(
   node: VXML,
@@ -14,13 +15,13 @@ fn nodemap(
   case node {
     V(_, tag, _, _) if tag == parent_tag -> {
       // return early if we have a child of tag child_tag:
-      use _ <- infra.on_ok_on_error(
+      use _ <- on.ok_error(
         infra.children_with_tag(node, child_tag) |> list.first,
         fn(_) {#(node, GoBack)},
       )
 
       // return early if we don't have a attribute_key :
-      use attribute <- infra.on_error_on_ok(
+      use attribute <- on.error_ok(
         infra.v_all_attributes_with_key(node, attribute_key) |> list.first,
         fn (_) {#(node, GoBack)},
       )

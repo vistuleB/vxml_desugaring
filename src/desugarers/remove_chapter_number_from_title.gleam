@@ -4,6 +4,7 @@ import gleam/regexp
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedContent, T, V}
+import on
 
 fn nodemap(
   vxml: VXML,
@@ -11,10 +12,10 @@ fn nodemap(
   case vxml {
     V(blame, t, atts, children) -> {
       // remove carousel buttons
-      use <- infra.on_false_on_true(
-        over: infra.v_has_key_value(vxml, "class", "chapterTitle")
-          || infra.v_has_key_value(vxml, "class", "subChapterTitle"),
-        with_on_false: Ok(vxml),
+      use <- on.false_true(
+        infra.v_has_key_value(vxml, "class", "chapterTitle") ||
+        infra.v_has_key_value(vxml, "class", "subChapterTitle"),
+        on_false: Ok(vxml),
       )
 
       let assert [
@@ -27,9 +28,9 @@ fn nodemap(
       let assert Ok(re) = regexp.from_string("^(\\d+)(\\.(\\d+)?)?\\s")
       regexp.check(re, first_text_node_line)
 
-      use <- infra.on_false_on_true(
-        over: regexp.check(re, first_text_node_line),
-        with_on_false: Ok(vxml),
+      use <- on.false_true(
+        regexp.check(re, first_text_node_line),
+        on_false: Ok(vxml),
       )
 
       let new_line = regexp.replace(re, first_text_node_line, "")

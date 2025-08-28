@@ -136,7 +136,7 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
             False -> Error(Nil)
           }
         })
-      use _ <- infra.on_error_on_ok(over: chapter, with_on_ok: fn(c) { c })
+      use _ <- on.error_ok(over: chapter, with_on_ok: fn(c) { c })
 
       let bootcamp =
         list.find_map(bootcamps, fn(c) {
@@ -146,11 +146,11 @@ fn at_root(root: VXML) -> Result(VXML, DesugaringError) {
             False -> Error(Nil)
           }
         })
-      use _ <- infra.on_error_on_ok(over: bootcamp, with_on_ok: fn(c) { c })
+      use _ <- on.error_ok(over: bootcamp, with_on_ok: fn(c) { c })
 
-      use <- infra.on_true_on_false(
+      use <- on.true_false(
         over: tag == "TOC",
-        with_on_true: toc,
+        on_true: toc,
       )
 
       vxml

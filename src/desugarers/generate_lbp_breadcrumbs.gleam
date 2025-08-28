@@ -6,14 +6,15 @@ import gleam/option
 import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
+import on
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
-  use #(head, last) <- infra.on_error_on_ok(
+  use #(head, last) <- on.error_ok(
     infra.head_last(nodes),
     fn(_){nodes}
   )
 
-  use <- infra.on_lazy_false_on_true(
+  use <- on.lazy_false_true(
     infra.is_text_node(last),
     fn() {
       let assert V(_, _, _, children) = last
@@ -21,7 +22,7 @@ fn remove_period(nodes: List(VXML)) -> List(VXML) {
     }
   )
 
-  use last <- infra.on_none_on_some(
+  use last <- on.none_some(
     infra.t_super_trim_end_and_remove_ending_period(last),
     head,
   )

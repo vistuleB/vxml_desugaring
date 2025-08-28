@@ -3,6 +3,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import on
 
 fn nodemap(
   vxml: VXML,
@@ -10,37 +11,30 @@ fn nodemap(
   case vxml {
     V(blame, _, _, _) -> {
       // remove carousel buttons
-      use <- infra.on_true_on_false(
-        over: infra.v_has_key_value(vxml, "data-slide", "prev"),
-        with_on_true: Ok(T(blame, [])),
+      use <- on.true_false(
+        infra.v_has_key_value(vxml, "data-slide", "prev"),
+        on_true: Ok(T(blame, [])),
       )
-      use <- infra.on_true_on_false(
-        over: infra.v_has_key_value(vxml, "data-slide", "next"),
-        with_on_true: Ok(T(blame, [])),
+      use <- on.true_false(
+        infra.v_has_key_value(vxml, "data-slide", "next"),
+        on_true: Ok(T(blame, [])),
       )
-      infra.v_attribute_with_key(vxml, "data-slide-to")
-      use <- infra.on_true_on_false(
-        over: infra.v_attribute_with_key(vxml, "data-slide-to")
-          |> option.is_some,
-        with_on_true: Ok(T(blame, [])),
+      use <- on.true_false(
+        infra.v_attribute_with_key(vxml, "data-slide-to") |> option.is_some,
+        on_true: Ok(T(blame, [])),
       )
       // carousel
-      use <- infra.on_true_on_false(
-        over: !{ infra.v_has_key_value(vxml, "class", "carousel") },
-        with_on_true: Ok(vxml),
+      use <- on.true_false(
+        !{ infra.v_has_key_value(vxml, "class", "carousel") },
+        on_true: Ok(vxml),
       )
       // vxml is node with carousel class
       // get only images from children
       let images = infra.descendants_with_tag(vxml, "img")
-
-      let attributes =
-        infra.on_true_on_false(
-          over: infra.v_has_key_value(vxml, "id", "cyk-demo"),
-          with_on_true: [
-            vxml.BlamedAttribute(blame, "jumpToLast", "true"),
-          ],
-          with_on_false: fn() { [] },
-        )
+      let attributes = case infra.v_has_key_value(vxml, "id", "cyk-demo") {
+        True -> [vxml.BlamedAttribute(blame, "jumpToLast", "true")]
+        False -> []
+      }
       let carousel_node = V(blame, "Carousel", attributes, images)
       Ok(carousel_node)
     }

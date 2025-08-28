@@ -6,6 +6,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, BlamedAttribute, V}
 import blame as bl
+import on
 
 fn prepand_0(number: String) {
   case string.length(number) {
@@ -23,25 +24,25 @@ fn chapter_link(
 
   let item_blame = infra.get_blame(item)
 
-  use label_attr <- infra.on_none_on_some(
+  use label_attr <- on.none_some(
     infra.v_attribute_with_key(item, "title_gr"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents)" <> tp <> " missing title_gr attribute",
     )),
   )
 
-  use href_attr <- infra.on_none_on_some(
+  use href_attr <- on.none_some(
     infra.v_attribute_with_key(item, "title_en"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents)" <> tp <> " missing title_en attribute",
     )),
   )
 
-  use number_attribute <- infra.on_none_on_some(
+  use number_attribute <- on.none_some(
     infra.v_attribute_with_key(item, "number"),
-    with_on_none: Error(DesugaringError(
+    on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents)" <> tp <> " missing number attribute",
     )),
@@ -97,15 +98,12 @@ fn at_root(
   let #(table_of_contents_tag, chapter_link_component_name) = inner
   let sections = infra.descendants_with_tag(root, "Section")
 
-  use chapter_menu_items <- infra.on_error_on_ok(
-    over: {
-      sections
-      |> list.index_map(fn(chapter: VXML, index) {
-        chapter_link(chapter_link_component_name, chapter, index + 1)
-      })
-      |> result.all
-    },
-    with_on_error: Error,
+  use chapter_menu_items <- on.ok(
+    sections
+    |> list.index_map(fn(chapter: VXML, index) {
+      chapter_link(chapter_link_component_name, chapter, index + 1)
+    })
+    |> result.all
   )
 
   let chapters_div =

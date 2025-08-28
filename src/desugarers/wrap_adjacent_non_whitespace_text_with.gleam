@@ -4,6 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import on
 
 fn wrap_second_element_if_its_math_and_recurse(
   children: List(VXML),
@@ -11,17 +12,17 @@ fn wrap_second_element_if_its_math_and_recurse(
 ) -> List(VXML) {
   let #(to_be_wrapped, wrapper_tag) = inner
 
-  use first, after_first <- infra.on_empty_on_nonempty(
+  use first, after_first <- on.empty_nonempty(
     children,
     []
   )
 
-  use second, after_second <- infra.on_empty_on_nonempty(
+  use second, after_second <- on.empty_nonempty(
     after_first,
     children
   )
 
-  use <- infra.on_lazy_false_on_true(
+  use <- on.lazy_false_true(
     infra.is_v_and_tag_equals(second, to_be_wrapped),
     fn() {
       [
@@ -34,7 +35,7 @@ fn wrap_second_element_if_its_math_and_recurse(
   let #(first, last_word_of_first) =
     infra.extract_last_word_from_t_node_if_t(first)
 
-  use third, after_third <- infra.on_lazy_empty_on_nonempty(
+  use third, after_third <- on.lazy_empty_nonempty(
     after_second,
     fn() {
       case last_word_of_first {

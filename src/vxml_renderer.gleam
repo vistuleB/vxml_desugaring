@@ -19,6 +19,7 @@ import simplifile
 import star_block
 import vxml.{type VXML, V} as vp
 import writerly as wp
+import on
 
 pub type InSituDesugaringError {
   InSituDesugaringError(
@@ -320,7 +321,7 @@ pub fn default_prettier_prettifier(
   case prettier_dir {
     Some(dir) -> {
       let dest_path = dir <> "/" <> ghost.path
-      use _ <- infra.on_error_on_ok(
+      use _ <- on.error_ok(
         create_dirs_on_path_to_file(dest_path),
         fn(e) {Error(#(0, "error creating directories on path: " <> ins(e)))},
       )
@@ -400,7 +401,7 @@ pub type PrettifierMode {
 
 pub type RendererParameters {
   RendererParameters(
-    pipeline_table: Bool,
+    table: Bool,
     input_dir: String,
     output_dir: String,
     prettifier_behavior: PrettifierMode,
@@ -430,12 +431,12 @@ fn run_pipeline(
       }
       let printed_arrow = case track_any && !got_arrow {
         True -> {
-          io.println("    ⬇")
+          io.println("    💠")
           True
         }
         False -> False
       }
-      use #(vxml, new_warnings) <- infra.on_error_on_ok(desugarer.transform(vxml), fn(error) {
+      use #(vxml, new_warnings) <- on.error_ok(desugarer.transform(vxml), fn(error) {
         Error(InSituDesugaringError(
           desugarer: desugarer,
           step_no: step_no,
@@ -462,7 +463,7 @@ fn run_pipeline(
       let got_arrow = case must_print {
         True -> {
           io.println("    " <> star_block.name_and_param_string(desugarer, step_no))
-          io.println("    ⬇")
+          io.println("    💠")
           selected
           |> infra.s_lines_to_strings("", False)
           |> star_block.print_table_at_indent(2)
@@ -605,6 +606,53 @@ fn print_pipeline(desugarers: List(Desugarer)) {
 // RUN_RENDERER
 // *************
 
+fn boxed_error_lines(
+  lines: List(String),
+  emoji: String,
+) -> List(String) {
+  let lengths = list.map(lines, string.length)
+  let max = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
+  let max = case max % 2 == 0 {
+    True -> max
+    False -> max + 1
+  }
+  [
+    [
+      string.repeat(emoji, 4 + max / 2),
+      string.repeat(emoji, 4 + max / 2),
+    ],
+    list.map(
+      list.zip(lines, lengths),
+      fn (pair) {
+        let #(line, line_length) = pair
+        emoji <> emoji <> line <> star_block.spaces(max - line_length) <> emoji <> emoji
+      }
+    ),
+    [
+      string.repeat(emoji, 4 + max / 2),
+      string.repeat(emoji, 4 + max / 2),
+    ],
+  ]
+  |> list.flatten
+}
+
+fn boxed_error_announcer(
+  lines: List(String),
+  emoji: String,
+  indent: Int,
+  lines_before_after: #(Int, Int)
+) -> Nil {
+  let margin = star_block.spaces(indent)
+  let lines =
+    lines
+    |> boxed_error_lines(emoji)
+    |> list.map(fn(l){margin <> l})
+    |> string.join("\n")
+  io.print(string.repeat("\n", lines_before_after.0))
+  io.println(lines)
+  io.print(string.repeat("\n", lines_before_after.1))
+}
+
 pub fn run_renderer(
   renderer: Renderer(a, c, d, e, f, h),
   parameters: RendererParameters,
@@ -614,20 +662,20 @@ pub fn run_renderer(
 
   let parameters = sanitize_output_dir(parameters)
   let RendererParameters(
-    pipeline_table,
+    table,
     input_dir,
     output_dir,
     prettifier_mode,
   ) = parameters
 
-  case pipeline_table {
+  case table {
     True -> print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
     False -> Nil
   }
 
   io.print("• assembling ")
 
-  use assembled <- infra.on_error_on_ok(
+  use assembled <- on.error_ok(
     renderer.assembler(input_dir),
     fn(error_a) {
       io.println(
@@ -650,9 +698,9 @@ pub fn run_renderer(
 
   io.print("• parsing input lines to VXML")
 
-  use parsed: VXML <- infra.on_error_on_ok(
-    over: renderer.parser(assembled),
-    with_on_error: fn(error: c) {
+  use parsed: VXML <- on.error_ok(
+    renderer.parser(assembled),
+    on_error: fn(error: c) {
       io.println("")
       io.println("renderer.parser error: " <> ins(error))
       Error(SourceParserError(error))
@@ -664,29 +712,19 @@ pub fn run_renderer(
   io.println("• starting pipeline...")
   let t0 = timestamp.system_time()
 
-  use #(desugared, warnings, times) <- infra.on_error_on_ok(
-    over: run_pipeline(parsed, renderer.pipeline),
-    with_on_error: fn(e: InSituDesugaringError) {
-      let z = [
-        "🏯🏯error thrown by: " <> e.desugarer.name <> ".gleam desugarer",
-        "🏯🏯pipeline step:   " <> ins(e.step_no),
-        "🏯🏯blame:           " <> bl.blame_digest(e.blame),
-        "🏯🏯message:         " <> e.message,
+  use #(desugared, warnings, times) <- on.error_ok(
+    run_pipeline(parsed, renderer.pipeline),
+    on_error: fn(e: InSituDesugaringError) {
+      io.println("\nDesugaringError:")
+      [
+        " ",
+        "  thrown by:      " <> e.desugarer.name <> " (desugarer)",
+        "  pipeline step:  " <> ins(e.step_no),
+        "  blame:          " <> bl.blame_digest(e.blame),
+        "  message:        " <> e.message,
+        " ",
       ]
-      let lengths = list.map(z, string.length)
-      let width = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
-      let width = case width % 2 == 0 {
-        True -> width
-        False -> width + 1
-      }
-      io.println("")
-      io.println("")
-      io.println(string.repeat("🏯", 2 + width / 2))
-      io.println(string.repeat("🏯", 2 + width / 2))
-      list.each(list.zip(z, lengths), fn(pair) {io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🏯🏯")})
-      io.println(string.repeat("🏯", 2 + width / 2))
-      io.println(string.repeat("🏯", 2 + width / 2))
-      io.println("")
+      |> boxed_error_announcer("💥", 0, #(1, 0))
       Error(PipelineError(e))
     },
   )
@@ -718,10 +756,20 @@ pub fn run_renderer(
   io.println("• splitting the vxml...")
 
   // vxml fragments generation
-  use fragments <- infra.on_error_on_ok(
-    over: renderer.splitter(desugared),
-    with_on_error: fn(error: e) {
-      io.println("splitter error: " <> ins(error))
+  use fragments <- on.error_ok(
+    renderer.splitter(desugared),
+    on_error: fn(error: e) {
+      io.println("\nsplitter error:")
+      boxed_error_announcer(
+        [
+          "",
+          "  " <> ins(error),
+          "",
+        ],
+        "💥",
+        0,
+        #(1, 1)
+      )
       Error(SplitterError(error))
     },
   )
@@ -777,27 +825,41 @@ pub fn run_renderer(
     }
   })
 
-  io.print("• converting output line fragments to string fragments")
+  list.each(
+    fragments,
+    fn (fr) {
+      use error <- on.ok_error(fr, fn(_){Nil})
+      io.println("\nemitter error:")
+      boxed_error_announcer(
+        [
+          "",
+          "  " <> ins(error),
+          "",
+        ],
+        "💥",
+        0,
+        #(1, 1)
+      )
+    }
+  )
+
+  io.println("• converting output line fragments to string fragments")
 
   // output line fragments -> string fragments
   let fragments = {
     fragments
-    |> list.map(fn(result) {
-      case result {
-        Error(error) -> {
-          io.println("emitting error: " <> ins(error))
+    |> list.map(
+      on.error_ok(
+        _,
+        fn(error) {
           Error(C1(error))
-        }
-        Ok(fr) -> {
-          Ok(
-            OutputFragment(..fr, payload: io_l.output_lines_to_string(fr.payload)),
-          )
-        }
-      }
-    })
+        },
+        fn(fr) {
+          Ok(OutputFragment(..fr, payload: io_l.output_lines_to_string(fr.payload)))
+        },
+      )
+    )
   }
-
-  io.println("")
 
   // string fragments debug printing
   fragments
@@ -808,14 +870,12 @@ pub fn run_renderer(
         case debug_options.printer_debug_options.echo_(fr) {
           False -> Nil
           True -> {
-            let header =
-              "----------------- printer_debug_options: "
-              <> fr.path
-              <> " -----------------"
+            let header = "----------------- printer_debug_options: " <> fr.path <> " -----------------"
             io.println(header)
             io.println(fr.payload)
             io.println(star_block.dashes(string.length(header)))
             io.println("")
+
           }
         }
       }
@@ -851,7 +911,7 @@ pub fn run_renderer(
     fragments
     |> list.map(fn(result) {
       use fr <- result.try(result)
-      use <- infra.on_true_on_false(prettifier_mode == PrettifierOff, result)
+      use <- on.true_false(prettifier_mode == PrettifierOff, result)
       let dest_dir = case prettifier_mode {
         PrettifierCheck -> None
         PrettifierOff -> panic as "bug"
@@ -873,12 +933,12 @@ pub fn run_renderer(
   // prettified fragments debug printing
   fragments
   |> list.each(fn(result) {
-    use fr <- infra.on_error_on_ok(result, fn(_) { Nil })
+    use fr <- on.error_ok(result, fn(_) { Nil })
     case debug_options.prettifier_debug_options.echo_(fr) {
       False -> Nil
       True -> {
         let path = output_dir <> "/" <> fr.path
-        use file_contents <- infra.on_error_on_ok(
+        use file_contents <- on.error_ok(
           simplifile.read(path),
           fn(error) {
             io.println("")
@@ -915,24 +975,15 @@ pub fn run_renderer(
   list.each(
     warnings,
     fn (w) {
-      let z = [
-        "🚨🚨from:          " <> w.desugarer.name <> ".gleam desugarer",
-        "🚨🚨pipeline step: " <> ins(w.step_no),
-        "🚨🚨blame:         " <> bl.blame_digest(w.blame),
-        "🚨🚨message:       " <> w.message,
+      [
+        "",
+        "  from:           " <> w.desugarer.name <> " (desugarer)",
+        "  pipeline step:  " <> ins(w.step_no),
+        "  blame:          " <> bl.blame_digest(w.blame),
+        "  message:        " <> w.message,
+        "",
       ]
-      let lengths = list.map(z, string.length)
-      let width = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
-      let width = case width % 2 == 0 {
-        True -> width
-        False -> width + 1
-      }
-      io.println("")
-      io.println(string.repeat("🚨", 2 + width / 2))
-      io.println(string.repeat("🚨", 2 + width / 2))
-      list.each(list.zip(z, lengths), fn(pair) {io.println(pair.0 <> star_block.spaces(width - pair.1 - 2) <> "🚨🚨")})
-      io.println(string.repeat("🚨", 2 + width / 2))
-      io.println(string.repeat("🚨", 2 + width / 2))
+      |> boxed_error_announcer("🚨", 0, #(1, 0))
     }
   )
 
@@ -940,10 +991,6 @@ pub fn run_renderer(
 
   case list.length(errors) > 0 {
     True -> {
-      // list.each(
-      //   errors,
-      //   fn(e){io.println("error: " <> ins(e))}
-      // )
       Error(EmittingOrPrintingOrPrettifyingErrors(errors))
     }
     False -> Ok(Nil)
@@ -996,7 +1043,7 @@ pub fn double_dash_keys(
 pub type CommandLineAmendments {
   CommandLineAmendments(
     help: Bool,
-    pipeline_table: Option(Bool),
+    table: Option(Bool),
     input_dir: Option(String),
     output_dir: Option(String),
     debug_assembled_input: Bool,
@@ -1019,7 +1066,7 @@ pub type CommandLineAmendments {
 pub fn empty_command_line_amendments() -> CommandLineAmendments {
   CommandLineAmendments(
     help: False,
-    pipeline_table: None,
+    table: None,
     input_dir: None,
     output_dir: None,
     debug_assembled_input: False,
@@ -1303,7 +1350,7 @@ fn parse_step_numbers(
 fn parse_show_changes_near_args(
   values: List(String),
 ) -> Result(PipelineCliArgsModifier, CommandLineError) {
-  use first_payload, values <- infra.on_empty_on_nonempty(
+  use first_payload, values <- on.empty_nonempty(
     values,
     Error(SelectorValues("missing 1st argument")),
   )
@@ -1312,7 +1359,7 @@ fn parse_show_changes_near_args(
 
   let selector = sl.verbatim(first_payload)
 
-  use second_payload, values <- infra.on_empty_on_nonempty(
+  use second_payload, values <- on.empty_nonempty(
     values,
     Ok(
       PipelineCliArgsModifier(
@@ -1323,7 +1370,7 @@ fn parse_show_changes_near_args(
     ),
   )
 
-  use plus_minus <- infra.on_error_on_ok(
+  use plus_minus <- on.error_ok(
     parse_plus_minus(second_payload),
     fn(_) {
       Error(SelectorValues(
@@ -1361,7 +1408,7 @@ fn join_pipeline_modifiers(
   pm1: Option(PipelineCliArgsModifier),
   pm2: PipelineCliArgsModifier,
 ) -> PipelineCliArgsModifier {
-  use pm1 <- infra.on_none_on_some(pm1, pm2)
+  use pm1 <- on.none_some(pm1, pm2)
   let #(restrict, force) =
     cleanup_step_numbers(
       list.append(pm1.force_output_at_steps, pm2.force_output_at_steps),
@@ -1414,7 +1461,7 @@ pub fn process_command_line_arguments(
   arguments: List(String),
   xtra_keys: List(String),
 ) -> Result(CommandLineAmendments, CommandLineError) {
-  use list_key_values <- infra.on_error_on_ok(
+  use list_key_values <- on.error_ok(
     double_dash_keys(arguments),
     fn(bad_key) { Error(ExpectedDoubleDashString(bad_key)) },
   )
@@ -1549,7 +1596,7 @@ pub fn amend_renderer_paramaters_by_command_line_amendments(
   amendments: CommandLineAmendments,
 ) -> RendererParameters {
   RendererParameters(
-    pipeline_table: option.unwrap(amendments.pipeline_table, parameters.pipeline_table),
+    table: option.unwrap(amendments.table, parameters.table),
     input_dir: option.unwrap(amendments.input_dir, parameters.input_dir),
     output_dir: option.unwrap(amendments.output_dir, parameters.output_dir),
     prettifier_behavior: option.unwrap(amendments.prettier, parameters.prettifier_behavior),

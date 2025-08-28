@@ -10,6 +10,7 @@ import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V, BlamedAttribute, BlamedContent}
 import xmlm
 import blame.{type Blame} as bl
+import on
 
 type PatternToken {
   EndT
@@ -449,7 +450,7 @@ fn nodemap(
 ) -> VXML {
   case vxml {
     V(_, _, _, children) -> {
-      use atomized <- infra.on_none_on_some(
+      use atomized <- on.none_some(
         tokenize_maybe(children),
         vxml,
       )
@@ -654,10 +655,10 @@ fn pseudoword_to_pattern_tokens(word: String, re: regexp.Regexp) -> List(Pattern
   let assert True = word == " " || {!string.contains(word, " ") && word != ""}
 
   // case 1: a space
-  use <- infra.on_lazy_true_on_false(word == " ", fn(){[Space]})
+  use <- on.lazy_true_false(word == " ", fn(){[Space]})
 
   // case 2: an ordinary word
-  use <- infra.on_lazy_false_on_true(regexp.check(re, word), fn(){[Word(word)]})
+  use <- on.lazy_false_true(regexp.check(re, word), fn(){[Word(word)]})
 
   // case 3: a word containing 'ContentVar' patterns
   regexp.split(re, word)
@@ -709,7 +710,7 @@ fn xmlm_tag_to_link_pattern(
 
   let tag_content_patterns = tag_content_patterns |> list.flatten
 
-  use <- infra.on_true_on_false(
+  use <- on.true_false(
     xmlm_tag_name(xmlm_tag) == "root",
     Ok(tag_content_patterns),
   )
@@ -755,7 +756,7 @@ fn extra_string_to_link_pattern(
   s: String,
   re: regexp.Regexp,
 ) -> Result(LinkPattern, DesugaringError) {
-  use #(_, pattern, _) <- infra.on_error_on_ok(
+  use #(_, pattern, _) <- on.error_ok(
     xmlm.document_tree(
       xmlm.from_string(s),
       xmlm_tag_to_link_pattern,
