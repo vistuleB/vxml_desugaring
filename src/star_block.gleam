@@ -12,6 +12,17 @@ pub fn dots(num: Int) -> String { string.repeat(".", num) }
 pub fn threedots(num: Int) -> String { string.repeat("…", num) }
 pub fn twodots(num: Int) -> String { string.repeat("‥", num) }
 
+pub fn how_many(
+  singular: String,
+  plural: String,
+  count: Int,
+) -> String {
+  case count {
+    1 -> "1 " <> singular
+    _ -> ins(count) <> " " <> plural
+  }
+}
+
 // ************************
 // 2-column table printer
 // ************************
@@ -267,17 +278,11 @@ pub fn desugarer_name_star_block(
 ) -> List(String) {
   let name_and_param = name_and_param_string(desugarer, step_no)
 
-  // star_block(
-  //   True,
-  //   [name_and_param],
-  //   True,
-  // )
-
-  [
-    "  " <> "⬇",
-    "  " <> name_and_param,
-    "  " <> "⬇",
-  ]
+  star_block(
+    True,
+    [name_and_param],
+    True,
+  )
 }
 
 pub fn desugarer_description_star_block(

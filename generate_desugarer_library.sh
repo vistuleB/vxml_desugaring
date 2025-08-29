@@ -25,7 +25,7 @@ MODULES=$(find "$SRC_DIR" -maxdepth 1 -type f -name '*.gleam' ! -name '__*' \
   echo
 
   # assertive_tests
-  echo "pub const assertive_tests : List(fn() -> infra.AssertiveTests) = ["
+  echo "pub const assertive_tests : List(fn() -> infra.AssertiveTestCollection) = ["
   printf '%s\n' "$MODULES" | while IFS= read -r m; do
     echo "  ${m}.assertive_tests,"
   done

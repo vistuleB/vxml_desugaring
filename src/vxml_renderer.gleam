@@ -60,13 +60,16 @@ pub fn default_assembler(
 ) -> Assembler(wp.AssemblyError) {
   let spaces = string.repeat(" ", string.length("• assembling "))
   fn(input_dir) {
-    use #(directory_tree, assembled) <- result.try(
+    use #(directory_tree, assembled) <- on.ok(
       wp.assemble_input_lines_advanced_mode(input_dir, spotlight_paths),
     )
     let directory_tree =
       list.map(directory_tree, fn(line) { spaces <> line }) |> list.drop(1)
     io.println(input_dir)
-    io.println(string.join(directory_tree, "\n"))
+    case directory_tree {
+      [] -> Nil
+      _ -> io.println(string.join(directory_tree, "\n"))
+    }
     Ok(assembled)
   }
 }
@@ -394,7 +397,6 @@ pub type RendererDebugOptions(d) {
 
 pub type PrettifierMode {
   PrettifierOff
-  PrettifierCheck
   PrettifierOverwriteOutputDir
   PrettifierToBespokeDir(String)
 }
@@ -466,6 +468,7 @@ fn run_pipeline(
           io.println("    💠")
           selected
           |> infra.s_lines_annotated_table("", False, 2)
+          |> io.println
           False
         }
         False -> case printed_arrow && step_no < last_step {
@@ -779,7 +782,7 @@ pub fn run_renderer(
   let fragments_types_and_paths_4_table =
     list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
 
-  io.println("  -> obtained " <> ins(list.length(fragments)) <> " fragments:")
+  io.println("  -> obtained " <> star_block.how_many("fragment", "fragments", list.length(fragments)) <> ":")
   
   [#("classifier", "path"), ..fragments_types_and_paths_4_table]
   |> star_block.two_column_table
@@ -914,7 +917,6 @@ pub fn run_renderer(
       use fr <- result.try(result)
       use <- on.true_false(prettifier_mode == PrettifierOff, result)
       let dest_dir = case prettifier_mode {
-        PrettifierCheck -> None
         PrettifierOff -> panic as "bug"
         PrettifierOverwriteOutputDir -> Some(output_dir)
         PrettifierToBespokeDir(dir) -> Some(dir)
@@ -963,13 +965,8 @@ pub fn run_renderer(
 
   case list.length(warnings) {
     0 -> Nil
-    1 -> {
-      io.println("")
-      io.println("1 warning:")
-    }
     _ -> {
-      io.println("")
-      io.println(ins(list.length(warnings)) <> " warnings:")
+      io.println("\n👉 " <> star_block.how_many("warning", "warnings", list.length(warnings)) <> ":")
     }
   }
 
@@ -984,7 +981,7 @@ pub fn run_renderer(
         "  message:        " <> w.message,
         "",
       ]
-      |> boxed_error_announcer("🚨", 0, #(1, 0))
+      |> boxed_error_announcer("🚨", 2, #(1, 0))
     }
   )
 
@@ -1044,18 +1041,18 @@ pub fn double_dash_keys(
 pub type CommandLineAmendments {
   CommandLineAmendments(
     help: Bool,
-    table: Option(Bool),
     input_dir: Option(String),
     output_dir: Option(String),
-    debug_assembled_input: Bool,
-    show_changes_near: Option(PipelineCliArgsModifier),
-    debug_vxml_fragments_local_paths: Option(List(String)),
-    debug_output_lines_fragments_local_paths: Option(List(String)),
-    debug_printed_string_fragments_local_paths: Option(List(String)),
-    debug_prettified_string_fragments_local_paths: Option(List(String)),
-    spotlight_key_values: List(#(String, String, String)),
-    spotlight_paths: List(String),
+    only_paths: List(String),
+    only_key_values: List(#(String, String, String)),
     prettier: Option(PrettifierMode),
+    track: Option(PipelineCliArgsModifier),
+    table: Option(Bool),
+    echo_assembled: Bool,
+    vxml_fragments_local_paths_to_echo: Option(List(String)),
+    output_lines_fragments_local_paths_to_echo: Option(List(String)),
+    printed_string_fragments_local_paths_to_echo: Option(List(String)),
+    prettified_string_fragments_local_paths_to_echo: Option(List(String)),
     user_args: Dict(String, List(String)),
   )
 }
@@ -1070,14 +1067,14 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
     table: None,
     input_dir: None,
     output_dir: None,
-    debug_assembled_input: False,
-    show_changes_near: None,
-    debug_vxml_fragments_local_paths: None,
-    debug_output_lines_fragments_local_paths: None,
-    debug_printed_string_fragments_local_paths: None,
-    debug_prettified_string_fragments_local_paths: None,
-    spotlight_key_values: [],
-    spotlight_paths: [],
+    echo_assembled: False,
+    track: None,
+    vxml_fragments_local_paths_to_echo: None,
+    output_lines_fragments_local_paths_to_echo: None,
+    printed_string_fragments_local_paths_to_echo: None,
+    prettified_string_fragments_local_paths_to_echo: None,
+    only_key_values: [],
+    only_paths: [],
     prettier: None,
     user_args: dict.from_list([]),
   )
@@ -1087,7 +1084,7 @@ fn amend_debug_assembled_input(
   amendments: CommandLineAmendments,
   val: Bool,
 ) -> CommandLineAmendments {
-  CommandLineAmendments(..amendments, debug_assembled_input: val)
+  CommandLineAmendments(..amendments, echo_assembled: val)
 }
 
 fn amend_user_args(
@@ -1107,9 +1104,9 @@ fn amend_spotlight_args(
 ) -> CommandLineAmendments {
   CommandLineAmendments(
     ..amendments,
-    spotlight_key_values: list.append(amendments.spotlight_key_values, args),
-    spotlight_paths: list.append(
-      amendments.spotlight_paths,
+    only_key_values: list.append(amendments.only_key_values, args),
+    only_paths: list.append(
+      amendments.only_paths,
       args
         |> list.map(fn(a) {
           let #(path, _, _) = a
@@ -1131,39 +1128,38 @@ pub fn cli_usage() {
   io.println(margin <> "  -> restrict source to paths that match one of the given subpaths")
   io.println("")
   io.println(margin <> "--only <key1=val1> <key2=val2> ...")
-  io.println(margin <> "  -> restrict source to elements that have one of the given key-value")
-  io.println(margin <> "     pairs as attributes")
+  io.println(margin <> "  -> restrict source to elements that have one of the given")
+  io.println(margin <> "     key-value pairs as attributes")
   io.println("")
   io.println(margin <> "--table")
-  io.println(margin <> "  -> print the pipeline")
+  io.println(margin <> "  -> include a printout of the pipeline table in the rendering")
+  io.println(margin <> "     output")
   io.println("")
-  io.println(margin <> "--show-changes-near <marker> +<p>-<m> <step numbers>")
+  io.println(margin <> "--track <string> +<p>-<m> <step numbers>")
   io.println(margin <> "  -> track changes near the verbatim document fragment given by")
-  io.println(margin <> "     <marker> argument, that can refer to any part of the printed")
-  io.println(margin <> "     VXML output save leading whitespace; e.g.:")
+  io.println(margin <> "     <string> argument, that can refer to any part of the printed")
+  io.println(margin <> "     VXML output except for leading whitespace; e.g.:")
   io.println("")
-  io.println(margin <> "     gleam run -- --show-changes-near \"lorem ipsum\"")
-  io.println(margin <> "     gleam run -- --show-changes-near src=img/23.svg")
-  io.println(margin <> "     gleam run -- --show-changes-near \"<> ImageRight\"")
+  io.println(margin <> "     gleam run -- --track \"lorem ipsum\"")
+  io.println(margin <> "     gleam run -- --track src=img/23.svg")
+  io.println(margin <> "     gleam run -- --track \"<> ImageRight\"")
   io.println("")
-  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before <marker>")
+  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before <string>")
   io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
-  io.println(margin <> "       lines where <marker> appears")
+  io.println(margin <> "       lines where <string> appears; can also be used in the")
+  io.println(margin <> "       '+15' or '-5' only")
   io.println("")
   io.println(margin <> "     • <step numbers> specificy which desugaring steps to track:")
   io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
-  io.println(margin <> "         • !x to force a printout at desugaring step x whether or")
-  io.println(margin <> "           not changes in selection occur")
-  io.println(margin <> "       leave empty to track all steps and use negative arguments")
-  io.println(margin <> "       to denote steps from end of list; '-1' prints only the")
-  io.println(margin <> "       final occurrence")
+  io.println(margin <> "         • !x to force a printout at step x whether or not a")
+  io.println(margin <> "           changeoccurs at that step")
+  io.println(margin <> "       leave <step numbers> empty to track all steps; use negative")
+  io.println(margin <> "       arguments to denote steps from end of list, python-style")
   io.println("")
-  io.println(margin <> "--scn")
-  io.println(margin <> "  -> same as --show-changes-near")
-  io.println("")
-  io.println(margin <> "--show-changes-at-steps")
+  io.println(margin <> "--track-steps")
   io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
-  io.println(margin <> "     --show-changes-near option, with the same semantics", )
+  io.println(margin <> "     --track, with the same semantics (to edit the tracking steps", )
+  io.println(margin <> "     of a tracker set up code-side)", )
   io.println("")
   io.println(margin <> "--echo-assembled")
   io.println(margin <> "  -> print the assembled input lines of source")
@@ -1184,12 +1180,9 @@ pub fn cli_usage() {
   io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
   io.println(margin <> "     in string form after prettifying, list none to match all", )
   io.println("")
-  io.println(margin <> "--prettier")
-  io.println(margin <> "  -> turn the prettifier on")
-  io.println("")
-  io.println(margin <> "--prettier-dir <dir>")
-  io.println(margin <> "  -> specify directory to write prettier output to")
-  io.println(margin <> "     if not specified, prettier runs in check mode only", )
+  io.println(margin <> "--prettier [<dir>]")
+  io.println(margin <> "  -> turn the prettifier on and have the prettifier output to")
+  io.println(margin <> "     <dir>; if absent, <dir> defaults to renderer.output_dir")
   io.println("")
 }
 
@@ -1351,7 +1344,7 @@ fn parse_step_numbers(
   Ok(cleanup_step_numbers(restrict, force))
 }
 
-fn parse_show_changes_near_args(
+fn parse_track_args(
   values: List(String),
 ) -> Result(PipelineCliArgsModifier, CommandLineError) {
   use first_payload, values <- on.empty_nonempty(
@@ -1503,19 +1496,7 @@ pub fn process_command_line_arguments(
             False -> Error(UnexpectedArgumentsToOption("--table"))
           }
 
-        "--prettier0" ->
-          case list.is_empty(values) {
-            True -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierOff)))
-            False -> Error(UnexpectedArgumentsToOption("--prettier0"))
-          }
-
-        "--prettier1" ->
-          case list.is_empty(values) {
-            True -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierCheck)))
-            False -> Error(UnexpectedArgumentsToOption("--prettier1"))
-          }
-
-        "--prettier2" ->
+        "--prettier" ->
           case values {
             [dir] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierToBespokeDir(dir))))
             [] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierOverwriteOutputDir)))
@@ -1532,7 +1513,7 @@ pub fn process_command_line_arguments(
           Ok(
             CommandLineAmendments(
               ..amendments,
-              debug_vxml_fragments_local_paths: Some(values),
+              vxml_fragments_local_paths_to_echo: Some(values),
             ),
           )
 
@@ -1540,7 +1521,7 @@ pub fn process_command_line_arguments(
           Ok(
             CommandLineAmendments(
               ..amendments,
-              debug_output_lines_fragments_local_paths: Some(values),
+              output_lines_fragments_local_paths_to_echo: Some(values),
             ),
           )
 
@@ -1548,7 +1529,7 @@ pub fn process_command_line_arguments(
           Ok(
             CommandLineAmendments(
               ..amendments,
-              debug_printed_string_fragments_local_paths: Some(values),
+              printed_string_fragments_local_paths_to_echo: Some(values),
             ),
           )
 
@@ -1556,30 +1537,30 @@ pub fn process_command_line_arguments(
           Ok(
             CommandLineAmendments(
               ..amendments,
-              debug_prettified_string_fragments_local_paths: Some(values),
+              prettified_string_fragments_local_paths_to_echo: Some(values),
             ),
           )
 
-        "--show-changes-at-steps" -> {
+        "--track-steps" -> {
           use pipeline_mod <- result.try(parse_show_change_at_steps_args(values))
           Ok(
             CommandLineAmendments(
               ..amendments,
-              show_changes_near: Some(join_pipeline_modifiers(
-                amendments.show_changes_near,
+              track: Some(join_pipeline_modifiers(
+                amendments.track,
                 pipeline_mod,
               )),
             ),
           )
         }
 
-        "--show-changes-near" | "--scn" -> {
-          use pipeline_mod <- result.try(parse_show_changes_near_args(values))
+        "--track" -> {
+          use pipeline_mod <- result.try(parse_track_args(values))
           Ok(
             CommandLineAmendments(
               ..amendments,
-              show_changes_near: Some(join_pipeline_modifiers(
-                amendments.show_changes_near,
+              track: Some(join_pipeline_modifiers(
+                amendments.track,
                 pipeline_mod,
               )),
             ),
@@ -1630,7 +1611,7 @@ pub fn db_amend_assembler_debug_options(
   amendments: CommandLineAmendments,
 ) -> AssemblerDebugOptions {
   AssemblerDebugOptions(
-    echo_: amendments.debug_assembled_input,
+    echo_: amendments.echo_assembled,
   )
 }
 
@@ -1641,7 +1622,7 @@ pub fn db_amend_splitter_debug_options(
   SplitterDebugOptions(echo_: fn(fr: OutputFragment(d, VXML)) {
     previous.echo_(fr)
     || is_some_and_any_or_is_empty(
-      amendments.debug_vxml_fragments_local_paths,
+      amendments.vxml_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
   })
@@ -1654,7 +1635,7 @@ pub fn db_amend_emitter_debug_options(
   EmitterDebugOptions(echo_: fn(fr: OutputFragment(d, List(OutputLine))) {
     previous.echo_(fr)
     || is_some_and_any_or_is_empty(
-      amendments.debug_output_lines_fragments_local_paths,
+      amendments.output_lines_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
   })
@@ -1667,7 +1648,7 @@ pub fn db_amend_printed_debug_options(
   WriterDebugOptions(fn(fr: OutputFragment(d, String)) {
     previous.echo_(fr)
     || is_some_and_any_or_is_empty(
-      amendments.debug_printed_string_fragments_local_paths,
+      amendments.printed_string_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
   })
@@ -1680,7 +1661,7 @@ pub fn db_amend_prettifier_debug_options(
   PrettifierDebugOptions(fn(fr: GhostOfOutputFragment(d)) {
     previous.echo_(fr)
     || is_some_and_any_or_is_empty(
-      amendments.debug_prettified_string_fragments_local_paths,
+      amendments.prettified_string_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
   })
@@ -1690,7 +1671,7 @@ pub fn amend_renderer_by_command_line_amendments(
   renderer: Renderer(a, c, d, e, f, h),
   amendments: CommandLineAmendments,
 ) -> Renderer(a, c, d, e, f, h) {
-  case amendments.show_changes_near {
+  case amendments.track {
     None -> renderer
     Some(cli) ->
       Renderer(

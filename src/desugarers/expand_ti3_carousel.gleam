@@ -277,5 +277,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
 // - src attributes with children: "Carousel cannot have src attribute and children at the same time."
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data_no_param(name, assertive_tests_data(), constructor)
+  infra.assertive_test_collection_from_data_no_param(name, assertive_tests_data(), constructor)
 }

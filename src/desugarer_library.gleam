@@ -313,7 +313,7 @@ pub const wrap_children_before_in = wrap_children_before_in.constructor
 pub const wrap_children_in = wrap_children_in.constructor
 pub const wrap_each_child = wrap_each_child.constructor
 
-pub const assertive_tests : List(fn() -> infra.AssertiveTests) = [
+pub const assertive_tests : List(fn() -> infra.AssertiveTestCollection) = [
   absorb_into_previous_sibling.assertive_tests,
   add_after_but_not_after_last_child__batch.assertive_tests,
   add_before.assertive_tests,

@@ -1,4 +1,3 @@
-import shellout
 import gleam/list
 import argv
 import gleam/io
@@ -34,8 +33,8 @@ fn test_renderer() {
 
   let renderer =
     vr.Renderer(
-      assembler: vr.default_assembler(amendments.spotlight_paths),
-      parser: vr.default_writerly_parser(amendments.spotlight_key_values),
+      assembler: vr.default_assembler(amendments.only_paths),
+      parser: vr.default_writerly_parser(amendments.only_key_values),
       pipeline: test_pipeline(),
       splitter: vr.stub_splitter(".tsx"),
       emitter: vr.stub_jsx_emitter,
@@ -62,99 +61,6 @@ fn test_renderer() {
   Nil
 }
 
-fn generate_desugarer_library() {
-  let _ = shellout.command(
-    run: "generate_library.sh",
-    in: ".",
-    with: [],
-    opt: [],
-  )
-  Nil
-}
-
-fn run_desugarer_tests(names: List(String)) {
-  let #(all, dont_have_tests) =
-    list.fold(
-      dl.assertive_tests,
-      #([], []),
-      fn(acc, constructor) {
-        let w = constructor()
-        case list.length(w.tests()) > 0 {
-          True -> #([w.name, ..acc.0], acc.1)
-          False -> #([w.name, ..acc.0], [w.name, ..acc.1])
-        }
-      }
-    )
-
-  let names = case list.is_empty(names) {
-    True -> all
-    False -> names
-  }
-
-  let dont_have_tests = list.filter(dont_have_tests, list.contains(names, _))
-
-  case list.is_empty(dont_have_tests) {
-    True -> Nil
-    False -> {
-      io.println("")
-      io.println("the following desugarers have empty test data:")
-      list.each(
-        dont_have_tests,
-        fn(name) { io.println(" - " <> name)}
-      )
-    }
-  }
-
-  io.println("")
-  let #(num_performed, num_failed) =
-    list.fold(
-      dl.assertive_tests,
-      #(0, 0),
-      fn(acc, constructor) {
-        let w = constructor()
-        case list.contains(names, w.name) && list.length(w.tests()) > 0 {
-          False -> acc
-          True -> {
-            let #(_, num_failed) = infra.run_assertive_tests(w)
-            case num_failed > 0 {
-              True -> #(acc.0 + 1, acc.1 + 1)
-              False -> #(acc.0 + 1, acc.1)
-            }
-          }
-        }
-      }
-    )
-
-  io.println("")
-  io.println(
-    ins(num_performed)
-    <> case num_performed == 1 {
-      True -> " desugarer tested, "
-      False -> " desugarers tested, "
-    }
-    <> ins(num_failed)
-    <> case num_failed == 1 {
-      True -> " failed"
-      False -> " failures"
-    }
-  )
-
-  let desugarers_with_no_test_group = list.filter(names, fn(name) { !list.contains(all, name)})
-  case list.is_empty(desugarers_with_no_test_group) {
-    True -> Nil
-    False -> {
-      io.println("")
-      io.println("could not find any test data for the following desugarers:")
-      list.each(
-        desugarers_with_no_test_group,
-        fn(name) { io.println(" - " <> name)}
-      )
-    }
-  }
-
-  Nil
-}
-
 pub fn test_thing() {
   // let assert Ok([vxml]) = vxml.parse_file("test/sample.vxml")
   // echo vxml
@@ -168,10 +74,8 @@ pub fn main() {
       test_thing()
     }
     ["--test-desugarers", ..names] -> {
-      run_desugarer_tests(names)
-    }
-    ["--generate-lib"] | ["--generate"] | ["--generate-library"] -> {
-      generate_desugarer_library()
+      let collections = list.map(dl.assertive_tests, fn(constructor){constructor()})
+      infra.run_assertive_desugarer_tests(names, collections)
     }
     _ -> {
       io.println("")

@@ -1781,13 +1781,6 @@ pub fn descendants_with_class(vxml: VXML, class: String) -> List(VXML) {
   filter_descendants(vxml, has_class(_, class))
 }
 
-pub fn excise_children(node: VXML, condition: fn(VXML) -> Bool) -> #(VXML, List(VXML)) {
-  let assert V(blame, tag, attributes, children) = node
-  let #(remaining_children, excised_children) = list.partition(children, fn(child) { !condition(child) })
-  let new_node = V(blame, tag, attributes, remaining_children)
-  #(new_node, excised_children)
-}
-
 pub fn replace_children_with(node: VXML, children: List(VXML)) {
   case node {
     V(b, t, a, _) -> V(b, t, a, children)
@@ -2020,15 +2013,15 @@ pub type AssertiveTestDataWithOutside(a) {
 
 pub type AssertiveTest {
   AssertiveTest(
-    desugarer_factory: fn() -> Desugarer,
-    source: String,   // VXML String
-    expected: String, // VXML String
+    constructor: fn() -> Desugarer,
+    source: String,    // VXML String
+    expected: String,  // VXML String
   )
 }
 
-pub type AssertiveTests {
-  AssertiveTests(
-    name: String,
+pub type AssertiveTestCollection {
+  AssertiveTestCollection(
+    desugarer_name: String,
     tests: fn() -> List(AssertiveTest),
   )
 }
@@ -2046,19 +2039,19 @@ fn remove_minimum_indent(s: String) -> String {
   lines |> list.map(fn(line) { line |> string.drop_start(minimum_indent) }) |> string.join("\n")
 }
 
-pub fn assertive_tests_from_data_no_param(
+pub fn assertive_test_collection_from_data_no_param(
   name: String,
   datas: List(AssertiveTestDataNoParam),
   constructor: fn() -> Desugarer,
-) -> AssertiveTests {
-  AssertiveTests(
-    name: name,
+) -> AssertiveTestCollection {
+  AssertiveTestCollection(
+    desugarer_name: name,
     tests: fn() -> List(AssertiveTest) {
       list.map(
         datas,
         fn(data) {
           AssertiveTest(
-            desugarer_factory: constructor,
+            constructor: constructor,
             source: data.source |> remove_minimum_indent,
             expected: data.expected |> remove_minimum_indent
           )
@@ -2068,19 +2061,19 @@ pub fn assertive_tests_from_data_no_param(
   )
 }
 
-pub fn assertive_tests_from_data(
+pub fn assertive_test_collection_from_data(
   name: String,
   datas: List(AssertiveTestData(a)),
   constructor: fn(a) -> Desugarer,
-) -> AssertiveTests {
-  AssertiveTests(
-    name: name,
+) -> AssertiveTestCollection {
+  AssertiveTestCollection(
+    desugarer_name: name,
     tests: fn() -> List(AssertiveTest) {
       list.map(
         datas,
         fn(data) {
           AssertiveTest(
-            desugarer_factory: fn() { constructor(data.param) },
+            constructor: fn() { constructor(data.param) },
             source: data.source |> remove_minimum_indent,
             expected: data.expected |> remove_minimum_indent
           )
@@ -2090,19 +2083,19 @@ pub fn assertive_tests_from_data(
   )
 }
 
-pub fn assertive_tests_from_data_no_param_with_outside(
+pub fn assertive_test_collection_from_data_no_param_with_outside(
   name: String,
   datas: List(AssertiveTestDataNoParamWithOutside),
   constructor: fn(List(String)) -> Desugarer,
-) -> AssertiveTests {
-  AssertiveTests(
-    name: name,
+) -> AssertiveTestCollection {
+  AssertiveTestCollection(
+    desugarer_name: name,
     tests: fn() -> List(AssertiveTest) {
       list.map(
         datas,
         fn(data) {
           AssertiveTest(
-            desugarer_factory: fn() { constructor(data.outside) },
+            constructor: fn() { constructor(data.outside) },
             source: data.source |> remove_minimum_indent,
             expected: data.expected |> remove_minimum_indent
           )
@@ -2112,19 +2105,19 @@ pub fn assertive_tests_from_data_no_param_with_outside(
   )
 }
 
-pub fn assertive_tests_from_data_with_outside(
+pub fn assertive_test_collection_from_data_with_outside(
   name: String,
   datas: List(AssertiveTestDataWithOutside(a)),
   constructor: fn(a, List(String)) -> Desugarer,
-) -> AssertiveTests {
-  AssertiveTests(
-    name: name,
+) -> AssertiveTestCollection {
+  AssertiveTestCollection(
+    desugarer_name: name,
     tests: fn() -> List(AssertiveTest) {
       list.map(
         datas,
         fn(data) {
           AssertiveTest(
-            desugarer_factory: fn() { constructor(data.param, data.outside) },
+            constructor: fn() { constructor(data.param, data.outside) },
             source: data.source |> remove_minimum_indent,
             expected: data.expected |> remove_minimum_indent
           )
@@ -2135,26 +2128,19 @@ pub fn assertive_tests_from_data_with_outside(
 }
 
 pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, AssertiveTestError) {
-  let desugarer = tst.desugarer_factory()
-
+  let desugarer = tst.constructor()
   use <- on.true_false(
     name != desugarer.name,
     Error(NonMatchingDesugarerName(desugarer.name)),
   )
-
   use vxmls <- result.try(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
-
   let assert [input] = vxmls
-
   use vxmls <- result.try(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
-
   let assert [expected] = vxmls
-
   use #(output, _) <- result.try(
     desugarer.transform(input)
     |> result.map_error(fn(e) { TestDesugaringError(e) })
   )
-
   case vxml_to_string(output) == vxml_to_string(expected) {
     True -> Ok(Nil)
     False -> Error(
@@ -2168,12 +2154,12 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
 }
 
 pub fn run_and_announce_results(
-  test_group: AssertiveTests,
+  test_group: AssertiveTestCollection,
   tst: AssertiveTest,
   number: Int,
   total: Int,
 ) -> Int {
-  case run_assertive_test(test_group.name, tst) {
+  case run_assertive_test(test_group.desugarer_name, tst) {
     Ok(Nil) -> {
       io.print("✅")
       0
@@ -2194,14 +2180,14 @@ pub fn run_and_announce_results(
   }
 }
 
-pub fn run_assertive_tests(test_group: AssertiveTests) -> #(Int, Int) {
+fn run_assertive_test_collection(test_group: AssertiveTestCollection) -> #(Int, Int) {
   let tests = test_group.tests()
   let total = list.length(tests)
   use <- on.false_true(
     total > 0,
     #(0, 0),
   )
-  io.print(test_group.name <> " ")
+  io.print(test_group.desugarer_name <> " ")
   let #(num_success, num_failures) = list.fold(
     tests,
     #(0, 0),
@@ -2216,6 +2202,100 @@ pub fn run_assertive_tests(test_group: AssertiveTests) -> #(Int, Int) {
   }
   #(num_success, num_failures)
 }
+
+pub fn run_assertive_desugarer_tests(
+  desugarer_names names: List(String),
+  available_collections colls: List(AssertiveTestCollection),
+) {
+  let #(all, dont_have_tests) =
+    list.fold(
+      colls,
+      #([], []),
+      fn(acc, coll) {
+        case list.length(coll.tests()) > 0 {
+          True -> #(
+            [coll.desugarer_name, ..acc.0],
+            acc.1,
+          )
+          False -> #(
+            [coll.desugarer_name, ..acc.0],
+            [coll.desugarer_name, ..acc.1],
+          )
+        }
+      }
+    )
+
+  let names = case list.is_empty(names) {
+    True -> all
+    False -> names
+  }
+
+  let dont_have_tests = list.filter(dont_have_tests, list.contains(names, _))
+
+  case list.is_empty(dont_have_tests) {
+    True -> Nil
+    False -> {
+      io.println("")
+      io.println("the following desugarers have empty test data:")
+      list.each(
+        dont_have_tests,
+        fn(name) { io.println(" - " <> name)}
+      )
+    }
+  }
+
+  io.println("")
+  let #(num_performed, num_failed) =
+    list.fold(
+      colls,
+      #(0, 0),
+      fn(acc, coll) {
+        case {
+          list.contains(names, coll.desugarer_name) && 
+          list.length(coll.tests()) > 0
+        } {
+          False -> acc
+          True -> {
+            let #(_, num_failed) = run_assertive_test_collection(coll)
+            case num_failed > 0 {
+              True -> #(acc.0 + 1, acc.1 + 1)
+              False -> #(acc.0 + 1, acc.1)
+            }
+          }
+        }
+      }
+    )
+
+  io.println("")
+  io.println(
+    ins(num_performed)
+    <> case num_performed == 1 {
+      True -> " desugarer tested, "
+      False -> " desugarers tested, "
+    }
+    <> ins(num_failed)
+    <> case num_failed == 1 {
+      True -> " failed"
+      False -> " failures"
+    }
+  )
+
+  let desugarers_with_no_test_group = list.filter(names, fn(name) { !list.contains(all, name)})
+  case list.is_empty(desugarers_with_no_test_group) {
+    True -> Nil
+    False -> {
+      io.println("")
+      io.println("could not find any test data for the following desugarers:")
+      list.each(
+        desugarers_with_no_test_group,
+        fn(name) { io.println(" - " <> name)}
+      )
+    }
+  }
+
+  Nil
+}
+
 
 //*********
 //* types *

@@ -129,5 +129,5 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 // Invalid cases would result in DesugaringError at runtime.
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(name, assertive_tests_data(), constructor)
+  infra.assertive_test_collection_from_data(name, assertive_tests_data(), constructor)
 }

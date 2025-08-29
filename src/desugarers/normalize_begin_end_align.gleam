@@ -522,7 +522,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
 }
 
 pub fn assertive_tests() {
-  infra.assertive_tests_from_data(
+  infra.assertive_test_collection_from_data(
     name,
     assertive_tests_data(),
     constructor,

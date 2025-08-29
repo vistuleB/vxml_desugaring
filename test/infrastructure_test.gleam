@@ -562,7 +562,8 @@ pub fn descendants_with_class_test() {
   no_descendants |> list.length |> should.equal(0)
 }
 
-pub fn excise_children_test() {
+
+pub fn extract_children_test() {
   let blame = Src([], "test", 1, 0)
   
   // create a parent with multiple children
@@ -617,7 +618,7 @@ pub fn excise_children_test() {
   )
   
   // test excising children with "remove" class
-  let #(new_node, excised) = infra.excise_children(parent_div, fn(child) {
+  let #(new_node, excised) = infra.extract_children(parent_div, fn(child) {
     infra.has_class(child, "remove")
   })
   
@@ -635,7 +636,7 @@ pub fn excise_children_test() {
   keep_count |> should.equal(2)
   
   // test excising children by tag
-  let #(new_node2, excised2) = infra.excise_children(parent_div, fn(child) {
+  let #(new_node2, excised2) = infra.extract_children(parent_div, fn(child) {
     infra.is_v_and_tag_equals(child, "span")
   })
   
@@ -647,7 +648,7 @@ pub fn excise_children_test() {
   remaining_children2 |> list.length |> should.equal(3)
   
   // test excising all children
-  let #(new_node3, excised3) = infra.excise_children(parent_div, fn(_) { True })
+  let #(new_node3, excised3) = infra.extract_children(parent_div, fn(_) { True })
   
   // check that all 5 children were excised
   excised3 |> list.length |> should.equal(5)
@@ -657,7 +658,7 @@ pub fn excise_children_test() {
   remaining_children3 |> list.length |> should.equal(0)
   
   // test excising no children
-  let #(new_node4, excised4) = infra.excise_children(parent_div, fn(_) { False })
+  let #(new_node4, excised4) = infra.extract_children(parent_div, fn(_) { False })
   
   // check that no children were excised
   excised4 |> list.length |> should.equal(0)
@@ -673,7 +674,7 @@ pub fn excise_children_test() {
     [BlamedAttribute(blame, "class", "childless")],
     []
   )
-  let #(new_childless, excised_childless) = infra.excise_children(childless_element, fn(_) { True })
+  let #(new_childless, excised_childless) = infra.extract_children(childless_element, fn(_) { True })
   
   // check that no children were excised and node remains unchanged
   excised_childless |> list.length |> should.equal(0)
