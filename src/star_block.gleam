@@ -340,9 +340,7 @@ pub fn turn_into_paragraph(
     len < max_line_length,
     on_true: [message],
   )
-
   let shortest = max_line_length * 3 / 5
-  echo shortest
   let #(current_start, current_end, remaining) = #(
     string.slice(message, 0, shortest),
     string.slice(message, shortest, max_line_length - shortest),
@@ -360,5 +358,35 @@ pub fn turn_into_paragraph(
       current_start <> current_end,
       ..turn_into_paragraph(remaining, max_line_length)
     ]
+  }
+}
+
+pub fn padded_error_paragraph(
+  message: String,
+  max_line_length: Int,
+  pad: String,
+) -> List(String) {
+  message
+  |> turn_into_paragraph(max_line_length)
+  |> list.index_map(
+    fn(s, i) {
+      case i > 0 {
+        False -> s
+        True -> pad <> s
+      }
+    }
+  )
+}
+
+pub fn strip_quotes(
+  string: String,
+) -> String {
+  case {
+    string.starts_with(string, "") &&
+    string.ends_with(string, "") &&
+    string != ""
+  } {
+    True -> string |> string.drop_start(1) |> string.drop_end(1)
+    False -> string
   }
 }

@@ -5,7 +5,6 @@ import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/io
-import gleam/pair
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -80,7 +79,7 @@ pub fn default_assembler(
 // *************
 
 pub type Parser(c) =
-  fn(List(InputLine)) -> Result(VXML, c)
+  fn(List(InputLine)) -> Result(VXML, #(Blame, c))
 
 pub type ParserDebugOptions {
   ParserDebugOptions(echo_: Bool)
@@ -91,23 +90,22 @@ pub type ParserDebugOptions {
 // ******************************
 
 pub fn default_writerly_parser(
-  spotlight_args: List(#(String, String, String)),
+  only_args: List(#(String, String, String)),
 ) -> Parser(String) {
   fn(lines) {
-    use writerlys <- result.try(
-      wp.parse_input_lines(lines)
-      |> result.map_error(fn(e) { ins(e) }),
+    use writerlys <- on.error_ok(
+      wp.parse_input_lines(lines),
+      fn(e) { Error(#(e.blame, ins(e))) },
     )
 
-    use vxml <- result.try(
-      writerlys
-      |> wp.writerlys_to_vxmls
-      |> infra.get_root,
+    use vxml <- on.error_ok(
+      writerlys |> wp.writerlys_to_vxmls |> infra.get_root,
+      fn(e) { Error(#(bl.no_blame, ins(e)))},
     )
 
-    use #(filtered_vxml, _) <- result.try(
-      dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
-      |> result.map_error(fn(e) { ins(e) }),
+    use #(filtered_vxml, _) <- on.error_ok(
+      dl.filter_nodes_by_attributes(only_args).transform(vxml),
+      fn(_) { Error(#(bl.no_blame, "empty document after filtering nodes by: " <> ins(only_args))) },
     )
 
     Ok(filtered_vxml)
@@ -115,7 +113,7 @@ pub fn default_writerly_parser(
 }
 
 pub fn default_html_parser(
-  spotlight_args: List(#(String, String, String)),
+  only_args: List(#(String, String, String)),
 ) -> Parser(String) {
   fn(lines: List(InputLine)) {
     // we don't have our own html parser that can give
@@ -125,28 +123,29 @@ pub fn default_html_parser(
       bl.Src(_, path, _, _) -> path
       _ -> "vr::default_html_parser"
     }
-    let s =
+
+    let content =
       lines
       |> io_l.input_lines_to_output_lines
       |> io_l.output_lines_to_string
       |> string.trim
 
-    use nonempty_string <- result.try(
-      case s {
-        "" -> Error("empty content")
-        _ -> Ok(s)
-      }
+    use <- on.true_false(
+      content == "",
+      Error(#(first_line.blame, "empty content")),
     )
 
-    use vxml <- result.try(
-      nonempty_string
-      |> vp.xmlm_based_html_parser(path)
-      |> result.map_error(ins),
+    use vxml <- on.error_ok(
+      content |> vp.xmlm_based_html_parser(path),
+      fn(xmlm_parse_error) { Error(#(bl.no_blame, "xmlm parse error: " <> ins(xmlm_parse_error))) },
     )
 
-    dl.filter_nodes_by_attributes(spotlight_args).transform(vxml)
-    |> result.map_error(ins)
-    |> result.map(pair.first)
+    use #(vxml, _) <- on.error_ok(
+      dl.filter_nodes_by_attributes(only_args).transform(vxml),
+      fn(_) { Error(#(bl.no_blame, "empty document after filtering nodes by: " <> ins(only_args))) },
+    )
+
+    Ok(vxml)
   }
 }
 
@@ -528,7 +527,7 @@ pub fn output_dir_local_path_printer(
 
 pub type RendererError(a, c, e, f, h) {
   FileOrParseError(a)
-  SourceParserError(c)
+  SourceParserError(Blame, c)
   PipelineError(InSituDesugaringError)
   SplitterError(e)
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
@@ -608,6 +607,14 @@ fn print_pipeline(desugarers: List(Desugarer)) {
 // RUN_RENDERER
 // *************
 
+fn our_blame_digest(blame: Blame) -> String {
+  case bl.blame_digest(blame) {
+    "" -> "--"
+    s -> s
+  }
+}
+
+
 fn boxed_error_lines(
   lines: List(String),
   emoji: String,
@@ -680,7 +687,7 @@ pub fn run_renderer(
   use assembled <- on.error_ok(
     renderer.assembler(input_dir),
     fn(error_a) {
-      io.println("\n  ...renderer.assembler error on input_dir " <> input_dir <> ":")
+      io.println("\n  ...assembler error on input_dir " <> input_dir <> ":")
       [
         "",
         "  " <> ins(error_a),
@@ -701,18 +708,32 @@ pub fn run_renderer(
     }
   }
 
-  io.print("• parsing input lines to VXML")
+  io.println("• parsing input lines to VXML")
 
   use parsed: VXML <- on.error_ok(
     renderer.parser(assembled),
-    on_error: fn(error: c) {
-      io.println("")
-      io.println("renderer.parser error: " <> ins(error))
-      Error(SourceParserError(error))
+    on_error: fn(error) {
+      let #(blame, c) = error
+      let assert [first, ..rest] =
+        star_block.padded_error_paragraph(ins(c) |> star_block.strip_quotes, 70, "            ")
+
+      io.println("\n  ...parser error:")
+      [
+        [
+          "            ",
+          "  blame:    " <> our_blame_digest(blame),
+          "  message:  " <> first,
+        ],
+        rest,
+        [
+          "",
+        ]
+      ]
+      |> list.flatten
+      |> boxed_error_announcer("💥", 2, #(1, 0))
+      Error(SourceParserError(blame, c))
     },
   )
-
-  io.println("")
 
   io.println("• starting pipeline...")
   let t0 = timestamp.system_time()
@@ -720,21 +741,8 @@ pub fn run_renderer(
   use #(desugared, warnings, times) <- on.error_ok(
     run_pipeline(parsed, renderer.pipeline),
     on_error: fn(e: InSituDesugaringError) {
-      let assert [first, ..rest] = 
-        star_block.turn_into_paragraph(e.message, 80)
-        |> list.index_map(
-          fn(s, i) {
-            case i > 0 {
-              False -> s
-              True -> "                  " <> s
-            }
-          }
-        )
-
-      let bl_msg = case bl.blame_digest(e.blame) {
-        "" -> "--"
-        s -> s
-      }
+      let assert [first, ..rest] =
+        star_block.padded_error_paragraph(e.message, 80, "                  ")
 
       io.println("\n  DesugaringError:")
       [
@@ -742,7 +750,7 @@ pub fn run_renderer(
           "                  ",
           "  thrown by:      " <> e.desugarer.name,
           "  pipeline step:  " <> ins(e.step_no),
-          "  blame:          " <> bl_msg,
+          "  blame:          " <> our_blame_digest(e.blame),
           "  message:        " <> first,
         ],
         rest,
