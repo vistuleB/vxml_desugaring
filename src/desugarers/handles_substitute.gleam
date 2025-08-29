@@ -110,7 +110,7 @@ fn matches_2_hyperlinks(
     |> list.map(extract_handle_name)
     |> list.map(hyperlink_maybe(_, blame, state, inner))
 
-  use _ <- on.ok_error(
+  use _ <- result.try_error(
     list.find(threats, is_failure),
     fn (f) {
       let assert Failure(desugaring_error) = f

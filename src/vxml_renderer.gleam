@@ -781,7 +781,7 @@ pub fn run_renderer(
 
   io.println("  -> obtained " <> ins(list.length(fragments)) <> " fragments:")
   
-  [#("type", "path"), ..fragments_types_and_paths_4_table]
+  [#("classifier", "path"), ..fragments_types_and_paths_4_table]
   |> star_block.two_column_table
   |> star_block.print_table_at_indent(2)
 
@@ -829,7 +829,7 @@ pub fn run_renderer(
   list.each(
     fragments,
     fn (fr) {
-      use error <- on.ok_error(fr, fn(_){Nil})
+      use error <- result.try_error(fr, fn(_){Nil})
       io.println("\nemitter error:")
       boxed_error_announcer(
         [

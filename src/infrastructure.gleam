@@ -62,7 +62,7 @@ pub fn parse_number_and_optional_css_unit(
   s: String
 ) -> Result(#(Float, Option(CSSUnit)), Nil) {
   let #(before_unit, unit) = extract_css_unit(s)
-  use number <- on.ok(parse_to_float(before_unit))
+  use number <- result.try(parse_to_float(before_unit))
   Ok(#(number, unit))
 }
 
@@ -330,8 +330,8 @@ pub fn try_map_fold(
   case ze_list {
     [] -> Ok(#([], state))
     [first, ..rest] -> {
-      use #(mapped_first, state) <- on.ok(f(state, first))
-      use #(mapped_rest, state) <- on.ok(try_map_fold(rest, state, f))
+      use #(mapped_first, state) <- result.try(f(state, first))
+      use #(mapped_rest, state) <- result.try(try_map_fold(rest, state, f))
       Ok(#([mapped_first, ..mapped_rest], state))
     }
   }
@@ -2142,15 +2142,15 @@ pub fn run_assertive_test(name: String, tst: AssertiveTest) -> Result(Nil, Asser
     Error(NonMatchingDesugarerName(desugarer.name)),
   )
 
-  use vxmls <- on.ok(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
+  use vxmls <- result.try(vxml.parse_string(tst.source, "tst.source") |> result.map_error(fn(e) { VXMLParseError(e) }))
 
   let assert [input] = vxmls
 
-  use vxmls <- on.ok(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
+  use vxmls <- result.try(vxml.parse_string(tst.expected, "tst.expect") |> result.map_error(fn(e) { VXMLParseError(e) }))
 
   let assert [expected] = vxmls
 
-  use #(output, _) <- on.ok(
+  use #(output, _) <- result.try(
     desugarer.transform(input)
     |> result.map_error(fn(e) { TestDesugaringError(e) })
   )

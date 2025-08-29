@@ -14,7 +14,7 @@ fn nodemap(
   case node {
     V(_, tag, _, _) if tag == inner.0 -> {
       // return early if we have a child of tag child_tag == inner.1:
-      use _ <- on.ok_error(
+      use _ <- result.try_error(
         infra.children_with_tag(node, inner.1) |> list.first,
         fn(_) {#(node, GoBack)},
       )
