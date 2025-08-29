@@ -829,7 +829,7 @@ pub fn run_renderer(
   list.each(
     fragments,
     fn (fr) {
-      use error <- result.try_error(fr, fn(_){Nil})
+      use error <- on.ok_error(fr, fn(_){Nil})
       io.println("\nemitter error:")
       boxed_error_announcer(
         [
