@@ -12,7 +12,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import gleam/time/duration
 import gleam/time/timestamp.{type Timestamp}
-import infrastructure.{type Desugarer, type Pipe, type Pipeline, Off, On, OnChange} as infra
+import infrastructure.{type Desugarer, type Pipe, type Pipeline, TrackingOff, TrackingForced, TrackingOnChange} as infra
 import selector_library as sl
 import shellout
 import simplifile
@@ -418,14 +418,14 @@ fn run_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
 ) -> Result(#(VXML, List(InSituDesugaringWarning), List(#(Int, Timestamp))), InSituDesugaringError) {
-  let track_any = list.any(pipeline, fn(p){p.0 != Off})
+  let track_any = list.any(pipeline, fn(p){p.0 != TrackingOff})
   let last_step = list.length(pipeline)
 
   pipeline
   |> list.try_fold(
     #(vxml, 1, "", [], [], False),
     fn(acc, pipe) {
-      let #(vxml, step_no, last_debug_output, times, warnings, got_arrow) = acc
+      let #(vxml, step_no, last_tracking_output, times, warnings, got_arrow) = acc
       let #(mode, selector, desugarer) = pipe
       let times = case desugarer.name == "timer" {
         True -> [#(step_no, timestamp.system_time()), ..times]
@@ -454,14 +454,14 @@ fn run_pipeline(
           message: warning.message,
         )
       })
-      let #(selected, next_debug_output) = case mode == Off {
-        True -> #([], last_debug_output)
+      let #(selected, next_tracking_output) = case mode == TrackingOff {
+        True -> #([], last_tracking_output)
         False -> {
           let selected = vxml |> infra.vxml_to_s_lines |> selector
           #(selected, selected |> infra.s_lines_annotated_table("", True, 0))
         }
       }
-      let must_print = mode == On || { mode == OnChange && next_debug_output != last_debug_output }
+      let must_print = mode == TrackingForced || { mode == TrackingOnChange && next_tracking_output != last_tracking_output }
       let got_arrow = case must_print {
         True -> {
           io.println("    " <> star_block.name_and_param_string(desugarer, step_no))
@@ -479,7 +479,7 @@ fn run_pipeline(
           False -> True
         }
       }
-      #(vxml, step_no + 1, next_debug_output, times, list.append(warnings, new_warnings), got_arrow)
+      #(vxml, step_no + 1, next_tracking_output, times, list.append(warnings, new_warnings), got_arrow)
       |> Ok
     }
   )
@@ -680,12 +680,13 @@ pub fn run_renderer(
   use assembled <- on.error_ok(
     renderer.assembler(input_dir),
     fn(error_a) {
-      io.println(
-        "\nrenderer.assembler error on input_dir "
-        <> input_dir
-        <> ": "
-        <> ins(error_a),
-      )
+      io.println("\n  ...renderer.assembler error on input_dir " <> input_dir <> ":")
+      [
+        "",
+        "  " <> ins(error_a),
+        "",
+      ]
+      |> boxed_error_announcer("💥", 2, #(1, 0))
       Error(FileOrParseError(error_a))
     },
   )
@@ -719,15 +720,37 @@ pub fn run_renderer(
   use #(desugared, warnings, times) <- on.error_ok(
     run_pipeline(parsed, renderer.pipeline),
     on_error: fn(e: InSituDesugaringError) {
+      let assert [first, ..rest] = 
+        star_block.turn_into_paragraph(e.message, 80)
+        |> list.index_map(
+          fn(s, i) {
+            case i > 0 {
+              False -> s
+              True -> "                  " <> s
+            }
+          }
+        )
+
+      let bl_msg = case bl.blame_digest(e.blame) {
+        "" -> "--"
+        s -> s
+      }
+
       io.println("\n  DesugaringError:")
       [
-        " ",
-        "  thrown by:      " <> e.desugarer.name <> " (desugarer)",
-        "  pipeline step:  " <> ins(e.step_no),
-        "  blame:          " <> bl.blame_digest(e.blame),
-        "  message:        " <> e.message,
-        " ",
+        [
+          "                  ",
+          "  thrown by:      " <> e.desugarer.name,
+          "  pipeline step:  " <> ins(e.step_no),
+          "  blame:          " <> bl_msg,
+          "  message:        " <> first,
+        ],
+        rest,
+        [
+          ""
+        ],
       ]
+      |> list.flatten
       |> boxed_error_announcer("💥", 2, #(1, 0))
       Error(PipelineError(e))
     },
@@ -1116,45 +1139,10 @@ fn amend_spotlight_args(
   )
 }
 
-pub fn cli_usage() {
+pub fn extended_cli_usage() {
   let margin = "   "
   io.println("")
-  io.println("Renderer options:")
-  io.println("")
-  io.println(margin <> "--help")
-  io.println(margin <> "  -> print this message")
-  io.println("")
-  io.println(margin <> "--only <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> restrict source to paths that match one of the given subpaths")
-  io.println("")
-  io.println(margin <> "--only <key1=val1> <key2=val2> ...")
-  io.println(margin <> "  -> restrict source to elements that have one of the given")
-  io.println(margin <> "     key-value pairs as attributes")
-  io.println("")
-  io.println(margin <> "--table")
-  io.println(margin <> "  -> include a printout of the pipeline table in the rendering")
-  io.println(margin <> "     output")
-  io.println("")
-  io.println(margin <> "--track <string> +<p>-<m> <step numbers>")
-  io.println(margin <> "  -> track changes near the verbatim document fragment given by")
-  io.println(margin <> "     <string> argument, that can refer to any part of the printed")
-  io.println(margin <> "     VXML output except for leading whitespace; e.g.:")
-  io.println("")
-  io.println(margin <> "     gleam run -- --track \"lorem ipsum\"")
-  io.println(margin <> "     gleam run -- --track src=img/23.svg")
-  io.println(margin <> "     gleam run -- --track \"<> ImageRight\"")
-  io.println("")
-  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before <string>")
-  io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
-  io.println(margin <> "       lines where <string> appears; can also be used in the")
-  io.println(margin <> "       '+15' or '-5' only")
-  io.println("")
-  io.println(margin <> "     • <step numbers> specificy which desugaring steps to track:")
-  io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
-  io.println(margin <> "         • !x to force a printout at step x whether or not a")
-  io.println(margin <> "           changeoccurs at that step")
-  io.println(margin <> "       leave <step numbers> empty to track all steps; use negative")
-  io.println(margin <> "       arguments to denote steps from end of list, python-style")
+  io.println("Esoteric renderer options:")
   io.println("")
   io.println(margin <> "--track-steps")
   io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
@@ -1180,9 +1168,52 @@ pub fn cli_usage() {
   io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
   io.println(margin <> "     in string form after prettifying, list none to match all", )
   io.println("")
+
+}
+
+pub fn basic_cli_usage() {
+  let margin = "   "
+  io.println("")
+  io.println("Renderer options:")
+  io.println("")
+  io.println(margin <> "--help")
+  io.println(margin <> "  -> print this message")
+  io.println("")
+  io.println(margin <> "--only <string1> <string2> ...")
+  io.println(margin <> "  -> restrict source to files whose paths contain at least one of")
+  io.println(margin <> "     the given strings (as a substring)")
+  io.println("")
+  io.println(margin <> "--only <key1=val1> <key2=val2> ...")
+  io.println(margin <> "  -> restrict source to elements that have at least one of the")
+  io.println(margin <> "     given key-value pairs as attributes (& ancestors of such)")
+  io.println("")
+  io.println(margin <> "--table")
+  io.println(margin <> "  -> include a printout of the pipeline table in the rendering")
+  io.println(margin <> "     output")
+  io.println("")
+  io.println(margin <> "--track <string> +<p>-<m> [<step numbers>]")
+  io.println(margin <> "  -> track changes near the document fragment given by <string>,")
+  io.println(margin <> "     that can refer to any part of the printed VXML output except")
+  io.println(margin <> "     for leading whitespace; e.g.:")
+  io.println("")
+  io.println(margin <> "     gleam run -- --track \"lorem ipsum\"")
+  io.println(margin <> "     gleam run -- --track src=img/23.svg")
+  io.println(margin <> "     gleam run -- --track \"<> ImageRight\"")
+  io.println("")
+  io.println(margin <> "     • +<p>-<m>: track p lines beyond and m lines before <string>")
+  io.println(margin <> "       e.g., '+15-5' to track 15 lines beyond and 5 lines before")
+  io.println(margin <> "       lines where the marker appears")
+  io.println("")
+  io.println(margin <> "     • <step numbers> specificy which desugaring steps to track:")
+  io.println(margin <> "         • <x-y> to track changes in desugaring steps x to y only")
+  io.println(margin <> "         • !x to force a printout at step x")
+  io.println("")
+  io.println(margin <> "     leave <step numbers> empty to track all steps")
+  io.println("")
   io.println(margin <> "--prettier [<dir>]")
   io.println(margin <> "  -> turn the prettifier on and have the prettifier output to")
-  io.println(margin <> "     <dir>; if absent, <dir> defaults to renderer.output_dir")
+  io.println(margin <> "     <dir>; if absent, <dir> defaults to")
+  io.println(margin <> "     renderer_parameters.output_dir")
   io.println("")
 }
 
@@ -1202,9 +1233,12 @@ fn apply_show_changes_near_cli_args_to_pipeline(
   let apply_to_all = restrict == [] && force == []
   case apply_to_all {
     True -> {
-      list.map(pipeline, fn(pipe) {
-        #(infra.OnChange, option.unwrap(cli.selector, pipe.1), pipe.2)
-      })
+      list.map(
+        pipeline,
+        fn(pipe) {
+          #(TrackingOnChange, option.unwrap(cli.selector, pipe.1), pipe.2)
+        }
+      )
     }
     False -> {
       list.index_map(pipeline, fn(pipe, i) {
@@ -1212,9 +1246,9 @@ fn apply_show_changes_near_cli_args_to_pipeline(
         let on_change = list.contains(restrict, step_no)
         let on = list.contains(force, step_no)
         let mode = case on_change, on {
-          _, True -> infra.On
-          True, _ -> infra.OnChange
-          _, _ -> infra.Off
+          _, True -> TrackingForced
+          True, _ -> TrackingOnChange
+          _, _ -> TrackingOff
         }
         #(mode, option.unwrap(cli.selector, pipe.1), pipe.2)
       })
@@ -1474,7 +1508,7 @@ pub fn process_command_line_arguments(
       let #(option, values) = pair
       case option {
         "--help" -> {
-          cli_usage()
+          basic_cli_usage()
           io.println("")
           case list.is_empty(values) {
             True -> Ok(CommandLineAmendments(..amendments, help: True))
@@ -1659,8 +1693,7 @@ pub fn db_amend_prettifier_debug_options(
   amendments: CommandLineAmendments,
 ) -> PrettifierDebugOptions(d) {
   PrettifierDebugOptions(fn(fr: GhostOfOutputFragment(d)) {
-    previous.echo_(fr)
-    || is_some_and_any_or_is_empty(
+    previous.echo_(fr) || is_some_and_any_or_is_empty(
       amendments.prettified_string_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )

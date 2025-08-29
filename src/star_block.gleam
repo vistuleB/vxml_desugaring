@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer}
+import on
 
 pub fn dashes(num: Int) -> String { string.repeat("-", num) }
 pub fn solid_dashes(num: Int) -> String { string.repeat("─", num) }
@@ -328,4 +329,36 @@ pub fn desugarer_description_star_block(
     ),
     True,
   )
+}
+
+pub fn turn_into_paragraph(
+  message: String,
+  max_line_length: Int,
+) -> List(String) {
+  let len = string.length(message)
+  use <- on.true_false(
+    len < max_line_length,
+    on_true: [message],
+  )
+
+  let shortest = max_line_length * 3 / 5
+  echo shortest
+  let #(current_start, current_end, remaining) = #(
+    string.slice(message, 0, shortest),
+    string.slice(message, shortest, max_line_length - shortest),
+    string.slice(message, max_line_length, len),
+  )
+  case string.split_once(current_end |> string.reverse, " ") {
+    Ok(#(before, after)) -> [
+      current_start <> {after |> string.reverse},
+      ..turn_into_paragraph(
+        { before |> string.reverse } <> remaining,
+        max_line_length
+      )
+    ]
+    _ -> [
+      current_start <> current_end,
+      ..turn_into_paragraph(remaining, max_line_length)
+    ]
+  }
 }

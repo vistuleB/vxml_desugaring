@@ -2409,10 +2409,10 @@ pub fn vxml_to_s_lines(
 //* Selector-related
 //*********
 
-pub type EchoMode {
-  On
-  Off
-  OnChange
+pub type TrackingMode {
+  TrackingOff
+  TrackingOnChange
+  TrackingForced
 }
 
 pub type LineSelector =
@@ -2422,7 +2422,7 @@ pub type Selector =
   fn(List(SLine)) -> List(SLine)
 
 pub type Pipe = 
-  #(EchoMode, Selector, Desugarer)
+  #(TrackingMode, Selector, Desugarer)
 
 pub type Pipeline =
   List(Pipe)
@@ -2436,7 +2436,7 @@ pub fn pipeline_desugarers(
 
 pub fn wrap_desugarers(
   desugarers: List(Desugarer),
-  echo_mode: EchoMode,
+  echo_mode: TrackingMode,
   selector: Selector,
 ) -> Pipeline {
   desugarers

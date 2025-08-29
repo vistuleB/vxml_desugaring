@@ -13,7 +13,7 @@ fn test_pipeline() -> List(Pipe) {
     dl.identity(),
     dl.rearrange_links(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>")),
   ]
-  |> infra.wrap_desugarers(infra.Off, sl.all())
+  |> infra.wrap_desugarers(infra.TrackingOff, sl.all())
 }
 
 fn test_renderer() {
@@ -22,7 +22,7 @@ fn test_renderer() {
     fn(e) {
       io.println("")
       io.println("cli error: " <> ins(e))
-      vr.cli_usage()
+      vr.basic_cli_usage()
     },
   )
 
