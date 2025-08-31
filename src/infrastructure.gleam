@@ -1874,7 +1874,7 @@ pub fn t_map(
 }
 
 // ************************************************************
-// AssertiveTest runnning
+// AssertiveTest running
 // ************************************************************
 
 pub type AssertiveTest {
