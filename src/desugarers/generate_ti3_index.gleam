@@ -18,7 +18,7 @@ fn format_chapter_link(chapter_no: Int, sub_no: Int) -> String {
 
 fn extract_chapter_title(chapter: VXML) -> ChapterTitle {
   chapter
-  |> infra.unique_child_with_tag("ChapterTitle")
+  |> infra.v_unique_child_with_tag("ChapterTitle")
   |> result.map(fn(chapter_title) {
     let assert V(_, _, _, children) = chapter_title
     let assert [T(_, contents), ..] = children
@@ -31,7 +31,7 @@ fn extract_chapter_title(chapter: VXML) -> ChapterTitle {
 
 fn chapters_number_title(root: VXML) -> List(#(VXML, ChapterNo, ChapterTitle)) {
   root
-  |> infra.index_children_with_tag("Chapter")
+  |> infra.v_index_children_with_tag("Chapter")
   |> list.map(fn(tup: #(VXML, Int)) {
     #(tup.0, tup.1 + 1, extract_chapter_title(tup.0))
   })
@@ -39,11 +39,11 @@ fn chapters_number_title(root: VXML) -> List(#(VXML, ChapterNo, ChapterTitle)) {
 
 fn extract_subchapter_title(chapter: VXML) -> List(#(SubChapterNo, SubchapterTitle)) {
   chapter
-  |> infra.index_children_with_tag("Sub")
+  |> infra.v_index_children_with_tag("Sub")
   |> list.map(fn(sub: #(VXML, Int)) {
       let subchapter_title =
         sub.0
-        |> infra.unique_child_with_tag("SubTitle")
+        |> infra.v_unique_child_with_tag("SubTitle")
         |> result.map(fn(subtitle) {
           let assert V(_, _, _, children) = subtitle
           let assert [T(_, contents), ..] = children
@@ -126,25 +126,25 @@ fn construct_header(document: VXML) -> VXML {
   let blame = desugarer_blame(126)
 
   let title =
-    case infra.v_attribute_with_key(document, "title") {
+    case infra.v_first_attribute_with_key(document, "title") {
       None -> "no title"
       Some(x) -> x.value
     }
 
   let program =
-    case infra.v_attribute_with_key(document, "program") {
+    case infra.v_first_attribute_with_key(document, "program") {
       None -> "no program"
       Some(x) -> x.value
     }
 
   let institution =
-    case infra.v_attribute_with_key(document, "institution") {
+    case infra.v_first_attribute_with_key(document, "institution") {
       None -> "no institution"
       Some(x) -> x.value
     }
 
   let lecturer =
-    case infra.v_attribute_with_key(document, "lecturer") {
+    case infra.v_first_attribute_with_key(document, "lecturer") {
       None -> "no lecturer"
       Some(x) -> x.value
     }
@@ -181,9 +181,9 @@ fn construct_right_menu(document: VXML) -> VXML {
 
   let first_chapter_title =
     document
-    |> infra.children_with_tag("Chapter")
+    |> infra.v_children_with_tag("Chapter")
     |> list.first
-    |> result.map(fn(chapter) { infra.v_attribute_with_key(chapter, "title") })
+    |> result.map(fn(chapter) { infra.v_first_attribute_with_key(chapter, "title") })
     |> result.map(fn(opt) { option.map(opt, fn(attr) {attr.value})})
     |> result.map(fn(opt) { option.unwrap(opt, "no title found")})
     |> result.unwrap("no title found")
@@ -211,7 +211,7 @@ fn construct_menu(document: VXML) -> VXML {
   let blame = desugarer_blame(211)
 
   let course_homepage_link =
-    case infra.v_attribute_with_key(document, "course_homepage") {
+    case infra.v_first_attribute_with_key(document, "course_homepage") {
       None -> "no url for course homepage"
       Some(x) -> x.value
     }
@@ -274,7 +274,7 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
     [menu_node, header_node, index_list_node]
   )
 
-  infra.prepend_child(root, index_node)
+  infra.v_prepend_child(root, index_node)
   |> n2t.add_warnings
   |> Ok
 }

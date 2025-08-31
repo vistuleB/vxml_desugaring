@@ -21,7 +21,7 @@ fn chapter_link(
   }
 
   use title_element <- on.error_ok(
-    infra.unique_child_with_tag(item, "ArticleTitle"),
+    infra.v_unique_child_with_tag(item, "ArticleTitle"),
     fn (s) {
       case s {
         infra.MoreThanOne -> Error(DesugaringError(item.blame, "has more than one ArticleTitle child"))
@@ -85,13 +85,13 @@ fn at_root(root: VXML, param: InnerParam) -> Result(#(VXML, List(DesugaringWarni
   ) = param
 
   use chapter_menu_items <- result.try(
-    infra.children_with_tag(root, "Chapter")
+    infra.v_children_with_tag(root, "Chapter")
     |> list.index_map(fn(chapter: VXML, index) { chapter_link(chapter_link_component_name, chapter, index + 1) })
     |> result.all
   )
 
   use bootcamp_menu_items <- result.try(
-    infra.children_with_tag(root, "Bootcamp")
+    infra.v_children_with_tag(root, "Bootcamp")
     |> list.index_map(fn(bootcamp: VXML, index) { chapter_link(chapter_link_component_name, bootcamp, index + 1) })
     |> result.all
   )
@@ -130,7 +130,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(#(VXML, List(DesugaringWarni
     },
   ])
 
-  infra.prepend_child(root, V(desugarer_blame(132), table_of_contents_tag, [], children))
+  infra.v_prepend_child(root, V(desugarer_blame(132), table_of_contents_tag, [], children))
   |> n2t.add_warnings
   |> Ok
 }

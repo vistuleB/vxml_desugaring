@@ -1,13 +1,13 @@
-import infrastructure.{type Selector, type SLine, type SMode} as infra
+import infrastructure.{type Selector, type SLine, type SLineSelectedStatus} as infra
 import gleam/string
 
 fn line_selector(
   line: SLine,
   s: String,
-) -> SMode {
+) -> SLineSelectedStatus {
   case string.contains(line.content, s) {
-    True -> infra.OGS
-    _ -> infra.NotS
+    True -> infra.OG
+    _ -> infra.NotSelected
   }
 }
 

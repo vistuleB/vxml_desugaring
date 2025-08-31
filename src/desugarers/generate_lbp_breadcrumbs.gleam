@@ -9,16 +9,18 @@ import nodemaps_2_desugarer_transforms as n2t
 import on
 
 fn remove_period(nodes: List(VXML)) -> List(VXML) {
-  use #(head, last) <- on.error_ok(
-    infra.head_last(nodes),
-    fn(_){nodes}
+  use last, head <- on.empty_nonempty(
+    nodes |> list.reverse,
+    [],
   )
+
+  let head = head |> list.reverse
 
   use <- on.lazy_false_true(
     infra.is_text_node(last),
     fn() {
       let assert V(_, _, _, children) = last
-      list.append(head, [infra.replace_children_with(last, remove_period(children))])
+      list.append(head, [V(..last, children: remove_period(children))])
     }
   )
 
@@ -72,7 +74,7 @@ fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> 
 }
 
 fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
-  case infra.get_children(section) {
+  case infra.v_get_children(section) {
     [V(_, "BreadcrumbTitle", _, children), ..] -> Ok(construct_breadcrumb(children, "section-" <> ins(index + 1), index))
     _ -> Error(DesugaringError(section.blame, "Section must have a BreadcrumbTitle as first child"))
   }
@@ -124,8 +126,8 @@ fn remove_breadcrumb_title(
 fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
   case child {
     V(b, tag, a, children) if tag == "Chapter" || tag == "Bootcamp" -> {
-      let sections = infra.children_with_tag(child, "Section")
-      let exercises = infra.children_with_tag(child, "Exercises")
+      let sections = infra.v_children_with_tag(child, "Section")
+      let exercises = infra.v_children_with_tag(child, "Exercises")
       use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
       Ok(V(b, tag, a, [sections_ul, ..children |> list.map(remove_breadcrumb_title)]))
     }
@@ -134,15 +136,15 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
 }
 
 fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
-  let children = infra.get_children(root)
-
+  let children = infra.v_get_children(root)
   use updated_children <- result.try(
     children
     |> list.map(map_chapter)
     |> result.all
   )
 
-  infra.replace_children_with(root, updated_children)
+  root
+  |> infra.v_replace_children_with(updated_children)
   |> n2t.add_warnings
   |> Ok
 }

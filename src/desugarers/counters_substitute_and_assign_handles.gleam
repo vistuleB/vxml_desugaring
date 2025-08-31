@@ -316,29 +316,29 @@ fn handle_non_unary_att_value(
 ) -> Result(#(String, Int, Int), DesugaringError) {
   let splits = string.split(attribute.value, " ")
 
-  use #(counter_name, rest) <- on.error_ok(
-    infra.first_rest(splits),
-    fn(_) {Error(DesugaringError(attribute.blame, "counter must have a name"))}
+  use counter_name, rest <- on.lazy_empty_nonempty(
+    splits,
+    fn() { Error(DesugaringError(attribute.blame, "counter must have a name")) },
   )
 
-  use #(starting_value, rest) <- on.error_ok(
-    infra.first_rest(rest),
-    fn(_) {Ok(#(counter_name, 0, 1))}
+  use starting_value, rest <- on.lazy_empty_nonempty(
+    rest,
+    fn() { Ok(#(counter_name, 0, 1)) },
   )
 
   use starting_value <- on.error_ok(
     int.parse(starting_value),
-    fn(_) {Error(DesugaringError(attribute.blame, "counter starting value must be a number"))},
+    fn(_) { Error(DesugaringError(attribute.blame, "counter starting value must be a number")) },
   )
 
-  use #(step, rest) <- on.error_ok(
-    infra.first_rest(rest),
-    fn(_) {Ok(#(counter_name, starting_value, 1))}
+  use step, rest <- on.lazy_empty_nonempty(
+    rest,
+    fn() { Ok(#(counter_name, starting_value, 1)) },
   )
 
   use step <- on.error_ok(
     int.parse(step),
-    fn(_) {Error(DesugaringError(attribute.blame, "counter starting value must be a number"))},
+    fn(_) { Error(DesugaringError(attribute.blame, "counter starting value must be a number")) },
   )
 
   case list.is_empty(rest) {
@@ -375,8 +375,9 @@ fn read_counter_definition(
 ) -> Result(Option(#(String, CounterInfo)), DesugaringError) {
   use counter_type <- on.error_ok(
     attribute_key_is_counter(attribute.key),
-    fn(_){Ok(None)},
+    fn(_) { Ok(None) },
   )
+
   case counter_type {
     Unary(_) -> {
       use #(counter_name, unary_char) <- result.try(handle_unary_att_value(attribute))

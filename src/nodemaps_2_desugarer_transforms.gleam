@@ -749,8 +749,8 @@ fn one_to_one_before_and_after_no_error_stateful_nodemap_recursive_application(
 ) -> #(VXML, a) {
   case node {
     T(_, _) -> nodemap.t_nodemap(node, original_state)
-    V(_, _, _, children) -> {
-      let #(node, latest_state) =
+    V(_, _, _, _) -> {
+      let assert #(V(_, _, _, children), latest_state) =
         nodemap.v_before_transforming_children(
           node,
           original_state,
@@ -765,7 +765,7 @@ fn one_to_one_before_and_after_no_error_stateful_nodemap_recursive_application(
           }
         )
       nodemap.v_after_transforming_children(
-        node |> infra.replace_children_with(children),
+        node |> infra.v_replace_children_with(children),
         original_state,
         latest_state,
       )
@@ -810,13 +810,14 @@ fn one_to_one_before_and_after_stateful_nodemap_recursive_application(
 ) -> Result(#(VXML, a), DesugaringError) {
   case node {
     T(_, _) -> nodemap.t_nodemap(node, original_state)
-    V(_, _, _, children) -> {
+    V(_, _, _, _) -> {
       use #(node, latest_state) <- result.try(
         nodemap.v_before_transforming_children(
           node,
           original_state,
         ),
       )
+      let assert V(_, _, _, children) = node
       use #(children, latest_state) <- result.try(
         infra.try_map_fold(
           children,
@@ -825,7 +826,7 @@ fn one_to_one_before_and_after_stateful_nodemap_recursive_application(
         )
       )
       nodemap.v_after_transforming_children(
-        node |> infra.replace_children_with(children),
+        node |> infra.v_replace_children_with(children),
         original_state,
         latest_state,
       )
@@ -1001,7 +1002,7 @@ fn one_to_many_before_and_after_stateful_nodemap_recursive_application(
         |> result.map(fn(acc) {#(acc.0 |> list.reverse, acc.1)})
       )
       nodemap.v_after_transforming_children(
-        node |> infra.replace_children_with(children),
+        node |> infra.v_replace_children_with(children),
         original_state,
         latest_state,
       )
@@ -1077,7 +1078,7 @@ fn one_to_many_before_and_after_stateful_nodemap_with_warnings_recursive_applica
       )
       use #(node, latest_state, warnings) <- result.try(
         nodemap.v_after_transforming_children(
-          node |> infra.replace_children_with(children),
+          node |> infra.v_replace_children_with(children),
           original_state,
           latest_state,
         )

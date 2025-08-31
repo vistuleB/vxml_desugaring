@@ -12,9 +12,9 @@ fn child_mapper(
 ) -> VXML {
   case vxml {
     V(_, child_tag, attributes, _) if child_tag == inner.0 -> {
-      let old_attribute_keys = infra.get_attribute_keys(attributes)
+      let old_keys = infra.keys(attributes)
       let attributes =
-        case list.contains(old_attribute_keys, inner.2) {
+        case list.contains(old_keys, inner.2) {
           True -> attributes
           False -> list.append(
             attributes,

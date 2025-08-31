@@ -16,7 +16,7 @@ fn v_before_transforming_children(
   case list.contains(inner, tag) {
     False -> Ok(#(node, state))
     True -> {
-      case infra.v_attribute_with_key(node, "width") {
+      case infra.v_first_attribute_with_key(node, "width") {
         None -> Error(DesugaringError(blame, tag <> " tag must have width attribute"))
         Some(attr) -> {
           use #(width, _) <- on.error_ok(

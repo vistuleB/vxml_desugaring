@@ -95,7 +95,7 @@ pub fn constructor(param: Param) -> Desugarer {
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
   [
     infra.AssertiveTestData(
-      param: [#("Chapter", "main-column", infra.tag_equals(_, "p"))],
+      param: [#("Chapter", "main-column", infra.is_v_and_tag_equals(_, "p"))],
       source:   "
                 <> root
                   <> Chapter
@@ -148,7 +148,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
     ),
     infra.AssertiveTestData(
       param: [
-        #("parent", "new", infra.tag_equals(_, "child")),
+        #("parent", "new", infra.is_v_and_tag_equals(_, "child")),
         #("other", "different", infra.has_class(_, "special"))
       ],
       source:   "

@@ -11,7 +11,7 @@ fn ensure_has_id_attribute(
   vxml: VXML, counter: Int
 ) -> #(VXML, Int, String) {
   let assert V(_, _, _, _) = vxml
-  case infra.v_attribute_with_key(vxml, "id") {
+  case infra.v_first_attribute_with_key(vxml, "id") {
     Some(attr) -> #(vxml, counter, attr.value)
     None -> {
       let counter = counter + 1

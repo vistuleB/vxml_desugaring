@@ -26,9 +26,9 @@ fn elements_for_line(line: BlamedContent) -> List(VXML) {
   case string.split_once(line.content, "//") {
     Error(_) -> [blamed_content_2_t(line)]
     Ok(#(before, after)) -> {
-      let after_blame = infra.advance(line.blame, string.length(before) + 2)
+      let after_blame = bl.advance(line.blame, string.length(before) + 2)
       let before = blamed_content_2_t(BlamedContent(line.blame, before))
-      let orange = orange |> infra.prepend_child(blamed_content_2_t(BlamedContent(after_blame, after)))
+      let orange = orange |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(after_blame, after)))
       [before, orange, t_1_empty_line]
     }
   }

@@ -171,7 +171,7 @@ fn generate_replacement_vxml_internal(
 fn fast_forward_past_spaces(
   atomized: List(VXML),
 ) -> List(VXML) {
-  list.drop_while(atomized, infra.tag_is_one_of(_, ["__OneSpace", "__OneNewLine"]))
+  list.drop_while(atomized, infra.v_tag_is_one_of(_, ["__OneSpace", "__OneNewLine"]))
 }
 
 fn insert_new_content_key_val_into_match_data(
@@ -261,7 +261,7 @@ fn match_internal(
     [Word(word), ..pattern_rest] -> {
       case atomized {
         [V(_, "__OneWord", _, _) as v, ..atomized_rest] -> {
-          let assert Some(attr) = infra.v_attribute_with_key(v, "val")
+          let assert Some(attr) = infra.v_first_attribute_with_key(v, "val")
           case attr.value == word {
             True -> match_internal(atomized_rest, pattern_rest, match_data)
             False -> None
@@ -375,12 +375,12 @@ fn tokenize_string_acc(
   case string.split_once(leftover, " ") {
     Ok(#("", after)) -> tokenize_string_acc(
       [space_node(current_blame), ..past_tokens],
-      infra.advance(current_blame, 1),
+      bl.advance(current_blame, 1),
       after,
     )
     Ok(#(before, after)) -> tokenize_string_acc(
       [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
-      infra.advance(current_blame, string.length(before) + 1),
+      bl.advance(current_blame, string.length(before) + 1),
       after,
     )
     Error(Nil) -> case leftover == "" {
@@ -717,7 +717,7 @@ fn xmlm_tag_to_link_pattern(
     xmlm_tag.attributes
     |> list.find(xmlm_attribute_equals(_, "href"))
     |> result.map_error(fn(_) {
-      DesugaringError(infra.no_blame, "<a> pattern tag missing 'href' attribute")
+      DesugaringError(bl.no_blame, "<a> pattern tag missing 'href' attribute")
     }),
   )
 
@@ -726,7 +726,7 @@ fn xmlm_tag_to_link_pattern(
   use value <- result.try(
     int.parse(value)
     |> result.map_error(fn(_) {
-      DesugaringError(infra.no_blame, "<a> pattern 'href' attribute does not parse to an int")
+      DesugaringError(bl.no_blame, "<a> pattern 'href' attribute does not parse to an int")
     }),
   )
 
@@ -760,7 +760,7 @@ fn extra_string_to_link_pattern(
       xmlm_tag_to_link_pattern,
       xlml_text_to_link_pattern(_, re),
     ),
-    fn(e) {Error(DesugaringError(infra.no_blame, "xmlm input error: " <> ins(e)))},
+    fn(e) {Error(DesugaringError(bl.no_blame, "xmlm input error: " <> ins(e)))},
   )
 
   use pattern <- result.try(pattern) // pattern was a Result(TokenPatter, DesugaringError)

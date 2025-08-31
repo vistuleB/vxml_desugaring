@@ -108,7 +108,7 @@ fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> 
 }
 
 fn map_section(section: VXML, index: Int) -> Result(VXML, DesugaringError) {
-  case infra.get_children(section) {
+  case infra.v_get_children(section) {
     [V(_, "BreadcrumbTitle", _, children), ..] -> {
       children
       |> transform_children
@@ -149,14 +149,14 @@ fn generate_sections_list(sections: List(VXML), exercises: List(VXML)) -> Result
 fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
   case child {
     V(b, "Chapter", a, children) -> {
-      let sections = infra.children_with_tag(child, "Section")
-      let exercises = infra.children_with_tag(child, "Exercises")
+      let sections = infra.v_children_with_tag(child, "Section")
+      let exercises = infra.v_children_with_tag(child, "Exercises")
       use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
       Ok(V(b, "Chapter", a, [sections_ul, ..children]))
     }
     V(b, "Bootcamp", a, children) -> {
-      let sections = infra.children_with_tag(child, "Section")
-      let exercises = infra.children_with_tag(child, "Exercises")
+      let sections = infra.v_children_with_tag(child, "Section")
+      let exercises = infra.v_children_with_tag(child, "Exercises")
       use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
       Ok(V(b, "Bootcamp", a, [sections_ul, ..children]))
     }
@@ -171,7 +171,9 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
     |> list.map(map_chapter)
     |> result.all
   )
-  infra.replace_children_with(root, children)
+
+  root
+  |> infra.v_replace_children_with(children)
   |> n2t.add_warnings
   |> Ok
 }

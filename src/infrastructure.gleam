@@ -21,9 +21,9 @@ pub type TrafficLight {
   GoBack
 }
 
-// *************************************************************
+// ************************************************************
 // css-unit parsing
-// *************************************************************
+// ************************************************************
 
 pub type CSSUnit {
   PX
@@ -66,9 +66,9 @@ pub fn parse_number_and_optional_css_unit(
   Ok(#(number, unit))
 }
 
-//**************************************************************
-//* LatexDelimiterPair, LatexDelimiterSingleton
-//**************************************************************
+// ************************************************************
+// LatexDelimiterPair, LatexDelimiterSingleton
+// ************************************************************
 
 pub type LatexDelimiterPair {
   DoubleDollar
@@ -139,9 +139,9 @@ pub fn left_right_delim_strings(delimiters: List(LatexDelimiterPair)) -> #(List(
   |> list.unzip
 }
 
-//**************************************************************
-//* use <- utilities
-//**************************************************************
+// ************************************************************
+// use <- utilities
+// ************************************************************
 
 pub fn on_v_on_t(
   node: VXML,
@@ -165,58 +165,9 @@ pub fn on_t_on_v(
   }
 }
 
-pub fn on_t_on_v_no_deconstruct(
-  node: VXML,
-  f1: fn(Blame, List(BlamedContent)) -> c,
-  f2: fn() -> c,
-) -> c {
-  case node {
-    T(blame, blamed_contents) -> f1(blame, blamed_contents)
-    _ -> f2()
-  }
-}
-
-//**************************************************************
-//* v-stuff
-//**************************************************************
-
-pub fn io_debug_digests(vxmls: List(VXML), announce: String) -> List(VXML) {
-  io.print(announce <> ": ")
-  list.each(vxmls, fn(vxml) { io.print(digest(vxml)) })
-  io.println("")
-  vxmls
-}
-
-pub fn set_tag(vxml: VXML, tag: String) -> VXML {
-  let assert V(_, _, _, _) = vxml
-  V(..vxml, tag: tag)
-}
-
-pub fn readable_attribute(attr: BlamedAttribute) -> String {
-  "   " <> attr.key <> "=" <> attr.value
-}
-
-pub fn v_readable_attribute(vxml: VXML) -> String {
-  let assert V(_, _, attributes, _) = vxml
-  attributes
-  |> list.map(readable_attribute)
-  |> string.join("\n")
-}
-
-pub fn v_echo_readable_attributes(vxml: VXML) -> Nil {
-  let assert V(_, _, attributes, _) = vxml
-  attributes
-  |> list.map(readable_attribute)
-  |> list.each(fn(s) {echo s})
-}
-
-pub fn announce_error(message: String) -> fn(e) -> Nil {
-  fn(error) { io.println(message <> ": " <> ins(error)) }
-}
-
-pub fn nillify_error(message: String) -> fn(e) -> Result(a, Nil) {
-  fn(error) { Error(io.println(message <> ": " <> ins(error))) }
-}
+// ************************************************************
+// get_root
+// ************************************************************
 
 pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
   case vxmls {
@@ -228,8 +179,62 @@ pub fn get_root(vxmls: List(VXML)) -> Result(VXML, String) {
 
 pub fn get_root_with_desugaring_error(vxmls: List(VXML)) -> Result(VXML, DesugaringError) {
   get_root(vxmls)
-  |> result.map_error(fn(msg) { DesugaringError(no_blame, msg)})
+  |> result.map_error(fn(msg) { DesugaringError(bl.no_blame, msg)})
 }
+
+// ************************************************************
+// descendant_ text_contains/!text_contains
+// ************************************************************
+
+pub fn descendant_text_contains(
+  v: VXML,
+  s: String,
+) -> Bool {
+  case v {
+    T(_, lines) -> lines_contain(lines, s)
+    V(_, _, _, children) -> list.any(children, descendant_text_contains(_, s))
+  }
+}
+
+pub fn descendant_text_does_not_contain(
+  vxml: VXML,
+  s: String,
+) -> Bool {
+  !descendant_text_contains(vxml, s)
+}
+
+pub fn filter_descendants(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
+  case vxml {
+    T(_, _) -> []
+    V(_, _, _, children) -> {
+      let matching_children = list.filter(children, condition)
+      let descendants_from_children =
+        list.map(children, filter_descendants(_, condition))
+        |> list.flatten
+
+      list.flatten([
+        matching_children,
+        descendants_from_children,
+      ])
+    }
+  }
+}
+
+pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
+  filter_descendants(vxml, is_v_and_tag_equals(_, tag))
+}
+
+pub fn descendants_with_key_value(vxml: VXML, attr_key: String, attr_value: String) -> List(VXML) {
+  filter_descendants(vxml, is_v_and_has_key_value(_, attr_key, attr_value))
+}
+
+pub fn descendants_with_class(vxml: VXML, class: String) -> List(VXML) {
+  filter_descendants(vxml, has_class(_, class))
+}
+
+// ************************************************************
+// list utilities
+// ************************************************************
 
 pub fn get_duplicate(list: List(a)) -> Option(a) {
   case list {
@@ -248,51 +253,6 @@ pub fn get_contained(from: List(a), in: List(a)) -> Option(a) {
     [first, ..rest] -> case list.contains(in, first) {
       True -> Some(first)
       False -> get_contained(rest, in)
-    }
-  }
-}
-
-pub fn is_tag(vxml: VXML, tag: String) -> Bool {
-  case vxml {
-    T(_, _) -> False
-    V(_, t, _, _) -> t == tag
-  }
-}
-
-pub fn v_attrs_constructor(
-  blame: Blame,
-  tag: String,
-  attrs: List(#(String, String)),
-) -> VXML {
-  let attrs = list.map(attrs, fn(pair) { BlamedAttribute(blame, pair.0, pair.1) })
-  V(blame, tag, attrs, [])
-}
-
-//**************************************************************
-//* list utilities
-//**************************************************************
-
-pub fn first_rest(l: List(a)) -> Result(#(a, List(a)), Nil) {
-  case l {
-    [first, ..rest] -> Ok(#(first, rest))
-    _ -> Error(Nil)
-  }
-}
-
-pub fn first_second_rest(l: List(a)) -> Result(#(a, a, List(a)), Nil) {
-  case l {
-    [first, second, ..rest] -> Ok(#(first, second, rest))
-    _ -> Error(Nil)
-  }
-}
-
-pub fn head_last(l: List(a)) -> Result(#(List(a), a), Nil) {
-  case l {
-    [] -> Error(Nil)
-    [last] -> Ok(#([], last))
-    [first, ..rest] -> {
-      let assert Ok(#(head, last)) = head_last(rest)
-      Ok(#([first, ..head], last))
     }
   }
 }
@@ -376,9 +336,41 @@ pub fn drop_last(z: List(a)) -> List(a) {
   z |> list.reverse |> list.drop(1) |> list.reverse
 }
 
-//**************************************************************
-//* tuple manipulation
-//**************************************************************
+fn index_of_internal(ze_list: List(a), thing: a, current_index: Int) -> Int {
+  case ze_list {
+    [] -> -1
+    [first, ..] if first == thing -> current_index
+    [_, ..rest] -> index_of_internal(rest, thing, current_index + 1)
+  }
+}
+
+pub fn index_of(ze_list: List(a), thing: a) -> Int {
+  index_of_internal(ze_list, thing, 0)
+}
+
+pub type SingletonError {
+  MoreThanOne
+  LessThanOne
+}
+
+pub fn read_singleton(z: List(a)) -> Result(a, SingletonError) {
+  case z {
+    [] -> Error(LessThanOne)
+    [one] -> Ok(one)
+    _ -> Error(MoreThanOne)
+  }
+}
+
+pub fn append_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
+  case list.contains(ze_list, ze_thing) {
+    True -> ze_list
+    False -> list.append(ze_list, [ze_thing])
+  }
+}
+
+// ************************************************************
+// tuples
+// ************************************************************
 
 pub fn quad_to_pair_pair(
   t: #(a, b, c, d)
@@ -439,7 +431,7 @@ pub fn validate_unique_keys(
   l: List(#(a, b))
 ) -> Result(List(#(a, b)), DesugaringError) {
   case get_duplicate(list.map(l, pair.first)) {
-    Some(guy) -> Error(DesugaringError(no_blame, "duplicate key in list being converted to dict: " <> ins(guy)))
+    Some(guy) -> Error(DesugaringError(bl.no_blame, "duplicate key in list being converted to dict: " <> ins(guy)))
     None -> Ok(l)
   }
 }
@@ -639,48 +631,18 @@ pub fn either_or_misceginator(
 }
 
 //**************************************************************
-//* find replace list-version
+//* find replace
 //**************************************************************
 
 fn find_replace_in_blamed_content(
-  blamed_content: BlamedContent,
-  list_pairs: List(#(String, String)),
+  bc: BlamedContent,
+  from: String,
+  to: String,
 ) -> BlamedContent {
-  use #(first_from, first_to), rest <- on.empty_nonempty(
-    list_pairs,
-    blamed_content,
-  )
-  BlamedContent(
-    blamed_content.blame,
-    string.replace(blamed_content.content, first_from, first_to),
-  )
-  |> find_replace_in_blamed_content(rest)
+  BlamedContent(bc.blame, string.replace(bc.content, from, to))
 }
 
-pub fn find_replace_in_t(node: VXML, list_pairs: List(#(String, String))) {
-  let assert T(blame, blamed_contents) = node
-  T(
-    blame,
-    blamed_contents |> list.map(find_replace_in_blamed_content(_, list_pairs)),
-  )
-}
-
-pub fn find_replace_in_node(
-  node: VXML,
-  list_pairs: List(#(String, String)),
-) -> VXML {
-  case node {
-    T(_, _) -> find_replace_in_t(node, list_pairs)
-    _ -> node
-  }
-}
-
-//**************************************************************
-//* find replace no_list-version
-//**************************************************************
-pub const no_list = True
-
-pub fn find_replace_in_t_no_list(
+pub fn t_find_replace(
   node: VXML,
   from: String,
   to: String,
@@ -688,40 +650,101 @@ pub fn find_replace_in_t_no_list(
   let assert T(blame, contents) = node
   T(
     blame,
-    list.map(
-      contents,
-      fn(bc){BlamedContent(bc.blame, string.replace(bc.content, from, to))}
-    )
+    list.map(contents, find_replace_in_blamed_content(_, from, to))
   )
 }
 
-pub fn find_replace_in_node_no_list(
+pub fn find_replace_if_t(
   node: VXML,
   from: String,
   to: String,
 ) -> VXML {
   case node {
-    T(_, _) -> find_replace_in_t_no_list(node, from, to)
+    T(_, _) -> t_find_replace(node, from, to)
     _ -> node
   }
 }
 
-//**************************************************************
-//* blame-related                                              *
-//**************************************************************
+fn find_replace_in_blamed_content__batch(
+  blamed_content: BlamedContent,
+  pairs: List(#(String, String)),
+) -> BlamedContent {
+  list.fold(
+    pairs,
+    blamed_content,
+    fn(acc, pair) { find_replace_in_blamed_content(acc, pair.0, pair.1) }
+  )
+}
 
-pub const no_blame = bl.no_blame
+pub fn t_find_replace__batch(t: VXML, pairs: List(#(String, String))) {
+  let assert T(blame, blamed_contents) = t
+  T(
+    blame,
+    blamed_contents
+    |> list.map(find_replace_in_blamed_content__batch(_, pairs)),
+  )
+}
+
+pub fn find_replace_if_t__batch(
+  node: VXML,
+  pairs: List(#(String, String)),
+) -> VXML {
+  case node {
+    T(_, _) -> t_find_replace__batch(node, pairs)
+    _ -> node
+  }
+}
+
+// ************************************************************
+// Blame
+// ************************************************************
 
 pub fn assert_get_first_blame(vxmls: List(VXML)) -> Blame {
   let assert [first, ..] = vxmls
   first.blame
 }
 
-pub const advance = bl.advance
+// ************************************************************
+// String
+// ************************************************************
 
-//**************************************************************
-//* string
-//**************************************************************
+pub fn drop_starting_slash(path: String) -> String {
+  case string.starts_with(path, "/") {
+    True -> string.drop_start(path, 1)
+    False -> path
+  }
+}
+
+pub fn drop_ending_slash(path: String) -> String {
+  case string.ends_with(path, "/") {
+    True -> string.drop_end(path, 1)
+    False -> path
+  }
+}
+
+pub fn kabob_case_to_camel_case(input: String) -> String {
+  input
+  |> string.split("-")
+  |> list.index_map(fn(word, index) {
+    case index {
+      0 -> word
+      _ -> case string.to_graphemes(word) {
+        [] -> ""
+        [first, ..rest] -> string.uppercase(first) <> string.join(rest, "")
+      }
+    }
+  })
+  |> string.join("")
+}
+
+pub fn normalize_spaces(
+  s: String
+) -> String {
+  s
+  |> string.split(" ")
+  |> list.filter(fn(x) { !string.is_empty(x) })
+  |> string.join(" ")
+}
 
 pub fn extract_trim_start(content: String) -> #(String, String) {
   let new_content = string.trim_start(content)
@@ -735,9 +758,9 @@ pub fn extract_trim_end(content: String) -> #(String, String) {
   #(string.repeat(" ", num_spaces), new_content)
 }
 
-//**************************************************************
-//* lines
-//**************************************************************
+// ************************************************************
+// lines
+// ************************************************************
 
 pub fn lines_are_whitespace(
   lines: List(BlamedContent)
@@ -768,43 +791,23 @@ pub fn lines_contain(
 
 pub fn lines_first_blame(lines: List(BlamedContent)) -> Blame {
   case lines {
-    [] -> no_blame
+    [] -> bl.no_blame
     [first, ..] -> first.blame
   }
 }
 
-pub fn descendant_text_contains(
-  v: VXML,
-  s: String,
-) -> Bool {
-  case v {
-    T(_, lines) -> lines_contain(lines, s)
-    V(_, _, _, children) -> list.any(children, descendant_text_contains(_, s))
-  }
-}
-
-pub fn descendant_text_does_not_contain(
-  vxml: VXML,
-  s: String,
-) -> Bool {
-  !descendant_text_contains(vxml, s)
-}
-
-pub fn debug_lines_and(
+pub fn echo_lines(
   lines: List(BlamedContent),
   announcer: String,
 ) -> List(BlamedContent) {
-  io.print(announcer <> ":" <> string.repeat(" ", 15 - string.length(announcer)))
-  list.index_map(
-    lines,
-    fn(line, i) {
-      case i > 0 {
-        True -> io.print(string.repeat(" ", 16))
-        False -> Nil
-      }
-      io.println("\"" <> line.content <> "\"")
-    }
-  )
+  let table =
+    lines
+    |> list.map(fn(bc) {#(bc.blame, "\"" <> bc.content <> "\"")})
+    |> bl.blamed_strings_annotated_table_no1("")
+    |> list.map(fn(l) {"   " <> l})
+    |> string.join("\n")
+  io.println(announcer <> ":\n")
+  io.println(table)
   lines
 }
 
@@ -946,6 +949,10 @@ pub fn lines_total_chars(
   |> int.sum
 }
 
+// ************************************************************
+// line wrapping
+// ************************************************************
+
 pub fn line_wrap_rearrangement_internal(
   is_very_first_token: Bool,
   current_blame: Blame,
@@ -977,7 +984,7 @@ pub fn line_wrap_rearrangement_internal(
     )
     [Either(some_string), ..rest] -> {
       let length = string.length(some_string)
-      let current_blame = advance(current_blame, length + 1)
+      let current_blame = bl.advance(current_blame, length + 1)
       case some_string == "" || chars_left > 0 || is_very_first_token {
         True -> line_wrap_rearrangement_internal(
           False,
@@ -1031,9 +1038,9 @@ pub fn line_wrap_rearrangement(
   }
 }
 
-//**************************************************************
-//* last_to_first concatenation
-//**************************************************************
+// ************************************************************
+// line last_to_first concatenation
+// ************************************************************
 
 fn lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
   l1: List(BlamedContent),
@@ -1117,12 +1124,6 @@ pub fn last_to_first_concatenation(vxmls: List(VXML)) -> List(VXML) {
   last_to_first_concatenation_internal(vxmls, [], None)
 }
 
-pub fn v_last_to_first_concatenation(v: VXML) -> VXML {
-  let assert V(blame, tag, attributes, children) = v
-  let children = last_to_first_concatenation(children)
-  V(blame, tag, attributes, children)
-}
-
 fn nonempty_list_t_plain_concatenation(nodes: List(VXML)) -> VXML {
   let assert [first, ..] = nodes
   let assert T(blame, _) = first
@@ -1147,9 +1148,9 @@ pub fn plain_concatenation_in_list(nodes: List(VXML)) -> List(VXML) {
   )
 }
 
-//**************************************************************
-//* t-
-//**************************************************************
+// ************************************************************
+// t
+// ************************************************************
 
 pub fn is_t_and_is_whitespace(
   vxml: VXML
@@ -1297,6 +1298,137 @@ pub fn t_extract_ending_spaces(node: VXML) -> #(Option(VXML), VXML) {
   }
 }
 
+pub fn t_start_insert_line(node: VXML, bc: BlamedContent) {
+  let assert T(blame, lines) = node
+  T(blame, [bc, ..lines])
+}
+
+pub fn t_end_insert_line(node: VXML, bc: BlamedContent) {
+  let assert T(blame, lines) = node
+  T(blame, list.append(lines, [bc]))
+}
+
+pub fn t_start_insert_text(node: VXML, text: String) {
+  let assert T(blame, lines) = node
+  let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
+  T(
+    blame,
+    [BlamedContent(blame_first, text <> content_first), ..other_lines]
+  )
+}
+
+pub fn t_end_insert_text(node: VXML, text: String) {
+  let assert T(blame, lines) = node
+  let assert [BlamedContent(blame_last, content_last), ..other_lines] =
+    lines |> list.reverse
+  T(
+    blame,
+    [BlamedContent(blame_last, content_last <> text), ..other_lines]
+      |> list.reverse,
+  )
+}
+
+/// "word" == "non-whitespace" == empty string if string ends with
+/// whitespace
+///
+/// returns: -> #(everything_before, after_last_space)
+fn break_out_last_word(input: String) -> #(String, String) {
+  case input |> string.reverse |> string.split_once(" ") {
+    Ok(#(yoro, rest)) -> #(
+      { " " <> rest } |> string.reverse,
+      yoro |> string.reverse,
+    )
+    _ -> #("", input)
+  }
+}
+
+/// "word" == "non-whitespace" == empty string if string
+/// starts with whitespace
+///
+/// returns: -> #(before_first_space, everything_afterwards)
+pub fn break_out_first_word(input: String) -> #(String, String) {
+  case input |> string.split_once(" ") {
+    Ok(#(yoro, rest)) -> #(yoro, " " <> rest)
+    _ -> #(input, "")
+  }
+}
+
+/// "word" == "non-whitespace" == empty string if node
+/// ends with whitespace
+///
+/// returns -> #(
+///   node leftover with last word taken out,
+///   Option(new T(_, _) containing last word),
+/// )
+pub fn extract_last_word_from_t_node_if_t(vxml: VXML) -> #(VXML, Option(VXML)) {
+  case vxml {
+    V(_, _, _, _) -> #(vxml, None)
+    T(blame, contents) -> {
+      let reversed = contents |> list.reverse
+      let assert [last, ..rest] = reversed
+      case break_out_last_word(last.content) {
+        #(_, "") -> #(vxml, None)
+        #(before_last_word, last_word) -> {
+          let contents =
+            [BlamedContent(last.blame, before_last_word), ..rest]
+            |> list.reverse
+          #(
+            T(blame, contents),
+            Some(T(last.blame, [BlamedContent(last.blame, last_word)])),
+          )
+        }
+      }
+    }
+  }
+}
+
+/// "word" == "non-whitespace" == empty string if node
+/// starts with whitespace
+///
+/// returns -> #(
+///   Option(new T(_, _) containing first word),
+///   node leftover with word taken out,
+/// )
+pub fn extract_first_word_from_t_node_if_t(vxml: VXML) -> #(Option(VXML), VXML) {
+  case vxml {
+    V(_, _, _, _) -> #(None, vxml)
+    T(blame, contents) -> {
+      let assert [first, ..rest] = contents
+      case break_out_first_word(first.content) {
+        #("", _) -> #(None, vxml)
+        #(first_word, after_first_word) -> {
+          let contents = [BlamedContent(first.blame, after_first_word), ..rest]
+          #(
+            Some(T(first.blame, [BlamedContent(first.blame, first_word)])),
+            T(blame, contents),
+          )
+        }
+      }
+    }
+  }
+}
+
+// ************************************************************
+// v
+// ************************************************************
+
+pub fn v_attrs_constructor(
+  blame: Blame,
+  tag: String,
+  attrs: List(#(String, String)),
+) -> VXML {
+  let attrs = list.map(attrs, fn(pair) { BlamedAttribute(blame, pair.0, pair.1) })
+  V(blame, tag, attrs, [])
+}
+
+pub fn v_set_tag(
+  v: VXML,
+  tag: String,
+) -> VXML {
+  let assert V(_, _, _, _) = v
+  V(..v, tag: tag)
+}
+
 pub fn v_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
   let assert V(blame, tag, attrs, children) = node
   case children {
@@ -1381,36 +1513,6 @@ pub fn v_remove_ending_empty_lines(node: VXML) -> VXML {
   }
 }
 
-pub fn t_start_insert_line(node: VXML, bc: BlamedContent) {
-  let assert T(blame, lines) = node
-  T(blame, [bc, ..lines])
-}
-
-pub fn t_end_insert_line(node: VXML, bc: BlamedContent) {
-  let assert T(blame, lines) = node
-  T(blame, list.append(lines, [bc]))
-}
-
-pub fn t_start_insert_text(node: VXML, text: String) {
-  let assert T(blame, lines) = node
-  let assert [BlamedContent(blame_first, content_first), ..other_lines] = lines
-  T(
-    blame,
-    [BlamedContent(blame_first, text <> content_first), ..other_lines]
-  )
-}
-
-pub fn t_end_insert_text(node: VXML, text: String) {
-  let assert T(blame, lines) = node
-  let assert [BlamedContent(blame_last, content_last), ..other_lines] =
-    lines |> list.reverse
-  T(
-    blame,
-    [BlamedContent(blame_last, content_last <> text), ..other_lines]
-      |> list.reverse,
-  )
-}
-
 pub fn v_start_insert_line(vxml: VXML, bc: BlamedContent) -> VXML {
   let assert V(blame, _, _, children) = vxml
   let children = case children {
@@ -1447,135 +1549,37 @@ pub fn v_end_insert_text(vxml: VXML, text: String) -> VXML {
   V(..vxml, children: children |> list.reverse)
 }
 
-// "word" == "non-whitespace" == empty string if string ends with
-// whitespace
-//
-// returns:                -> #(everything_before, after_last_space)
-fn break_out_last_word(input: String) -> #(String, String) {
-  case input |> string.reverse |> string.split_once(" ") {
-    Ok(#(yoro, rest)) -> #(
-      { " " <> rest } |> string.reverse,
-      yoro |> string.reverse,
-    )
-    _ -> #("", input)
-  }
+pub fn v_get_children(vxml: VXML) -> List(VXML) {
+  let assert V(_, _, _, children) = vxml
+  children
 }
 
-// "word" == "non-whitespace" == empty string if string startss with
-// whitespace
-//
-// returns:                -> #(before_first_space, everything_afterwards)
-fn break_out_first_word(input: String) -> #(String, String) {
-  case input |> string.split_once(" ") {
-    Ok(#(yoro, rest)) -> #(yoro, " " <> rest)
-    _ -> #(input, "")
-  }
+pub fn v_get_tag(vxml: VXML) -> String {
+  let assert V(_, tag, _, _) = vxml
+  tag
 }
 
-// "word" == "non-whitespace" == empty string if node ends with
-// whitespace
-//
-// returns                                           #(node leftover with last word taken out, Option(new T(_, _) containing last word))
-pub fn extract_last_word_from_t_node_if_t(vxml: VXML) -> #(VXML, Option(VXML)) {
-  case vxml {
-    V(_, _, _, _) -> #(vxml, None)
-    T(blame, contents) -> {
-      let reversed = contents |> list.reverse
-      let assert [last, ..rest] = reversed
-      case break_out_last_word(last.content) {
-        #(_, "") -> #(vxml, None)
-        #(before_last_word, last_word) -> {
-          let contents =
-            [BlamedContent(last.blame, before_last_word), ..rest]
-            |> list.reverse
-          #(
-            T(blame, contents),
-            Some(T(last.blame, [BlamedContent(last.blame, last_word)])),
-          )
-        }
-      }
-    }
-  }
-}
-
-// "word" == "non-whitespace" == empty string if node starts with
-// whitespace
-//
-// returns                                            #(Option(new T(_, _) containing first word), node leftover with word taken out)
-pub fn extract_first_word_from_t_node_if_t(vxml: VXML) -> #(Option(VXML), VXML) {
-  case vxml {
-    V(_, _, _, _) -> #(None, vxml)
-    T(blame, contents) -> {
-      let assert [first, ..rest] = contents
-      case break_out_first_word(first.content) {
-        #("", _) -> #(None, vxml)
-        #(first_word, after_first_word) -> {
-          let contents = [BlamedContent(first.blame, after_first_word), ..rest]
-          #(
-            Some(T(first.blame, [BlamedContent(first.blame, first_word)])),
-            T(blame, contents),
-          )
-        }
-      }
-    }
-  }
-}
-
-pub fn drop_ending_slash(path: String) -> String {
-  case string.ends_with(path, "/") {
-    True -> string.drop_end(path, 1)
-    False -> path
-  }
-}
-
-pub fn drop_starting_slash(path: String) -> String {
-  case string.starts_with(path, "/") {
-    True -> string.drop_start(path, 1)
-    False -> path
-  }
-}
-
-pub fn kabob_case_to_camel_case(input: String) -> String {
-  input
-  |> string.split("-")
-  |> list.index_map(fn(word, index) {
-    case index {
-      0 -> word
-      _ -> case string.to_graphemes(word) {
-        [] -> ""
-        [first, ..rest] -> string.uppercase(first) <> string.join(rest, "")
-      }
-    }
-  })
-  |> string.join("")
-}
-
-pub fn prepend_attribute(vxml: VXML, attr: BlamedAttribute) {
+pub fn v_prepend_attribute(vxml: VXML, attr: BlamedAttribute) {
   let assert V(blame, tag, attrs, children) = vxml
   V(blame, tag, [attr, ..attrs], children)
 }
 
-pub fn prepend_unique_key_attribute(
+pub fn v_prepend_unique_key_attribute(
   vxml: VXML,
   attr: BlamedAttribute,
 ) -> Result(VXML, Nil) {
   case v_has_attribute_with_key(vxml, attr.key) {
     True -> Error(Nil)
-    False -> Ok(prepend_attribute(vxml, attr))
+    False -> Ok(v_prepend_attribute(vxml, attr))
   }
 }
 
-pub fn prepend_child(vxml: VXML, child: VXML) {
+pub fn v_prepend_child(vxml: VXML, child: VXML) {
   let assert V(blame, tag, attributes, children) = vxml
   V(blame, tag, attributes, [child, ..children])
 }
 
-pub fn get_attribute_keys(attrs: List(BlamedAttribute)) -> List(String) {
-  attrs
-  |> list.map(fn(attr) { attr.key })
-}
-
-pub fn v_attribute_with_key(
+pub fn v_first_attribute_with_key(
   vxml: VXML,
   key: String,
 ) -> Option(BlamedAttribute) {
@@ -1587,7 +1591,7 @@ pub fn v_attribute_with_key(
   }
 }
 
-pub fn v_all_attributes_with_key(
+pub fn v_attributes_with_key(
   vxml: VXML,
   key: String,
 ) -> List(BlamedAttribute) {
@@ -1618,144 +1622,35 @@ pub fn v_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
   }
 }
 
-pub fn extract_children(vxml: VXML, condition: fn(VXML) -> Bool) -> #(VXML, List(VXML)) {
+pub fn v_extract_children(vxml: VXML, condition: fn(VXML) -> Bool) -> #(VXML, List(VXML)) {
   let assert V(_, _, _, children) = vxml
   let #(extracted, left) = list.partition(children, condition)
   #(V(..vxml, children: left), extracted)
 }
 
-pub fn get_children(vxml: VXML) -> List(VXML) {
-  let assert V(_, _, _, children) = vxml
-  children
-}
-
-pub fn tag_equals(vxml: VXML, tag: String) -> Bool {
-  let assert V(_, v_tag, _, _) = vxml
-  v_tag == tag
-}
-
-pub fn tag_is_one_of(node: VXML, tags: List(String)) -> Bool {
-  case node {
-    T(_, _) -> False
-    V(_, tag, _, _) -> list.contains(tags, tag)
-  }
-}
-
-pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
-  case vxml {
-    T(_, _) -> False
-    V(_, t, _, _) -> t == tag
-  }
-}
-
-pub fn is_v_and_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
-  case vxml {
-    T(_, _) -> False
-    V(_, tag, _, _) -> list.contains(tags, tag)
-  }
-}
-
-pub fn attributes_have_key(
-  attrs: List(BlamedAttribute),
-  key: String,
-) -> Bool {
-  list.any(attrs, fn(x){x.key == key})
-}
-
-pub fn attributes_have_key_with_echo(
-  attrs: List(BlamedAttribute),
-  key: String,
-) -> Bool {
-  io.println("inside!" <> ins(attrs))
-  list.any(attrs, fn(x){
-    echo key
-    {x.key == key}
-  })
-}
-
-pub fn is_v_and_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
-  case vxml {
-    T(_, _) -> False
-    _ -> {
-      v_has_key_value(vxml, key, value)
-    }
-  }
-}
-
-pub fn get_tag(vxml: VXML) -> String {
-  let assert V(_, tag, _, _) = vxml
-  tag
-}
-
-pub fn extract_tag(vxml: VXML) -> String {
-  let assert V(_, tag, _, _) = vxml
-  tag
-}
-
-pub fn is_text_node(node: VXML) -> Bool {
-  case node {
-    T(_, _) -> True
-    V(_, _, _, _) -> False
-  }
-}
-
-pub fn is_text_or_is_one_of(node: VXML, tags: List(String)) -> Bool {
-  case node {
-    T(_, _) -> True
-    V(_, tag, _, _) -> list.contains(tags, tag)
-  }
-}
-
-pub fn filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
+pub fn v_filter_children(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
   let assert V(_, _, _, children) = vxml
   list.filter(children, condition)
 }
 
-pub fn filter_descendants(vxml: VXML, condition: fn(VXML) -> Bool) -> List(VXML) {
-  case vxml {
-    T(_, _) -> []
-    V(_, _, _, children) -> {
-      let matching_children = list.filter(children, condition)
-      let descendants_from_children =
-        list.map(children, filter_descendants(_, condition))
-        |> list.flatten
-
-      list.flatten([
-        matching_children,
-        descendants_from_children,
-      ])
-    }
-  }
+pub fn v_children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
+  v_filter_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
-pub fn children_with_tag(vxml: VXML, tag: String) -> List(VXML) {
-  let assert V(_, _, _, _) = vxml
-  filter_children(vxml, is_v_and_tag_equals(_, tag))
+pub fn v_children_with_tags(vxml: VXML, tags: List(String)) -> List(VXML) {
+  v_filter_children(vxml, fn (node){ tags |> list.any(is_v_and_tag_equals(node, _)) })
 }
 
-pub fn children_with_tags(vxml: VXML, tags: List(String)) -> List(VXML) {
-  let assert V(_, _, _, _) = vxml
-  filter_children(vxml, fn (node){ tags |> list.any(is_v_and_tag_equals(node, _)) })
+pub fn v_children_with_class(vxml: VXML, class: String) -> List(VXML) {
+  v_filter_children(vxml, has_class(_, class))
 }
 
-pub fn children_with_class(vxml: VXML, class: String) -> List(VXML) {
-  let assert V(_, _, _, _) = vxml
-  filter_children(vxml, has_class(_, class))
+pub fn v_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
+  let assert V(_, tag, _, _) = vxml
+  list.contains(tags, tag)
 }
 
-pub fn index_of(ze_list: List(a), thing: a) -> Int {
-  index_of_internal(ze_list, thing, 0)
-}
-
-fn index_of_internal(ze_list: List(a), thing: a, current_index: Int) -> Int {
-  case ze_list {
-    [] -> -1
-    [first, ..] if first == thing -> current_index
-    [_, ..rest] -> index_of_internal(rest, thing, current_index + 1)
-  }
-}
-
-pub fn index_filter_children(
+pub fn v_index_filter_children(
   vxml: VXML,
   condition: fn(VXML) -> Bool,
 ) -> List(#(VXML, Int)) {
@@ -1765,83 +1660,60 @@ pub fn index_filter_children(
   |> list.index_map(fn(v, idx) { #(v, idx) })
 }
 
-pub fn index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
-  index_filter_children(vxml, is_v_and_tag_equals(_, tag))
+pub fn v_index_children_with_tag(vxml: VXML, tag: String) -> List(#(VXML, Int)) {
+  v_index_filter_children(vxml, is_v_and_tag_equals(_, tag))
 }
 
-pub fn descendants_with_tag(vxml: VXML, tag: String) -> List(VXML) {
-  filter_descendants(vxml, is_v_and_tag_equals(_, tag))
+pub fn v_unique_child_with_tag(
+  vxml: VXML,
+  tag: String,
+) -> Result(VXML, SingletonError) {
+  v_children_with_tag(vxml, tag)
+  |> read_singleton
 }
 
-pub fn descendants_with_key_value(vxml: VXML, attr_key: String, attr_value: String) -> List(VXML) {
-  filter_descendants(vxml, is_v_and_has_key_value(_, attr_key, attr_value))
-}
-
-pub fn descendants_with_class(vxml: VXML, class: String) -> List(VXML) {
-  filter_descendants(vxml, has_class(_, class))
-}
-
-pub fn replace_children_with(node: VXML, children: List(VXML)) {
+pub fn v_replace_children_with(node: VXML, children: List(VXML)) {
   case node {
     V(b, t, a, _) -> V(b, t, a, children)
     _ -> node
   }
 }
 
-pub fn assert_pop_attribute(vxml: VXML, key: String) -> #(VXML, BlamedAttribute) {
-  let assert V(b, t, a, c) = vxml
-  let assert #([unique_guy_with_key], other_guys) = list.partition(a, fn(b){b.key == key})
-  #(V(b, t, other_guys, c), unique_guy_with_key)
+pub fn v_append_classes(
+  node: VXML,
+  classes: String,
+) -> VXML {
+  let assert V(blame, _, attributes, _) = node
+  V(
+    ..node,
+    attributes: append_to_class_attribute(attributes, blame, classes),
+  )
 }
 
-pub fn assert_pop_attribute_value(vxml: VXML, key: String) -> #(VXML, String) {
-  let #(vxml, BlamedAttribute(_, _, value)) = assert_pop_attribute(vxml, key)
-  #(vxml, value)
-}
-
-pub type SingletonError {
-  MoreThanOne
-  LessThanOne
-}
-
-pub fn read_singleton(z: List(a)) -> Result(a, SingletonError) {
-  case z {
-    [] -> Error(LessThanOne)
-    [one] -> Ok(one)
-    _ -> Error(MoreThanOne)
+pub fn v_append_classes_if(
+  node: VXML,
+  classes: String,
+  condition: fn(VXML) -> Bool,
+) -> VXML {
+  case condition(node) {
+    True -> v_append_classes(node, classes)
+    False -> node
   }
 }
 
-pub fn unique_child_with_tag(
-  vxml: VXML,
-  tag: String,
-) -> Result(VXML, SingletonError) {
-  children_with_tag(vxml, tag)
-  |> read_singleton
+// ************************************************************
+// BlamedAttribute
+// ************************************************************
+
+pub fn keys(attrs: List(BlamedAttribute)) -> List(String) {
+  attrs |> list.map(fn(attr) { attr.key })
 }
 
-pub fn digest(vxml: VXML) -> String {
-  case vxml {
-    V(_, tag, _, _) -> "V(_, " <> tag <> ", _, _)"
-    T(_, _) -> "T(_, _)"
-  }
-}
-
-pub fn valid_tag(tag: String) -> Bool {
-  !string.is_empty(tag) &&
-  !string.contains(tag, " ") &&
-  !string.contains(tag, ".") &&
-  !string.contains(tag, "\n") &&
-  !string.contains(tag, "\t")
-}
-
-pub fn normalize_spaces(
-  s: String
-) -> String {
-  s
-  |> string.split(" ")
-  |> list.filter(fn(x){!string.is_empty(x)})
-  |> string.join(" ")
+pub fn attributes_have_key(
+  attrs: List(BlamedAttribute),
+  key: String,
+) -> Bool {
+  list.any(attrs, fn(x) { x.key == key })
 }
 
 pub fn string_pair_2_blamed_attribute(
@@ -1859,18 +1731,67 @@ pub fn string_pairs_2_blamed_attributes(
   |> list.map(string_pair_2_blamed_attribute(_, blame))
 }
 
-pub fn append_if_not_present(ze_list: List(a), ze_thing: a) -> List(a) {
-  case list.contains(ze_list, ze_thing) {
-    True -> ze_list
-    False -> list.append(ze_list, [ze_thing])
+// ************************************************************
+// validation
+// ************************************************************
+
+pub fn valid_tag(tag: String) -> Bool {
+  case vxml.validate_tag(tag) {
+    Ok(_) -> True
+    Error(_) -> False
   }
 }
+
+// ************************************************************
+// is_
+// ************************************************************
+
+pub fn is_v_and_has_key_value(vxml: VXML, key: String, value: String) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    _ -> {
+      v_has_key_value(vxml, key, value)
+    }
+  }
+}
+
+pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    V(_, t, _, _) -> t == tag
+  }
+}
+
+pub fn is_v_and_tag_is_one_of(vxml: VXML, tags: List(String)) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    V(_, tag, _, _) -> list.contains(tags, tag)
+  }
+}
+
+pub fn is_text_node(node: VXML) -> Bool {
+  case node {
+    T(_, _) -> True
+    V(_, _, _, _) -> False
+  }
+}
+
+pub fn is_text_or_is_one_of(node: VXML, tags: List(String)) -> Bool {
+  case node {
+    T(_, _) -> True
+    V(_, tag, _, _) -> list.contains(tags, tag)
+  }
+}
+
+// ************************************************************
+// class
+// ************************************************************
 
 pub fn has_class(vxml: VXML, class: String) -> Bool {
   case vxml {
     T(_, _) -> False
     _ -> {
-      case v_attribute_with_key(vxml, "class") {
+      case v_first_attribute_with_key(vxml, "class") {
         Some(BlamedAttribute(_, "class", vals)) -> {
           vals
           |> string.split(" ")
@@ -1907,29 +1828,9 @@ pub fn append_to_class_attribute(attrs: List(BlamedAttribute), blame: Blame, cla
   }
 }
 
-/// adds classes to a V node
-pub fn v_append_classes(
-  node: VXML,
-  classes: String,
-) -> VXML {
-  let assert V(blame, _, attributes, _) = node
-  V(
-    ..node,
-    attributes: append_to_class_attribute(attributes, blame, classes),
-  )
-}
-
-/// adds classes to a V node if condition is met
-pub fn v_append_classes_if(
-  node: VXML,
-  classes: String,
-  condition: fn(VXML) -> Bool,
-) -> VXML {
-  case condition(node) {
-    True -> v_append_classes(node, classes)
-    False -> node
-  }
-}
+// ************************************************************
+// iteration
+// ************************************************************
 
 pub fn v_map(
   vxmls: List(VXML),
@@ -1961,22 +1862,23 @@ pub fn t_map(
   )
 }
 
-pub fn if_else(cond: Bool, if_branch: a, else_branch: a) -> a {
-  case cond {
-    True -> if_branch
-    False -> else_branch
-  }
+// ************************************************************
+// AssertiveTest runnning
+// ************************************************************
+
+pub type AssertiveTest {
+  AssertiveTest(
+    constructor: fn() -> Desugarer,
+    source: String,      // VXML String
+    expected: String,    // VXML String
+  )
 }
 
-//*******************
-//* assertive tests *
-//*******************
-
-pub type AssertiveTestError {
-  VXMLParseError(vxml.VXMLParseError)
-  TestDesugaringError(DesugaringError)
-  AssertiveTestError(name: String, output: VXML, expected: VXML)
-  NonMatchingDesugarerName(String)
+pub type AssertiveTestCollection {
+  AssertiveTestCollection(
+    desugarer_name: String,
+    tests: fn() -> List(AssertiveTest),
+  )
 }
 
 pub type AssertiveTestDataNoParam {
@@ -2011,19 +1913,11 @@ pub type AssertiveTestDataWithOutside(a) {
   )
 }
 
-pub type AssertiveTest {
-  AssertiveTest(
-    constructor: fn() -> Desugarer,
-    source: String,    // VXML String
-    expected: String,  // VXML String
-  )
-}
-
-pub type AssertiveTestCollection {
-  AssertiveTestCollection(
-    desugarer_name: String,
-    tests: fn() -> List(AssertiveTest),
-  )
+pub type AssertiveTestError {
+  VXMLParseError(vxml.VXMLParseError)
+  TestDesugaringError(DesugaringError)
+  AssertiveTestError(name: String, output: VXML, expected: VXML)
+  NonMatchingDesugarerName(String)
 }
 
 fn remove_minimum_indent(s: String) -> String {
@@ -2296,10 +2190,9 @@ pub fn run_assertive_desugarer_tests(
   Nil
 }
 
-
-//*********
-//* types *
-//*********
+// ************************************************************
+// Desugarer types
+// ************************************************************
 
 pub type DesugaringError {
   DesugaringError(blame: Blame, message: String)
@@ -2322,37 +2215,59 @@ pub type Desugarer {
   )
 }
 
-//*********
-//* Selector(s)
-//*********
+// ************************************************************
+// tracking-related part 1: types
+// ************************************************************
 
-pub type SMode {
-  NotS
-  OGS
-  ByproductS
-}
-
+/// A VXML instance is serialized into a list of SLine for the
+/// purposes of tracking (see "--track" command line option);
+/// each SLine (for "Selected (or not) Line") is one of four
+/// variants:
+/// 
+/// - VSLine: a tag "<> ..." of a V-node
+/// - ASLine: a key-attribute pair line "key=val" of a V-node
+/// - TSLine: the caret "<>" that marks the start of a T-node
+/// - LSLine: a content-line for a T-node
+/// 
+/// Each SLine comes with a selection status, given by its 'selected'
+/// field.
 pub type SLine {
-  VSLine(blame: Blame, indent: Int, content: String, selected: SMode, tag: String)
-  ASLine(blame: Blame, indent: Int, content: String, selected: SMode, key: String, val: String)
-  TSLine(blame: Blame, indent: Int, content: String, selected: SMode)
-  LSLine(blame: Blame, indent: Int, content: String, selected: SMode)
+  VSLine(blame: Blame, indent: Int, content: String, selected: SLineSelectedStatus, tag: String)
+  ASLine(blame: Blame, indent: Int, content: String, selected: SLineSelectedStatus, key: String, val: String)
+  TSLine(blame: Blame, indent: Int, content: String, selected: SLineSelectedStatus)
+  LSLine(blame: Blame, indent: Int, content: String, selected: SLineSelectedStatus)
 }
+
+pub type SLineSelectedStatus {
+  NotSelected
+  OG
+  Bystander
+}
+
+pub type LineSelector =
+  fn(SLine) -> SLineSelectedStatus
+
+pub type Selector =
+  fn(List(SLine)) -> List(SLine)
+
+// ************************************************************
+// tracking-related part 2: VXML -> List(SLine)
+// ************************************************************
 
 fn v_s_line(blame: Blame, indent: Int, tag: String) {
-  VSLine(blame, indent, "<> " <> tag, NotS, tag)
+  VSLine(blame, indent, "<> " <> tag, NotSelected, tag)
 }
 
 fn a_s_line(blame: Blame, indent: Int, key: String, val: String) {
-  ASLine(blame, indent, key <> "=" <> val, NotS, key, val)
+  ASLine(blame, indent, key <> "=" <> val, NotSelected, key, val)
 }
 
 fn t_s_line(blame: Blame, indent: Int) {
-  TSLine(blame, indent, "<>", NotS)
+  TSLine(blame, indent, "<>", NotSelected)
 }
 
 fn l_s_line(blame: Blame, indent: Int, content: String) {
-  TSLine(blame, indent, "\"" <> content <> "\"", NotS)
+  TSLine(blame, indent, "\"" <> content <> "\"", NotSelected)
 }
 
 fn v_s_lines(
@@ -2405,124 +2320,44 @@ pub fn vxml_to_s_lines(
   |> list.reverse
 }
 
-//*********
-//* Selector-related
-//*********
+// ************************************************************
+// tracking-related part 3: creating an initial selection from a LineSelector
+// ************************************************************
 
-pub type TrackingMode {
-  TrackingOff
-  TrackingOnChange
-  TrackingForced
+pub fn apply_line_selector_to_line(
+  line: SLine,
+  line_selector: LineSelector,
+) -> SLine {
+  let sel = line_selector(line)
+  case line {
+    VSLine(_, _, _, _, _) -> VSLine(..line, selected: sel)
+    ASLine(_, _, _, _, _, _) -> ASLine(..line, selected: sel)
+    TSLine(_, _, _, _) -> TSLine(..line, selected: sel)
+    LSLine(_, _, _, _) -> LSLine(..line, selected: sel)
+  }
 }
 
-pub type LineSelector =
-  fn(SLine) -> SMode
-
-pub type Selector =
-  fn(List(SLine)) -> List(SLine)
-
-pub type Pipe = 
-  #(TrackingMode, Selector, Desugarer)
-
-pub type Pipeline =
-  List(Pipe)
-
-pub fn pipeline_desugarers(
-  pipeline: Pipeline
-) -> List(Desugarer) {
-  pipeline
-  |> list.map(fn(x){x.2})
-}
-
-pub fn wrap_desugarers(
-  desugarers: List(Desugarer),
-  echo_mode: TrackingMode,
-  selector: Selector,
-) -> Pipeline {
-  desugarers
-  |> list.map(fn (d) {#(echo_mode, selector, d)})
-}
-
-pub fn s_line_2_output_line(line: SLine) -> OutputLine {
-  OutputLine(line.blame, line.indent, line.content)
-}
-
-pub fn s_lines_2_output_lines(
-  lines: List(SLine),
-  dry_run: Bool,
-) -> List(OutputLine) {
-  let s2l = s_line_2_output_line
-  lines
-  |> list.fold(
-    #(False, None, []),
-    fn (acc, line) {
-      case line.selected {
-        OGS | ByproductS -> case acc.1 {
-          None -> 
-            #(
-              True,
-              None,
-              [line |> s2l, ..acc.2],
-            )
-
-          Some(#(indentation, num_lines)) ->
-            #(
-              True,
-              None,
-              [line |> s2l, OutputLine(bl.NoBlame([ins(case dry_run {True -> 0 False -> num_lines}) <> " unselected lines"]), indentation, "..."), ..acc.2],
-            )
-        }
-        NotS -> case acc.0, acc.1 {
-          False, None -> 
-            #(
-              False,
-              None,
-              acc.2
-            )
-
-          True, None ->
-            #(
-              True,
-              Some(#(line.indent, 1)),
-              acc.2,
-            )
-
-          True, Some(#(indentation, num_lines)) -> 
-            #(
-              True,
-              Some(#(int.min(line.indent, indentation), num_lines + 1)),
-              acc.2,
-            )
-
-          False, Some(_) -> panic as "shouldn't reach this combo"
-        }
-      }
-    }
+pub fn line_selector_to_selector(
+  line_selector: LineSelector,
+) -> Selector {
+  list.map(
+    _,
+    apply_line_selector_to_line(_, line_selector)
   )
-  |> triple_3rd
-  |> list.reverse
 }
 
-pub fn s_lines_annotated_table(
-  lines: List(SLine),
-  banner: String,
-  dry_run: Bool,
-  indent: Int,
-) -> String {
-  lines
-  |> s_lines_2_output_lines(dry_run)
-  |> io_l.output_lines_annotated_table_at_indent(banner, indent)
-  |> string.join("\n")
-}
+// ************************************************************
+// tracking-related part 4: List(SLine) -> List(SLine) operations (extending selections)
+// ************************************************************
 
-fn bring_to_byproduct_level(line: SLine) -> SLine {
+fn bring_to_bystander_level(line: SLine) -> SLine {
   case line.selected {
-    OGS | ByproductS -> line
+    OG | Bystander -> line
     _ -> case line {
-      VSLine(_, _, _, _, _) -> VSLine(..line, selected: ByproductS)
-      ASLine(_, _, _, _, _, _) -> ASLine(..line, selected: ByproductS)
-      TSLine(_, _, _, _) -> TSLine(..line, selected: ByproductS)
-      LSLine(_, _, _, _) -> LSLine(..line, selected: ByproductS)
+      VSLine(_, _, _, _, _) -> VSLine(..line, selected: Bystander)
+      ASLine(_, _, _, _, _, _) -> ASLine(..line, selected: Bystander)
+      TSLine(_, _, _, _) -> TSLine(..line, selected: Bystander)
+      LSLine(_, _, _, _) -> LSLine(..line, selected: Bystander)
     }
   }
 }
@@ -2542,7 +2377,7 @@ fn is_a_s_line(line: SLine) -> Bool {
 }
 
 fn is_og(line: SLine) -> Bool {
-  line.selected == OGS
+  line.selected == OG
 }
 
 fn extend_selection_down_no_reverse(
@@ -2555,12 +2390,12 @@ fn extend_selection_down_no_reverse(
     #(0, []),
     fn(acc, line) {
       let #(gas, lines) = acc
-      let gas = case line.selected == OGS {
+      let gas = case line.selected == OG {
         True -> amt + 1
         False -> gas - 1
       }
       let lines = case gas > 0 {
-        True -> [line |> bring_to_byproduct_level, ..lines]
+        True -> [line |> bring_to_bystander_level, ..lines]
         False -> [line, ..lines]
       }
       #(gas, lines)
@@ -2607,7 +2442,7 @@ pub fn extend_selection_to_ancestors(
       } || {
         line.indent == indent + 2 && with_siblings && is_a && with_attributes
       } {
-        True -> line |> bring_to_byproduct_level
+        True -> line |> bring_to_bystander_level
         False -> line
       }
       let indent = case {
@@ -2658,6 +2493,10 @@ pub fn extend_selector_to_ancestors(
   }
 }
 
+// ************************************************************
+// tracking-related part 5: or-ing Selectors (esoteric, but we do it)
+// ************************************************************
+
 fn or_a_pair_of_s_lines(
   l1: SLine,
   l2: SLine,
@@ -2666,10 +2505,10 @@ fn or_a_pair_of_s_lines(
   // let assert True = l1.indent == l2.indent
   // let assert True = l1.blame == l2.blame
   case l1.selected, l2.selected {
-    OGS, _ -> l1
-    _, OGS -> l2
-    ByproductS, _ -> l1
-    _, ByproductS -> l2
+    OG, _ -> l1
+    _, OG -> l2
+    Bystander, _ -> l1
+    _, Bystander -> l2
     _, _ -> l1
   }
 }
@@ -2693,24 +2532,110 @@ pub fn or_selectors(
   }
 }
 
-pub fn apply_line_selector_to_line(
-  line: SLine,
-  line_selector: LineSelector,
-) -> SLine {
-  let sel = line_selector(line)
-  case line {
-    VSLine(_, _, _, _, _) -> VSLine(..line, selected: sel)
-    ASLine(_, _, _, _, _, _) -> ASLine(..line, selected: sel)
-    TSLine(_, _, _, _) -> TSLine(..line, selected: sel)
-    LSLine(_, _, _, _) -> LSLine(..line, selected: sel)
-  }
+// ************************************************************
+// tracking-related part 6: pretty-printing selections
+// ************************************************************
+
+pub fn s_line_2_output_line(line: SLine) -> OutputLine {
+  OutputLine(line.blame, line.indent, line.content)
 }
 
-pub fn line_selector_to_selector(
-  line_selector: LineSelector,
-) -> Selector {
-  list.map(
-    _,
-    apply_line_selector_to_line(_, line_selector)
+pub fn s_lines_2_output_lines(
+  lines: List(SLine),
+  dry_run: Bool,
+) -> List(OutputLine) {
+  let s2l = s_line_2_output_line
+  lines
+  |> list.fold(
+    #(False, None, []),
+    fn (acc, line) {
+      case line.selected {
+        OG | Bystander -> case acc.1 {
+          None -> 
+            #(
+              True,
+              None,
+              [line |> s2l, ..acc.2],
+            )
+
+          Some(#(indentation, num_lines)) ->
+            #(
+              True,
+              None,
+              [line |> s2l, OutputLine(bl.NoBlame([ins(case dry_run {True -> 0 False -> num_lines}) <> " unselected lines"]), indentation, "..."), ..acc.2],
+            )
+        }
+        NotSelected -> case acc.0, acc.1 {
+          False, None -> 
+            #(
+              False,
+              None,
+              acc.2
+            )
+
+          True, None ->
+            #(
+              True,
+              Some(#(line.indent, 1)),
+              acc.2,
+            )
+
+          True, Some(#(indentation, num_lines)) -> 
+            #(
+              True,
+              Some(#(int.min(line.indent, indentation), num_lines + 1)),
+              acc.2,
+            )
+
+          False, Some(_) -> panic as "shouldn't reach this combo"
+        }
+      }
+    }
   )
+  |> triple_3rd
+  |> list.reverse
+}
+
+pub fn s_lines_annotated_table(
+  lines: List(SLine),
+  banner: String,
+  dry_run: Bool,
+  indent: Int,
+) -> String {
+  lines
+  |> s_lines_2_output_lines(dry_run)
+  |> io_l.output_lines_annotated_table_at_indent(banner, indent)
+  |> string.join("\n")
+}
+
+// ************************************************************
+// Pipeline
+// ************************************************************
+
+pub type TrackingMode {
+  TrackingOff
+  TrackingOnChange
+  TrackingForced
+}
+
+pub type Pipe = 
+  #(TrackingMode, Selector, Desugarer)
+
+pub type Pipeline =
+  List(Pipe)
+
+pub fn pipeline_desugarers(
+  pipeline: Pipeline
+) -> List(Desugarer) {
+  pipeline
+  |> list.map(fn(x) { x.2 })
+}
+
+pub fn wrap_desugarers(
+  desugarers: List(Desugarer),
+  echo_mode: TrackingMode,
+  selector: Selector,
+) -> Pipeline {
+  desugarers
+  |> list.map(fn (d) {#(echo_mode, selector, d)})
 }

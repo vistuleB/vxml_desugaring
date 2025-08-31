@@ -25,7 +25,7 @@ fn nodemap(
     fn(_) { vxml }
   )
 
-  let old_attribute_keys = infra.get_attribute_keys(attributes)
+  let old_attribute_keys = infra.keys(attributes)
 
   let attributes_to_add =
     list.fold(

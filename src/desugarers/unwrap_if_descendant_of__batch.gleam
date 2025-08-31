@@ -15,7 +15,7 @@ fn nodemap(
       case infra.use_list_pair_as_dict(inner, tag) {
         Error(Nil) -> [node]
         Ok(forbidden) -> {
-          let ancestor_names = list.map(ancestors, infra.get_tag)
+          let ancestor_names = list.map(ancestors, infra.v_get_tag)
           case list.any(ancestor_names, list.contains(forbidden, _)) {
             True -> children
             False -> [node]

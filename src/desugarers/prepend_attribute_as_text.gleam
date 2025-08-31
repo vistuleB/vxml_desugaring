@@ -11,7 +11,7 @@ fn nodemap(
 ) -> VXML {
   case vxml {
     V(_, tag, _, children) if tag == inner.0 -> {
-      case infra.v_attribute_with_key(vxml, inner.1) {
+      case infra.v_first_attribute_with_key(vxml, inner.1) {
         Some(BlamedAttribute(_, _, value)) if value != "" ->
           V(..vxml, children: [
             T(

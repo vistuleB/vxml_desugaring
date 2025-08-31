@@ -231,7 +231,7 @@ pub fn stub_html_emitter(
         OutputLine(Em([], "stub_html_emitter"), 0, "<body>"),
       ],
       fragment.payload
-        |> infra.get_children
+        |> infra.v_get_children
         |> list.map(fn(vxml) { vp.vxml_to_html_output_lines(vxml, 2, 2) })
         |> list.flatten,
       [
@@ -258,7 +258,7 @@ pub fn stub_jsx_emitter(
         OutputLine(Em([], "panel_emitter"), 2, "return ("),
         OutputLine(Em([], "panel_emitter"), 4, "<>"),
       ],
-      vp.vxmls_to_jsx_output_lines(fragment.payload |> infra.get_children, 6),
+      vp.vxmls_to_jsx_output_lines(fragment.payload |> infra.v_get_children, 6),
       [
         OutputLine(Em([], "panel_emitter"), 4, "</>"),
         OutputLine(Em([], "panel_emitter"), 2, ");"),
@@ -600,7 +600,7 @@ fn print_pipeline(desugarers: List(Desugarer)) {
 
   [#("#.", "name", "param", "outside"), ..lines]
   |> star_block.four_column_table
-  |> star_block.print_table_at_indent(2)
+  |> star_block.print_lines_at_indent(2)
 }
 
 // *************
@@ -794,7 +794,7 @@ pub fn run_renderer(
   use fragments <- on.error_ok(
     renderer.splitter(desugared),
     on_error: fn(error: e) {
-      io.println("\nsplitter error:")
+      io.println("\n  ...splitter error:")
       boxed_error_announcer(
         [
           "",
@@ -802,7 +802,7 @@ pub fn run_renderer(
           "",
         ],
         "💥",
-        0,
+        2,
         #(1, 1)
       )
       Error(SplitterError(error))
@@ -817,7 +817,7 @@ pub fn run_renderer(
   
   [#("classifier", "path"), ..fragments_types_and_paths_4_table]
   |> star_block.two_column_table
-  |> star_block.print_table_at_indent(2)
+  |> star_block.print_lines_at_indent(2)
 
   // fragments debug printing
   fragments
@@ -860,11 +860,18 @@ pub fn run_renderer(
     }
   })
 
+  let num_emitter_errors = list.fold(fragments, 0, fn(acc, fr) {
+    case fr {
+      Ok(_) -> acc
+      _ -> acc + 1
+    }
+  })
+
   list.each(
     fragments,
     fn (fr) {
       use error <- on.ok_error(fr, fn(_){Nil})
-      io.println("\nemitter error:")
+      io.println("\n  emitter error:")
       boxed_error_announcer(
         [
           "",
@@ -872,11 +879,16 @@ pub fn run_renderer(
           "",
         ],
         "💥",
-        0,
-        #(1, 1)
+        2,
+        #(1, 0)
       )
     }
   )
+
+  case num_emitter_errors {
+    0 -> Nil
+    _ -> io.println("")
+  }
 
   io.println("• converting output line fragments to string fragments")
 

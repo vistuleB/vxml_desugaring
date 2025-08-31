@@ -7,7 +7,7 @@ import vxml.{type VXML, BlamedAttribute, V}
 import nodemaps_2_desugarer_transforms as n2t
 
 fn prepend_link(vxml: VXML, link_value: String, link_key: String) -> VXML {
-  infra.prepend_attribute(vxml, BlamedAttribute(vxml.blame, link_key, link_value))
+  infra.v_prepend_attribute(vxml, BlamedAttribute(vxml.blame, link_key, link_value))
 }
 
 fn add_links_to_chapter(vxml: VXML, number: Int, num_chapters: Int) -> VXML {
@@ -56,10 +56,10 @@ fn add_links_to_toc(vxml: VXML, num_bootcamps: Int, num_chapters: Int) -> VXML {
 
 fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringError) {
   let assert V(_, _, _, children) = root
-  let chapters = infra.children_with_tag(root, "Chapter")
-  let bootcamps = infra.children_with_tag(root, "Bootcamp")
+  let chapters = infra.v_children_with_tag(root, "Chapter")
+  let bootcamps = infra.v_children_with_tag(root, "Bootcamp")
   use toc <- on.empty_gt1_singleton(
-    infra.children_with_tag(root, "TOC"),
+    infra.v_children_with_tag(root, "TOC"),
     on_empty: Error(DesugaringError(root.blame, "TOC missing")),
     on_gt1: fn(_, _, _) {Error(DesugaringError(root.blame, "> 1 TOC"))},
   )

@@ -122,7 +122,7 @@ fn update_path(
   inner: InnerParam,
 ) -> State {
   let assert V(_, _, _, _) = node
-  case infra.v_attribute_with_key(node, inner) {
+  case infra.v_first_attribute_with_key(node, inner) {
     Some(BlamedAttribute(_, _, value)) -> State(..state, path: Some(value))
     None -> state
   }

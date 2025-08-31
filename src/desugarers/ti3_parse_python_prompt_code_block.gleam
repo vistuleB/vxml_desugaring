@@ -44,8 +44,8 @@ fn python_prompt_chunk_to_vxmls(
           [BlamedAttribute(desugarer_blame(44), "class", "python-prompt-content")],
           [
             T(
-              infra.advance(bc.blame, 3),
-              [BlamedContent(infra.advance(bc.blame, 3), bc.content |> string.drop_start(3))]
+              bl.advance(bc.blame, 3),
+              [BlamedContent(bl.advance(bc.blame, 3), bc.content |> string.drop_start(3))]
             )
           ]
         )

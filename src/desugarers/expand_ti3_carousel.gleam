@@ -3,6 +3,7 @@ import gleam/option.{None}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V, BlamedAttribute}
+import blame as bl
 import on
 
 fn nodemap(
@@ -47,7 +48,7 @@ fn nodemap(
 
             let final_attrs = case style_value {
               "" -> base_attrs
-              style_value -> list.append(base_attrs, [BlamedAttribute (infra.no_blame, "style", style_value)])
+              style_value -> list.append(base_attrs, [BlamedAttribute(desugarer_blame(0), "style", style_value)])
             }
 
             let img = V(blame, "img", final_attrs, [])
@@ -88,6 +89,7 @@ fn param_to_inner_param(_param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 pub const name = "expand_ti3_carousel"
+fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 
 type Param = Nil
 type InnerParam = Nil

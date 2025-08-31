@@ -15,7 +15,7 @@ fn nodemap(
     V(blame, tag, attrs, children) -> {
       case infra.use_list_pair_as_dict(inner, tag) {
         Ok(#(ancestor_tag, if_version, else_version)) -> {
-          let ancestor_tags = ancestors |> list.map(infra.get_tag)
+          let ancestor_tags = ancestors |> list.map(infra.v_get_tag)
           let text = case list.contains(ancestor_tags, ancestor_tag) {
             True -> if_version
             False -> else_version

@@ -27,7 +27,7 @@ type Menu {
 }
 
 fn get_course_homepage(document: VXML) -> String {
-  case infra.v_attribute_with_key(document, "course_homepage") {
+  case infra.v_first_attribute_with_key(document, "course_homepage") {
     None -> ""
     Some(x) -> x.value
   }
@@ -87,7 +87,7 @@ fn info_2_link(
   }
 
   a_tag_with_href_and_content(href, content)
-  |> infra.prepend_attribute(id_attribute)
+  |> infra.v_prepend_attribute(id_attribute)
 }
 
 fn info_2_left_menu(
@@ -97,7 +97,7 @@ fn info_2_left_menu(
     a_tag_with_href_and_content("./index.html", "Inhaltsverzeichnis")
 
   let index_link = case prev_info {
-    None -> index_link |> infra.prepend_attribute(an_attribute("id", "prev-page"))
+    None -> index_link |> infra.v_prepend_attribute(an_attribute("id", "prev-page"))
     Some(_) -> index_link
   }
 
@@ -160,7 +160,7 @@ fn prepend_menu_element(
     get_prev_next_info(chapter_no, sub_no, page_infos),
     homepage_url,
   )
-  infra.prepend_child(node, menu)
+  infra.v_prepend_child(node, menu)
 }
 
 fn prepend_menu_element_in_chapter_and_subchapters(
@@ -196,13 +196,13 @@ fn prepend_menu_element_in_chapter_and_subchapters(
 }
 
 fn collect_all_page_infos(root: VXML) -> List(PageInfo) {
-  let chapters = infra.children_with_tag(root, "Chapter")
+  let chapters = infra.v_children_with_tag(root, "Chapter")
   list.index_fold(
     chapters,
     [],
     fn(acc, chapter, chapter_idx) {
       let chapter_no = chapter_idx + 1
-      let subchapters = infra.children_with_tag(chapter, "Sub")
+      let subchapters = infra.v_children_with_tag(chapter, "Sub")
       let subchapters = list.index_map(
         subchapters,
         fn(_, sub_idx) { #(chapter_no, sub_idx + 1) }

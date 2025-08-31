@@ -17,7 +17,7 @@ fn update_child(
       infra.v_append_classes_if(
         acc,
         tag_and_classes_to_append.1,
-        infra.tag_equals(_, tag_and_classes_to_append.0),
+        infra.is_v_and_tag_equals(_, tag_and_classes_to_append.0),
       )
     }
   )

@@ -34,12 +34,12 @@ fn tokenize_string_acc(
   case string.split_once(leftover, " ") {
     Ok(#("", after)) -> tokenize_string_acc(
       [space_node(current_blame), ..past_tokens],
-      infra.advance(current_blame, 1),
+      bl.advance(current_blame, 1),
       after,
     )
     Ok(#(before, after)) -> tokenize_string_acc(
       [space_node(current_blame), word_node(current_blame, before), ..past_tokens],
-      infra.advance(current_blame, string.length(before) + 1),
+      bl.advance(current_blame, string.length(before) + 1),
       after,
     )
     Error(Nil) -> case leftover == "" {

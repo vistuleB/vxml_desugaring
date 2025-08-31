@@ -11,7 +11,7 @@ fn nodemap(
   inner: InnerParam,
 ) -> List(VXML) {
   case node {
-    V(_, tag, _, children) if tag == inner.0 -> case list.any(inner.1, fn(b) {list.any(ancestors, fn(a) { infra.tag_equals(a, b)})}) {
+    V(_, tag, _, children) if tag == inner.0 -> case list.any(inner.1, fn(b) {list.any(ancestors, fn(a) { infra.is_v_and_tag_equals(a, b)})}) {
       True -> children
       False -> [node]
     }

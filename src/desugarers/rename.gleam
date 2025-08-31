@@ -3,6 +3,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T, V}
+import blame as bl
 
 fn nodemap(
   vxml: VXML,
@@ -32,7 +33,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   let #(_, to) = param
   case infra.valid_tag(to) {
     True -> Ok(param)
-    False -> Error(DesugaringError(infra.no_blame, "invalid target tag name '" <> to <> "'"))
+    False -> Error(DesugaringError(bl.no_blame, "invalid target tag name '" <> to <> "'"))
   }
 }
 

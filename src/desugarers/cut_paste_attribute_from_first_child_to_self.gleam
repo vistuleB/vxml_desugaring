@@ -11,14 +11,14 @@ import on
 /// - modified children (with removed attribute)
 fn check_first_child(children: List(VXML), key: String)
 -> Option(#(BlamedAttribute, List(VXML))) {
-  use #(first, rest) <- on.error_ok(infra.first_rest(children), fn(_){None})
-  use <- infra.on_t_on_v_no_deconstruct(first, fn(_, _){None})
-  let assert V(_, _, _, _) = first
+  use first, rest <- on.empty_nonempty(children, None)
+  use _, _, _, _ <- infra.on_t_on_v(first, fn(_, _){None})
+  let assert V(_, _, attributes, _) = first
   use attribute <- on.error_ok(
-    list.find(first.attributes, fn(att) {att.key == key}),
-    fn(_){None},
+    list.find(attributes, fn(att) {att.key == key}),
+    fn(_) { None },
   )
-  let first = V(..first, attributes: list.filter(first.attributes, fn(att) { att.key != key }))
+  let first = V(..first, attributes: list.filter(attributes, fn(att) { att.key != key }))
   Some(#(attribute, [first, ..rest]))
 }
 

@@ -1,6 +1,5 @@
 import gleam/option
 import gleam/string.{inspect as ins}
-import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, T, BlamedContent}
@@ -14,15 +13,15 @@ fn nodemap(
   case node {
     V(_, tag, _, _) if tag == inner.0 -> {
       // return early if we have a child of tag child_tag == inner.1:
-      use _ <- on.ok_error(
-        infra.children_with_tag(node, inner.1) |> list.first,
-        fn(_) {#(node, GoBack)},
+      use <- on.nonempty_empty(
+        infra.v_children_with_tag(node, inner.1),
+        fn(_, _) { #(node, GoBack) },
       )
 
       // return early if we don't have a attribute_key == inner.2:
-      use attribute <- on.error_ok(
-        infra.v_all_attributes_with_key(node, inner.2) |> list.first,
-        fn (_) {#(node, GoBack)},
+      use attribute, _ <- on.empty_nonempty(
+        infra.v_attributes_with_key(node, inner.2),
+        #(node, GoBack),
       )
 
       #(

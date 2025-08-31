@@ -1,9 +1,9 @@
-import infrastructure.{type Selector, type SLine, type SMode} as infra
+import infrastructure.{type Selector, type SLine, type SLineSelectedStatus} as infra
 
 fn line_selector(
   _line: SLine,
-) -> SMode {
-  infra.OGS
+) -> SLineSelectedStatus {
+  infra.OG
 }
 
 pub fn selector() -> Selector {

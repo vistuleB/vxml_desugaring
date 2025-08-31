@@ -17,9 +17,9 @@ fn nodemap(
     T(_, _) -> {
       list.fold(inner, vxml, fn(v, tuple) -> VXML {
         let #(ancestor, list_pairs) = tuple
-        case list.any(ancestors, fn(a) { infra.get_tag(a) == ancestor }) {
+        case list.any(ancestors, fn(a) { infra.v_get_tag(a) == ancestor }) {
           False -> v
-          True -> infra.find_replace_in_t(vxml, list_pairs)
+          True -> infra.t_find_replace__batch(vxml, list_pairs)
         }
       })
     }

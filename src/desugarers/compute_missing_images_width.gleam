@@ -82,13 +82,13 @@ fn nodemap(
       if tag == "ImageLeft" || tag == "ImageRight" || tag == "Image" -> {
         // if the image has a width attribute, we don't need to do anything
         use <- on.some_none(
-          infra.v_attribute_with_key(node, "width"),
+          infra.v_first_attribute_with_key(node, "width"),
           on_some: fn(_) {Ok(node)},
         )
 
         // if the image doesn't have a src attribute, we need to error
         use attr <- on.none_some(
-          infra.v_attribute_with_key(node, "src"),
+          infra.v_first_attribute_with_key(node, "src"),
           on_none: Error(DesugaringError(blame, "Image tag must have a src attribute")),
         )
        

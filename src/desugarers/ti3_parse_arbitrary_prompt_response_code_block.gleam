@@ -55,12 +55,12 @@ fn elements_for_line(line: BlamedContent) -> List(VXML) {
         True -> #(terminal_prompt, string.drop_start(line.content, terminal_prompt |> string.length))
       }
     )
-  let after_blame = infra.advance(line.blame, string.length(before) + 2)
+  let after_blame = bl.advance(line.blame, string.length(before) + 2)
   let prompt = case before == terminal_prompt {
-    False -> prompt |> infra.prepend_child(blamed_content_2_t(BlamedContent(line.blame, before)))
-    True -> terminal_prompt_span |> infra.prepend_child(blamed_content_2_t(BlamedContent(line.blame, before)))
+    False -> prompt |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(line.blame, before)))
+    True -> terminal_prompt_span |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(line.blame, before)))
   }
-  let response = response |> infra.prepend_child(blamed_content_2_t(BlamedContent(after_blame, after)))
+  let response = response |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(after_blame, after)))
   [prompt, response]
 }
 

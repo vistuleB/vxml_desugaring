@@ -137,7 +137,7 @@ fn fast_forward_past_spaces(
 fn fast_forward_past_end_t(
   atomized: List(VXML),
 ) -> List(VXML) {
-  list.drop_while(atomized, infra.tag_equals(_, "__EndAtomizedT"))
+  list.drop_while(atomized, infra.is_v_and_tag_equals(_, "__EndAtomizedT"))
 }
 
 fn match_internal(
@@ -174,7 +174,7 @@ fn match_internal(
     [Word(word), ..pattern_rest] ->
       case atomized {
         [V(_, "__OneWord", _, _) as v, ..atomized_rest] -> {
-          let assert Some(attr) = infra.v_attribute_with_key(v, "val")
+          let assert Some(attr) = infra.v_first_attribute_with_key(v, "val")
           case attr.value == word {
             True -> match_internal(
               atomized_rest,

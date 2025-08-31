@@ -27,7 +27,7 @@ fn chapter_link(
   let item_blame = item.blame
 
   use label_attr <- on.none_some(
-    infra.v_attribute_with_key(item, "title_gr"),
+    infra.v_first_attribute_with_key(item, "title_gr"),
     on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
@@ -37,7 +37,7 @@ fn chapter_link(
   )
 
   use href_attr <- on.none_some(
-    infra.v_attribute_with_key(item, "title_en"),
+    infra.v_first_attribute_with_key(item, "title_en"),
     on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
@@ -47,7 +47,7 @@ fn chapter_link(
   )
 
   use number_attribute <- on.none_some(
-    infra.v_attribute_with_key(item, "number"),
+    infra.v_first_attribute_with_key(item, "number"),
     on_none: Error(DesugaringError(
       item_blame,
       "(generate_ti2_table_of_contents_html) "
@@ -108,7 +108,7 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
   let tp = "Chapter"
 
   use number_attribute <- on.none_some(
-    infra.v_attribute_with_key(item, "number"),
+    infra.v_first_attribute_with_key(item, "number"),
     on_none: Error(DesugaringError(
       item.blame,
       "(generate_ti2_table_of_contents_html) "
@@ -162,7 +162,7 @@ fn at_root(
   let chapters_div =
     div_with_id_title_and_menu_items("Chapters", chapter_menu_items)
 
-  infra.prepend_child(
+  infra.v_prepend_child(
     root,
     V(desugarer_blame(169), table_of_contents_tag, [], [chapters_div]),
   )

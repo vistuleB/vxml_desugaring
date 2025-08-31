@@ -4,6 +4,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, V, T, BlamedContent}
+import blame as bl
 
 fn do_it(
   t: VXML,
@@ -20,7 +21,7 @@ fn do_it(
         True -> t
         False -> {
           let trimmed_start = string.trim_end(start)
-          let suffix_blame = infra.advance(first.blame, string.length(start))
+          let suffix_blame = bl.advance(first.blame, string.length(start))
           case trimmed_start == "" {
             True -> T(
               blame,

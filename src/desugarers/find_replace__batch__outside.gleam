@@ -4,7 +4,7 @@ import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type 
 import nodemaps_2_desugarer_transforms as n2t
 
 fn nodemap_factory(inner: InnerParam) -> n2t.OneToOneNoErrorNodeMap {
-  infra.find_replace_in_node(_, inner.0)
+  infra.find_replace_if_t__batch(_, inner.0)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
@@ -21,7 +21,7 @@ type Param = #(List(#(String, String)), List(String))
 //             from/to pairs            keep_out_of
 type InnerParam = Param
 
-pub const name = "find_replace__batch__outside"
+pub const name = "find_replace_if_t__batch__outside"
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️

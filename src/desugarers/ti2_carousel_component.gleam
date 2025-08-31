@@ -20,7 +20,7 @@ fn nodemap(
         on_true: Ok(T(blame, [])),
       )
       use <- on.true_false(
-        infra.v_attribute_with_key(vxml, "data-slide-to") |> option.is_some,
+        infra.v_first_attribute_with_key(vxml, "data-slide-to") |> option.is_some,
         on_true: Ok(T(blame, [])),
       )
       // carousel

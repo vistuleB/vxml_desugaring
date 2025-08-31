@@ -23,7 +23,7 @@ fn nodemap(
 ) -> #(VXML, TrafficLight) {
   case node {
     V(_, tag, _, _) if tag == inner.0 -> {
-      case infra.v_attribute_with_key(node, inner.2) {
+      case infra.v_first_attribute_with_key(node, inner.2) {
         option.None -> #(node, GoBack)
         option.Some(attribute) -> #(
           V(

@@ -6,7 +6,7 @@ import nodemaps_2_desugarer_transforms as n2t
 fn nodemap_factory(
   inner: InnerParam
 ) -> n2t.OneToOneNoErrorNodeMap {
-  infra.find_replace_in_node_no_list(_, inner.0, inner.1)
+  infra.find_replace_if_t(_, inner.0, inner.1)
 }
 
 fn transform_factory(inner: InnerParam, outside: List(String)) -> DesugarerTransform {

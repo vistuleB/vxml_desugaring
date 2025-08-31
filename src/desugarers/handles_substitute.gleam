@@ -250,7 +250,7 @@ fn update_path(
   inner: InnerParam,
 ) -> State {
   let assert V(_, _, _, _) = vxml
-  case infra.v_attribute_with_key(vxml, inner.0) {
+  case infra.v_first_attribute_with_key(vxml, inner.0) {
     Some(BlamedAttribute(_, _, value)) -> State(..state, path: Some(value))
     None -> state
   }
