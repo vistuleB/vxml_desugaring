@@ -15,7 +15,7 @@ import infrastructure.{type Desugarer, type Pipe, type Pipeline, TrackingOff, Tr
 import selector_library as sl
 import shellout
 import simplifile
-import star_block
+import table_and_co_printer as pr
 import vxml.{type VXML, V} as vp
 import writerly as wp
 import on
@@ -38,10 +38,10 @@ pub type InSituDesugaringWarning {
   )
 }
 
-// *************
-// ASSEMBLER(a)                                    // 'a' is assembler error type; "assembler" = "source assembler"
+// ************************************************************
+// Assembler(a)                                    // 'a' is assembler error type; "assembler" = "source assembler"
 // file/directory -> List(InputLine)
-// *************
+// ************************************************************
 
 pub type Assembler(a) =
   fn(String) -> Result(List(InputLine), a)
@@ -50,9 +50,9 @@ pub type AssemblerDebugOptions {
   AssemblerDebugOptions(echo_: Bool)
 }
 
-// ******************************
+// ************************************************************
 // default assembler
-// ******************************
+// ************************************************************
 
 pub fn default_assembler(
   spotlight_paths: List(String),
@@ -385,7 +385,7 @@ pub type RendererDebugOptions(d) {
     parser_debug_options: ParserDebugOptions,
     splitter_debug_options: SplitterDebugOptions(d),
     emitter_debug_options: EmitterDebugOptions(d),
-    printer_debug_options: WriterDebugOptions(d),
+    writer_debug_options: WriterDebugOptions(d),
     prettifier_debug_options: PrettifierDebugOptions(d),
   )
 }
@@ -463,7 +463,7 @@ fn run_pipeline(
       let must_print = mode == TrackingForced || { mode == TrackingOnChange && next_tracking_output != last_tracking_output }
       let got_arrow = case must_print {
         True -> {
-          io.println("    " <> star_block.name_and_param_string(desugarer, step_no))
+          io.println("    " <> pr.name_and_param_string(desugarer, step_no))
           io.println("    💠")
           selected
           |> infra.s_lines_annotated_table("", False, 2)
@@ -485,7 +485,7 @@ fn run_pipeline(
   |> result.map(fn(acc) { #(acc.0, acc.4, acc.3) })
 }
 
-pub fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
+fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
   RendererParameters(
     ..parameters,
     output_dir: infra.drop_ending_slash(parameters.output_dir),
@@ -509,7 +509,7 @@ fn create_dirs_on_path_to_file(path_to_file: String) -> Result(Nil, simplifile.F
   |> result.map(fn(_) { Nil })
 }
 
-pub fn output_dir_local_path_printer(
+fn output_dir_local_path_printer(
   output_dir: String,
   local_path: String,
   content: String,
@@ -525,6 +525,12 @@ pub fn output_dir_local_path_printer(
 // RENDERER ERROR(a, c, e, f, h)
 // *************
 
+pub type ThreePossibilities(f, g, h) {
+  C1(f)
+  C2(g)
+  C3(h)
+}
+
 pub type RendererError(a, c, e, f, h) {
   FileOrParseError(a)
   SourceParserError(Blame, c)
@@ -533,134 +539,9 @@ pub type RendererError(a, c, e, f, h) {
   EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
 }
 
-pub type ThreePossibilities(f, g, h) {
-  C1(f)
-  C2(g)
-  C3(h)
-}
-
-fn ddd_truncate(str: String, max_cols) -> String {
-  case string.length(str) > max_cols {
-    False -> str
-    True -> {
-      let excess = string.length(str) - max_cols
-      string.drop_end(str, excess + 3) <> "..."
-    }
-  }
-}
-
-fn desugarer_to_list_lines(
-  desugarer: Desugarer,
-  index: Int,
-  max_param_cols: Int,
-  max_outside_cols: Int,
-  none_string: String,
-) -> List(#(String, String, String, String)) {
-  let number = ins(index + 1) <> "."
-  let name = desugarer.name
-  let param_lines = case desugarer.stringified_param {
-    None -> [none_string]
-    Some(thing) ->
-      case string.split(thing, "\n") {
-        [] -> panic as "stringified param is empty string?"
-        lines -> lines |> list.map(ddd_truncate(_, max_param_cols))
-      }
-  }
-  let outside = case desugarer.stringified_outside {
-    None -> none_string
-    Some(thing) -> thing |> ddd_truncate(max_outside_cols)
-  }
-  list.index_map(param_lines, fn(p, i) {
-    case i == 0 {
-      True -> #(number, name, p, outside)
-      False -> #("", star_block.spaces(string.length(name)), p, "⋮")
-    }
-  })
-}
-
-fn print_pipeline(desugarers: List(Desugarer)) {
-  let none_string = "--"
-  let max_param_cols = 65
-  let max_outside_cols = 45
-
-  let lines =
-    desugarers
-    |> list.index_map(fn(d, i) {
-      desugarer_to_list_lines(
-        d,
-        i,
-        max_param_cols,
-        max_outside_cols,
-        none_string,
-      )
-    })
-    |> list.flatten
-
-  io.println("• pipeline:")
-
-  [#("#.", "name", "param", "outside"), ..lines]
-  |> star_block.four_column_table
-  |> star_block.print_lines_at_indent(2)
-}
-
-// *************
-// RUN_RENDERER
-// *************
-
-fn our_blame_digest(blame: Blame) -> String {
-  case bl.blame_digest(blame) {
-    "" -> "--"
-    s -> s
-  }
-}
-
-
-fn boxed_error_lines(
-  lines: List(String),
-  emoji: String,
-) -> List(String) {
-  let lengths = list.map(lines, string.length)
-  let max = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
-  let max = case max % 2 == 0 {
-    True -> max
-    False -> max + 1
-  }
-  [
-    [
-      string.repeat(emoji, 4 + max / 2),
-      string.repeat(emoji, 4 + max / 2),
-    ],
-    list.map(
-      list.zip(lines, lengths),
-      fn (pair) {
-        let #(line, line_length) = pair
-        emoji <> emoji <> line <> star_block.spaces(max - line_length) <> emoji <> emoji
-      }
-    ),
-    [
-      string.repeat(emoji, 4 + max / 2),
-      string.repeat(emoji, 4 + max / 2),
-    ],
-  ]
-  |> list.flatten
-}
-
-fn boxed_error_announcer(
-  lines: List(String),
-  emoji: String,
-  indent: Int,
-  lines_before_after: #(Int, Int)
-) -> Nil {
-  let margin = star_block.spaces(indent)
-  let lines =
-    lines
-    |> boxed_error_lines(emoji)
-    |> list.map(fn(l){margin <> l})
-    |> string.join("\n")
-  io.print(string.repeat("\n", lines_before_after.0))
-  io.println(lines)
-  io.print(string.repeat("\n", lines_before_after.1))
-}
+// ************************************************************
+// run_renderer
+// ************************************************************
 
 pub fn run_renderer(
   renderer: Renderer(a, c, d, e, f, h),
@@ -678,9 +559,11 @@ pub fn run_renderer(
   ) = parameters
 
   case table {
-    True -> print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
+    True -> pr.print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
     False -> Nil
   }
+
+  // ASSEMBLING
 
   io.print("• assembling ")
 
@@ -693,7 +576,7 @@ pub fn run_renderer(
         "  " <> ins(error_a),
         "",
       ]
-      |> boxed_error_announcer("💥", 2, #(1, 0))
+      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
       Error(FileOrParseError(error_a))
     },
   )
@@ -708,6 +591,8 @@ pub fn run_renderer(
     }
   }
 
+  // PARSING
+
   io.println("• parsing input lines to VXML")
 
   use parsed: VXML <- on.error_ok(
@@ -715,13 +600,13 @@ pub fn run_renderer(
     on_error: fn(error) {
       let #(blame, c) = error
       let assert [first, ..rest] =
-        star_block.padded_error_paragraph(ins(c) |> star_block.strip_quotes, 70, "            ")
+        pr.padded_error_paragraph(ins(c) |> pr.strip_quotes, 70, "            ")
 
       io.println("\n  ...parser error:")
       [
         [
           "            ",
-          "  blame:    " <> our_blame_digest(blame),
+          "  blame:    " <> pr.our_blame_digest(blame),
           "  message:  " <> first,
         ],
         rest,
@@ -730,10 +615,12 @@ pub fn run_renderer(
         ]
       ]
       |> list.flatten
-      |> boxed_error_announcer("💥", 2, #(1, 0))
+      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
       Error(SourceParserError(blame, c))
     },
   )
+
+  // PIPELINE
 
   io.println("• starting pipeline...")
   let t0 = timestamp.system_time()
@@ -742,7 +629,7 @@ pub fn run_renderer(
     run_pipeline(parsed, renderer.pipeline),
     on_error: fn(e: InSituDesugaringError) {
       let assert [first, ..rest] =
-        star_block.padded_error_paragraph(e.message, 80, "                  ")
+        pr.padded_error_paragraph(e.message, 80, "                  ")
 
       io.println("\n  DesugaringError:")
       [
@@ -750,7 +637,7 @@ pub fn run_renderer(
           "                  ",
           "  thrown by:      " <> e.desugarer.name,
           "  pipeline step:  " <> ins(e.step_no),
-          "  blame:          " <> our_blame_digest(e.blame),
+          "  blame:          " <> pr.our_blame_digest(e.blame),
           "  message:        " <> first,
         ],
         rest,
@@ -759,7 +646,7 @@ pub fn run_renderer(
         ],
       ]
       |> list.flatten
-      |> boxed_error_announcer("💥", 2, #(1, 0))
+      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
       Error(PipelineError(e))
     },
   )
@@ -788,14 +675,15 @@ pub fn run_renderer(
     }
   }
 
+  // SPLITTING
+
   io.println("• splitting the vxml...")
 
-  // vxml fragments generation
   use fragments <- on.error_ok(
     renderer.splitter(desugared),
     on_error: fn(error: e) {
       io.println("\n  ...splitter error:")
-      boxed_error_announcer(
+      pr.boxed_error_announcer(
         [
           "",
           "  " <> ins(error),
@@ -813,13 +701,12 @@ pub fn run_renderer(
   let fragments_types_and_paths_4_table =
     list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
 
-  io.println("  -> obtained " <> star_block.how_many("fragment", "fragments", list.length(fragments)) <> ":")
+  io.println("  -> obtained " <> pr.how_many("fragment", "fragments", list.length(fragments)) <> ":")
   
   [#("classifier", "path"), ..fragments_types_and_paths_4_table]
-  |> star_block.two_column_table
-  |> star_block.print_lines_at_indent(2)
+  |> pr.two_column_table
+  |> pr.print_lines_at_indent(2)
 
-  // fragments debug printing
   fragments
   |> list.each(fn(fr) {
     case debug_options.splitter_debug_options.echo_(fr) {
@@ -833,16 +720,16 @@ pub fn run_renderer(
     }
   })
 
+  // EMITTING
+
   io.print("• converting fragments to output line fragments")
 
-  // vxml fragments -> output line fragments
   let fragments =
     fragments
     |> list.map(renderer.emitter)
 
   io.println("")
 
-  // output line fragments debug printing
   fragments
   |> list.each(fn(result) {
     case result {
@@ -872,7 +759,7 @@ pub fn run_renderer(
     fn (fr) {
       use error <- on.ok_error(fr, fn(_){Nil})
       io.println("\n  emitter error:")
-      boxed_error_announcer(
+      pr.boxed_error_announcer(
         [
           "",
           "  " <> ins(error),
@@ -890,9 +777,10 @@ pub fn run_renderer(
     _ -> io.println("")
   }
 
+  // WRITING
+
   io.println("• converting output line fragments to string fragments")
 
-  // output line fragments -> string fragments
   let fragments = {
     fragments
     |> list.map(
@@ -908,19 +796,18 @@ pub fn run_renderer(
     )
   }
 
-  // string fragments debug printing
   fragments
   |> list.each(fn(result) {
     case result {
       Error(_) -> Nil
       Ok(fr) -> {
-        case debug_options.printer_debug_options.echo_(fr) {
+        case debug_options.writer_debug_options.echo_(fr) {
           False -> Nil
           True -> {
-            let header = "----------------- printer_debug_options: " <> fr.path <> " -----------------"
+            let header = "────────────────── writer echo: " <> fr.path <> " ──────────────────"
             io.println(header)
             io.println(fr.payload)
-            io.println(star_block.dashes(string.length(header)))
+            io.println(pr.dashes(string.length(header)))
             io.println("")
 
           }
@@ -931,7 +818,6 @@ pub fn run_renderer(
 
   io.println("• writing string fragments to files")
 
-  // printing string fragments (list.map to record errors)
   let fragments =
     fragments
     |> list.map(fn(result) {
@@ -949,7 +835,8 @@ pub fn run_renderer(
       }
     })
 
-  // running prettifier (list.map to record erros)
+  // PRETTIFYING
+
   case prettifier_mode != PrettifierOff {
     True -> io.println("• prettifying")
     False -> Nil
@@ -976,7 +863,6 @@ pub fn run_renderer(
       }
     })
 
-  // prettified fragments debug printing
   fragments
   |> list.each(fn(result) {
     use fr <- on.error_ok(result, fn(_) { Nil })
@@ -994,13 +880,10 @@ pub fn run_renderer(
           },
         )
         io.println("")
-        let header =
-          "----------------- printer_debug_options: "
-          <> fr.path
-          <> " -----------------"
+        let header = "───────────── prettifier echo: " <> fr.path <> " ──────────────────"
         io.println(header)
         io.println(file_contents)
-        io.println(star_block.dashes(string.length(header)))
+        io.println(pr.dashes(string.length(header)))
         io.println("")
       }
     }
@@ -1009,7 +892,7 @@ pub fn run_renderer(
   case list.length(warnings) {
     0 -> Nil
     _ -> {
-      io.println("\n👉 " <> star_block.how_many("warning", "warnings", list.length(warnings)) <> ":")
+      io.println("\n👉 " <> pr.how_many("warning", "warnings", list.length(warnings)) <> ":")
     }
   }
 
@@ -1024,7 +907,7 @@ pub fn run_renderer(
         "  message:        " <> w.message,
         "",
       ]
-      |> boxed_error_announcer("🚨", 2, #(1, 0))
+      |> pr.boxed_error_announcer("🚨", 2, #(1, 0))
     }
   )
 
@@ -1057,7 +940,7 @@ fn take_strings_while_not_key(
   }
 }
 
-pub fn double_dash_keys(
+fn double_dash_keys(
   arguments: List(String),
 ) -> Result(List(#(String, List(String))), String) {
   case arguments {
@@ -1089,7 +972,7 @@ pub type CommandLineAmendments {
     only_paths: List(String),
     only_key_values: List(#(String, String, String)),
     prettier: Option(PrettifierMode),
-    track: Option(PipelineCliArgsModifier),
+    track: Option(PipelineTrackingModifier),
     table: Option(Bool),
     echo_assembled: Bool,
     vxml_fragments_local_paths_to_echo: Option(List(String)),
@@ -1237,9 +1120,9 @@ pub fn basic_cli_usage() {
   io.println("")
 }
 
-fn apply_show_changes_near_cli_args_to_pipeline(
+pub fn apply_pipeline_tracking_modifier(
   pipeline: Pipeline,
-  cli: PipelineCliArgsModifier,
+  mod: PipelineTrackingModifier,
 ) -> Pipeline {
   let num_steps = list.length(pipeline)
   let wraparound = fn(x: Int) {
@@ -1248,15 +1131,15 @@ fn apply_show_changes_near_cli_args_to_pipeline(
       False -> x
     }
   }
-  let restrict = list.map(cli.restrict_on_change_check_to_steps, wraparound)
-  let force = list.map(cli.force_output_at_steps, wraparound)
+  let restrict = list.map(mod.restrict_on_change_check_to_steps, wraparound)
+  let force = list.map(mod.force_output_at_steps, wraparound)
   let apply_to_all = restrict == [] && force == []
   case apply_to_all {
     True -> {
       list.map(
         pipeline,
         fn(pipe) {
-          #(TrackingOnChange, option.unwrap(cli.selector, pipe.1), pipe.2)
+          #(TrackingOnChange, option.unwrap(mod.selector, pipe.1), pipe.2)
         }
       )
     }
@@ -1270,7 +1153,7 @@ fn apply_show_changes_near_cli_args_to_pipeline(
           True, _ -> TrackingOnChange
           _, _ -> TrackingOff
         }
-        #(mode, option.unwrap(cli.selector, pipe.1), pipe.2)
+        #(mode, option.unwrap(mod.selector, pipe.1), pipe.2)
       })
     }
   }
@@ -1280,8 +1163,8 @@ pub type PlusMinusRange {
   PlusMinusRange(plus: Int, minus: Int)
 }
 
-pub type PipelineCliArgsModifier {
-  PipelineCliArgsModifier(
+pub type PipelineTrackingModifier {
+  PipelineTrackingModifier(
     selector: Option(infra.Selector),
     restrict_on_change_check_to_steps: List(Int),
     force_output_at_steps: List(Int),
@@ -1400,7 +1283,7 @@ fn parse_step_numbers(
 
 fn parse_track_args(
   values: List(String),
-) -> Result(PipelineCliArgsModifier, CommandLineError) {
+) -> Result(PipelineTrackingModifier, CommandLineError) {
   use first_payload, values <- on.empty_nonempty(
     values,
     Error(SelectorValues("missing 1st argument")),
@@ -1413,7 +1296,7 @@ fn parse_track_args(
   use second_payload, values <- on.empty_nonempty(
     values,
     Ok(
-      PipelineCliArgsModifier(
+      PipelineTrackingModifier(
         selector: Some(selector),
         restrict_on_change_check_to_steps: [],
         force_output_at_steps: [],
@@ -1437,7 +1320,7 @@ fn parse_track_args(
 
   use #(restrict, force) <- result.try(parse_step_numbers(values))
 
-  Ok(PipelineCliArgsModifier(
+  Ok(PipelineTrackingModifier(
     selector: Some(selector),
     restrict_on_change_check_to_steps: restrict,
     force_output_at_steps: force,
@@ -1446,9 +1329,9 @@ fn parse_track_args(
 
 fn parse_show_change_at_steps_args(
   values: List(String),
-) -> Result(PipelineCliArgsModifier, CommandLineError) {
+) -> Result(PipelineTrackingModifier, CommandLineError) {
   use #(restrict, force) <- result.try(parse_step_numbers(values))
-  Ok(PipelineCliArgsModifier(
+  Ok(PipelineTrackingModifier(
     selector: None,
     restrict_on_change_check_to_steps: restrict,
     force_output_at_steps: force,
@@ -1456,9 +1339,9 @@ fn parse_show_change_at_steps_args(
 }
 
 fn join_pipeline_modifiers(
-  pm1: Option(PipelineCliArgsModifier),
-  pm2: PipelineCliArgsModifier,
-) -> PipelineCliArgsModifier {
+  pm1: Option(PipelineTrackingModifier),
+  pm2: PipelineTrackingModifier,
+) -> PipelineTrackingModifier {
   use pm1 <- on.none_some(pm1, pm2)
   let #(restrict, force) =
     cleanup_step_numbers(
@@ -1468,7 +1351,7 @@ fn join_pipeline_modifiers(
         pm2.restrict_on_change_check_to_steps,
       ),
     )
-  PipelineCliArgsModifier(
+  PipelineTrackingModifier(
     selector: case pm1.selector, pm2.selector {
       Some(s1), Some(s2) -> Some(infra.or_selectors(s1, s2))
       _, _ -> option.or(pm1.selector, pm2.selector)
@@ -1557,7 +1440,7 @@ pub fn process_command_line_arguments(
             _ -> Error(UnexpectedArgumentsToOption("--prettier2"))
           }
 
-        "--echo-assembled-input" | "--echo-assembled" ->
+        "--echo-assembled" ->
           case list.is_empty(values) {
             True -> Ok(amendments |> amend_debug_assembled_input(True))
             False -> Error(UnexpectedArgumentsToOption(option))
@@ -1729,7 +1612,7 @@ pub fn amend_renderer_by_command_line_amendments(
     Some(cli) ->
       Renderer(
         ..renderer,
-        pipeline: apply_show_changes_near_cli_args_to_pipeline(
+        pipeline: apply_pipeline_tracking_modifier(
           renderer.pipeline,
           cli,
         ),
@@ -1756,7 +1639,7 @@ pub fn amend_renderer_debug_options_by_command_line_amendments(
       amendments,
     ),
     db_amend_printed_debug_options(
-      debug_options.printer_debug_options,
+      debug_options.writer_debug_options,
       amendments,
     ),
     db_amend_prettifier_debug_options(
@@ -1800,7 +1683,7 @@ pub fn default_renderer_debug_options() -> RendererDebugOptions(d) {
     parser_debug_options: empty_parser_debug_options(),
     splitter_debug_options: empty_splitter_debug_options(),
     emitter_debug_options: empty_emitter_debug_options(),
-    printer_debug_options: empty_writer_debug_options(),
+    writer_debug_options: empty_writer_debug_options(),
     prettifier_debug_options: empty_prettifier_debug_options(),
   )
 }

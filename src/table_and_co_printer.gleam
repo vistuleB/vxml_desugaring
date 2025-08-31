@@ -4,6 +4,7 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer}
+import blame.{type Blame} as bl
 import on
 
 pub fn dashes(num: Int) -> String { string.repeat("-", num) }
@@ -139,7 +140,7 @@ pub fn print_lines_at_indent(
 }
 
 // ************************
-// pipeline 'star block' printer
+// desugarer
 // ************************
 
 pub fn name_and_param_string(
@@ -218,4 +219,122 @@ pub fn strip_quotes(
     True -> string |> string.drop_start(1) |> string.drop_end(1)
     False -> string
   }
+}
+
+fn ddd_truncate(str: String, max_cols) -> String {
+  case string.length(str) > max_cols {
+    False -> str
+    True -> {
+      let excess = string.length(str) - max_cols
+      string.drop_end(str, excess + 3) <> "..."
+    }
+  }
+}
+
+fn desugarer_to_list_lines(
+  desugarer: Desugarer,
+  index: Int,
+  max_param_cols: Int,
+  max_outside_cols: Int,
+  none_string: String,
+) -> List(#(String, String, String, String)) {
+  let number = ins(index + 1) <> "."
+  let name = desugarer.name
+  let param_lines = case desugarer.stringified_param {
+    None -> [none_string]
+    Some(thing) ->
+      case string.split(thing, "\n") {
+        [] -> panic as "stringified param is empty string?"
+        lines -> lines |> list.map(ddd_truncate(_, max_param_cols))
+      }
+  }
+  let outside = case desugarer.stringified_outside {
+    None -> none_string
+    Some(thing) -> thing |> ddd_truncate(max_outside_cols)
+  }
+  list.index_map(param_lines, fn(p, i) {
+    case i == 0 {
+      True -> #(number, name, p, outside)
+      False -> #("", spaces(string.length(name)), p, "⋮")
+    }
+  })
+}
+
+pub fn print_pipeline(desugarers: List(Desugarer)) {
+  let none_string = "--"
+  let max_param_cols = 65
+  let max_outside_cols = 45
+
+  let lines =
+    desugarers
+    |> list.index_map(fn(d, i) {
+      desugarer_to_list_lines(
+        d,
+        i,
+        max_param_cols,
+        max_outside_cols,
+        none_string,
+      )
+    })
+    |> list.flatten
+
+  io.println("• pipeline:")
+
+  [#("#.", "name", "param", "outside"), ..lines]
+  |> four_column_table
+  |> print_lines_at_indent(2)
+}
+
+pub fn our_blame_digest(blame: Blame) -> String {
+  case bl.blame_digest(blame) {
+    "" -> "--"
+    s -> s
+  }
+}
+
+fn boxed_error_lines(
+  lines: List(String),
+  emoji: String,
+) -> List(String) {
+  let lengths = list.map(lines, string.length)
+  let max = list.fold(lengths, 0, fn(acc, n) { int.max(acc, n) }) + 2
+  let max = case max % 2 == 0 {
+    True -> max
+    False -> max + 1
+  }
+  [
+    [
+      string.repeat(emoji, 4 + max / 2),
+      string.repeat(emoji, 4 + max / 2),
+    ],
+    list.map(
+      list.zip(lines, lengths),
+      fn (pair) {
+        let #(line, line_length) = pair
+        emoji <> emoji <> line <> spaces(max - line_length) <> emoji <> emoji
+      }
+    ),
+    [
+      string.repeat(emoji, 4 + max / 2),
+      string.repeat(emoji, 4 + max / 2),
+    ],
+  ]
+  |> list.flatten
+}
+
+pub fn boxed_error_announcer(
+  lines: List(String),
+  emoji: String,
+  indent: Int,
+  lines_before_after: #(Int, Int)
+) -> Nil {
+  let margin = spaces(indent)
+  let lines =
+    lines
+    |> boxed_error_lines(emoji)
+    |> list.map(fn(l){margin <> l})
+    |> string.join("\n")
+  io.print(string.repeat("\n", lines_before_after.0))
+  io.println(lines)
+  io.print(string.repeat("\n", lines_before_after.1))
 }
