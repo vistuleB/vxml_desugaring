@@ -1701,6 +1701,17 @@ pub fn v_append_classes_if(
   }
 }
 
+pub fn v_assert_pop_attribute(vxml: VXML, key: String) -> #(VXML, BlamedAttribute) {
+  let assert V(b, t, a, c) = vxml
+  let assert #([unique_guy_with_key], other_guys) = list.partition(a, fn(b){ b.key == key })
+  #(V(b, t, other_guys, c), unique_guy_with_key)
+}
+
+pub fn v_assert_pop_attribute_value(vxml: VXML, key: String) -> #(VXML, String) {
+  let #(vxml, BlamedAttribute(_, _, value)) = v_assert_pop_attribute(vxml, key)
+  #(vxml, value)
+}
+
 // ************************************************************
 // BlamedAttribute
 // ************************************************************

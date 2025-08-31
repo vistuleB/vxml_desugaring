@@ -50,8 +50,8 @@ pub fn two_column_table(
   let padding = #(2, 2)
   let one_line = fn(cols: #(String, String)) -> String {
     "│ " <> cols.0 <> spaces(maxes.0 - string.length(cols.0) + padding.0) <>
-    "| " <> cols.1 <> spaces(maxes.1 - string.length(cols.1) + padding.1) <>
-    "|"
+    "│ " <> cols.1 <> spaces(maxes.1 - string.length(cols.1) + padding.1) <>
+    "│"
   }
   let sds = #(
     solid_dashes(maxes.0 + padding.0),
