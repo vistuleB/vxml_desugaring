@@ -3,7 +3,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import blame as bl
 
 fn nodemap(
@@ -13,7 +13,7 @@ fn nodemap(
 ) -> Result(VXML, DesugaringError) {
   case node, previous_unmapped_siblings {
     V(_, tag, attrs, _), [V(_, prev_tag, _, _), ..] if tag == inner.0 && prev_tag == inner.0 -> {
-      let new_attr = BlamedAttribute(desugarer_blame(16), inner.1, inner.2)
+      let new_attr = Attribute(desugarer_blame(16), inner.1, inner.2)
       Ok(V(..node, attributes: list.append(attrs, [new_attr])))
     }
     _, _ -> Ok(node)

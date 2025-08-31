@@ -3,11 +3,11 @@ import gleam/list
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{ type VXML, V, type BlamedAttribute, BlamedAttribute}
+import vxml.{ type VXML, V, type Attribute, Attribute}
 
 type State = Bool
 
-fn map_attribute(attr: BlamedAttribute, state: State, inner: InnerParam) -> BlamedAttribute {
+fn map_attribute(attr: Attribute, state: State, inner: InnerParam) -> Attribute {
   case attr.key {
     "handle" -> {
       case attr.value |> string.split_once(" ") {
@@ -20,7 +20,7 @@ fn map_attribute(attr: BlamedAttribute, state: State, inner: InnerParam) -> Blam
             True -> inner.2
             False -> inner.3
           }
-          BlamedAttribute(..attr, value: attr.value <> " " <> appended_value)
+          Attribute(..attr, value: attr.value <> " " <> appended_value)
         }
       }
     }

@@ -6,7 +6,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError, DesugaringWarning} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type Attribute, type Line, type VXML, Attribute, Line, T, V}
 import blame.{type Blame} as bl
 import on
 
@@ -43,14 +43,14 @@ fn hyperlink_constructor(
     False -> #(inner.2, inner.4)
   }
   let attrs = [
-    BlamedAttribute(blame, "href", target_path <> "#" <> id),
+    Attribute(blame, "href", target_path <> "#" <> id),
     ..attrs
   ]
   Ok(V(
     blame,
     tag,
     attrs,
-    [T(blame, [BlamedContent(blame, value)])],
+    [T(blame, [Line(blame, value)])],
   ))
 }
 
@@ -67,8 +67,8 @@ fn warning_element(
   V(
     desugarer_blame(67),
     "span",
-    [BlamedAttribute(desugarer_blame(69), "style", "color:red;background-color:yellow;")],
-    [T(desugarer_blame(70), [BlamedContent(desugarer_blame(70), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
+    [Attribute(desugarer_blame(69), "style", "color:red;background-color:yellow;")],
+    [T(desugarer_blame(70), [Line(desugarer_blame(70), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
   )
 }
 
@@ -164,7 +164,7 @@ fn split_2_t(
   split: String,
   blame: Blame,
 ) -> VXML {
-  T(blame, [BlamedContent(blame, split)])
+  T(blame, [Line(blame, split)])
 }
 
 fn splits_2_ts(
@@ -177,13 +177,13 @@ fn splits_2_ts(
   |> list.map(split_2_t(_, blame))
 }
 
-fn process_blamed_content(
-  blamed_content: BlamedContent,
+fn process_line(
+  line: Line,
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,
 ) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
-  let BlamedContent(blame, content) = blamed_content
+  let Line(blame, content) = line
   let matches = regexp.scan(handle_regexp, content)
   let splits = regexp.split(handle_regexp, content)
   use #(hyperlinks, warnings) <- result.try(
@@ -193,15 +193,15 @@ fn process_blamed_content(
   Ok(#(list.interleave([text_nodes, hyperlinks]), warnings))
 }
 
-fn process_blamed_contents(
-  contents: List(BlamedContent),
+fn process_lines(
+  contents: List(Line),
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,
 ) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
   use big_list <- result.try(
     contents
-    |> list.map(process_blamed_content(_, state, inner, handle_regexp))
+    |> list.map(process_line(_, state, inner, handle_regexp))
     |> result.all
   )
 
@@ -210,7 +210,7 @@ fn process_blamed_contents(
   let vxmls = 
     list_list_vxml
     |> list.flatten                          // you now have a list of t-nodes and of hyperlinks
-    |> infra.plain_concatenation_in_list     // adjacent t-nodes are wrapped into single t-node, with 1 blamed_content per old t-node (pre-concatenation)
+    |> infra.plain_concatenation_in_list     // adjacent t-nodes are wrapped into single t-node, with 1 line per old t-node (pre-concatenation)
 
   let warnings =
     list_list_warnings
@@ -221,7 +221,7 @@ fn process_blamed_contents(
 }
 
 fn get_handles_instances_from_grand_wrapper(
-  attributes: List(BlamedAttribute),
+  attributes: List(Attribute),
 ) -> HandlesDict {
   attributes
   |> list.fold(
@@ -251,7 +251,7 @@ fn update_path(
 ) -> State {
   let assert V(_, _, _, _) = vxml
   case infra.v_first_attribute_with_key(vxml, inner.0) {
-    Some(BlamedAttribute(_, _, value)) -> State(..state, path: Some(value))
+    Some(Attribute(_, _, value)) -> State(..state, path: Some(value))
     None -> state
   }
 }
@@ -289,7 +289,7 @@ fn t_transform(
 ) -> Result(#(List(VXML), State, List(DesugaringWarning)), DesugaringError) {
   let assert T(_, contents)  = vxml
   use #(updated_contents, warnings) <- result.try(
-    process_blamed_contents(
+    process_lines(
       contents,
       state,
       inner,
@@ -318,8 +318,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
     param.0,
     param.1,
     param.2,
-    param.3 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(320)),
-    param.4 |> infra.string_pairs_2_blamed_attributes(desugarer_blame(321)),
+    param.3 |> infra.string_pairs_2_attributes(desugarer_blame(320)),
+    param.4 |> infra.string_pairs_2_attributes(desugarer_blame(321)),
   )
   |> Ok
 }
@@ -330,7 +330,7 @@ type Param = #(String,            String,                 String,               
 //             to update the      when handle path        when handle path       pairs for former case      pairs for latter case
 //             local path         equals local path       !equals local path
 //                                at point of insertion   at point of insertion
-type InnerParam = #(String, String, String, List(BlamedAttribute), List(BlamedAttribute))
+type InnerParam = #(String, String, String, List(Attribute), List(Attribute))
 
 pub const name = "handles_substitute"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}

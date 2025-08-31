@@ -3,10 +3,10 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
+import vxml.{type Attribute, Attribute, type VXML, T, V}
 
-fn replacer(mister: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
-  BlamedAttribute(
+fn replacer(mister: Attribute, inner: InnerParam) -> Attribute {
+  Attribute(
     mister.blame,
     mister.key,
     list.fold(inner, mister.value, fn(current, pair) {

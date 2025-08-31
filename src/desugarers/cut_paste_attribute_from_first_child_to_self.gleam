@@ -3,14 +3,14 @@ import gleam/option.{type Option, Some, None}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, V, type BlamedAttribute}
+import vxml.{type VXML, V, type Attribute}
 import on
 
 /// return option of
 /// - attribute with key `key`
 /// - modified children (with removed attribute)
 fn check_first_child(children: List(VXML), key: String)
--> Option(#(BlamedAttribute, List(VXML))) {
+-> Option(#(Attribute, List(VXML))) {
   use first, rest <- on.empty_nonempty(children, None)
   use _, _, _, _ <- infra.on_t_on_v(first, fn(_, _){None})
   let assert V(_, _, attributes, _) = first

@@ -2,7 +2,7 @@ import gleam/list
 import gleam/option.{None}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V, BlamedAttribute}
+import vxml.{type VXML, T, V, Attribute}
 import blame as bl
 import on
 
@@ -48,7 +48,7 @@ fn nodemap(
 
             let final_attrs = case style_value {
               "" -> base_attrs
-              style_value -> list.append(base_attrs, [BlamedAttribute(desugarer_blame(0), "style", style_value)])
+              style_value -> list.append(base_attrs, [Attribute(desugarer_blame(0), "style", style_value)])
             }
 
             let img = V(blame, "img", final_attrs, [])

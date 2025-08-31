@@ -6,7 +6,7 @@ import gleam/result
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml.{type Line, type VXML, Line, T, V}
 
 type IgnoreWhen {
   IgnoreWhen(before: List(String), after: List(String))
@@ -115,10 +115,10 @@ fn look_for_opening_delimiter(
 }
 
 fn append_until_delimiter(
-  contents: List(BlamedContent),
-  output: List(BlamedContent),
+  contents: List(Line),
+  output: List(Line),
   dels_to_ignore: List(Delimiter),
-) -> #(List(BlamedContent), List(BlamedContent)) {
+) -> #(List(Line), List(Line)) {
   case contents {
     [] -> #(output, [])
     [first, ..rest] -> {
@@ -144,7 +144,7 @@ fn append_until_delimiter(
 
 fn split_delimiters(
   blame: Blame,
-  contents: List(BlamedContent),
+  contents: List(Line),
   dels_to_ignore: List(Delimiter),
 ) -> Result(List(VXML), DesugaringError) {
   case contents {
@@ -165,13 +165,13 @@ fn split_delimiters(
             look_for_closing_delimiter(rest_of_str, del)
 
           let blamed_line_for_string_before_delimiter =
-            BlamedContent(first.blame, before_del_str)
+            Line(first.blame, before_del_str)
 
           let blamed_line_for_rest_of_string =
-            BlamedContent(first.blame, rest_of_str)
+            Line(first.blame, rest_of_str)
 
           let blamed_line_for_del_content =
-            BlamedContent(first.blame, del_content)
+            Line(first.blame, del_content)
 
           use nested_delimiters_vxml <- result.try(
             nodemap(

@@ -2,7 +2,7 @@ import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{ type VXML, BlamedContent, T, V, BlamedAttribute}
+import vxml.{ type VXML, Line, T, V, Attribute}
 import blame as bl
 
 fn nodemap(
@@ -12,11 +12,11 @@ fn nodemap(
   case vxml {
     V(_, tag, _, children) if tag == inner.0 -> {
       case infra.v_first_attribute_with_key(vxml, inner.1) {
-        Some(BlamedAttribute(_, _, value)) if value != "" ->
+        Some(Attribute(_, _, value)) if value != "" ->
           V(..vxml, children: [
             T(
               desugarer_blame(18),
-              [BlamedContent(desugarer_blame(19), value)]
+              [Line(desugarer_blame(19), value)]
             ),
             ..children
           ])

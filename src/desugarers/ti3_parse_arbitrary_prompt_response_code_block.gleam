@@ -4,15 +4,15 @@ import gleam/string
 import gleam/result
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type Line, type VXML, Attribute, Line, T, V}
 import blame as bl
 
 const newline_t =
   T(
     bl.Des([], name, 12),
     [
-      BlamedContent(bl.Des([], name, 14), ""),
-      BlamedContent(bl.Des([], name, 15), ""),
+      Line(bl.Des([], name, 14), ""),
+      Line(bl.Des([], name, 15), ""),
     ]
   )
 
@@ -22,7 +22,7 @@ const prompt =
   V(
     bl.Des([], name, 22),
     "span",
-    [BlamedAttribute(bl.Des([], name, 18), "class", "arbitrary-prompt")],
+    [Attribute(bl.Des([], name, 18), "class", "arbitrary-prompt")],
     [],
   )
 
@@ -30,7 +30,7 @@ const terminal_prompt_span =
   V(
     bl.Des([], name, 31),
     "span",
-    [BlamedAttribute(bl.Des([], name, 18), "class", "terminal-prompt")],
+    [Attribute(bl.Des([], name, 18), "class", "terminal-prompt")],
     [],
   )
 
@@ -38,15 +38,15 @@ const response =
   V(
     bl.Des([], name, 30),
     "span",
-    [BlamedAttribute(bl.Des([], name, 18), "class", "arbitrary-response")],
+    [Attribute(bl.Des([], name, 18), "class", "arbitrary-response")],
     [],
   )
 
-fn blamed_content_2_t(line: BlamedContent) -> VXML {
+fn line_2_t(line: Line) -> VXML {
   T(line.blame, [line])
 }
 
-fn elements_for_line(line: BlamedContent) -> List(VXML) {
+fn elements_for_line(line: Line) -> List(VXML) {
   let #(before, after) = 
     string.split_once(line.content, "<- ")
     |> result.unwrap(
@@ -57,15 +57,15 @@ fn elements_for_line(line: BlamedContent) -> List(VXML) {
     )
   let after_blame = bl.advance(line.blame, string.length(before) + 2)
   let prompt = case before == terminal_prompt {
-    False -> prompt |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(line.blame, before)))
-    True -> terminal_prompt_span |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(line.blame, before)))
+    False -> prompt |> infra.v_prepend_child(line_2_t(Line(line.blame, before)))
+    True -> terminal_prompt_span |> infra.v_prepend_child(line_2_t(Line(line.blame, before)))
   }
-  let response = response |> infra.v_prepend_child(blamed_content_2_t(BlamedContent(after_blame, after)))
+  let response = response |> infra.v_prepend_child(line_2_t(Line(after_blame, after)))
   [prompt, response]
 }
 
 fn process_lines(
-  lines: List(BlamedContent),
+  lines: List(Line),
 ) -> List(VXML) {
   lines
   |> list.fold([], fn(acc, line) {[elements_for_line(line), ..acc]})
@@ -83,7 +83,7 @@ fn nodemap(
         True -> V(
           blame,
           "pre",
-          [BlamedAttribute(desugarer_blame(86), "class", "well highlight")],
+          [Attribute(desugarer_blame(86), "class", "well highlight")],
           process_lines(lines),
         )
         _ -> vxml

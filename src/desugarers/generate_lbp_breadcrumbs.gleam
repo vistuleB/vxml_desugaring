@@ -3,7 +3,7 @@ import gleam/result
 import gleam/list
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import gleam/option
-import vxml.{type VXML, V, T, BlamedContent, BlamedAttribute}
+import vxml.{type VXML, V, T, Line, Attribute}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 import on
@@ -35,7 +35,7 @@ fn remove_period(nodes: List(VXML)) -> List(VXML) {
 fn lowercase_t(t: VXML) -> VXML{
   let assert T(b, contents) = t
   contents
-  |> list.map(fn(bc) { BlamedContent(..bc, content: string.lowercase(bc.content)) })
+  |> list.map(fn(bc) { Line(..bc, content: string.lowercase(bc.content)) })
   |> T(b, _)
 }
 
@@ -61,12 +61,12 @@ fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> 
   V(
     desugarer_blame(59),
     "BreadcrumbItem",
-    [BlamedAttribute(desugarer_blame(61), "id", "breadcrumb-" <> ins(index))],
+    [Attribute(desugarer_blame(61), "id", "breadcrumb-" <> ins(index))],
     [
       V(
         desugarer_blame(64),
         "InChapterLink",
-        [BlamedAttribute(desugarer_blame(66), "href", "?id=" <> target_id)],
+        [Attribute(desugarer_blame(66), "href", "?id=" <> target_id)],
         children |> cleanup_children,
       ),
     ]
@@ -94,7 +94,7 @@ fn generate_sections_list(
     [one] -> {
       [
         construct_breadcrumb(
-          [T(one.blame, [BlamedContent(one.blame, "exercises")])],
+          [T(one.blame, [Line(one.blame, "exercises")])],
           "exercises",
           list.length(sections_nodes)
         )

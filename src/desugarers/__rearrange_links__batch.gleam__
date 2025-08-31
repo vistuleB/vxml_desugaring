@@ -8,7 +8,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type VXML, Attribute, Line, T, V}
 import xmlm
 
 type LinkPatternToken {
@@ -38,7 +38,7 @@ fn word_to_node(blame: Blame, word: String) {
   V(
     blame,
     "__OneWord",
-    [BlamedAttribute(infra.blame_us("..."), "val", word)],
+    [Attribute(infra.blame_us("..."), "val", word)],
     [],
   )
 }
@@ -57,13 +57,13 @@ fn end_node(blame: Blame) {
 
 fn deatomize_vxmls(
   vxmls: List(VXML),
-  accumulated_contents: List(vxml.BlamedContent),
+  accumulated_contents: List(vxml.Line),
   accumulated_nodes: List(VXML)
 ) -> List(VXML) {
-  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.BlamedContent) {
+  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.Line) {
     case accumulated_contents {
-      [first, ..rest] -> [BlamedContent(first.blame, first.content <> word), ..rest]
-      _ -> [BlamedContent(blame, word)]
+      [first, ..rest] -> [Line(first.blame, first.content <> word), ..rest]
+      _ -> [Line(blame, word)]
     }
   }
 
@@ -76,7 +76,7 @@ fn deatomize_vxmls(
     [first, ..rest] -> {
       case first {
         V(blame, "__OneWord", attributes, _) -> {
-          let assert [BlamedAttribute(_, "val", word)] = attributes
+          let assert [Attribute(_, "val", word)] = attributes
           let accumulated_contents = append_word_to_accumlated_contents(blame, word)
           deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
         }
@@ -88,8 +88,8 @@ fn deatomize_vxmls(
 
         V(blame, "__OneNewLine", _, _) -> {
           let accumulated_contents = case accumulated_contents {
-            [] -> [BlamedContent(blame, ""), BlamedContent(blame, "")]
-            _ -> [BlamedContent(blame, ""), ..accumulated_contents]
+            [] -> [Line(blame, ""), Line(blame, "")]
+            _ -> [Line(blame, ""), ..accumulated_contents]
           }
           deatomize_vxmls(rest, accumulated_contents, accumulated_nodes)
         }
@@ -372,17 +372,17 @@ fn match_until_end(
 }
 
 fn atomize_text_node(vxml: VXML) -> List(VXML) {
-  let assert T(blame, blamed_contents) = vxml
-  blamed_contents
-  |> list.map(fn(blamed_content) {
-    blamed_content.content
+  let assert T(blame, lines) = vxml
+  lines
+  |> list.map(fn(line) {
+    line.content
     |> string.split(" ")
-    |> list.map(fn(word) { word_to_node(blamed_content.blame, word) })
-    |> list.intersperse(space_node(blamed_content.blame))
+    |> list.map(fn(word) { word_to_node(line.blame, word) })
+    |> list.intersperse(space_node(line.blame))
     |> list.filter(fn(node) {
       case node {
         V(_, "__OneWord", attr, _) -> {
-          let assert [BlamedAttribute(_, "val", word)] = attr
+          let assert [Attribute(_, "val", word)] = attr
           !{ word |> string.is_empty }
         }
         _ -> True

@@ -4,7 +4,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, V, T, BlamedContent}
+import vxml.{type VXML, V, T, Line}
 import blame as bl
 
 fn nodemap(
@@ -17,7 +17,7 @@ fn nodemap(
       case dict.get(inner, tag) {
         Error(Nil) -> Ok(vxml)
         Ok(#(new_tag, text, new_attrs)) -> {
-          let text_node = T(blame, [BlamedContent(blame, text)])
+          let text_node = T(blame, [Line(blame, text)])
           let attrs = list.append(attrs, new_attrs)
           Ok(V(blame, new_tag, attrs, [text_node, ..children]))
         }
@@ -40,7 +40,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       let #(old_tag, new_tag, text, attrs) = renaming
       let attrs_converted = list.map(attrs, fn(attr) {
         let #(key, value) = attr
-        vxml.BlamedAttribute(desugarer_blame(43), key, value)
+        vxml.Attribute(desugarer_blame(43), key, value)
       })
       #(old_tag, #(new_tag, text, attrs_converted))
     })
@@ -54,7 +54,7 @@ type Param =
 //       old_tag new_tag  text   list of attributes as key value pairs
 
 type InnerParam =
-  Dict(String, #(String, String, List(vxml.BlamedAttribute)))
+  Dict(String, #(String, String, List(vxml.Attribute)))
 
 pub const name = "rename_with_appended_attributes_and_prepended_text"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}

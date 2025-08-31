@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import on
 
 fn nodemap(
@@ -35,7 +35,7 @@ fn nodemap(
         let #(key, value) = pair
         case list.contains(old_attribute_keys, key) {
           True -> so_far
-          False -> [BlamedAttribute(blame, key, value), ..so_far]
+          False -> [Attribute(blame, key, value), ..so_far]
         }
       }
     )

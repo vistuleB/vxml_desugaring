@@ -5,12 +5,12 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, T, V}
+import vxml.{type Attribute, Attribute, type VXML, T, V}
 
 fn lookup_attributes_by_key(
-  in: List(BlamedAttribute),
+  in: List(Attribute),
   key: String,
-) -> Result(#(BlamedAttribute, List(BlamedAttribute)), Nil) {
+) -> Result(#(Attribute, List(Attribute)), Nil) {
   let #(matches, non_matches) = list.partition(in, fn(b) { b.key == key })
   let assert True = list.length(matches) <= 1
   case matches {
@@ -28,10 +28,10 @@ fn maybe_semicolon(thing: String) -> String {
 }
 
 fn merge_one_attribute(
-  attrs: List(BlamedAttribute),
-  to_merge: BlamedAttribute,
-) -> Result(List(BlamedAttribute), DesugaringError) {
-  let BlamedAttribute(blame, key, value) = to_merge
+  attrs: List(Attribute),
+  to_merge: Attribute,
+) -> Result(List(Attribute), DesugaringError) {
+  let Attribute(blame, key, value) = to_merge
   let res = lookup_attributes_by_key(attrs, key)
   case res {
     Error(Nil) -> Ok([to_merge, ..attrs])
@@ -48,7 +48,7 @@ fn merge_one_attribute(
           ))
         True ->
           Ok([
-            BlamedAttribute(
+            Attribute(
               existing.blame |> bl.append_comment(blame |> ins),
               "style",
               existing.value <> maybe_semicolon(existing.value) <> value,
@@ -61,13 +61,13 @@ fn merge_one_attribute(
 }
 
 fn merge_attributes(
-  attrs1: List(BlamedAttribute),
-  attrs2: List(BlamedAttribute),
-) -> Result(List(BlamedAttribute), DesugaringError) {
-  list.fold(attrs1, Ok(attrs2), fn(attrs, blamed_attribute) {
+  attrs1: List(Attribute),
+  attrs2: List(Attribute),
+) -> Result(List(Attribute), DesugaringError) {
+  list.fold(attrs1, Ok(attrs2), fn(attrs, attribute) {
     case attrs {
       Error(e) -> Error(e)
-      Ok(attrs) -> merge_one_attribute(attrs, blamed_attribute)
+      Ok(attrs) -> merge_one_attribute(attrs, attribute)
     }
   })
 }

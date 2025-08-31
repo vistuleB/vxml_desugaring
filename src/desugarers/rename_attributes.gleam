@@ -3,11 +3,11 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V, type BlamedAttribute, BlamedAttribute}
+import vxml.{type VXML, T, V, type Attribute, Attribute}
 
-fn rename_maybe(attr: BlamedAttribute, inner: InnerParam) -> BlamedAttribute {
+fn rename_maybe(attr: Attribute, inner: InnerParam) -> Attribute {
   case infra.use_list_pair_as_dict(inner, attr.key) {
-    Ok(key) -> BlamedAttribute(..attr, key: key)
+    Ok(key) -> Attribute(..attr, key: key)
     Error(_) -> attr
   }
 }

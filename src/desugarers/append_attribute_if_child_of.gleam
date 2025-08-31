@@ -3,7 +3,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import blame as bl
 
 fn child_mapper(
@@ -18,7 +18,7 @@ fn child_mapper(
           True -> attributes
           False -> list.append(
             attributes,
-            [BlamedAttribute(desugarer_blame(21), inner.2, inner.3)],
+            [Attribute(desugarer_blame(21), inner.2, inner.3)],
           )
         }
       V(..vxml, attributes: attributes)

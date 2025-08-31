@@ -2,10 +2,10 @@ import gleam/list
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V, type BlamedAttribute, BlamedAttribute}
+import vxml.{type VXML, T, V, type Attribute, Attribute}
 
-fn rename_attribute_key(attr: BlamedAttribute, transform_fn: fn(String) -> String) -> BlamedAttribute {
-  BlamedAttribute(..attr, key: transform_fn(attr.key))
+fn rename_attribute_key(attr: Attribute, transform_fn: fn(String) -> String) -> Attribute {
+  Attribute(..attr, key: transform_fn(attr.key))
 }
 
 fn nodemap(

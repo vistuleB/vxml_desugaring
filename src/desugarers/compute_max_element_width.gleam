@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugarerTransform} as infra
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, Attribute, T, V}
 import nodemaps_2_desugarer_transforms as n2t
 import on
 
@@ -45,7 +45,7 @@ fn v_after_transforming_children(
         V(
           ..node,
           attributes: [
-            BlamedAttribute(node.blame, "max-element-width", ins(state)),
+            Attribute(node.blame, "max-element-width", ins(state)),
             ..node.attributes
           ]
         ),

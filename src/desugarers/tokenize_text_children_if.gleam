@@ -3,7 +3,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V, T}
+import vxml.{type VXML, Attribute, V, T}
 import blame.{type Blame} as bl
 
 fn start_node(blame: Blame) {
@@ -11,7 +11,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame(14), "val", word)], [])
+  V(blame, "__OneWord", [Attribute(desugarer_blame(14), "val", word)], [])
 }
 
 fn space_node(blame: Blame) {
@@ -50,17 +50,17 @@ fn tokenize_string_acc(
 }
 
 fn tokenize_t(vxml: VXML) -> List(VXML) {
-  let assert T(blame, blamed_contents) = vxml
-  blamed_contents
-  |> list.index_map(fn(blamed_content, i) {
+  let assert T(blame, lines) = vxml
+  lines
+  |> list.index_map(fn(line, i) {
     tokenize_string_acc(
       [],
-      blamed_content.blame,
-      blamed_content.content,
+      line.blame,
+      line.content,
     )
     |> list.prepend(case i == 0 {
-      True -> start_node(blamed_content.blame)
-      False -> newline_node(blamed_content.blame)
+      True -> start_node(line.blame)
+      False -> newline_node(line.blame)
     })
   })
   |> list.flatten

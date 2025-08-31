@@ -3,7 +3,7 @@ import gleam/option.{type Option, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 import on
@@ -37,8 +37,8 @@ fn chapter_link(
       blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(desugarer_blame(39), "article_type", ins(count)),
-        BlamedAttribute(desugarer_blame(40), "href", tp <> ins(count)),
+        Attribute(desugarer_blame(39), "article_type", ins(count)),
+        Attribute(desugarer_blame(40), "href", tp <> ins(count)),
       ],
       title_element.children,
     ),
@@ -52,7 +52,7 @@ fn type_of_chapters_title(
   V(
     desugarer_blame(52),
     type_of_chapters_title_component_name,
-    [BlamedAttribute(desugarer_blame(54), "label", label)],
+    [Attribute(desugarer_blame(54), "label", label)],
     [],
   )
 }
@@ -67,7 +67,7 @@ fn div_with_id_title_and_menu_items(
     desugarer_blame(66),
     "div",
     [
-      BlamedAttribute(desugarer_blame(69), "id", id)
+      Attribute(desugarer_blame(69), "id", id)
     ], 
     [
       type_of_chapters_title(type_of_chapters_title_component_name, title_label),

@@ -24,7 +24,7 @@ fn nodemap(
         |> list.map(fn(att) {
           case att.key {
             "href" ->
-              vxml.BlamedAttribute(
+              vxml.Attribute(
                 att.blame,
                 "href",
                 att.value

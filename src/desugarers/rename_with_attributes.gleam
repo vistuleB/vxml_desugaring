@@ -40,7 +40,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
       let #(old_tag, new_tag, attrs) = renaming
       let attrs_converted = list.map(attrs, fn(attr) {
         let #(key, value) = attr
-        vxml.BlamedAttribute(desugarer_blame(43), key, value)
+        vxml.Attribute(desugarer_blame(43), key, value)
       })
       #(old_tag, #(new_tag, attrs_converted))
     })
@@ -54,7 +54,7 @@ type Param =
 //       old_tag new_tag list of attributes as key value pairs
 
 type InnerParam =
-  Dict(String, #(String, List(vxml.BlamedAttribute)))
+  Dict(String, #(String, List(vxml.Attribute)))
 
 pub const name = "rename_with_attributes"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}

@@ -5,7 +5,7 @@ import gleam/result
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, type VXML, BlamedAttribute, V}
+import vxml.{type Attribute, type VXML, Attribute, V}
 import blame.{type Blame} as bl
 import on
 
@@ -24,13 +24,13 @@ type State {
 
 fn convert_handles_to_attributes(
   handles: HandlesDict,
-) -> List(BlamedAttribute) {
+) -> List(Attribute) {
   list.map2(
     dict.keys(handles),
     dict.values(handles),
     fn (key, values) {
       let #(value, id, filename) = values
-      BlamedAttribute(
+      Attribute(
         blame: desugarer_blame(33),
         key: "handle",
         value: key <> "|" <> value <> "|" <> id <> "|" <> filename,
@@ -54,8 +54,8 @@ fn check_handle_already_defined(
   }
 }
 
-type HandleBlamedAttributeInfo {
-  HandleBlamedAttributeInfo(
+type HandleAttributeInfo {
+  HandleAttributeInfo(
     handle_name: String,
     id: String,
     value: String,
@@ -63,9 +63,9 @@ type HandleBlamedAttributeInfo {
   )
 }
 
-fn extract_handles_blamed_attribute_infos(
-  attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), List(HandleBlamedAttributeInfo)) {
+fn extract_handles_attribute_infos(
+  attributes: List(Attribute),
+) -> #(List(Attribute), List(HandleAttributeInfo)) {
   let #(handle_attributes, other_attributes) =
     attributes
     |> list.partition(fn(att){att.key == "handle"})
@@ -74,7 +74,7 @@ fn extract_handles_blamed_attribute_infos(
     handle_attributes
     |> list.map(fn(att) {
       let assert [handle_name, value, id] = string.split(att.value, "|")
-      HandleBlamedAttributeInfo(
+      HandleAttributeInfo(
         handle_name: handle_name,
         id: id,
         value: value,
@@ -87,7 +87,7 @@ fn extract_handles_blamed_attribute_infos(
 
 fn update_handles(
   state: State,
-  handle_infos: List(HandleBlamedAttributeInfo),
+  handle_infos: List(HandleAttributeInfo),
   inner: InnerParam,
 ) -> Result(State, DesugaringError) {
   use first, _ <- on.empty_nonempty(
@@ -123,7 +123,7 @@ fn update_path(
 ) -> State {
   let assert V(_, _, _, _) = node
   case infra.v_first_attribute_with_key(node, inner) {
-    Some(BlamedAttribute(_, _, value)) -> State(..state, path: Some(value))
+    Some(Attribute(_, _, value)) -> State(..state, path: Some(value))
     None -> state
   }
 }
@@ -141,7 +141,7 @@ fn v_before_transforming_children(
   inner: InnerParam,
 ) -> Result(#(VXML, State), DesugaringError) {
   let assert V(b, t, attributes, c) = vxml
-  let #(attributes, handle_infos) = extract_handles_blamed_attribute_infos(attributes)
+  let #(attributes, handle_infos) = extract_handles_attribute_infos(attributes)
   let state = update_path(state, vxml, inner)
   use state <- result.try(update_handles(state, handle_infos, inner))
   Ok(#(V(b, t, attributes, c), state))

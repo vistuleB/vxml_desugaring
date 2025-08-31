@@ -5,7 +5,7 @@ import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 
 fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
   case children {
@@ -20,7 +20,7 @@ fn add_in_list(children: List(VXML), inner: InnerParam) -> List(VXML) {
               blame,
               new_element_tag,
               list.map(new_element_attributes, fn(pair) {
-                BlamedAttribute(blame, pair |> pair.first, pair |> pair.second)
+                Attribute(blame, pair |> pair.first, pair |> pair.second)
               }),
               [],
             ),

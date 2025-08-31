@@ -3,12 +3,12 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, V, type BlamedAttribute}
+import vxml.{type VXML, V, type Attribute}
 
 fn update_child(
   child: VXML,
   child_tag: String,
-  attribute: BlamedAttribute,
+  attribute: Attribute,
 ) -> VXML {
   case child {
     V(_, tag, _, _) if tag == child_tag ->

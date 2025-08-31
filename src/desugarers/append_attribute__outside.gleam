@@ -3,7 +3,7 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight, Continue, GoBack} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, BlamedAttribute, type VXML, V}
+import vxml.{type Attribute, Attribute, type VXML, V}
 import blame as bl
 
 fn nodemap(
@@ -36,7 +36,7 @@ fn transform_factory(
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
   #(
     param.0,
-    BlamedAttribute(
+    Attribute(
       desugarer_blame(40),
       param.1,
       param.2,
@@ -48,7 +48,7 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = #(String, String, String)
 //             ↖       ↖       ↖
 //             tag     attr    value
-type InnerParam = #(String, BlamedAttribute)
+type InnerParam = #(String, Attribute)
 
 pub const name = "append_attribute__outside"
 fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}

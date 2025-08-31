@@ -7,7 +7,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type VXML, Attribute, Line, T, V}
 import on
 
 fn prepend_0(number: String) {
@@ -74,7 +74,7 @@ fn chapter_link(
       T(
         desugarer_blame(74),
         [
-          BlamedContent(
+          Line(
             desugarer_blame(77),
             chapter_number <> "." <> ins(section_index) <> " - ",
           ),
@@ -87,10 +87,10 @@ fn chapter_link(
       item_blame,
       "a",
       [
-        BlamedAttribute(desugarer_blame(89), "href", link)
+        Attribute(desugarer_blame(89), "href", link)
       ],
       [
-        T(item_blame, [BlamedContent(item_blame, label_attr.value)]),
+        T(item_blame, [Line(item_blame, label_attr.value)]),
       ]
     )
 
@@ -99,7 +99,7 @@ fn chapter_link(
     on.true_false(sub_chapter_number == "0", "0", fn() { "40px" })
 
   let style_attr =
-    BlamedAttribute(desugarer_blame(101), "style", "margin-left: " <> margin_left)
+    Attribute(desugarer_blame(101), "style", "margin-left: " <> margin_left)
 
   Ok(V(item_blame, chapter_link_component_name, [style_attr], [number_span, a]))
 }
@@ -128,11 +128,11 @@ fn get_section_index(item: VXML, count: Int) -> Result(Int, DesugaringError) {
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(desugarer_blame(130), "div", [BlamedAttribute(desugarer_blame(130), "id", id)], [
+  V(desugarer_blame(130), "div", [Attribute(desugarer_blame(130), "id", id)], [
     V(
       desugarer_blame(132),
       "ul",
-      [BlamedAttribute(desugarer_blame(134), "style", "list-style: none")],
+      [Attribute(desugarer_blame(134), "style", "list-style: none")],
       menu_items,
     ),
   ])

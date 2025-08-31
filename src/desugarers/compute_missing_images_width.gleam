@@ -6,7 +6,7 @@ import gleam/int
 import gleam/option.{Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugarerTransform} as infra
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import gleam/regexp
 import nodemaps_2_desugarer_transforms as n2t
 import ansel/image.{read, get_width}
@@ -93,7 +93,7 @@ fn nodemap(
         )
        
         use width <- result.try(get_image_width(attr.blame, "../../../MrChaker/little-bo-peep-solid/public" <> attr.value))
-        Ok(V(..node, attributes: [BlamedAttribute(blame, "width", ins(width) <> "px"), ..attributes]))
+        Ok(V(..node, attributes: [Attribute(blame, "width", ins(width) <> "px"), ..attributes]))
       }
     _ -> Ok(node)
   }

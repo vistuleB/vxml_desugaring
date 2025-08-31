@@ -3,11 +3,11 @@ import gleam/list
 import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, DesugaringError, type DesugaringWarning} as infra
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import nodemaps_2_desugarer_transforms as n2t
 
 fn prepend_link(vxml: VXML, link_value: String, link_key: String) -> VXML {
-  infra.v_prepend_attribute(vxml, BlamedAttribute(vxml.blame, link_key, link_value))
+  infra.v_prepend_attribute(vxml, Attribute(vxml.blame, link_key, link_value))
 }
 
 fn add_links_to_chapter(vxml: VXML, number: Int, num_chapters: Int) -> VXML {

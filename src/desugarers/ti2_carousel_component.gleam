@@ -32,7 +32,7 @@ fn nodemap(
       // get only images from children
       let images = infra.descendants_with_tag(vxml, "img")
       let attributes = case infra.v_has_key_value(vxml, "id", "cyk-demo") {
-        True -> [vxml.BlamedAttribute(blame, "jumpToLast", "true")]
+        True -> [vxml.Attribute(blame, "jumpToLast", "true")]
         False -> []
       }
       let carousel_node = V(blame, "Carousel", attributes, images)

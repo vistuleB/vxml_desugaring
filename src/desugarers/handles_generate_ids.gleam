@@ -4,7 +4,7 @@ import gleam/option.{Some, None}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, Attribute, T, V}
 import on
 
 fn ensure_has_id_attribute(
@@ -18,7 +18,7 @@ fn ensure_has_id_attribute(
       let id = "_" <> ins(counter) <> "_hgi_"
       let attributes = list.append(
         vxml.attributes,
-        [BlamedAttribute(vxml.blame, "id", id)]
+        [Attribute(vxml.blame, "id", id)]
       )
       #(V(..vxml, attributes: attributes), counter, id)
     }
@@ -69,7 +69,7 @@ fn nodemap(
                     Error(_) -> Ok(#(att.value, ""))
                   }
                 )
-                Ok(BlamedAttribute(..att, value: handle_name <> "|" <> handle_value <> "|" <> id))
+                Ok(Attribute(..att, value: handle_name <> "|" <> handle_value <> "|" <> id))
               }
             }
           }

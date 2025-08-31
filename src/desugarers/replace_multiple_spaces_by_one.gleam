@@ -17,7 +17,7 @@ fn nodemap(
             True -> {
               let new_line = " " <> first.content |> string.trim_start()
               T(blame, [
-                vxml.BlamedContent(first.blame, new_line),
+                vxml.Line(first.blame, new_line),
                 ..list.drop(lines, 1)
               ])
             }

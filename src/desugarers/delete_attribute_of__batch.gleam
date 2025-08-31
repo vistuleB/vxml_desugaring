@@ -18,8 +18,8 @@ fn nodemap(
           Ok(V(
             blame,
             tag,
-            list.filter(attributes, fn(blamed_attribute) {
-              !list.contains(attributes_to_remove, blamed_attribute.key)
+            list.filter(attributes, fn(attribute) {
+              !list.contains(attributes_to_remove, attribute.key)
             }),
             children,
           ))

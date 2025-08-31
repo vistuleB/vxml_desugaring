@@ -4,7 +4,7 @@ import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type TrafficLight} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, T, V}
+import vxml.{type VXML, Attribute, T, V}
 
 fn nodemap(
   vxml: VXML,
@@ -32,13 +32,13 @@ fn nodemap(
             |> list.index_map(fn(counter_name, index) {
               case index == 0 {
                 True ->
-                  BlamedAttribute(
+                  Attribute(
                     blame,
                     ".",
                     counter_name <> " " <> handles_str <> "::++" <> counter_name,
                   )
                 False ->
-                  BlamedAttribute(
+                  Attribute(
                     blame,
                     ".",
                     counter_name <> " " <> "::++" <> counter_name,

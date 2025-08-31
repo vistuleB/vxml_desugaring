@@ -7,30 +7,30 @@ import infrastructure.{
   DesugaringError, Pipe,
 } as infra
 import vxml.{
-  type BlamedAttribute, type VXML, BlamedAttribute, BlamedContent, T, V,
+  type Attribute, type VXML, Attribute, Line, T, V,
 }
 
 fn filter_out_handle_attributes(
-  attributes: List(BlamedAttribute),
-) -> #(List(BlamedAttribute), List(BlamedAttribute)) {
+  attributes: List(Attribute),
+) -> #(List(Attribute), List(Attribute)) {
 
   list.fold(
     over: attributes,
     from: #([], []),
-    with: fn(pairs, blamed_attribute) {
+    with: fn(pairs, attribute) {
       let #(current_attrs, current_handles) = pairs
-      let BlamedAttribute(_, key, _) = blamed_attribute
+      let Attribute(_, key, _) = attribute
 
       case key == "handle" {
-        True -> #(current_attrs, [blamed_attribute, ..current_handles])
-        False -> #([blamed_attribute, ..current_attrs], current_handles)
+        True -> #(current_attrs, [attribute, ..current_handles])
+        False -> #([attribute, ..current_attrs], current_handles)
       }
     },
   )
 }
 
-fn attribute_value(blamed_attribute: BlamedAttribute) -> String {
-  let BlamedAttribute(_, _, value) = blamed_attribute
+fn attribute_value(attribute: Attribute) -> String {
+  let Attribute(_, _, value) = attribute
   value
 }
 
@@ -40,12 +40,12 @@ fn counter_attributes_for_node(
   tuples: List(ManyStrings),
 ) {
   list.fold(over: tuples, from: [], with: fn(attributes_so_far, tuple) -> List(
-    BlamedAttribute,
+    Attribute,
   ) {
     let #(parent, counter_name, _, _, _, _) = tuple
     case parent == tag {
       True -> [
-        BlamedAttribute(blame, "counter", counter_name),
+        Attribute(blame, "counter", counter_name),
         ..attributes_so_far
       ]
       False -> attributes_so_far
@@ -131,7 +131,7 @@ fn param_transform(
             False -> {
               let attributes_v3 = list.append(attributes_v2, handle_attributes)
               let text_node_to_insert =
-                T(blame, [BlamedContent(blame, fallback)])
+                T(blame, [Line(blame, fallback)])
               Ok(
                 V(blame, tag, attributes_v3, [text_node_to_insert, ..children]),
               )
@@ -152,7 +152,7 @@ fn param_transform(
               }
               let text_node_to_insert =
                 T(blame, [
-                  BlamedContent(
+                  Line(
                     blame,
                     pre
                       <> handle_assignments_string

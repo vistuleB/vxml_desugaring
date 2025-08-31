@@ -7,7 +7,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V, BlamedAttribute}
+import vxml.{type VXML, T, V, Attribute}
 import xmlm
 import blame.{type Blame} as bl
 import on
@@ -282,7 +282,7 @@ fn start_node(blame: Blame) {
 }
 
 fn word_node(blame: Blame, word: String) {
-  V(blame, "__OneWord", [BlamedAttribute(desugarer_blame(284), "val", word)], [])
+  V(blame, "__OneWord", [Attribute(desugarer_blame(284), "val", word)], [])
 }
 
 fn space_node(blame: Blame) {

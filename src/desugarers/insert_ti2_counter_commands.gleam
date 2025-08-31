@@ -3,18 +3,18 @@ import gleam/option.{type Option}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedContent, type VXML, BlamedContent, T, V}
+import vxml.{type Line, type VXML, Line, T, V}
 import on
 
 fn updated_node(
   vxml: VXML,
-  prefix: Option(BlamedContent),
-  cc: #(BlamedContent, Option(String)),
+  prefix: Option(Line),
+  cc: #(Line, Option(String)),
   // string is for the wrapper tag
-  rest: BlamedContent,
+  rest: Line,
 ) -> VXML {
   let assert V(blame, tag, attributes, children) = vxml
-  let assert [T(t_blame, blamed_contents), ..] = children
+  let assert [T(t_blame, lines), ..] = children
 
   let prefix = on.none_some(prefix, [], fn(p) { [p] })
 
@@ -30,7 +30,7 @@ fn updated_node(
             prefix,
             [counter_command],
             [rest],
-            list.drop(blamed_contents, 1),
+            list.drop(lines, 1),
           ]),
         ),
         ..list.drop(children, 1)
@@ -41,7 +41,7 @@ fn updated_node(
         [
           T(t_blame, prefix),
           wrapper_node,
-          T(t_blame, [rest, ..list.drop(blamed_contents, 1)]),
+          T(t_blame, [rest, ..list.drop(lines, 1)]),
           ..list.drop(children, 1)
         ]
       },
@@ -66,8 +66,8 @@ fn nodemap(
 
       // get first text node
       case children {
-        [T(t_blame, blamed_contents), ..] -> {
-          let assert [first_line, ..] = blamed_contents
+        [T(t_blame, lines), ..] -> {
+          let assert [first_line, ..] = lines
           let found_prefix =
             list.find(prefixes, fn(prefix) {
               string.starts_with(first_line.content, prefix)
@@ -75,10 +75,10 @@ fn nodemap(
 
           case found_prefix, list.is_empty(prefixes) {
             Ok(found_prefix), _ -> {
-              let blamed_cc = BlamedContent(first_line.blame, counter_command)
-              let blamed_prefix = BlamedContent(first_line.blame, found_prefix)
+              let blamed_cc = Line(first_line.blame, counter_command)
+              let blamed_prefix = Line(first_line.blame, found_prefix)
               let rest =
-                BlamedContent(
+                Line(
                   first_line.blame,
                   string.length(found_prefix)
                     |> string.drop_start(first_line.content, _),
@@ -93,7 +93,7 @@ fn nodemap(
               |> Ok
             }
             Error(_), True -> {
-              let blamed_cc = BlamedContent(t_blame, counter_command)
+              let blamed_cc = Line(t_blame, counter_command)
               updated_node(vxml, option.None, #(blamed_cc, wrapper), first_line) |> Ok
             }
             Error(_), False -> Ok(vxml)

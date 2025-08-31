@@ -8,7 +8,7 @@ import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import roman
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type Attribute, type Line, type VXML, Attribute, Line, T, V}
 import blame as bl
 import on
 
@@ -251,27 +251,27 @@ fn substitute_counters_and_generate_handle_assignments(
   handle_matches(matches, splits, counters, regexes)
 }
 
-fn update_blamed_content(
-  bl: BlamedContent,
+fn update_line(
+  bl: Line,
   counters: CounterDict,
   regexes: #(Regexp, Regexp),
 ) -> Result(
-  #(BlamedContent, CounterDict, List(HandleAssignment)),
+  #(Line, CounterDict, List(HandleAssignment)),
   DesugaringError,
 ) {
   case substitute_counters_and_generate_handle_assignments(bl.content, counters, regexes) {
     Ok(#(updated_content, counters, handles)) ->
-      Ok(#(BlamedContent(..bl, content: updated_content), counters, handles))
+      Ok(#(Line(..bl, content: updated_content), counters, handles))
     Error(e) -> Error(DesugaringError(bl.blame, e))
   }
 }
 
-fn update_blamed_contents(
-  contents: List(BlamedContent),
+fn update_lines(
+  contents: List(Line),
   counters: CounterDict,
   regexes: #(Regexp, Regexp),
 ) -> Result(
-  #(List(BlamedContent), CounterDict, List(HandleAssignment)),
+  #(List(Line), CounterDict, List(HandleAssignment)),
   DesugaringError,
 ) {
   let init_acc = #([], counters, [])
@@ -281,7 +281,7 @@ fn update_blamed_contents(
     fn(acc, content) {
       let #(old_contents, counters, handles) = acc
       use #(updated_content, updated_counters, new_handles) <- result.try(
-        update_blamed_content(content, counters, regexes)
+        update_line(content, counters, regexes)
       )
       Ok(#(
         [updated_content, ..old_contents],
@@ -293,13 +293,13 @@ fn update_blamed_contents(
   |> result.map(fn(acc) { #(acc.0 |> list.reverse, acc.1, acc.2) })
 }
 
-fn handle_assignment_blamed_attributes_from_handle_assignments(
+fn handle_assignment_attributes_from_handle_assignments(
   handles: List(HandleAssignment),
-) -> List(BlamedAttribute) {
+) -> List(Attribute) {
   handles
   |> list.map(fn(handle) {
     let #(name, value) = handle
-    BlamedAttribute(desugarer_blame(301), "handle", name <> " " <> value)
+    Attribute(desugarer_blame(301), "handle", name <> " " <> value)
   })
 }
 
@@ -312,7 +312,7 @@ fn take_existing_counters(
 }
 
 fn handle_non_unary_att_value(
-  attribute: BlamedAttribute,
+  attribute: Attribute,
 ) -> Result(#(String, Int, Int), DesugaringError) {
   let splits = string.split(attribute.value, " ")
 
@@ -348,7 +348,7 @@ fn handle_non_unary_att_value(
 }
 
 fn handle_unary_att_value(
- attribute: BlamedAttribute,
+ attribute: Attribute,
 ) -> Result(#(String, String), DesugaringError) {
   let splits = string.split(attribute.value, " ")
   case splits {
@@ -371,7 +371,7 @@ fn attribute_key_is_counter(
 }
 
 fn read_counter_definition(
-  attribute: BlamedAttribute,
+  attribute: Attribute,
 ) -> Result(Option(#(String, CounterInfo)), DesugaringError) {
   use counter_type <- on.error_ok(
     attribute_key_is_counter(attribute.key),
@@ -391,11 +391,11 @@ fn read_counter_definition(
 }
 
 fn fancy_one_attribute_processor(
-  to_process: BlamedAttribute,
+  to_process: Attribute,
   counters: CounterDict,
   regexes: #(Regexp, Regexp),
 ) -> Result(
-  #(BlamedAttribute, CounterDict, List(HandleAssignment)),
+  #(Attribute, CounterDict, List(HandleAssignment)),
   DesugaringError,
 ) {
   use #(key, counters, assignments1) <- result.try(
@@ -431,18 +431,18 @@ fn fancy_one_attribute_processor(
   )
 
   Ok(#(
-    BlamedAttribute(to_process.blame, key, value),
+    Attribute(to_process.blame, key, value),
     counters,
     list.flatten([assignments1, assignments2]),
   ))
 }
 
 fn fancy_attribute_processor(
-  already_processed: List(BlamedAttribute),
-  yet_to_be_processed: List(BlamedAttribute),
+  already_processed: List(Attribute),
+  yet_to_be_processed: List(Attribute),
   counters: CounterDict,
   regexes: #(Regexp, Regexp),
-) -> Result(#(List(BlamedAttribute), CounterDict), DesugaringError) {
+) -> Result(#(List(Attribute), CounterDict), DesugaringError) {
   case yet_to_be_processed {
     [] -> Ok(#(already_processed |> list.reverse, counters))
     [next, ..rest] -> {
@@ -453,7 +453,7 @@ fn fancy_attribute_processor(
       let assignment_attributes =
         list.map(assignments, fn(handle_assignment) {
           let #(handle_name, handle_value) = handle_assignment
-          BlamedAttribute(next.blame, "handle", handle_name <> " " <> handle_value)
+          Attribute(next.blame, "handle", handle_name <> " " <> handle_value)
         })
 
       use new_counter <- result.try(read_counter_definition(next))
@@ -508,7 +508,7 @@ fn t_nodemap(
   let #(counters, old_handles) = state
 
   use #(contents, updated_counters, new_handles) <- result.try(
-    update_blamed_contents(contents, counters, regexes),
+    update_lines(contents, counters, regexes),
   )
 
   use <- on.some_none(
@@ -547,7 +547,7 @@ fn v_after_transforming_children(
   let attributes =
     list.append(
       attributes,
-      handle_assignment_blamed_attributes_from_handle_assignments(
+      handle_assignment_attributes_from_handle_assignments(
         handles_from_our_children,
       ),
     )

@@ -3,17 +3,17 @@ import gleam/list
 import gleam/option
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V, T, BlamedContent}
+import vxml.{type VXML, Attribute, V, T, Line}
 
 fn detokenize_children(
   children: List(VXML),
-  accumulated_contents: List(vxml.BlamedContent),
+  accumulated_contents: List(vxml.Line),
   accumulated_nodes: List(VXML)
 ) -> List(VXML) {
-  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.BlamedContent) {
+  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.Line) {
     case accumulated_contents {
-      [first, ..rest] -> [BlamedContent(first.blame, first.content <> word), ..rest]
-      _ -> [BlamedContent(blame, word)]
+      [first, ..rest] -> [Line(first.blame, first.content <> word), ..rest]
+      _ -> [Line(blame, word)]
     }
   }
 
@@ -27,13 +27,13 @@ fn detokenize_children(
       case first {
         V(blame, "__StartTokenizedT", _, _) -> {
           let assert [] = accumulated_contents
-          let accumulated_contents = [BlamedContent(blame, "")]
+          let accumulated_contents = [Line(blame, "")]
           detokenize_children(rest, accumulated_contents, accumulated_nodes)
         }
         
         V(blame, "__OneWord", attributes, _) -> {
           let assert [_, ..] = accumulated_contents
-          let assert [BlamedAttribute(_, "val", word)] = attributes
+          let assert [Attribute(_, "val", word)] = attributes
           let accumulated_contents = append_word_to_accumlated_contents(blame, word)
           detokenize_children(rest, accumulated_contents, accumulated_nodes)
         }
@@ -46,7 +46,7 @@ fn detokenize_children(
 
         V(blame, "__OneNewLine", _, _) -> {
           let assert [_, ..] = accumulated_contents
-          let accumulated_contents = [BlamedContent(blame, ""), ..accumulated_contents]
+          let accumulated_contents = [Line(blame, ""), ..accumulated_contents]
           detokenize_children(rest, accumulated_contents, accumulated_nodes)
         }
 

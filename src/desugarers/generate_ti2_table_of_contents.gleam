@@ -4,7 +4,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, BlamedAttribute, V}
+import vxml.{type VXML, Attribute, V}
 import blame as bl
 import on
 
@@ -66,14 +66,14 @@ fn chapter_link(
       item_blame,
       chapter_link_component_name,
       [
-        BlamedAttribute(label_attr.blame, "label", label_attr.value),
-        BlamedAttribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
-        BlamedAttribute(
+        Attribute(label_attr.blame, "label", label_attr.value),
+        Attribute(on_mobile_attr.blame, "on_mobile", on_mobile_attr.value),
+        Attribute(
           number_attribute.blame,
           "number",
           number_attribute.value,
         ),
-        BlamedAttribute(desugarer_blame(75), "href", link),
+        Attribute(desugarer_blame(75), "href", link),
       ],
       [],
     ),
@@ -81,11 +81,11 @@ fn chapter_link(
 }
 
 fn div_with_id_title_and_menu_items(id: String, menu_items: List(VXML)) -> VXML {
-  V(desugarer_blame(83), "div", [BlamedAttribute(desugarer_blame(83), "id", id)], [
+  V(desugarer_blame(83), "div", [Attribute(desugarer_blame(83), "id", id)], [
     V(
       desugarer_blame(85),
       "ul",
-      [BlamedAttribute(desugarer_blame(87), "style", "list-style: none")],
+      [Attribute(desugarer_blame(87), "style", "list-style: none")],
       menu_items,
     ),
   ])

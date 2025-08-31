@@ -3,7 +3,7 @@ import gleam/option.{Some,None}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
-import vxml.{type VXML, type BlamedContent, BlamedAttribute, BlamedContent, V, T}
+import vxml.{type VXML, type Line, Attribute, Line, V, T}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 
@@ -23,7 +23,7 @@ fn extract_chapter_title(chapter: VXML) -> ChapterTitle {
     let assert V(_, _, _, children) = chapter_title
     let assert [T(_, contents), ..] = children
     contents
-    |> list.map(fn(blamed_content: BlamedContent) { blamed_content.content })
+    |> list.map(fn(line: Line) { line.content })
     |> string.join("")
   })
   |> result.unwrap("no chapter title")
@@ -48,7 +48,7 @@ fn extract_subchapter_title(chapter: VXML) -> List(#(SubChapterNo, SubchapterTit
           let assert V(_, _, _, children) = subtitle
           let assert [T(_, contents), ..] = children
           contents
-          |> list.map(fn(blamed_content: BlamedContent) { blamed_content.content })
+          |> list.map(fn(line: Line) { line.content })
           |> string.join("")
         })
         |> result.unwrap("No subchapter title")
@@ -74,12 +74,12 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
     "li",
     [],
     [
-      T(blame, [BlamedContent(blame, ins(chapter_number) <> "." <> ins(subchapter_number) <> " - ")]),
+      T(blame, [Line(blame, ins(chapter_number) <> "." <> ins(subchapter_number) <> " - ")]),
       V(
         blame,
         "a",
-        [BlamedAttribute(blame, "href", format_chapter_link(chapter_number, subchapter_number))],
-        [T(blame, [BlamedContent(blame, subchapter_title)])]
+        [Attribute(blame, "href", format_chapter_link(chapter_number, subchapter_number))],
+        [T(blame, [Line(blame, subchapter_title)])]
       )
     ]
   )
@@ -94,7 +94,7 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
       V(
         blame,
         "ol",
-        [BlamedAttribute(blame, "class", "index__list__subchapter")],
+        [Attribute(blame, "class", "index__list__subchapter")],
         list.map(subchapters, fn(subchapter) {
           let #(subchapter_number, subchapter_title) = subchapter
           construct_subchapter_item(subchapter_title, subchapter_number, chapter_number)
@@ -106,15 +106,15 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
   V(
     blame,
     "li",
-    [BlamedAttribute(blame, "class", "index__list__chapter")],
+    [Attribute(blame, "class", "index__list__chapter")],
     list.flatten([
       [
-        T(blame, [BlamedContent(blame, ins(chapter_number) <> " - ")]),
+        T(blame, [Line(blame, ins(chapter_number) <> " - ")]),
         V(
           blame,
           "a",
-          [BlamedAttribute(blame, "href", "./" <> ins(chapter_number) <> "-0" <> ".html")],
-          [T(blame, [BlamedContent(blame, chapter_title)])]
+          [Attribute(blame, "href", "./" <> ins(chapter_number) <> "-0" <> ".html")],
+          [T(blame, [Line(blame, chapter_title)])]
         )
       ],
       subchapters_ol
@@ -152,25 +152,25 @@ fn construct_header(document: VXML) -> VXML {
   V(
     blame,
     "header",
-    [BlamedAttribute(blame, "class", "index__header")],
+    [Attribute(blame, "class", "index__header")],
     [
       V(
         blame,
         "h1",
-        [BlamedAttribute(blame, "class", "index__header__title")],
-        [T(blame, [BlamedContent(blame, title)])]
+        [Attribute(blame, "class", "index__header__title")],
+        [T(blame, [Line(blame, title)])]
       ),
       V(
         blame,
         "span",
-        [BlamedAttribute(blame, "class", "index__header__subtitle")],
-        [T(blame, [BlamedContent(blame, program)])]
+        [Attribute(blame, "class", "index__header__subtitle")],
+        [T(blame, [Line(blame, program)])]
       ),
       V(
         blame,
         "span",
-        [BlamedAttribute(blame, "class", "index__header__subtitle")],
-        [T(blame, [BlamedContent(blame, lecturer <> ", " <> institution)])]
+        [Attribute(blame, "class", "index__header__subtitle")],
+        [T(blame, [Line(blame, lecturer <> ", " <> institution)])]
       )
     ]
   )
@@ -191,16 +191,16 @@ fn construct_right_menu(document: VXML) -> VXML {
     V(
       blame,
       "RightMenu",
-      [BlamedAttribute(blame, "class", "menu-right")],
+      [Attribute(blame, "class", "menu-right")],
       [ V(
           blame,
           "a",
           [
-            BlamedAttribute(blame, "id", "next-page"),
-            BlamedAttribute(blame, "href", format_chapter_link(1, 0)),
+            Attribute(blame, "id", "next-page"),
+            Attribute(blame, "href", format_chapter_link(1, 0)),
           ],
           [
-            T(blame, [BlamedContent(blame, "1. " <> first_chapter_title <> " >>")]),
+            T(blame, [Line(blame, "1. " <> first_chapter_title <> " >>")]),
           ]
         )
       ]
@@ -220,16 +220,16 @@ fn construct_menu(document: VXML) -> VXML {
     V(
       blame,
       "LeftMenu",
-      [BlamedAttribute(blame, "class", "menu-left")]
+      [Attribute(blame, "class", "menu-left")]
       ,[
-        V(blame, "a", [BlamedAttribute(blame, "href", course_homepage_link)], [T(blame, [BlamedContent(blame, "zür Kursübersicht")])])
+        V(blame, "a", [Attribute(blame, "href", course_homepage_link)], [T(blame, [Line(blame, "zür Kursübersicht")])])
       ]
     )
 
   V(
     blame,
     "nav",
-    [ BlamedAttribute(blame, "class", "menu")],
+    [ Attribute(blame, "class", "menu")],
     [ menu_left,
       construct_right_menu(document)
     ]
@@ -247,7 +247,7 @@ fn construct_index(chapters: List(#(ChapterNo, ChapterTitle, List(#(SubChapterNo
       V(
         blame,
         "ol",
-        [BlamedAttribute(blame, "class", "index__list")],
+        [Attribute(blame, "class", "index__list")],
         list.map(chapters, fn(chapter) {
           let #(chapter_number, chapter_title, subchapters) = chapter
           construct_chapter_item(chapter_number, chapter_title, subchapters)

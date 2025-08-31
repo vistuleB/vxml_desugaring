@@ -4,10 +4,10 @@ import gleam/pair
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedAttribute, type VXML, T, V}
+import vxml.{type Attribute, type VXML, T, V}
 
 fn matches_all_key_value_pairs(
-  attrs: List(BlamedAttribute),
+  attrs: List(Attribute),
   key_value_pairs: List(#(String, String)),
 ) -> Bool {
   list.all(key_value_pairs, fn(key_value) {

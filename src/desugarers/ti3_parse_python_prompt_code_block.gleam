@@ -3,22 +3,22 @@ import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type BlamedContent, type VXML, BlamedAttribute, BlamedContent, T, V}
+import vxml.{type Line, type VXML, Attribute, Line, T, V}
 import blame as bl
 
 const newline_t =
   T(
     bl.Des([], name, 11),
     [
-      BlamedContent(bl.Des([], name, 13), ""),
-      BlamedContent(bl.Des([], name, 14), ""),
+      Line(bl.Des([], name, 13), ""),
+      Line(bl.Des([], name, 14), ""),
     ]
   )
 
 type PythonPromptChunk {
-  PromptLine(BlamedContent)
-  OkResponseLines(List(BlamedContent))
-  ErrorResponseLines(List(BlamedContent))
+  PromptLine(Line)
+  OkResponseLines(List(Line))
+  ErrorResponseLines(List(Line))
 }
 
 fn python_prompt_chunk_to_vxmls(
@@ -30,22 +30,22 @@ fn python_prompt_chunk_to_vxmls(
         V(
           desugarer_blame(31),
           "span",
-          [BlamedAttribute(desugarer_blame(33), "class", "python-prompt-carets")],
+          [Attribute(desugarer_blame(33), "class", "python-prompt-carets")],
           [
             T(
               bc.blame,
-              [BlamedContent(bc.blame, ">>>")]
+              [Line(bc.blame, ">>>")]
             )
           ]
         ),
         V(
           desugarer_blame(42),
           "span",
-          [BlamedAttribute(desugarer_blame(44), "class", "python-prompt-content")],
+          [Attribute(desugarer_blame(44), "class", "python-prompt-content")],
           [
             T(
               bl.advance(bc.blame, 3),
-              [BlamedContent(bl.advance(bc.blame, 3), bc.content |> string.drop_start(3))]
+              [Line(bl.advance(bc.blame, 3), bc.content |> string.drop_start(3))]
             )
           ]
         )
@@ -56,7 +56,7 @@ fn python_prompt_chunk_to_vxmls(
         V(
           desugarer_blame(57),
           "span",
-          [BlamedAttribute(desugarer_blame(59), "class", "python-prompt-ok-response")],
+          [Attribute(desugarer_blame(59), "class", "python-prompt-ok-response")],
           [
             T(
               lines |> infra.lines_first_blame,
@@ -71,7 +71,7 @@ fn python_prompt_chunk_to_vxmls(
         V(
           desugarer_blame(72),
           "span",
-          [BlamedAttribute(desugarer_blame(74), "class", "python-prompt-error-response")],
+          [Attribute(desugarer_blame(74), "class", "python-prompt-error-response")],
           [
             T(
               lines |> infra.lines_first_blame,
@@ -84,7 +84,7 @@ fn python_prompt_chunk_to_vxmls(
   }
 }
 
-fn process_python_prompt_lines(lines: List(BlamedContent)) -> List(PythonPromptChunk) {
+fn process_python_prompt_lines(lines: List(Line)) -> List(PythonPromptChunk) {
   lines
   |> infra.either_or_misceginator(fn(bc) {
     string.starts_with(bc.content, ">>>")
@@ -127,7 +127,7 @@ fn nodemap(
           V(
             blame,
             "pre",
-            [BlamedAttribute(desugarer_blame(130), "class", "python-prompt")],
+            [Attribute(desugarer_blame(130), "class", "python-prompt")],
             children,
           )
         }
