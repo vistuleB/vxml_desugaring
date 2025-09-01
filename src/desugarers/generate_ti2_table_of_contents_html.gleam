@@ -7,7 +7,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, Attribute, Line, T, V}
+import vxml.{type VXML, Attribute, TextLine, T, V}
 import on
 
 fn prepend_0(number: String) {
@@ -74,7 +74,7 @@ fn chapter_link(
       T(
         desugarer_blame(74),
         [
-          Line(
+          TextLine(
             desugarer_blame(77),
             chapter_number <> "." <> ins(section_index) <> " - ",
           ),
@@ -90,7 +90,7 @@ fn chapter_link(
         Attribute(desugarer_blame(89), "href", link)
       ],
       [
-        T(item_blame, [Line(item_blame, label_attr.value)]),
+        T(item_blame, [TextLine(item_blame, label_attr.value)]),
       ]
     )
 

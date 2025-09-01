@@ -3,7 +3,7 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
-import vxml.{type VXML, type Attribute, Attribute, Line, V, T}
+import vxml.{type VXML, type Attribute, Attribute, TextLine, V, T}
 import nodemaps_2_desugarer_transforms as n2t
 import on
 
@@ -12,7 +12,7 @@ fn an_attribute(key: String, value: String) -> Attribute {
 }
 
 fn a_1_line_text_node(content: String) -> VXML {
-  T(desugarer_blame(14), [Line(desugarer_blame(14), content)])
+  T(desugarer_blame(14), [TextLine(desugarer_blame(14), content)])
 }
 
 fn into_list(a: a) -> List(a) {

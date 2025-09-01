@@ -3,7 +3,7 @@ import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T}
+import vxml.{type VXML, T, TextLine}
 
 fn nodemap(
   vxml: VXML,
@@ -17,8 +17,8 @@ fn nodemap(
             True -> {
               let new_line = " " <> first.content |> string.trim_start()
               T(blame, [
-                vxml.Line(first.blame, new_line),
-                ..list.drop(lines, 1)
+                TextLine(first.blame, new_line),
+                ..list.drop(lines, 1),
               ])
             }
             False -> vxml

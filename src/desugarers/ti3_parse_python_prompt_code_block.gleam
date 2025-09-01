@@ -3,29 +3,29 @@ import gleam/option
 import gleam/string
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type Line, type VXML, Attribute, Line, T, V}
+import vxml.{type TextLine, type VXML, Attribute, TextLine, T, V}
 import blame as bl
 
 const newline_t =
   T(
     bl.Des([], name, 11),
     [
-      Line(bl.Des([], name, 13), ""),
-      Line(bl.Des([], name, 14), ""),
+      TextLine(bl.Des([], name, 13), ""),
+      TextLine(bl.Des([], name, 14), ""),
     ]
   )
 
 type PythonPromptChunk {
-  PromptLine(Line)
-  OkResponseLines(List(Line))
-  ErrorResponseLines(List(Line))
+  PromptLine(TextLine)
+  OkResponseLines(List(TextLine))
+  ErrorResponseLines(List(TextLine))
 }
 
 fn python_prompt_chunk_to_vxmls(
   chunk: PythonPromptChunk,
 ) -> List(VXML) {
   case chunk {
-    PromptLine(bc) -> {
+    PromptLine(line) -> {
       [
         V(
           desugarer_blame(31),
@@ -33,8 +33,8 @@ fn python_prompt_chunk_to_vxmls(
           [Attribute(desugarer_blame(33), "class", "python-prompt-carets")],
           [
             T(
-              bc.blame,
-              [Line(bc.blame, ">>>")]
+              line.blame,
+              [TextLine(line.blame, ">>>")]
             )
           ]
         ),
@@ -44,8 +44,8 @@ fn python_prompt_chunk_to_vxmls(
           [Attribute(desugarer_blame(44), "class", "python-prompt-content")],
           [
             T(
-              bl.advance(bc.blame, 3),
-              [Line(bl.advance(bc.blame, 3), bc.content |> string.drop_start(3))]
+              bl.advance(line.blame, 3),
+              [TextLine(bl.advance(line.blame, 3), line.content |> string.drop_start(3))]
             )
           ]
         )
@@ -84,15 +84,15 @@ fn python_prompt_chunk_to_vxmls(
   }
 }
 
-fn process_python_prompt_lines(lines: List(Line)) -> List(PythonPromptChunk) {
+fn process_python_prompt_lines(lines: List(TextLine)) -> List(PythonPromptChunk) {
   lines
-  |> infra.either_or_misceginator(fn(bc) {
-    string.starts_with(bc.content, ">>>")
+  |> infra.either_or_misceginator(fn(line) {
+    string.starts_with(line.content, ">>>")
   })
   |> infra.regroup_ors_no_empty_lists
   |> list.map(fn(either_bc_or_list_bc) {
     case either_bc_or_list_bc {
-      infra.Either(bc) -> PromptLine(bc)
+      infra.Either(line) -> PromptLine(line)
       infra.Or(list_bc) -> case infra.lines_contain(list_bc, "SyntaxError:") {
         True -> ErrorResponseLines(list_bc)
         False -> OkResponseLines(list_bc)

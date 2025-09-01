@@ -3,7 +3,7 @@ import gleam/option.{Some,None}
 import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugaringError, type DesugaringWarning} as infra
-import vxml.{type VXML, type Line, Attribute, Line, V, T}
+import vxml.{type VXML, type TextLine, Attribute, TextLine, V, T}
 import blame as bl
 import nodemaps_2_desugarer_transforms as n2t
 
@@ -23,7 +23,7 @@ fn extract_chapter_title(chapter: VXML) -> ChapterTitle {
     let assert V(_, _, _, children) = chapter_title
     let assert [T(_, contents), ..] = children
     contents
-    |> list.map(fn(line: Line) { line.content })
+    |> list.map(fn(line: TextLine) { line.content })
     |> string.join("")
   })
   |> result.unwrap("no chapter title")
@@ -48,7 +48,7 @@ fn extract_subchapter_title(chapter: VXML) -> List(#(SubChapterNo, SubchapterTit
           let assert V(_, _, _, children) = subtitle
           let assert [T(_, contents), ..] = children
           contents
-          |> list.map(fn(line: Line) { line.content })
+          |> list.map(fn(line: TextLine) { line.content })
           |> string.join("")
         })
         |> result.unwrap("No subchapter title")
@@ -74,12 +74,12 @@ fn construct_subchapter_item(subchapter_title: String, subchapter_number: Int, c
     "li",
     [],
     [
-      T(blame, [Line(blame, ins(chapter_number) <> "." <> ins(subchapter_number) <> " - ")]),
+      T(blame, [TextLine(blame, ins(chapter_number) <> "." <> ins(subchapter_number) <> " - ")]),
       V(
         blame,
         "a",
         [Attribute(blame, "href", format_chapter_link(chapter_number, subchapter_number))],
-        [T(blame, [Line(blame, subchapter_title)])]
+        [T(blame, [TextLine(blame, subchapter_title)])]
       )
     ]
   )
@@ -109,12 +109,12 @@ fn construct_chapter_item(chapter_number: Int, chapter_title: String, subchapter
     [Attribute(blame, "class", "index__list__chapter")],
     list.flatten([
       [
-        T(blame, [Line(blame, ins(chapter_number) <> " - ")]),
+        T(blame, [TextLine(blame, ins(chapter_number) <> " - ")]),
         V(
           blame,
           "a",
           [Attribute(blame, "href", "./" <> ins(chapter_number) <> "-0" <> ".html")],
-          [T(blame, [Line(blame, chapter_title)])]
+          [T(blame, [TextLine(blame, chapter_title)])]
         )
       ],
       subchapters_ol
@@ -158,19 +158,19 @@ fn construct_header(document: VXML) -> VXML {
         blame,
         "h1",
         [Attribute(blame, "class", "index__header__title")],
-        [T(blame, [Line(blame, title)])]
+        [T(blame, [TextLine(blame, title)])]
       ),
       V(
         blame,
         "span",
         [Attribute(blame, "class", "index__header__subtitle")],
-        [T(blame, [Line(blame, program)])]
+        [T(blame, [TextLine(blame, program)])]
       ),
       V(
         blame,
         "span",
         [Attribute(blame, "class", "index__header__subtitle")],
-        [T(blame, [Line(blame, lecturer <> ", " <> institution)])]
+        [T(blame, [TextLine(blame, lecturer <> ", " <> institution)])]
       )
     ]
   )
@@ -200,7 +200,7 @@ fn construct_right_menu(document: VXML) -> VXML {
             Attribute(blame, "href", format_chapter_link(1, 0)),
           ],
           [
-            T(blame, [Line(blame, "1. " <> first_chapter_title <> " >>")]),
+            T(blame, [TextLine(blame, "1. " <> first_chapter_title <> " >>")]),
           ]
         )
       ]
@@ -222,7 +222,7 @@ fn construct_menu(document: VXML) -> VXML {
       "LeftMenu",
       [Attribute(blame, "class", "menu-left")]
       ,[
-        V(blame, "a", [Attribute(blame, "href", course_homepage_link)], [T(blame, [Line(blame, "zür Kursübersicht")])])
+        V(blame, "a", [Attribute(blame, "href", course_homepage_link)], [T(blame, [TextLine(blame, "zür Kursübersicht")])])
       ]
     )
 

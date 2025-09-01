@@ -7,7 +7,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, V, Attribute, Line}
+import vxml.{type VXML, T, V, Attribute, type TextLine, TextLine}
 import xmlm
 import blame.{type Blame} as bl
 import on
@@ -38,13 +38,16 @@ type MatchData {
 
 fn detokenize_maybe(
   children: List(VXML),
-  accumulated_contents: List(vxml.Line),
+  accumulated_contents: List(TextLine),
   accumulated_nodes: List(VXML),
 ) -> List(VXML) {
-  let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(vxml.Line) {
+  let append_word_to_accumlated_contents = fn(
+    blame: Blame,
+    word: String,
+  ) -> List(TextLine) {
     case accumulated_contents {
-      [first, ..rest] -> [Line(first.blame, first.content <> word), ..rest]
-      _ -> [Line(blame, word)]
+      [first, ..rest] -> [TextLine(first.blame, first.content <> word), ..rest]
+      _ -> [TextLine(blame, word)]
     }
   }
 
@@ -58,7 +61,7 @@ fn detokenize_maybe(
       case first {
         V(blame, "__StartTokenizedT", _, _) -> {
           let assert [] = accumulated_contents
-          let accumulated_contents = [Line(blame, "")]
+          let accumulated_contents = [TextLine(blame, "")]
           detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
         }
         
@@ -77,7 +80,7 @@ fn detokenize_maybe(
 
         V(blame, "__OneNewLine", _, _) -> {
           let assert [_, ..] = accumulated_contents
-          let accumulated_contents = [Line(blame, ""), ..accumulated_contents]
+          let accumulated_contents = [TextLine(blame, ""), ..accumulated_contents]
           detokenize_maybe(rest, accumulated_contents, accumulated_nodes)
         }
 

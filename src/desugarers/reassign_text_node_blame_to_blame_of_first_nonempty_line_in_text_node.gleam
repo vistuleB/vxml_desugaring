@@ -12,7 +12,7 @@ fn nodemap(
   case vxml {
     T(_, lines) -> {
       use first_non_empty <- on.error_ok(
-        list.find(lines, fn(bc) {!{ string.is_empty(bc.content) }}),
+        list.find(lines, fn(line) {!{ string.is_empty(line.content) }}),
         on_error: fn(_){ Ok(vxml) }
       )
       Ok(T(first_non_empty.blame, lines))

@@ -6,7 +6,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, type DesugaringWarning, DesugaringError, DesugaringWarning} as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type Attribute, type Line, type VXML, Attribute, Line, T, V}
+import vxml.{type Attribute, type TextLine, type VXML, Attribute, TextLine, T, V}
 import blame.{type Blame} as bl
 import on
 
@@ -50,7 +50,7 @@ fn hyperlink_constructor(
     blame,
     tag,
     attrs,
-    [T(blame, [Line(blame, value)])],
+    [T(blame, [TextLine(blame, value)])],
   ))
 }
 
@@ -68,7 +68,7 @@ fn warning_element(
     desugarer_blame(67),
     "span",
     [Attribute(desugarer_blame(69), "style", "color:red;background-color:yellow;")],
-    [T(desugarer_blame(70), [Line(desugarer_blame(70), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
+    [T(desugarer_blame(70), [TextLine(desugarer_blame(70), "undefined handle at " <> bl.blame_digest(blame) <> ": " <> handle_name)])],
   )
 }
 
@@ -164,7 +164,7 @@ fn split_2_t(
   split: String,
   blame: Blame,
 ) -> VXML {
-  T(blame, [Line(blame, split)])
+  T(blame, [TextLine(blame, split)])
 }
 
 fn splits_2_ts(
@@ -178,12 +178,12 @@ fn splits_2_ts(
 }
 
 fn process_line(
-  line: Line,
+  line: TextLine,
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,
 ) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
-  let Line(blame, content) = line
+  let TextLine(blame, content) = line
   let matches = regexp.scan(handle_regexp, content)
   let splits = regexp.split(handle_regexp, content)
   use #(hyperlinks, warnings) <- result.try(
@@ -194,7 +194,7 @@ fn process_line(
 }
 
 fn process_lines(
-  contents: List(Line),
+  contents: List(TextLine),
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,

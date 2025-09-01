@@ -9,7 +9,7 @@ import gleam/pair
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string.{inspect as ins}
-import vxml.{type Attribute, Attribute, type Line, type VXML, Line, T, V, vxml_to_string}
+import vxml.{type Attribute, Attribute, type TextLine, type VXML, TextLine, T, V, vxml_to_string}
 import on
 
 // ************************************************************
@@ -146,7 +146,7 @@ pub fn left_right_delim_strings(delimiters: List(LatexDelimiterPair)) -> #(List(
 pub fn on_v_on_t(
   node: VXML,
   f1: fn(Blame, String, List(Attribute), List(VXML)) -> c,
-  f2: fn(Blame, List(Line)) -> c,
+  f2: fn(Blame, List(TextLine)) -> c,
 ) -> c {
   case node {
     V(blame, tag, attributes, children) -> f1(blame, tag, attributes, children)
@@ -156,7 +156,7 @@ pub fn on_v_on_t(
 
 pub fn on_t_on_v(
   node: VXML,
-  f1: fn(Blame, List(Line)) -> c,
+  f1: fn(Blame, List(TextLine)) -> c,
   f2: fn(Blame, String, List(Attribute), List(VXML)) -> c,
 ) -> c {
   case node {
@@ -635,11 +635,11 @@ pub fn either_or_misceginator(
 //**************************************************************
 
 fn find_replace_in_line(
-  bc: Line,
+  line: TextLine,
   from: String,
   to: String,
-) -> Line {
-  Line(bc.blame, string.replace(bc.content, from, to))
+) -> TextLine {
+  TextLine(line.blame, string.replace(line.content, from, to))
 }
 
 pub fn t_find_replace(
@@ -666,9 +666,9 @@ pub fn find_replace_if_t(
 }
 
 fn find_replace_in_line__batch(
-  line: Line,
+  line: TextLine,
   pairs: List(#(String, String)),
-) -> Line {
+) -> TextLine {
   list.fold(
     pairs,
     line,
@@ -763,15 +763,15 @@ pub fn extract_trim_end(content: String) -> #(String, String) {
 // ************************************************************
 
 pub fn lines_are_whitespace(
-  lines: List(Line)
+  lines: List(TextLine)
 ) -> Bool {
   list.all(
     lines,
-    fn(bc){string.trim(bc.content) == ""}
+    fn(line) { string.trim(line.content) == "" }
   )
 }
 
-pub fn lines_remove_starting_empty_lines(l: List(Line)) -> List(Line) {
+pub fn lines_remove_starting_empty_lines(l: List(TextLine)) -> List(TextLine) {
   case l {
     [] -> []
     [first, ..rest] ->
@@ -783,13 +783,13 @@ pub fn lines_remove_starting_empty_lines(l: List(Line)) -> List(Line) {
 }
 
 pub fn lines_contain(
-  lines: List(Line),
+  lines: List(TextLine),
   s: String,
 ) -> Bool {
-  list.any(lines, fn(bc) {string.contains(bc.content, s)})
+  list.any(lines, fn(line) { string.contains(line.content, s) })
 }
 
-pub fn lines_first_blame(lines: List(Line)) -> Blame {
+pub fn lines_first_blame(lines: List(TextLine)) -> Blame {
   case lines {
     [] -> bl.no_blame
     [first, ..] -> first.blame
@@ -797,14 +797,14 @@ pub fn lines_first_blame(lines: List(Line)) -> Blame {
 }
 
 pub fn echo_lines(
-  lines: List(Line),
+  lines: List(TextLine),
   announcer: String,
-) -> List(Line) {
+) -> List(TextLine) {
   let table =
     lines
-    |> list.map(fn(bc) {#(bc.blame, "\"" <> bc.content <> "\"")})
+    |> list.map(fn(line) { #(line.blame, "\"" <> line.content <> "\"") })
     |> bl.blamed_strings_annotated_table_no1("")
-    |> list.map(fn(l) {"   " <> l})
+    |> list.map(fn(l) { "   " <> l })
     |> string.join("\n")
   io.println(announcer <> ":\n")
   io.println(table)
@@ -812,11 +812,11 @@ pub fn echo_lines(
 }
 
 fn split_lines_internal(
-  previous_splits: List(List(Line)),
-  current_lines: List(Line),
-  remaining: List(Line),
+  previous_splits: List(List(TextLine)),
+  current_lines: List(TextLine),
+  remaining: List(TextLine),
   splitter: String,
-) -> List(List(Line)) {
+) -> List(List(TextLine)) {
   case remaining {
     [] -> [
       current_lines |> list.reverse,
@@ -833,14 +833,14 @@ fn split_lines_internal(
         Ok(#(before, after)) -> split_lines_internal(
           [
             [
-              Line(first.blame, before),
+              TextLine(first.blame, before),
               ..current_lines
             ] |> list.reverse,
             ..previous_splits,
           ],
           [],
           [
-            Line(first.blame, after),
+            TextLine(first.blame, after),
             ..rest,
           ],
           splitter,
@@ -851,9 +851,9 @@ fn split_lines_internal(
 }
 
 pub fn split_lines(
-  lines: List(Line),
+  lines: List(TextLine),
   splitter: String,
-) -> List(List(Line)) {
+) -> List(List(TextLine)) {
   split_lines_internal(
     [],
     [],
@@ -868,7 +868,7 @@ pub fn trim_starting_spaces_except_first_line(vxml: VXML) {
   let updated_rest =
     rest
     |> list.map(fn(line) {
-      Line(..line, content: string.trim_start(line.content))
+      TextLine(..line, content: string.trim_start(line.content))
     })
 
   T(blame, [first_line, ..updated_rest])
@@ -880,14 +880,14 @@ pub fn trim_ending_spaces_except_last_line(vxml: VXML) {
   let updated_rest =
     rest
     |> list.map(fn(line) {
-      Line(..line, content: string.trim_end(line.content))
+      TextLine(..line, content: string.trim_end(line.content))
     })
   T(blame, list.reverse([last_line, ..updated_rest]))
 }
 
 pub fn lines_trim_start(
-  lines: List(Line),
-) -> List(Line) {
+  lines: List(TextLine),
+) -> List(TextLine) {
   case lines {
     [] -> []
     [first, ..rest] -> {
@@ -895,7 +895,7 @@ pub fn lines_trim_start(
         Error(_) -> lines_trim_start(rest)
         Ok(" ") -> case string.trim_start(first.content) {
           "" -> lines_trim_start(rest)
-          nonempty -> [Line(first.blame, nonempty), ..rest]
+          nonempty -> [TextLine(first.blame, nonempty), ..rest]
         }
         _ -> lines
       }
@@ -904,8 +904,8 @@ pub fn lines_trim_start(
 }
 
 pub fn reversed_lines_trim_end(
-  lines: List(Line),
-) -> List(Line) {
+  lines: List(TextLine),
+) -> List(TextLine) {
   case lines {
     [] -> []
     [first, ..rest] -> {
@@ -913,7 +913,7 @@ pub fn reversed_lines_trim_end(
         Error(_) -> reversed_lines_trim_end(rest)
         Ok(" ") -> case string.trim_end(first.content) {
           "" -> reversed_lines_trim_end(rest)
-          nonempty -> reversed_lines_trim_end([Line(first.blame, nonempty), ..rest])
+          nonempty -> reversed_lines_trim_end([TextLine(first.blame, nonempty), ..rest])
         }
         _ -> lines
       }
@@ -922,30 +922,30 @@ pub fn reversed_lines_trim_end(
 }
 
 pub fn first_line_starts_with(
-  lines: List(Line),
+  lines: List(TextLine),
   s: String,
 ) -> Bool {
   case lines {
     [] -> False
-    [Line(_, line), ..] -> string.starts_with(line, s)
+    [TextLine(_, line), ..] -> string.starts_with(line, s)
   }
 }
 
 pub fn first_line_ends_with(
-  lines: List(Line),
+  lines: List(TextLine),
   s: String,
 ) -> Bool {
   case lines {
     [] -> False
-    [Line(_, line), ..] -> string.ends_with(line,s)
+    [TextLine(_, line), ..] -> string.ends_with(line, s)
   }
 }
 
 pub fn lines_total_chars(
-  lines: List(Line)
+  lines: List(TextLine)
 ) -> Int {
   lines
-  |> list.map(fn(bc) {string.length(bc.content)})
+  |> list.map(fn(line) { string.length(line.content) })
   |> int.sum
 }
 
@@ -956,14 +956,14 @@ pub fn lines_total_chars(
 pub fn line_wrap_rearrangement_internal(
   is_very_first_token: Bool,
   current_blame: Blame,
-  already_bundled: List(Line),
+  already_bundled: List(TextLine),
   current_line: List(String),
   wrap_beyond: Int,
   chars_left: Int,
   remaining_tokens: List(EitherOr(String, Blame)),
-) -> #(List(Line), Int) {
+) -> #(List(TextLine), Int) {
   let bundle_current = fn() {
-    Line(current_blame, current_line |> list.reverse |> string.join(" "))
+    TextLine(current_blame, current_line |> list.reverse |> string.join(" "))
   }
   case remaining_tokens {
     [] -> {
@@ -1010,17 +1010,19 @@ pub fn line_wrap_rearrangement_internal(
 }
 
 pub fn line_wrap_rearrangement(
-  lines: List(Line),
+  lines: List(TextLine),
   starting_offset: Int,
   wrap_beyond: Int,
-) -> #(List(Line), Int) {
+) -> #(List(TextLine), Int) {
   let tokens =
     lines
-    |> list.map(fn(bc){
-      string.split(bc.content, " ")
-      |> list.map(Either)
-      |> list.prepend(Or(bc.blame))
-    })
+    |> list.map(
+      fn(line) {
+        string.split(line.content, " ")
+        |> list.map(Either)
+        |> list.prepend(Or(line.blame))
+      }
+    )
     |> list.flatten
   let assert [Or(first_blame), ..tokens] = tokens
   let #(lines, last_line_length) = line_wrap_rearrangement_internal(
@@ -1043,23 +1045,23 @@ pub fn line_wrap_rearrangement(
 // ************************************************************
 
 fn lines_last_to_first_concatenation_where_first_lines_are_already_reversed(
-  l1: List(Line),
-  l2: List(Line),
-) -> List(Line) {
+  l1: List(TextLine),
+  l2: List(TextLine),
+) -> List(TextLine) {
   let assert [first1, ..rest1] = l1
   let assert [first2, ..rest2] = l2
   pour(
     rest1,
     [
-      Line(first1.blame, first1.content <> first2.content),
+      TextLine(first1.blame, first1.content <> first2.content),
       ..rest2
     ]
   )
 }
 
 pub fn last_to_first_concatenation_in_list_list_of_lines_where_all_but_last_list_are_already_reversed(
-  list_of_lists: List(List(Line))
-) -> List(Line) {
+  list_of_lists: List(List(TextLine))
+) -> List(TextLine) {
   case list_of_lists {
     [] -> panic as "this is unexpected"
     [one] -> one
@@ -1231,7 +1233,7 @@ pub fn t_super_trim_end(node: VXML) -> Option(VXML) {
   let lines =
     lines
     |> list.reverse
-    |> list.take_while(fn(bc) { string.trim_end(bc.content) == "" })
+    |> list.take_while(fn(line) { string.trim_end(line.content) == "" })
   case lines {
     [] -> None
     _ -> Some(T(blame, lines |> list.reverse))
@@ -1244,7 +1246,7 @@ pub fn t_super_trim_end_and_remove_ending_period(node: VXML) -> Option(VXML) {
   let lines =
     lines
     |> list.reverse
-    |> list.drop_while(fn(bc) { string.trim_end(bc.content) == "" })
+    |> list.drop_while(fn(line) { string.trim_end(line.content) == "" })
 
   case lines {
     [] -> None
@@ -1252,7 +1254,7 @@ pub fn t_super_trim_end_and_remove_ending_period(node: VXML) -> Option(VXML) {
       let content = string.trim_end(last.content)
       case string.ends_with(content, ".") && !string.ends_with(content, "..") {
         True -> {
-          let last = Line(..last, content: {content |> string.drop_end(1)})
+          let last = TextLine(..last, content: {content |> string.drop_end(1)})
           T(blame, [last, ..rest] |> list.reverse)
           |> t_super_trim_end_and_remove_ending_period
         }
@@ -1265,13 +1267,13 @@ pub fn t_super_trim_end_and_remove_ending_period(node: VXML) -> Option(VXML) {
 pub fn t_drop_start(node: VXML, to_drop: Int) -> VXML {
   let assert T(blame, lines) = node
   let assert [first, ..rest] = lines
-  T(blame, [Line(first.blame, string.drop_start(first.content, to_drop) ), ..rest])
+  T(blame, [TextLine(first.blame, string.drop_start(first.content, to_drop) ), ..rest])
 }
 
 pub fn t_drop_end(node: VXML, to_drop: Int) -> VXML {
   let assert T(blame, lines) = node
   let assert [first, ..rest] = lines |> list.reverse
-  T(blame, [Line(first.blame, string.drop_end(first.content, to_drop) ), ..rest] |> list.reverse)
+  T(blame, [TextLine(first.blame, string.drop_end(first.content, to_drop) ), ..rest] |> list.reverse)
 }
 
 pub fn t_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
@@ -1280,8 +1282,8 @@ pub fn t_extract_starting_spaces(node: VXML) -> #(Option(VXML), VXML) {
   case extract_trim_start(first.content) {
     #("", _) -> #(None, node)
     #(spaces, not_spaces) -> #(
-      Some(T(first.blame, [Line(first.blame, spaces)])),
-      T(blame, [Line(first.blame, not_spaces), ..rest]),
+      Some(T(first.blame, [TextLine(first.blame, spaces)])),
+      T(blame, [TextLine(first.blame, not_spaces), ..rest]),
     )
   }
 }
@@ -1292,38 +1294,38 @@ pub fn t_extract_ending_spaces(node: VXML) -> #(Option(VXML), VXML) {
   case extract_trim_end(first.content) {
     #("", _) -> #(None, node)
     #(spaces, not_spaces) -> #(
-      Some(T(first.blame, [Line(first.blame, spaces)])),
-      T(blame, [Line(first.blame, not_spaces), ..rest] |> list.reverse),
+      Some(T(first.blame, [TextLine(first.blame, spaces)])),
+      T(blame, [TextLine(first.blame, not_spaces), ..rest] |> list.reverse),
     )
   }
 }
 
-pub fn t_start_insert_line(node: VXML, bc: Line) {
+pub fn t_start_insert_line(node: VXML, line: TextLine) {
   let assert T(blame, lines) = node
-  T(blame, [bc, ..lines])
+  T(blame, [line, ..lines])
 }
 
-pub fn t_end_insert_line(node: VXML, bc: Line) {
+pub fn t_end_insert_line(node: VXML, line: TextLine) {
   let assert T(blame, lines) = node
-  T(blame, list.append(lines, [bc]))
+  T(blame, list.append(lines, [line]))
 }
 
 pub fn t_start_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
-  let assert [Line(blame_first, content_first), ..other_lines] = lines
+  let assert [TextLine(blame_first, content_first), ..other_lines] = lines
   T(
     blame,
-    [Line(blame_first, text <> content_first), ..other_lines]
+    [TextLine(blame_first, text <> content_first), ..other_lines]
   )
 }
 
 pub fn t_end_insert_text(node: VXML, text: String) {
   let assert T(blame, lines) = node
-  let assert [Line(blame_last, content_last), ..other_lines] =
+  let assert [TextLine(blame_last, content_last), ..other_lines] =
     lines |> list.reverse
   T(
     blame,
-    [Line(blame_last, content_last <> text), ..other_lines]
+    [TextLine(blame_last, content_last <> text), ..other_lines]
       |> list.reverse,
   )
 }
@@ -1370,11 +1372,11 @@ pub fn extract_last_word_from_t_node_if_t(vxml: VXML) -> #(VXML, Option(VXML)) {
         #(_, "") -> #(vxml, None)
         #(before_last_word, last_word) -> {
           let contents =
-            [Line(last.blame, before_last_word), ..rest]
+            [TextLine(last.blame, before_last_word), ..rest]
             |> list.reverse
           #(
             T(blame, contents),
-            Some(T(last.blame, [Line(last.blame, last_word)])),
+            Some(T(last.blame, [TextLine(last.blame, last_word)])),
           )
         }
       }
@@ -1397,9 +1399,9 @@ pub fn extract_first_word_from_t_node_if_t(vxml: VXML) -> #(Option(VXML), VXML) 
       case break_out_first_word(first.content) {
         #("", _) -> #(None, vxml)
         #(first_word, after_first_word) -> {
-          let contents = [Line(first.blame, after_first_word), ..rest]
+          let contents = [TextLine(first.blame, after_first_word), ..rest]
           #(
-            Some(T(first.blame, [Line(first.blame, first_word)])),
+            Some(T(first.blame, [TextLine(first.blame, first_word)])),
             T(blame, contents),
           )
         }
@@ -1513,20 +1515,20 @@ pub fn v_remove_ending_empty_lines(node: VXML) -> VXML {
   }
 }
 
-pub fn v_start_insert_line(vxml: VXML, bc: Line) -> VXML {
+pub fn v_start_insert_line(vxml: VXML, line: TextLine) -> VXML {
   let assert V(blame, _, _, children) = vxml
   let children = case children {
-    [T(_, _) as first, ..rest] -> [t_start_insert_line(first, bc), ..rest]
-    _ -> [T(blame, [bc]), ..children]
+    [T(_, _) as first, ..rest] -> [t_start_insert_line(first, line), ..rest]
+    _ -> [T(blame, [line]), ..children]
   }
   V(..vxml, children: children)
 }
 
-pub fn v_end_insert_line(vxml: VXML, bc: Line) -> VXML {
+pub fn v_end_insert_line(vxml: VXML, line: TextLine) -> VXML {
   let assert V(blame, _, _, children) = vxml
   let children = case children |> list.reverse {
-    [T(_, _) as first, ..rest] -> [t_end_insert_line(first, bc), ..rest]
-    _ -> [T(blame, [bc]), ..children]
+    [T(_, _) as first, ..rest] -> [t_end_insert_line(first, line), ..rest]
+    _ -> [T(blame, [line]), ..children]
   }
   V(..vxml, children: children |> list.reverse)
 }
@@ -1535,7 +1537,7 @@ pub fn v_start_insert_text(vxml: VXML, text: String) -> VXML {
   let assert V(blame, _, _, children) = vxml
   let children = case children {
     [T(_, _) as first, ..rest] -> [t_start_insert_text(first, text), ..rest]
-    _ -> [T(blame, [Line(blame, text)]), ..children]
+    _ -> [T(blame, [TextLine(blame, text)]), ..children]
   }
   V(..vxml, children: children)
 }
@@ -1544,7 +1546,7 @@ pub fn v_end_insert_text(vxml: VXML, text: String) -> VXML {
   let assert V(blame, _, _, children) = vxml
   let children = case children |> list.reverse {
     [T(_, _) as first, ..rest] -> [t_end_insert_text(first, text), ..rest]
-    _ -> [T(blame, [Line(blame, text)]), ..children]
+    _ -> [T(blame, [TextLine(blame, text)]), ..children]
   }
   V(..vxml, children: children |> list.reverse)
 }
@@ -2232,7 +2234,7 @@ pub type Desugarer {
 
 /// A VXML instance is serialized into a list of SLine for the
 /// purposes of tracking (see "--track" command line option);
-/// each SLine (for "Selected (or not) Line") is one of four
+/// each SLine (for "Selected (or not) TextLine") is one of four
 /// variants:
 /// 
 /// - VSLine: a tag "<> ..." of a V-node
@@ -2255,7 +2257,7 @@ pub type SLineSelectedStatus {
   Bystander
 }
 
-pub type LineSelector =
+pub type TextLineSelector =
   fn(SLine) -> SLineSelectedStatus
 
 pub type Selector =
@@ -2299,7 +2301,7 @@ fn t_s_lines(
   let assert T(blame, lines) = vxml
   let lines =
     lines
-    |> list.map(fn(bc) { l_s_line(bc.blame, indent + 2, bc.content) })
+    |> list.map(fn(line) { l_s_line(line.blame, indent + 2, line.content) })
   [t_s_line(blame, indent), ..lines]
 }
 
@@ -2332,12 +2334,12 @@ pub fn vxml_to_s_lines(
 }
 
 // ************************************************************
-// tracking-related part 3: creating an initial selection from a LineSelector
+// tracking-related part 3: creating an initial selection from a TextLineSelector
 // ************************************************************
 
 pub fn apply_line_selector_to_line(
   line: SLine,
-  line_selector: LineSelector,
+  line_selector: TextLineSelector,
 ) -> SLine {
   let sel = line_selector(line)
   case line {
@@ -2349,7 +2351,7 @@ pub fn apply_line_selector_to_line(
 }
 
 pub fn line_selector_to_selector(
-  line_selector: LineSelector,
+  line_selector: TextLineSelector,
 ) -> Selector {
   list.map(
     _,

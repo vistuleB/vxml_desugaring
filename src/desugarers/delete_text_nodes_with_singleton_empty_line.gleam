@@ -1,13 +1,13 @@
 import gleam/option
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{type VXML, T, Line}
+import vxml.{type VXML, T, TextLine}
 
 fn nodemap(
   node: VXML,
 ) -> List(VXML) {
   case node {
-    T(_, [Line(_, "")]) -> []
+    T(_, [TextLine(_, "")]) -> []
     _ -> [node]
   }
 }

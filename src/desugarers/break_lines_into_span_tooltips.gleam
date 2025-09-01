@@ -3,45 +3,45 @@ import gleam/option
 import gleam/string.{inspect as ins}
 import infrastructure.{ type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError } as infra
 import nodemaps_2_desugarer_transforms as n2t
-import vxml.{ type Line, type VXML, Attribute, Line, T, V }
+import vxml.{ type TextLine, type VXML, Attribute, TextLine, T, V }
 import blame as bl
 
 fn line_to_tooltip_span(
-  bc: Line,
+  line: TextLine,
   inner: InnerParam,
 ) -> VXML {
   let location =
-    inner <> case bc.blame {
+    inner <> case line.blame {
       bl.Src(_, _, _, _) -> {
-        let assert bl.Src(_, path, line_no, char_no) = bc.blame
+        let assert bl.Src(_, path, line_no, char_no) = line.blame
         path <> ":" <> ins(line_no) <> ":" <> ins(char_no)
       }
       _ -> ""
     }
   V(
-    bc.blame,
+    line.blame,
     "span",
-    [Attribute(bc.blame, "class", "tooltip-3003-container")],
+    [Attribute(line.blame, "class", "tooltip-3003-container")],
     [
       V(
-        bc.blame,
+        line.blame,
         "span",
         [
-          Attribute(bc.blame, "class", "tooltip-3003-text")
+          Attribute(line.blame, "class", "tooltip-3003-text")
         ],
         [
-          T(bc.blame, [Line(bc.blame, bc.content)])
+          T(line.blame, [TextLine(line.blame, line.content)])
         ],
       ),
       V(
-        bc.blame,
+        line.blame,
         "span",
         [
-          Attribute(bc.blame, "class", "tooltip-3003"),
-          Attribute(bc.blame, "onClick", "sendCmdTo3003('code --goto " <> location <> "');"),
+          Attribute(line.blame, "class", "tooltip-3003"),
+          Attribute(line.blame, "onClick", "sendCmdTo3003('code --goto " <> location <> "');"),
         ],
         [
-          T(bc.blame, [Line(bc.blame, location)])
+          T(line.blame, [TextLine(line.blame, location)])
         ],
       ),
     ],
@@ -62,7 +62,7 @@ fn nodemap(
           lines
             |> list.map(line_to_tooltip_span(_, inner))
             |> list.intersperse(
-              T(blame, [Line(blame, ""), Line(blame, "")]),
+              T(blame, [TextLine(blame, ""), TextLine(blame, "")]),
             ),
         ),
       ]
