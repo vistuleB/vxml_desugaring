@@ -30,19 +30,19 @@ fn strip(
   inner: InnerParam,
 ) -> VXML {
   let assert T(_, lines) = t
-  let lines = infra.lines_trim_start(lines)
-  let assert [first, ..rest] = lines
+  let assert [first, ..rest] = 
+    infra.lines_trim_start(lines)
   let lines = [
     TextLine(..first, content: remove_first_prefix_found(first.content, inner.1)),
     ..rest
   ]
-  let lines = infra.reversed_lines_trim_end(lines |> list.reverse)
-  let assert [first, ..rest] = lines
+  let assert [first, ..rest] = 
+    infra.reversed_lines_trim_end(lines |> list.reverse)
   let lines = [
     TextLine(..first, content: remove_first_suffix_found(first.content, inner.2)),
     ..rest
   ] |> list.reverse
-  T(..t, contents: lines)
+  T(..t, lines: lines)
 }
 
 fn nodemap(

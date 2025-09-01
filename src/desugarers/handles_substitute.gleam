@@ -194,13 +194,13 @@ fn process_line(
 }
 
 fn process_lines(
-  contents: List(TextLine),
+  lines: List(TextLine),
   state: State,
   inner: InnerParam,
   handle_regexp: Regexp,
 ) -> Result(#(List(VXML), List(DesugaringWarning)), DesugaringError) {
   use big_list <- result.try(
-    contents
+    lines
     |> list.map(process_line(_, state, inner, handle_regexp))
     |> result.all
   )
@@ -287,16 +287,16 @@ fn t_transform(
   inner: InnerParam,
   handles_regexp: Regexp,
 ) -> Result(#(List(VXML), State, List(DesugaringWarning)), DesugaringError) {
-  let assert T(_, contents)  = vxml
-  use #(updated_contents, warnings) <- result.try(
+  let assert T(_, lines)  = vxml
+  use #(updated_lines, warnings) <- result.try(
     process_lines(
-      contents,
+      lines,
       state,
       inner,
       handles_regexp,
     )
   )
-  Ok(#(updated_contents, state, warnings))
+  Ok(#(updated_lines, state, warnings))
 }
 
 fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyBeforeAndAfterStatefulNodeMapWithWarnings(State) {

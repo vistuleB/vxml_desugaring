@@ -267,24 +267,23 @@ fn update_line(
 }
 
 fn update_lines(
-  contents: List(TextLine),
+  lines: List(TextLine),
   counters: CounterDict,
   regexes: #(Regexp, Regexp),
 ) -> Result(
   #(List(TextLine), CounterDict, List(HandleAssignment)),
   DesugaringError,
 ) {
-  let init_acc = #([], counters, [])
-  contents
+  lines
   |> list.try_fold(
-    init_acc,
+    #([], counters, []),
     fn(acc, content) {
-      let #(old_contents, counters, handles) = acc
-      use #(updated_content, updated_counters, new_handles) <- result.try(
+      let #(lines, counters, handles) = acc
+      use #(updated_line, updated_counters, new_handles) <- result.try(
         update_line(content, counters, regexes)
       )
       Ok(#(
-        [updated_content, ..old_contents],
+        [updated_line, ..lines],
         updated_counters,
         list.flatten([handles, new_handles]),
       ))

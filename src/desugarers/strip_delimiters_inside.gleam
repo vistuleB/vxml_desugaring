@@ -42,7 +42,7 @@ fn strip(
     TextLine(..first, content: remove_first_suffix_found(first.content, inner.2)),
     ..rest
   ] |> list.reverse
-  T(..t, contents: lines)
+  T(..t, lines: lines)
 }
 
 fn nodemap(

@@ -7,11 +7,11 @@ import vxml.{type VXML, Attribute, V, T, type TextLine, TextLine}
 
 fn detokenize_in_list(
   children: List(VXML),
-  accumulated_contents: List(TextLine),
+  accumulated_lines: List(TextLine),
   accumulated_nodes: List(VXML)
 ) -> List(VXML) {
   let append_word_to_accumlated_contents = fn(blame: Blame, word: String) -> List(TextLine) {
-    case accumulated_contents {
+    case accumulated_lines {
       [first, ..rest] -> [TextLine(first.blame, first.content <> word), ..rest]
       _ -> [TextLine(blame, word)]
     }
@@ -19,45 +19,45 @@ fn detokenize_in_list(
 
   case children {
     [] -> {
-      let assert [] = accumulated_contents
+      let assert [] = accumulated_lines
       accumulated_nodes |> list.reverse |> infra.last_to_first_concatenation
     }
 
     [first, ..rest] -> {
       case first {
         V(blame, "__StartTokenizedT", _, _) -> {
-          let assert [] = accumulated_contents
-          let accumulated_contents = [TextLine(blame, "")]
-          detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
+          let assert [] = accumulated_lines
+          let accumulated_lines = [TextLine(blame, "")]
+          detokenize_in_list(rest, accumulated_lines, accumulated_nodes)
         }
         
         V(blame, "__OneWord", attributes, _) -> {
-          let assert [_, ..] = accumulated_contents
+          let assert [_, ..] = accumulated_lines
           let assert [Attribute(_, "val", word)] = attributes
-          let accumulated_contents = append_word_to_accumlated_contents(blame, word)
-          detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
+          let accumulated_lines = append_word_to_accumlated_contents(blame, word)
+          detokenize_in_list(rest, accumulated_lines, accumulated_nodes)
         }
 
         V(blame, "__OneSpace", _, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let accumulated_contents = append_word_to_accumlated_contents(blame, " ")
-          detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
+          let assert [_, ..] = accumulated_lines
+          let accumulated_lines = append_word_to_accumlated_contents(blame, " ")
+          detokenize_in_list(rest, accumulated_lines, accumulated_nodes)
         }
 
         V(blame, "__OneNewLine", _, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let accumulated_contents = [TextLine(blame, ""), ..accumulated_contents]
-          detokenize_in_list(rest, accumulated_contents, accumulated_nodes)
+          let assert [_, ..] = accumulated_lines
+          let accumulated_lines = [TextLine(blame, ""), ..accumulated_lines]
+          detokenize_in_list(rest, accumulated_lines, accumulated_nodes)
         }
 
         V(blame, "__EndTokenizedT", _, _) -> {
-          let assert [_, ..] = accumulated_contents
-          let accumulated_contents = append_word_to_accumlated_contents(blame, "")
-          detokenize_in_list(rest, [], [T(blame, accumulated_contents |> list.reverse), ..accumulated_nodes])
+          let assert [_, ..] = accumulated_lines
+          let accumulated_lines = append_word_to_accumlated_contents(blame, "")
+          detokenize_in_list(rest, [], [T(blame, accumulated_lines |> list.reverse), ..accumulated_nodes])
         }
 
         _ -> {
-          let assert [] = accumulated_contents
+          let assert [] = accumulated_lines
           detokenize_in_list(rest, [], [first, ..accumulated_nodes])
         }
       }
