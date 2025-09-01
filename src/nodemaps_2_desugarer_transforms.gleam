@@ -1,7 +1,8 @@
 import gleam/result
 import gleam/list
 import vxml.{type VXML, V, T}
-import infrastructure.{type DesugarerTransform, type DesugaringError, type DesugaringWarning, type TrafficLight, Continue, GoBack} as infra
+import infrastructure.{type DesugarerTransform, type DesugaringError, DesugaringError, type DesugaringWarning, type TrafficLight, Continue, GoBack} as infra
+import blame as bl
 import on
 
 pub fn add_warnings(vxml: VXML) {
@@ -72,7 +73,18 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(
   nodemap: OneToOneNoErrorNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
-  fn (vxml) {
+  let erroring_transform = fn(bad_tag: String) -> DesugarerTransform {
+    fn(_vxml) {
+      Error(DesugaringError(bl.no_blame, "invalid tag: \"" <> bad_tag <> "\""))
+    }
+  }
+
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform,
+  )
+
+  fn(vxml) {
     one_to_one_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> add_warnings
     |> Ok

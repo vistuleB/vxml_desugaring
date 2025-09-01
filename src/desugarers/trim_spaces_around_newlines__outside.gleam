@@ -1,10 +1,7 @@
 import gleam/option
-import gleam/list
-import blame as bl
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T}
-import on
 
 fn nodemap(
   vxml: VXML,
@@ -23,13 +20,6 @@ fn nodemap_factory() -> n2t.OneToOneNoErrorNodeMap {
 }
 
 fn transform_factory(outside: List(String)) -> DesugarerTransform {
-  use _ <- on.ok_error(
-    list.find(outside, infra.invalid_tag),
-    fn(guy) { 
-      fn(_) { Error(DesugaringError(bl.no_blame, "bad tag name: \"" <> guy <> "\"")) }
-    },
-  )
-
   nodemap_factory()
   |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(outside)
 }
