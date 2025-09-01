@@ -13,6 +13,12 @@ pub fn identity_transform(vxml: VXML) {
   Ok(#(vxml, []))
 }
 
+fn erroring_transform_for_bad_tag(bad_tag: String) -> DesugarerTransform {
+  fn(_vxml) {
+    Error(DesugaringError(bl.no_blame, "invalid tag: \"" <> bad_tag <> "\""))
+  }
+}
+
 //**************************************************************
 //* OneToOneNoErrorNodeMap
 //**************************************************************
@@ -73,15 +79,9 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(
   nodemap: OneToOneNoErrorNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
-  let erroring_transform = fn(bad_tag: String) -> DesugarerTransform {
-    fn(_vxml) {
-      Error(DesugaringError(bl.no_blame, "invalid tag: \"" <> bad_tag <> "\""))
-    }
-  }
-
   use _ <- on.ok_error(
     list.find(forbidden, infra.invalid_tag),
-    erroring_transform,
+    erroring_transform_for_bad_tag,
   )
 
   fn(vxml) {
@@ -118,6 +118,11 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden_self_fir
   nodemap: OneToOneNoErrorNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform_for_bad_tag,
+  )
+
   fn (vxml) {
     one_to_one_no_error_nodemap_recursive_application_with_forbidden_self_first(vxml, nodemap, forbidden)
     |> add_warnings
@@ -187,6 +192,11 @@ pub fn one_to_one_nodemap_2_desugarer_transform_with_forbidden(
   nodemap: OneToOneNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform_for_bad_tag,
+  )
+
   fn (vxml) {
     one_to_one_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> result.map(add_warnings)
@@ -254,6 +264,11 @@ pub fn one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(
   nodemap: OneToManyNoErrorNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform_for_bad_tag,
+  )
+
   fn (vxml) {
     one_to_many_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> infra.get_root_with_desugaring_error
@@ -324,6 +339,11 @@ pub fn one_to_many_nodemap_2_desugarer_transform_with_forbidden(
   nodemap: OneToManyNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform_for_bad_tag,
+  )
+
   fn (vxml) {
     one_to_many_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> result.try(infra.get_root_with_desugaring_error)
@@ -1196,6 +1216,11 @@ pub fn early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbi
   nodemap: EarlyReturnOneToOneNoErrorNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform_for_bad_tag,
+  )
+
   fn (vxml) {
     early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> add_warnings
@@ -1283,6 +1308,11 @@ pub fn early_return_one_to_many_no_error_nodemap_2_desugarer_transform_with_forb
   nodemap: EarlyReturnOneToManyNoErrorNodeMap,
   forbidden: List(String),
 ) -> DesugarerTransform {
+  use _ <- on.ok_error(
+    list.find(forbidden, infra.invalid_tag),
+    erroring_transform_for_bad_tag,
+  )
+
   fn (vxml) {
     early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> infra.get_root_with_desugaring_error
