@@ -962,7 +962,7 @@ pub fn lines_total_chars(
 
 pub fn line_wrap_rearrangement_internal(
   is_very_first_token: Bool,
-  next_token_marks_beginning_of_line: Bool,
+  _next_token_marks_beginning_of_line: Bool,
   current_blame: Blame,
   already_bundled: List(TextLine),
   tokens_4_current_line: List(String),
@@ -994,44 +994,28 @@ pub fn line_wrap_rearrangement_internal(
     [Either(next_token), ..rest] -> {
       let length = string.length(next_token)
       let new_chars_left = chars_left - length - 1
-      case False && next_token_marks_beginning_of_line && next_token == "" && rest == [] {
-        // very special case: force a newline because otherwise we'll get
-        // hit with a space at the end of the bundled line
+      let current_blame = bl.advance(current_blame, length + 1)
+      case next_token == "" || chars_left > 0 || is_very_first_token {
         True -> line_wrap_rearrangement_internal(
+          False,
+          False,
+          current_blame,
+          already_bundled,
+          [next_token, ..tokens_4_current_line],
+          wrap_beyond,
+          new_chars_left,
+          rest,
+        )
+        False -> line_wrap_rearrangement_internal(
           False,
           False,
           current_blame,
           [bundle_current(), ..already_bundled],
           [next_token],
           wrap_beyond,
-          wrap_beyond,
+          wrap_beyond - length,
           rest,
         )
-        False -> {
-          let current_blame = bl.advance(current_blame, length + 1)
-          case next_token == "" || chars_left > 0 || is_very_first_token {
-            True -> line_wrap_rearrangement_internal(
-              False,
-              False,
-              current_blame,
-              already_bundled,
-              [next_token, ..tokens_4_current_line],
-              wrap_beyond,
-              new_chars_left,
-              rest,
-            )
-            False -> line_wrap_rearrangement_internal(
-              False,
-              False,
-              current_blame,
-              [bundle_current(), ..already_bundled],
-              [next_token],
-              wrap_beyond,
-              wrap_beyond - length,
-              rest,
-            )
-          }
-        }
       }
     }
   }
@@ -1042,19 +1026,19 @@ pub fn line_wrap_rearrangement(
   starting_offset: Int,
   wrap_beyond: Int,
 ) -> #(List(TextLine), Int) {
+  // 🚨
+  // right now there is no option to protect empty first line
+  // or to protect empty last line; these will be sucked in & create leading and
+  // trailing spaces instead on the next & previous lines respectively;
+  // we apparently don't need this protection functionality, so far
+  // 🚨
   let tokens =
     lines
     |> list.map(
       fn(line) {
-        // let return =
         string.split(line.content, " ")
         |> list.map(Either)
         |> list.prepend(Or(line.blame))
-        // case line.content == "" {
-        //   True -> echo return
-        //   False -> []
-        // }
-        // return
       }
     )
     |> list.flatten
