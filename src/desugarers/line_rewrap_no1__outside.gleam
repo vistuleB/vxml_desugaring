@@ -49,7 +49,7 @@ fn line_wrap_in_list(
         deficit,
         False,
         rest,
-        inner
+        inner,
       )
     }
   }

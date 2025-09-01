@@ -53,12 +53,17 @@ fn one_to_one_no_error_nodemap_recursive_application_with_forbidden(
 ) -> VXML {
   case node {
     T(_, _) -> nodemap(node)
-    V(_, tag, _, children) -> case list.contains(forbidden, tag) {
-      True -> node
-      False -> nodemap(V(
-        ..node,
-        children: list.map(children, one_to_one_no_error_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
-      ))
+    V(_, tag, _, children) -> {
+      case list.contains(forbidden, tag) {
+        True -> node
+        False -> nodemap(V(
+          ..node,
+          children: list.map(
+            children, 
+            one_to_one_no_error_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden),
+          )
+        ))
+      }
     }
   }
 }

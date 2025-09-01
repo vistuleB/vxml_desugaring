@@ -94,6 +94,7 @@ import desugarers/line_rewrap_no1__outside
 import desugarers/merge_parent_attributes_into_child
 import desugarers/normalize_begin_end_align
 import desugarers/normalize_math_delimiters_inside
+import desugarers/normalize_spaces__outside
 import desugarers/pair
 import desugarers/pair_list_list
 import desugarers/prepend_append_to_text_children_of
@@ -251,6 +252,7 @@ pub const line_rewrap_no1__outside = line_rewrap_no1__outside.constructor
 pub const merge_parent_attributes_into_child = merge_parent_attributes_into_child.constructor
 pub const normalize_begin_end_align = normalize_begin_end_align.constructor
 pub const normalize_math_delimiters_inside = normalize_math_delimiters_inside.constructor
+pub const normalize_spaces__outside = normalize_spaces__outside.constructor
 pub const pair = pair.constructor
 pub const pair_list_list = pair_list_list.constructor
 pub const prepend_append_to_text_children_of = prepend_append_to_text_children_of.constructor
@@ -409,6 +411,7 @@ pub const assertive_tests : List(fn() -> infra.AssertiveTestCollection) = [
   merge_parent_attributes_into_child.assertive_tests,
   normalize_begin_end_align.assertive_tests,
   normalize_math_delimiters_inside.assertive_tests,
+  normalize_spaces__outside.assertive_tests,
   pair.assertive_tests,
   pair_list_list.assertive_tests,
   prepend_append_to_text_children_of.assertive_tests,

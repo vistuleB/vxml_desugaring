@@ -762,6 +762,13 @@ pub fn extract_trim_end(content: String) -> #(String, String) {
 // lines
 // ************************************************************
 
+pub fn lines_map_content(
+  lines: List(TextLine),
+  m: fn(String) -> String
+) {
+  lines |> list.map(fn(l) {TextLine(l.blame, m(l.content))})
+}
+
 pub fn lines_are_whitespace(
   lines: List(TextLine)
 ) -> Bool {
@@ -955,15 +962,16 @@ pub fn lines_total_chars(
 
 pub fn line_wrap_rearrangement_internal(
   is_very_first_token: Bool,
+  next_token_marks_beginning_of_line: Bool,
   current_blame: Blame,
   already_bundled: List(TextLine),
-  current_line: List(String),
+  tokens_4_current_line: List(String),
   wrap_beyond: Int,
   chars_left: Int,
   remaining_tokens: List(EitherOr(String, Blame)),
 ) -> #(List(TextLine), Int) {
   let bundle_current = fn() {
-    TextLine(current_blame, current_line |> list.reverse |> string.join(" "))
+    TextLine(current_blame, tokens_4_current_line |> list.reverse |> string.join(" "))
   }
   case remaining_tokens {
     [] -> {
@@ -975,35 +983,55 @@ pub fn line_wrap_rearrangement_internal(
     }
     [Or(current_blame), ..rest] -> line_wrap_rearrangement_internal(
       False,
+      True,
       current_blame,
       already_bundled,
-      current_line,
+      tokens_4_current_line,
       wrap_beyond,
       chars_left,
       rest,
     )
-    [Either(some_string), ..rest] -> {
-      let length = string.length(some_string)
-      let current_blame = bl.advance(current_blame, length + 1)
-      case some_string == "" || chars_left > 0 || is_very_first_token {
+    [Either(next_token), ..rest] -> {
+      let length = string.length(next_token)
+      let new_chars_left = chars_left - length - 1
+      case False && next_token_marks_beginning_of_line && next_token == "" && rest == [] {
+        // very special case: force a newline because otherwise we'll get
+        // hit with a space at the end of the bundled line
         True -> line_wrap_rearrangement_internal(
           False,
-          current_blame,
-          already_bundled,
-          [some_string, ..current_line],
-          wrap_beyond,
-          chars_left - length - 1,
-          rest,
-        )
-        False -> line_wrap_rearrangement_internal(
           False,
           current_blame,
           [bundle_current(), ..already_bundled],
-          [some_string],
+          [next_token],
           wrap_beyond,
-          wrap_beyond - length,
+          wrap_beyond,
           rest,
         )
+        False -> {
+          let current_blame = bl.advance(current_blame, length + 1)
+          case next_token == "" || chars_left > 0 || is_very_first_token {
+            True -> line_wrap_rearrangement_internal(
+              False,
+              False,
+              current_blame,
+              already_bundled,
+              [next_token, ..tokens_4_current_line],
+              wrap_beyond,
+              new_chars_left,
+              rest,
+            )
+            False -> line_wrap_rearrangement_internal(
+              False,
+              False,
+              current_blame,
+              [bundle_current(), ..already_bundled],
+              [next_token],
+              wrap_beyond,
+              wrap_beyond - length,
+              rest,
+            )
+          }
+        }
       }
     }
   }
@@ -1018,14 +1046,21 @@ pub fn line_wrap_rearrangement(
     lines
     |> list.map(
       fn(line) {
+        // let return =
         string.split(line.content, " ")
         |> list.map(Either)
         |> list.prepend(Or(line.blame))
+        // case line.content == "" {
+        //   True -> echo return
+        //   False -> []
+        // }
+        // return
       }
     )
     |> list.flatten
   let assert [Or(first_blame), ..tokens] = tokens
   let #(lines, last_line_length) = line_wrap_rearrangement_internal(
+    True,
     True,
     first_blame,
     [],
@@ -1755,6 +1790,13 @@ pub fn valid_tag(tag: String) -> Bool {
   }
 }
 
+pub fn invalid_tag(tag: String) -> Bool {
+  case vxml.validate_tag(tag) {
+    Ok(_) -> False
+    Error(_) -> True
+  }
+}
+
 // ************************************************************
 // is_
 // ************************************************************
@@ -1772,6 +1814,13 @@ pub fn is_v_and_tag_equals(vxml: VXML, tag: String) -> Bool {
   case vxml {
     T(_, _) -> False
     V(_, t, _, _) -> t == tag
+  }
+}
+
+pub fn is_v_and_tag_not_equals(vxml: VXML, tag: String) -> Bool {
+  case vxml {
+    T(_, _) -> False
+    V(_, t, _, _) -> t != tag
   }
 }
 
@@ -1793,6 +1842,13 @@ pub fn is_text_or_is_one_of(node: VXML, tags: List(String)) -> Bool {
   case node {
     T(_, _) -> True
     V(_, tag, _, _) -> list.contains(tags, tag)
+  }
+}
+
+pub fn has_text_child(node: VXML) {
+  case node {
+    T(_, _) -> False
+    V(_, _, _, children) -> list.any(children, is_text_node)
   }
 }
 

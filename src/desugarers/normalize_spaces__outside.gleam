@@ -1,19 +1,13 @@
 import gleam/option
-import gleam/list
-import blame as bl
-import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError, DesugaringError} as infra
+import infrastructure.{type Desugarer, Desugarer, type DesugarerTransform, type DesugaringError} as infra
 import nodemaps_2_desugarer_transforms as n2t
 import vxml.{type VXML, T}
-import on
 
 fn nodemap(
   vxml: VXML,
 ) -> VXML {
   case vxml {
-    T(_, _) ->
-      vxml
-      |> infra.trim_ending_spaces_except_last_line
-      |> infra.trim_starting_spaces_except_first_line
+    T(blame, lines) -> T(blame, lines |> infra.lines_map_content(infra.normalize_spaces))
     _ -> vxml
   }
 }
@@ -23,13 +17,6 @@ fn nodemap_factory() -> n2t.OneToOneNoErrorNodeMap {
 }
 
 fn transform_factory(outside: List(String)) -> DesugarerTransform {
-  use _ <- on.ok_error(
-    list.find(outside, infra.invalid_tag),
-    fn(guy) { 
-      fn(_) { Error(DesugaringError(bl.no_blame, "bad tag name: \"" <> guy <> "\"")) }
-    },
-  )
-
   nodemap_factory()
   |> n2t.one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(outside)
 }
@@ -41,13 +28,13 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 type Param = Nil
 type InnerParam = Nil
 
-pub const name = "trim_spaces_around_newlines__outside"
+pub const name = "normalize_spaces__outside"
 
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// trims spaces around newlines in text nodes
+/// turns double or more spaces into single spaces
 /// outside of subtrees rooted at tags given by the
 /// param argument
 pub fn constructor(outside: List(String)) -> Desugarer {
@@ -56,7 +43,7 @@ pub fn constructor(outside: List(String)) -> Desugarer {
     option.None,
     option.None,
     "
-/// trims spaces around newlines in text nodes
+/// turns double or more spaces into single spaces
 /// outside of subtrees rooted at tags given by the
 /// param argument
     ",
