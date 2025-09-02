@@ -40,7 +40,7 @@ pub const name = "filter_nodes_by_attributes"
 
 //------------------------------------------------53
 /// filters by identifying nodes whose
-/// blame.filename contain the extra.path as a 
+/// blame.filename contain the extra.path as a
 /// substring and whose attributes match at least
 /// one of the given #(key, value) pairs, with a
 /// match counting as true if key == ""; keeps only
@@ -51,15 +51,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// filters by identifying nodes whose
-/// blame.filename contain the extra.path as a 
-/// substring and whose attributes match at least
-/// one of the given #(key, value) pairs, with a
-/// match counting as true if key == \"\"; keeps only
-/// nodes that are descendants of such nodes, or
-/// ancestors of such nodes
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {

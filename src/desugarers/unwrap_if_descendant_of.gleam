@@ -59,10 +59,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// unwraps a given tag when it is the descendant of
-/// one of a stipulated list of tags
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -161,21 +161,15 @@ type InnerParam = Param
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// Processes CodeBlock elements with 
+/// Processes CodeBlock elements with
 /// language=python-prompt and converts them to pre
-/// elements with proper span highlighting for 
+/// elements with proper span highlighting for
 /// prompts, responses, and errors
 pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
-    "
-/// Processes CodeBlock elements with 
-/// language=python-prompt and converts them to pre
-/// elements with proper span highlighting for 
-/// prompts, responses, and errors
-    ",
     case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }
       Ok(inner) -> transform_factory(inner)

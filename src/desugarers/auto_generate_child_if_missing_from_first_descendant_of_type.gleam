@@ -84,20 +84,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Given arguments
-/// ```
-/// parent_tag, child_tag, descendant_tag
-/// ```
-/// will, for each node of tag `parent_tag`,
-/// generate, if the node has no existing
-/// children tag `child_tag`, a node of type
-/// `child_tag` by copy-pasting the contents
-/// and attributes of the first descendant
-/// of `parent_tag` that has tag `descendant_tag`.
-/// If no such descendant exists, does nothing
-/// to the node of tag `parent_tag`.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

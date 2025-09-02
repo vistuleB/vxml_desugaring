@@ -32,7 +32,7 @@ pub const name = "keep_only_subtrees_and_ancestors_of_nodes_matching_a_key_value
 /// filters by identifying nodes whose attributes
 /// match at least one of the given #(key, value)
 /// pairs. (OR not AND); keeps only nodes that are
-/// descendants of such nodes, or ancestors of such 
+/// descendants of such nodes, or ancestors of such
 /// nodes
 pub fn constructor(
   param: Param,
@@ -41,13 +41,6 @@ pub fn constructor(
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// filters by identifying nodes whose attributes
-/// match at least one of the given #(key, value)
-/// pairs. (OR not AND); keeps only nodes that are
-/// descendants of such nodes, or ancestors of such 
-/// nodes
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> case inner {

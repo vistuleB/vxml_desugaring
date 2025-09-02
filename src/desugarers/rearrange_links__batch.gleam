@@ -61,7 +61,7 @@ fn detokenize_maybe(
           let accumulated_lines = [TextLine(blame, "")]
           detokenize_maybe(rest, accumulated_lines, accumulated_nodes)
         }
-        
+
         V(blame, "__OneWord", attributes, _) -> {
           let assert [_, ..] = accumulated_lines
           let assert [Attribute(_, "val", word)] = attributes
@@ -454,14 +454,14 @@ fn nodemap(
         tokenize_maybe(children),
         vxml,
       )
-      
+
       let atomized = list.fold(
         inner,
         atomized,
         match_until_end,
       )
       |> detokenize_maybe([], [])
-      
+
       V(..vxml, children: atomized)
     }
     _ -> vxml
@@ -912,8 +912,8 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// matches appearance of first String while 
-/// considering (x) as a variable and replaces it 
+/// matches appearance of first String while
+/// considering (x) as a variable and replaces it
 /// with the second String (x) can be used in second
 /// String to use the variable from first String
 pub fn constructor(param: Param) -> Desugarer {
@@ -921,12 +921,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// matches appearance of first String while 
-/// considering (x) as a variable and replaces it 
-/// with the second String (x) can be used in second
-/// String to use the variable from first String
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

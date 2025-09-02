@@ -18,7 +18,7 @@ fn nodemap(
         dict.get(inner, tag),
         fn(_) { vxml },
       )
-    
+
       let new_children =
         list.map(children, fn(child) {
           use child_blame, child_tag, child_attrs, grandchildren <- infra.on_t_on_v(child, fn(_, _){
@@ -92,10 +92,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// renames tags when they appear as children of a
-/// specified parent tag
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

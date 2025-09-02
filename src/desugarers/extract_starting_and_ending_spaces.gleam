@@ -41,17 +41,13 @@ type InnerParam = Param
 
 pub const name = "extract_starting_and_ending_spaces"
 //------------------------------------------------53
-/// extracts starting and ending spaces from 
+/// extracts starting and ending spaces from
 /// specified tags into separate text nodes
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// extracts starting and ending spaces from
-/// specified tags into separate text nodes
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

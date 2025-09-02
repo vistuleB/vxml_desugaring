@@ -128,7 +128,7 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
     V(b, tag, a, children) if tag == "Chapter" || tag == "Bootcamp" -> {
       let sections = infra.v_children_with_tag(child, "Section")
       let exercises = infra.v_children_with_tag(child, "Exercises")
-      use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
+      use sections_ul <- result.try(generate_sections_list(sections, exercises))
       Ok(V(b, tag, a, [sections_ul, ..children |> list.map(remove_breadcrumb_title)]))
     }
     _ -> Ok(child)
@@ -172,7 +172,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "...",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

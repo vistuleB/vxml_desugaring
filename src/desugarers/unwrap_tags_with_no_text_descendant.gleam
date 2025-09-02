@@ -62,11 +62,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// for a specified list of tag strings, unwraps
-/// nodes with tags from the list if the node does
-/// not have a text child descendant
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -112,35 +112,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(inner)),
     option.None,
-    "
-/// Strips all Latex delimiters inside a targeted
-/// tag name. If called with tag \"MathBlock\", for
-/// example, will turn
-/// ```
-/// <> MathBlock
-///   <>
-///     \"$$x$$\"
-/// ```
-/// and
-/// ```
-/// <> MathBlock
-///   <>
-///     \"\\[x\\]\"
-/// ```
-/// and
-/// ```
-/// <> MathBlock
-///   <>
-///     \"$$x\\]\"
-/// ```
-/// (even if this is a Mathjax error), into
-/// ```
-/// <> MathBlock
-///   <>
-///     \"x\"
-/// ```
-/// .
-    ",
     transform_factory(inner),
   )
 }

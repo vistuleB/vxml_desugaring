@@ -78,17 +78,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Moves an attribute with key `key` from the first
-/// child of a node with tag `parent_tag` to the 
-/// node itself.
-/// ```
-/// #Param:
-/// - parent tag
-/// - child tag
-/// - attribute key
-/// ```
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

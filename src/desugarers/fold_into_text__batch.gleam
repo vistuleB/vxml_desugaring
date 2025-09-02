@@ -374,13 +374,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// seemingly replaces specified tags by specified
-/// strings that are glued to surrounding text nodes
-/// (in end-of-last-line glued to beginning-of-first-line
-/// fashion), without regards for the tag's contents
-/// or attributes, that are destroyed in the process
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

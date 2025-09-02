@@ -11,7 +11,7 @@ fn nodemap(
   case vxml {
     V(_, tag, _, _) if tag == inner.0 -> {
       case inner.5(vxml) {
-        True -> 
+        True ->
           vxml
           |> infra.v_start_insert_text(inner.1)
           |> infra.v_end_insert_text(inner.2)
@@ -59,10 +59,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(inner)),
     option.None,
-    "
-/// inserts text at the beginning and end of a
-/// specified tag
-    ",
     transform_factory(inner)
   )
 }

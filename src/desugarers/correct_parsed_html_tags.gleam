@@ -47,10 +47,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// corrects parsed HTML tags by removing
-/// surrounding angle brackets
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

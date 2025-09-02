@@ -89,13 +89,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// surrounds specified elements with above and below tags
-/// the three tuple elements:
-///    - list of tag names to surround
-///    - name of tag to place above, or \"\" if none
-///    - name of tag to place below, or \"\" if none
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

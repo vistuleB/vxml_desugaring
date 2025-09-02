@@ -66,7 +66,7 @@ pub const name = "wrap_children_before_in"
 /// from the first up to but not including the first
 /// child with a specified "stop tag" into a given
 /// wrapper tag.
-/// 
+///
 /// Will create an empty wrapper in case the stop
 /// tag is immediately encountered, or there are no
 /// children.
@@ -75,16 +75,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// For a specified parent tag, wraps all children
-/// from the first up to but not including the first
-/// child with a specified \"stop tag\" into a given
-/// wrapper tag.
-/// 
-/// Will create an empty wrapper in case the stop
-/// tag is immediately encountered, or there are no
-/// children.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -76,12 +76,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// appends a class to children if they meet a
-/// condition when they are children of a specified
-/// parent tag. takes tuples of
-/// (parent_tag, class_to_append, condition_function).
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

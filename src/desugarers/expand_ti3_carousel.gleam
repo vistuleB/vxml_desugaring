@@ -133,38 +133,6 @@ pub fn constructor() -> Desugarer {
     name,
     None,
     None,
-    "
-/// Expands compressed Carousel syntax to full form.
-///
-/// Transforms:
-/// ```
-/// |> Carousel
-///     src=blabla
-///     src=bloblo
-///     width=200px
-///     height=150px
-/// ```
-///
-/// To:
-/// ```
-/// |> Carousel
-///     |> CarouselItem
-///         |> img
-///             src=blabla
-///             width=200px
-///             height=150px
-///     |> CarouselItem
-///         |> img
-///             src=bloblo
-///             width=200px
-///             height=150px
-/// ```
-///
-/// Validates that compressed Carousel has:
-/// - No children
-/// - Only src, width, and height attributes
-/// - At least one src attribute
-    ",
     case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }
       Ok(_) -> transform_factory()

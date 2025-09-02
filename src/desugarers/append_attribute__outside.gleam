@@ -66,12 +66,6 @@ pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// add a specific key-value pair to all tags of a
-/// given name and early-return after tag is added,
-/// while not entering subtrees specified by the 
-/// last argument to the desugarer
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

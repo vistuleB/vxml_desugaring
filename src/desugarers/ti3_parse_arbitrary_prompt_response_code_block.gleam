@@ -18,7 +18,7 @@ const newline_t =
 
 const terminal_prompt = "user@home:~$"
 
-const prompt = 
+const prompt =
   V(
     bl.Des([], name, 22),
     "span",
@@ -26,7 +26,7 @@ const prompt =
     [],
   )
 
-const terminal_prompt_span = 
+const terminal_prompt_span =
   V(
     bl.Des([], name, 31),
     "span",
@@ -34,7 +34,7 @@ const terminal_prompt_span =
     [],
   )
 
-const response = 
+const response =
   V(
     bl.Des([], name, 30),
     "span",
@@ -47,7 +47,7 @@ fn line_2_t(line: TextLine) -> VXML {
 }
 
 fn elements_for_line(line: TextLine) -> List(VXML) {
-  let #(before, after) = 
+  let #(before, after) =
     string.split_once(line.content, "<- ")
     |> result.unwrap(
       case string.starts_with(line.content, terminal_prompt) {
@@ -124,11 +124,6 @@ pub fn constructor() -> Desugarer {
     name,
     None,
     None,
-    "
-/// Processes CodeBlock elements with language=orange-comment
-/// and converts them to pre elements with orange
-/// comment highlighting for text after // markers
-    ",
     case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }
       Ok(inner) -> transform_factory(inner)

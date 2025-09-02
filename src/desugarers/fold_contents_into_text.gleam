@@ -374,13 +374,13 @@ pub const name = "fold_contents_into_text"
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// Replaces a specified tag by its contents
-/// assuming that the tag contains exactly one child 
+/// assuming that the tag contains exactly one child
 /// consisting of text.
-/// 
+///
 /// The text content gets folded into surrounding text
 /// nodes (in end-of-last-line to beginning-of-first-line
 /// fashion).
-/// 
+///
 /// Throws an error if any instance of the tag fails
 /// to have exactly one text child.
 pub fn constructor(param: Param) -> Desugarer {
@@ -388,18 +388,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Replaces a specified tag by its contents
-/// assuming that the tag contains exactly one child 
-/// consisting of text.
-/// 
-/// The text content gets folded into surrounding text
-/// nodes (in end-of-last-line to beginning-of-first-line
-/// fashion).
-/// 
-/// Throws an error if any instance of the tag fails
-/// to have exactly one text child.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

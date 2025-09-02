@@ -61,9 +61,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// prepends text to the beginning of specified tags
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

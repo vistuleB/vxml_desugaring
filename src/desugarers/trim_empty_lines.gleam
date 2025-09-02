@@ -41,7 +41,7 @@ pub const name = "trim_empty_lines"
 //------------------------------------------------53
 /// Removes starting empty lines from first child
 /// ending empty lines from last child of nodes with
-/// specified tag if the first and last children 
+/// specified tag if the first and last children
 /// happen to be T-nodes, respectively. The removal
 /// of lines may destroy a T-node, in which case the
 /// process continues with the next T-node in order,
@@ -51,15 +51,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Removes starting empty lines from first child
-/// ending empty lines from last child of nodes with
-/// specified tag if the first and last children 
-/// happen to be T-nodes, respectively. The removal
-/// of lines may destroy a T-node, in which case the
-/// process continues with the next T-node in order,
-/// if any, so that the desugarer is idempotent.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

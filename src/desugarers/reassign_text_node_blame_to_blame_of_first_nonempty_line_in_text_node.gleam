@@ -49,10 +49,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// reassigns text node blame to the blame of the
-/// first nonempty line in the text node
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

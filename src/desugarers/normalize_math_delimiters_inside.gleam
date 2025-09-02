@@ -120,19 +120,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// adds flexiblilty to user's custom
-/// mathblock element
-/// ```
-/// |> Mathblock
-///     math
-/// ```
-/// should be same as
-/// ```
-/// |> Mathblock
-///     $$math$$
-/// ```
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

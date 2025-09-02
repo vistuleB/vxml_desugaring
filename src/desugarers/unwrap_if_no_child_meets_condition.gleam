@@ -32,9 +32,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String,   fn(VXML) -> Bool)
-//             ↖         ↖        
+//             ↖         ↖
 //             tag to    condition
-//             unwrap             
+//             unwrap
 type InnerParam = Param
 
 pub const name = "unwrap_if_no_child_meets_condition"
@@ -50,10 +50,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// unwraps nodes of a specified tag if none of its
-/// children meet a boolean condition
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

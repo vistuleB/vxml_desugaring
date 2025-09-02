@@ -126,7 +126,7 @@ pub const name = "wrap_adjacent_non_whitespace_text_with"
 /// a given kind of element A and wraps those
 /// characters plus the element A itself into a
 /// wrapper element B. For example:
-/// 
+///
 /// BEFORE:
 /// ```
 /// <>
@@ -136,7 +136,7 @@ pub const name = "wrap_adjacent_non_whitespace_text_with"
 /// <>
 ///   ", more text that started with a comma"
 /// ```
-/// 
+///
 /// AFTER:
 /// ```
 /// <>
@@ -151,7 +151,7 @@ pub const name = "wrap_adjacent_non_whitespace_text_with"
 /// <>
 ///   " more text that started with a comma"
 /// ```
-/// 
+///
 /// If no text is found to glob A in, leaves A
 /// unwrapped.
 pub fn constructor(param: Param) -> Desugarer {
@@ -159,40 +159,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Globs all non-whitespace characters surrounding
-/// a given kind of element A and wraps those
-/// characters plus the element A itself into a
-/// wrapper element B. For example:
-/// 
-/// BEFORE:
-/// ```
-/// <>
-///   \"some text that ends right\"
-///   \"here with an m-dash: —\"
-/// <> A
-/// <>
-///   \", more text that started with a comma\"
-/// ```
-/// 
-/// AFTER:
-/// ```
-/// <>
-///   \"some text that ends right\"
-///   \"here with an m-dash: \"
-/// <> B
-///   <>
-///     \"—\"
-///   <> A
-///   <>
-///     \",\"
-/// <>
-///   \" more text that started with a comma\"
-/// ```
-/// 
-/// If no text is found to glob A in, leaves A
-/// unwrapped.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -208,69 +208,38 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 //------------------------------------------------53
 /// Looks for `handle` attributes in the V nodes
 /// that are expected to be in form
-/// 
+///
 /// `handle=handle_name | id | value`
-/// 
+///
 /// (Panics if not in this form.)
-/// 
-/// Transform the values into a dict where the key 
-/// is the handle name and the values are tuples 
-/// #(String, String, String) comprising the handle, 
+///
+/// Transform the values into a dict where the key
+/// is the handle name and the values are tuples
+/// #(String, String, String) comprising the handle,
 /// id, and value.
-/// 
-/// Adds new field of data (path) which represents 
+///
+/// Adds new field of data (path) which represents
 /// the filename and is expected to be available
-/// In attribute value of node with Param.0 tag 
+/// In attribute value of node with Param.0 tag
 /// Param.1 attribute_key.
-/// 
-/// Wraps the document root by a V node with tag 
+///
+/// Wraps the document root by a V node with tag
 /// GrandWrapper and transform back the dict as the
 /// grandwrapper's attributes.
-/// 
-/// Returns a pair of newly created node and state 
+///
+/// Returns a pair of newly created node and state
 /// of handles used to check for name uniqueness.
-/// 
+///
 /// Throws error if
-/// 1. there are multiple handles with same 
+/// 1. there are multiple handles with same
 ///    handle_name
-/// 2. no node found with Param.0 tag Param.1 
+/// 2. no node found with Param.0 tag Param.1
 ///    attribute_key
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
-    "
-/// Looks for `handle` attributes in the V nodes
-/// that are expected to be in form
-/// 
-/// `handle=handle_name | id | value`
-/// 
-/// (Panics if not in this form.)
-/// 
-/// Transform the values into a dict where the key 
-/// is the handle name and the values are tuples 
-/// #(String, String, String) comprising the handle, 
-/// id, and value.
-/// 
-/// Adds new field of data (path) which represents 
-/// the filename and is expected to be available
-/// In attribute value of node with Param.0 tag 
-/// Param.1 attribute_key.
-/// 
-/// Wraps the document root by a V node with tag 
-/// GrandWrapper and transform back the dict as the
-/// grandwrapper's attributes.
-/// 
-/// Returns a pair of newly created node and state 
-/// of handles used to check for name uniqueness.
-/// 
-/// Throws error if
-/// 1. there are multiple handles with same 
-///    handle_name
-/// 2. no node found with Param.0 tag Param.1 
-///    attribute_key
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

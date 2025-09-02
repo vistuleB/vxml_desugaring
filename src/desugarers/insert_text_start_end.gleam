@@ -51,10 +51,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(inner)),
     option.None,
-    "
-/// inserts text at the beginning and end of a
-/// specified tag
-    ",
     transform_factory(inner)
   )
 }

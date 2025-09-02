@@ -113,15 +113,12 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// 
+///
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// 
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
@@ -133,7 +130,7 @@ pub fn constructor(param: Param) -> Desugarer {
 // 🌊🌊🌊 tests 🌊🌊🌊🌊🌊
 // 🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
 fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
-  let test_param = fn(vxml) { 
+  let test_param = fn(vxml) {
     let assert V(_, t, _, _) = vxml
     t == "a"
   }
@@ -143,7 +140,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       source: "
             <> testing
               <> a
-                <> 
+                <>
                   \"first line\"
                   \"second line\"
                 <>
@@ -186,7 +183,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       source: "
             <> testing
               <> a
-                <> 
+                <>
                   \"first  line\"
                   \"second  \"
                   \"   line\"
@@ -220,7 +217,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestData(Param)) {
       source: "
             <> testing
               <> a
-                <> 
+                <>
                   \"\"
                   \"\"
       ",

@@ -75,12 +75,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// adds a specified tag before each occurrence of
-/// some specified other tag, except when the latter
-/// tag is occurring for the first time with respect
-/// to the current group of siblings
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

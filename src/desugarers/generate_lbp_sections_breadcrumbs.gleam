@@ -70,7 +70,7 @@ fn small_caps_nodes(nodes: List(VXML), result: List(VXML)) -> List(VXML) {
     [] -> result |> list.reverse
     [first, ..rest] -> {
       case first {
-        T(_, _) -> small_caps_nodes(rest, [small_caps_t(first), ..result])  
+        T(_, _) -> small_caps_nodes(rest, [small_caps_t(first), ..result])
         V(b, t, a, children) -> small_caps_nodes(rest, [
           V(b, t, a, small_caps_nodes(children, [])),
           ..result
@@ -88,7 +88,7 @@ fn transform_children(children: List(VXML)) -> List(VXML){
 
 fn construct_breadcrumb(children: List(VXML), target_id: String, index: Int) -> VXML {
   let link = V(
-    desugarer_blame(90), 
+    desugarer_blame(90),
     "InChapterLink",
     [Attribute(desugarer_blame(92), "href", "?id=" <> target_id)],
     children
@@ -151,13 +151,13 @@ fn map_chapter(child: VXML) -> Result(VXML, DesugaringError) {
     V(b, "Chapter", a, children) -> {
       let sections = infra.v_children_with_tag(child, "Section")
       let exercises = infra.v_children_with_tag(child, "Exercises")
-      use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
+      use sections_ul <- result.try(generate_sections_list(sections, exercises))
       Ok(V(b, "Chapter", a, [sections_ul, ..children]))
     }
     V(b, "Bootcamp", a, children) -> {
       let sections = infra.v_children_with_tag(child, "Section")
       let exercises = infra.v_children_with_tag(child, "Exercises")
-      use sections_ul <- result.try(generate_sections_list(sections, exercises)) 
+      use sections_ul <- result.try(generate_sections_list(sections, exercises))
       Ok(V(b, "Bootcamp", a, [sections_ul, ..children]))
     }
     _ -> Ok(child)
@@ -201,7 +201,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.None,
     option.None,
-    "...",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

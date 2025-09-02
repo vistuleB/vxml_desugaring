@@ -69,18 +69,13 @@ pub const name = "prepend_text_node_if_has_ancestor_else__batch"
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// prepend one of two specified text fragments to
-/// nodes of a certain tag depending on wether the 
+/// nodes of a certain tag depending on wether the
 /// node has an ancestor of specified type or not
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// prepend one of two specified text fragments to
-/// nodes of a certain tag depending on wether the 
-/// node has an ancestor of specified type or not
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

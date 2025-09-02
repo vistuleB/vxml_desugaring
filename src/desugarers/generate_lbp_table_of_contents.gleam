@@ -68,7 +68,7 @@ fn div_with_id_title_and_menu_items(
     "div",
     [
       Attribute(desugarer_blame(69), "id", id)
-    ], 
+    ],
     [
       type_of_chapters_title(type_of_chapters_title_component_name, title_label),
       V(desugarer_blame(73), "ul", [], menu_items),
@@ -161,7 +161,7 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// admitting custom values for the root tag name
 /// of the table of contents, as well as for the tag
 /// name of the chapter (& bootcamp) links and the
-/// tag name for the Chapter/Bootcamp category 
+/// tag name for the Chapter/Bootcamp category
 /// banners, and an optional spacer tag name for an
 /// element to be placed between the two categories
 pub fn constructor(param: Param) -> Desugarer {
@@ -169,15 +169,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// generates the LBP table of contents while
-/// admitting custom values for the root tag name
-/// of the table of contents, as well as for the tag
-/// name of the chapter (& bootcamp) links and the
-/// tag name for the Chapter/Bootcamp category 
-/// banners, and an optional spacer tag name for an
-/// element to be placed between the two categories
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(param) -> desugarer_factory(param)

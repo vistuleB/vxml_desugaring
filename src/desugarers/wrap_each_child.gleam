@@ -46,19 +46,13 @@ pub const name = "wrap_each_child"
 //------------------------------------------------53
 /// Wraps each child of a specified node type with
 /// a given wrapper.
-/// 
+///
 /// Early-returns out of nodes of the specified tag.
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Wraps each child of a specified node type with
-/// a given wrapper.
-/// 
-/// Early-returns out of nodes of the specified tag.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

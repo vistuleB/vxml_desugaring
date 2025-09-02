@@ -64,17 +64,13 @@ pub const name = "remove_chapter_number_from_title"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes chapter numbers from titles in chapter 
+/// removes chapter numbers from titles in chapter
 /// and subchapter title elements
 pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
-    "
-/// removes chapter numbers from titles in chapter
-/// and subchapter title elements
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

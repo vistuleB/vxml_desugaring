@@ -45,9 +45,9 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String)
-//             ↖       ↖   
+//             ↖       ↖
 //             tag     text
-//                         
+//
 type InnerParam = #(String, VXML)
 
 pub const name = "prepend_text_node__outside"
@@ -65,9 +65,9 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// of tag 'tag'. The newline character can be
 /// included in 'text', which will be translated to
 /// >1 TextLine.
-/// 
+///
 /// Early-returns from nodes of tag 'tag'.
-/// 
+///
 /// Stays outside of subtrees rooted at tags given
 /// by the third argument.
 pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
@@ -75,21 +75,6 @@ pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// Given arguments
-/// ```
-/// tag, text
-/// ```
-/// prepends a text node wit content 'text' to nodes
-/// of tag 'tag'. The newline character can be
-/// included in 'text', which will be translated to
-/// >1 TextLine.
-/// 
-/// Early-returns from nodes of tag 'tag'.
-/// 
-/// Stays outside of subtrees rooted at tags given
-/// by the third argument.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

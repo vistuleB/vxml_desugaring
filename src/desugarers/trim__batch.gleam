@@ -55,16 +55,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// Removes starting spaces from first and ending
-/// spaces from last child of nodes with specified
-/// tag if those children are T-nodes. The removal
-/// of spaces includes the removal of empty lines
-/// and the deletion of the entire T-node if no
-/// lines remain, in which case the process
-/// continues with the next or previous T-node, if
-/// any.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

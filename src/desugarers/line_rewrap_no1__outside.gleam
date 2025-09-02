@@ -96,25 +96,17 @@ pub const name = "line_rewrap_no1__outside"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// wraps lines after they go beyond a certain 
+/// wraps lines after they go beyond a certain
 /// length
-/// 
+///
 /// accepts a function that determine which V-nodes
-/// will be "folded" and have contents that should 
+/// will be "folded" and have contents that should
 /// be counted as a deficit toward the next T-node
 pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// wraps lines after they go beyond a certain 
-/// length
-/// 
-/// accepts a function that determine which V-nodes
-/// will be \"folded\" and have contents that should 
-/// be counted as a deficit toward the next T-node
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

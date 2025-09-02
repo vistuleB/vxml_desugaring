@@ -1206,7 +1206,7 @@ pub fn total_chars( // yeah yeah it's not t-... ...relax a bit...
     T(_, lines) ->
       lines_total_chars(lines)
 
-    V(_, _, _, children) -> 
+    V(_, _, _, children) ->
       children
       |> list.map(total_chars)
       |> int.sum
@@ -2198,7 +2198,7 @@ pub fn run_assertive_desugarer_tests(
       #(0, 0),
       fn(acc, coll) {
         case {
-          list.contains(names, coll.desugarer_name) && 
+          list.contains(names, coll.desugarer_name) &&
           list.length(coll.tests()) > 0
         } {
           False -> acc
@@ -2263,7 +2263,6 @@ pub type Desugarer {
     name: String,
     stringified_param: Option(String),
     stringified_outside: Option(String),
-    docs: String,
     transform: DesugarerTransform,
   )
 }
@@ -2276,12 +2275,12 @@ pub type Desugarer {
 /// purposes of tracking (see "--track" command line option);
 /// each SLine (for "Selected (or not) TextLine") is one of four
 /// variants:
-/// 
+///
 /// - VSLine: a tag "<> ..." of a V-node
 /// - ASLine: a key-attribute pair line "key=val" of a V-node
 /// - TSLine: the caret "<>" that marks the start of a T-node
 /// - LSLine: a content-line for a T-node
-/// 
+///
 /// Each SLine comes with a selection status, given by its 'selected'
 /// field.
 pub type SLine {
@@ -2604,7 +2603,7 @@ pub fn s_lines_2_output_lines(
     fn (acc, line) {
       case line.selected {
         OG | Bystander -> case acc.1 {
-          None -> 
+          None ->
             #(
               True,
               None,
@@ -2619,7 +2618,7 @@ pub fn s_lines_2_output_lines(
             )
         }
         NotSelected -> case acc.0, acc.1 {
-          False, None -> 
+          False, None ->
             #(
               False,
               None,
@@ -2633,7 +2632,7 @@ pub fn s_lines_2_output_lines(
               acc.2,
             )
 
-          True, Some(#(indentation, num_lines)) -> 
+          True, Some(#(indentation, num_lines)) ->
             #(
               True,
               Some(#(int.min(line.indent, indentation), num_lines + 1)),

@@ -70,10 +70,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// fixes local links in TI2 content by converting
-/// relative paths to absolute URLs
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -90,23 +90,6 @@ pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// Given first 3 arguments
-/// ```
-/// parent_tag, child_tag, attribute_key
-/// ```
-/// will, for each node of tag `parent_tag`,
-/// generate, if the node has no existing children
-/// tag `child_tag`, by using the value of 
-/// attribute_key as the contents of the child of 
-/// tag child_tag. If no such attribute exists, does
-/// nothing to the node of tag parent_tag.
-/// 
-/// Early-returns from subtree rooted at parent_tag.
-/// 
-/// Stays outside of trees rooted at tags in last
-/// argument given to function.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

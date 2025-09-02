@@ -30,13 +30,13 @@ fn strip(
   inner: InnerParam,
 ) -> VXML {
   let assert T(_, lines) = t
-  let assert [first, ..rest] = 
+  let assert [first, ..rest] =
     infra.lines_trim_start(lines)
   let lines = [
     TextLine(..first, content: remove_first_prefix_found(first.content, inner.1)),
     ..rest
   ]
-  let assert [first, ..rest] = 
+  let assert [first, ..rest] =
     infra.reversed_lines_trim_end(lines |> list.reverse)
   let lines = [
     TextLine(..first, content: remove_first_suffix_found(first.content, inner.2)),
@@ -74,7 +74,7 @@ fn transform_factory(inner: InnerParam) -> DesugarerTransform {
 type Param = #(String,    List(infra.LatexDelimiterPair), fn(VXML) -> Bool)
 //             ↖          ↖                               ↖
 //             tag        delimiters                      condition
-//             to target  to remove                       
+//             to target  to remove
 type InnerParam = #(String, List(String), List(String), fn(VXML) -> Bool)
 
 pub const name = "strip_delimiters_inside_if"
@@ -117,35 +117,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(inner)),
     option.None,
-    "
-/// Strips all Latex delimiters inside a targeted
-/// tag name. If called with tag \"MathBlock\", for
-/// example, will turn
-/// ```
-/// <> MathBlock
-///   <>
-///     \"$$x$$\"
-/// ```
-/// and
-/// ```
-/// <> MathBlock
-///   <>
-///     \"\\[x\\]\"
-/// ```
-/// and
-/// ```
-/// <> MathBlock
-///   <>
-///     \"$$x\\]\"
-/// ```
-/// (even if this is a Mathjax error), into
-/// ```
-/// <> MathBlock
-///   <>
-///     \"x\"
-/// ```
-/// .
-    ",
     transform_factory(inner),
   )
 }

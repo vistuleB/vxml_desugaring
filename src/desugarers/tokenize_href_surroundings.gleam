@@ -123,15 +123,12 @@ pub const name = "tokenize_href_surroundings"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// 
+///
 pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
-    "
-/// 
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
@@ -149,7 +146,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
             <> testing
               <> zz
                 href=bla
-                <> 
+                <>
                   \"first line\"
                   \"second line\"
                 <>
@@ -194,7 +191,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
             <> testing
               <> zz
                 href=true
-                <> 
+                <>
                   \"first  line\"
                   \"second  \"
                   \"   line\"

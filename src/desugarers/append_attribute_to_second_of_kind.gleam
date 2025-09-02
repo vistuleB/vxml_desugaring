@@ -55,11 +55,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Adds the specified attribute-value pair to nodes
-/// with the given tag name when the previous
-/// sibling is also a node with the same tag name
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

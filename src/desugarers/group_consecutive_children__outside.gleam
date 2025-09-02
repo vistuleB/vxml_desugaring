@@ -60,9 +60,9 @@ fn param_to_inner_param(param: Param, outside: List(String)) -> Result(InnerPara
 }
 
 type Param = #(String,   List(String))
-//             ↖         ↖           
-//             wrapper   do not      
-//                       wrap        
+//             ↖         ↖
+//             wrapper   do not
+//                       wrap
 //                       these
 type InnerParam = #(String, List(String), Blame)
 
@@ -74,34 +74,21 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
 /// when called with params
-/// 
+///
 ///   - wrapper_tag: String
 ///   - dont_wrap_these: List(String)
 ///   - dont_enter_here: List(String)
-/// 
+///
 /// will wrap all groups of consecutive children
-/// where the group does not contain a tag from 
-/// dont_wrap_these with a wrapper_tag node, while 
-/// not processing subtrees rooted at nodes of tag 
+/// where the group does not contain a tag from
+/// dont_wrap_these with a wrapper_tag node, while
+/// not processing subtrees rooted at nodes of tag
 /// dont_enter_here untouched; see tests
 pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// when called with params
-/// 
-///   - wrapper_tag: String
-///   - dont_wrap_these: List(String)
-///   - dont_enter_here: List(String)
-/// 
-/// will wrap all groups of consecutive children
-/// where the group does not contain a tag from 
-/// dont_wrap_these with a wrapper_tag node, while 
-/// not processing subtrees rooted at nodes of tag 
-/// dont_enter_here untouched; see tests
-    ",
     case param_to_inner_param(param, outside) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

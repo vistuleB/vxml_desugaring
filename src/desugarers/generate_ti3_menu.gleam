@@ -264,12 +264,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// generate ti3 Menu navigation with left and right
-/// menus containing previous/next chapter links,
-/// index link, and course homepage link. The menu
-/// is inserted after each Chapter and Sub element.
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

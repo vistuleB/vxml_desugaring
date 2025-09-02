@@ -38,10 +38,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// desugarer that does nothing but is named 'timer',
-/// for use in timing the desugaring pipeline
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

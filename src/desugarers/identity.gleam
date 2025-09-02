@@ -31,17 +31,13 @@ pub const name = "identity"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// idempotent desugarer that leaves the VXML 
+/// idempotent desugarer that leaves the VXML
 /// unchanged and that never generates an error
 pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
-    "
-/// idempotent desugarer that leaves the VXML 
-/// unchanged and that never generates an error
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

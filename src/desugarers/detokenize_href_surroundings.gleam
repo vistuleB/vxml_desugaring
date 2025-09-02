@@ -30,7 +30,7 @@ fn detokenize_children(
           let accumulated_lines = [TextLine(blame, "")]
           detokenize_children(rest, accumulated_lines, accumulated_nodes)
         }
-        
+
         V(blame, "__OneWord", attributes, _) -> {
           let assert [_, ..] = accumulated_lines
           let assert [Attribute(_, "val", word)] = attributes
@@ -117,15 +117,12 @@ pub const name = "detokenize_href_surroundings"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// 
+///
 pub fn constructor() -> Desugarer {
   Desugarer(
     name,
     option.None,
     option.None,
-    "
-/// 
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
@@ -162,7 +159,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
       expected: "
           <> testing
             <> bb
-              <> 
+              <>
                 \"first line\"
                 \"second line\"
 
@@ -190,7 +187,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
             <> testing
               <> bb
                 href=qq
-                <> 
+                <>
                   \"first  line\"
       ",
     ),
@@ -214,7 +211,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
             <> testing
               <> bb
                 href=qq
-                <> 
+                <>
                   \"first \"
                   \" line\"
       ",
@@ -236,7 +233,7 @@ fn assertive_tests_data() -> List(infra.AssertiveTestDataNoParam) {
             <> testing
               <> bb
                 href=qq
-                <> 
+                <>
                   \"\"
                   \"\"
       ",

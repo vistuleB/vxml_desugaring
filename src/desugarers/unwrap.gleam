@@ -45,12 +45,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// to 'unwrap' a tag means to replace the
-/// tag by its children (replace a V- VXML node by
-/// its children in the tree); this function unwraps
-/// all tags with a given tag name
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

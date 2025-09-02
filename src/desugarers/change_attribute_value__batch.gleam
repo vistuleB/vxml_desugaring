@@ -72,15 +72,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Used for changing the value of an attribute.
-/// Takes an attribute key and a replacement string 
-/// in which \"()\" is used as a stand-in for the 
-/// current value. For example, replacing attribute 
-/// value \"images/img.png\" with the replacement 
-/// string \"/()\" will result in the new attribute 
-/// value \"/images/img.png\"
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

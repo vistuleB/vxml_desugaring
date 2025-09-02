@@ -41,10 +41,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// removes text nodes containing a single line
-/// consisting of an empty string
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

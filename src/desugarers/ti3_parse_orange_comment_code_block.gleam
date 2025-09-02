@@ -10,7 +10,7 @@ const t_1_empty_line = T(
   bl.Des([], name, 11),
   [TextLine(bl.Des([], name, 12), "")]
 )
-const orange = 
+const orange =
   V(
     bl.Des([], name, 16),
     "span",
@@ -93,11 +93,6 @@ pub fn constructor() -> Desugarer {
     name,
     None,
     None,
-    "
-/// Processes CodeBlock elements with language=orange-comment
-/// and converts them to pre elements with orange
-/// comment highlighting for text after // markers
-    ",
     case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }
       Ok(inner) -> transform_factory(inner)

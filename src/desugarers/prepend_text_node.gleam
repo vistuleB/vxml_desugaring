@@ -61,25 +61,13 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// of tag 'tag'. The newline character can be
 /// included in 'text', which will be translated to
 /// >1 TextLine.
-/// 
+///
 /// Early-returns from nodes of tag 'tag'.
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Given arguments
-/// ```
-/// tag, text
-/// ```
-/// prepends a text node wit content 'text' to nodes
-/// of tag 'tag'. The newline character can be
-/// included in 'text', which will be translated to
-/// >1 TextLine.
-/// 
-/// Early-returns from nodes of tag 'tag'.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

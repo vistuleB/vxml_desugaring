@@ -62,11 +62,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// for all pairs #(tag_name, key_name) deletes the
-/// attribute of key key_name for all tags of tag
-/// tag_name
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

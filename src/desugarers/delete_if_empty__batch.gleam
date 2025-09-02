@@ -40,17 +40,13 @@ pub const name = "delete_if_empty__batch"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// deletes nodes that have no children for tose 
+/// deletes nodes that have no children for tose
 /// tags in the given list
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// deletes nodes that have no children for tose 
-/// tags in the given list
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

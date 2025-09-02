@@ -104,16 +104,16 @@ pub const name = "handles_generate_ids"
 //------------------------------------------------53
 /// For each node that has an attribute of key
 /// 'handle':
-/// 
-/// 1. generates a unique id attribute added to the 
-///    node, if not already present 
-/// 
+///
+/// 1. generates a unique id attribute added to the
+///    node, if not already present
+///
 /// 2. parses each 'handle' attribute value in the
 ///    form
 /// ```
 /// handle=handle_name [handle_value]
 /// ```
-///    where the handle_value string is an optional 
+///    where the handle_value string is an optional
 ///    string separated from handle_name that may or
 ///    may not be present, and replaces this key-value
 ///    pair with
@@ -127,28 +127,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// For each node that has an attribute of key
-/// 'handle':
-/// 
-/// 1. generates a unique id attribute added to the 
-///    node, if not already present 
-/// 
-/// 2. parses each 'handle' attribute value in the
-///    form
-/// ```
-/// handle=handle_name [handle_value]
-/// ```
-///    where the handle_value string is an optional 
-///    string separated from handle_name that may or
-///    may not be present, and replaces this key-value
-///    pair with
-/// ```
-/// handle=handle_name|handle_value|id
-/// ```
-///    while using the empty string for 'handle_value',
-///    if not present
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

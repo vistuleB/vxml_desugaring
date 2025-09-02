@@ -48,11 +48,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// for each text node, removes each line whose
-/// content is the empty string & destroys
-/// text nodes that end up with 0 lines
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

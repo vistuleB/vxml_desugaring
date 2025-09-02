@@ -18,8 +18,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(grs.RegexpWithGroupReplacementInstructions)
-//           ↖                                                
-//           replacement_instructions                         
+//           ↖
+//           replacement_instructions
 type InnerParam = Param
 
 pub const name = "regex_split_and_replace__batch__outside"
@@ -35,10 +35,6 @@ pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// splits text nodes by regexp with group-by-group
-/// replacement instructions
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

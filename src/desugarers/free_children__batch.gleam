@@ -105,52 +105,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// given a parent-child structure of the form
-///
-///     A[parent]
-///
-///         B[child]
-///
-///         C[child]
-///
-///         B[child]
-///
-///         D[child]
-///
-///         C[child]
-///
-///         B[child]
-///
-/// where A, B, C, D represent tags, a call to
-///
-/// free_children__batch([#(A, C)])
-///
-/// will for example result in the updated
-/// structure
-///
-///     A[parent]
-///
-///         B[child]
-///
-///     C[parent]
-///
-///     A[parent]
-///
-///         B[child]
-///
-///         D[child]
-///
-///     C[parent]
-///
-///     A[parent]
-///
-///         B[child]
-///
-/// with the original attribute values of A
-/// copied over to the newly created 'copies' of
-/// A
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

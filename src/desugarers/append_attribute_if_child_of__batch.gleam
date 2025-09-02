@@ -80,12 +80,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// adds an attribute-pair to a tag when it is the
-/// child of another specified tag; will not
-/// overwrite if attribute with that key already
-/// exists
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

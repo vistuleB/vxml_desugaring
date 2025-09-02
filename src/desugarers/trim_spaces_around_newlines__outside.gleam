@@ -45,11 +45,6 @@ pub fn constructor(outside: List(String)) -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// trims spaces around newlines in text nodes
-/// outside of subtrees rooted at tags given by the
-/// param argument
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> transform_factory(outside)

@@ -20,7 +20,7 @@ fn nodemap(
   inner: InnerParam,
 ) -> VXML {
   case vxml {
-    V(_, tag, _, children) if tag == inner.2 -> {    
+    V(_, tag, _, children) if tag == inner.2 -> {
       let children = list.map(children, rename_child_if_right_tag(_, inner))
       V(..vxml, children: children)
     }
@@ -59,10 +59,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// renames tags when they appear as children of a
-/// specified parent tag
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

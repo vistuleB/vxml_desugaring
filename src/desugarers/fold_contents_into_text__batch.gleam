@@ -402,14 +402,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// replaces specified tags by their contents, but ONLY
-/// if each tag contains exactly one text node child.
-/// The text content gets folded into surrounding text
-/// nodes (in end-of-last-line to beginning-of-first-line
-/// fashion). Returns an error if any tag doesn't have
-/// exactly one text child.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

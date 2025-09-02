@@ -69,20 +69,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Given arguments
-/// ```
-/// tag, attribute_key
-/// ```
-/// prepends the value of the attribute with key
-/// 'attribute_key' as a text node to nodes of tag
-/// 'tag'. If the attribute doesn't exist, the node
-/// is left unchanged. The attribute value is used
-/// as-is without any newline splitting. Empty
-/// attribute values are ignored.
-///
-/// Processes all matching nodes depth-first.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

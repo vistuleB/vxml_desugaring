@@ -88,9 +88,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// 
-    ",
     case param_to_inner_param() {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -148,14 +148,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// inserts TI2 counter commands into text nodes of specified elements
-/// # Param:
-///  - Counter command to insert . ex: \"::++Counter\"
-///  - key-value pair of node to insert counter command
-///  - list of strings before counter command
-///  - A wrapper tag to wrap the counter command string
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

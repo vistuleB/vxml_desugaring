@@ -110,10 +110,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// reinserts dollar delimiters into Math and
-/// MathBlock elements
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

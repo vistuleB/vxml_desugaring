@@ -664,51 +664,6 @@ pub fn constructor() -> Desugarer {
     name,
     option.None,
     option.None,
-    "
-/// Substitutes counters by their numerical
-/// value converted to string form and assigns those
-/// values to prefixed handles.
-///
-/// If a counter named 'MyCounterName' is defined by
-/// an ancestor, replaces strings of the form
-///
-/// \\<aa>\\<bb>MyCounterName
-///
-/// where
-///
-/// \\<aa> == \"::\"|\"..\" indicates whether
-/// the counter occurrence should be echoed as a
-/// string appearing in the document or not (\"::\" 
-/// == echo, \"..\" == suppress), and where
-///
-/// \\<bb> ==  \"++\"|\"--\"|\"øø\" indicates 
-/// whether the counter should be incremented, 
-/// decremented, or neither prior to possible 
-/// insertion,
-///
-/// by the appropriate replacement string (possibly
-/// none), and assigns handles coming to the left
-/// using the '<<' assignment, e.g.,
-///
-/// handleName<<..++MyCounterName
-///
-/// would assign the stringified incremented value
-/// of MyCounterName to handle 'handleName' without
-/// echoing the value to the document, whereas
-///
-/// handleName<<::++MyCounterName
-///
-/// will do the same but also insert the new counter
-/// value at that point in the document.
-///
-/// The computed handle assignments are recorded as
-/// attributes of the form
-///
-/// handle_\\<handleName>=<counterValue>
-///
-/// on the parent tag to be later used by the
-/// 'handles_generate_dictionary' desugarer
-    ",
     case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

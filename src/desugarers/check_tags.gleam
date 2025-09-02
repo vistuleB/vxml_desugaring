@@ -60,15 +60,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Validates that all tags in the document are
-/// from an approved list of tags.
-///
-/// Returns a DesugaringError if any tag is found
-/// that is not in the approved list.
-///
-/// Processes all nodes depth-first.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

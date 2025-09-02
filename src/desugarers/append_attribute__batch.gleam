@@ -79,16 +79,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// Takes a list of tuples of the form
-/// ```
-/// #(tag, key, value)
-/// ```
-/// and appends an attribute key=value to the list 
-/// of attributes of each v-node of tag 'tag'. The 
-/// 'tag' value can be repeated in the list, and all
-/// attributes for that tag will be added.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -110,25 +110,6 @@ pub fn constructor(
     name,
     option.Some(param |> infra.list_param_stringifier),
     option.None,
-    "
-/// For each #(tag, counter_name, traffic_light) tuple in the 
-/// parameter list, this desugarer adds an
-/// attribute of the form
-/// ```
-/// .=counter_name ::++counter_name
-/// ```
-/// to each node of tag 'tag', where the key is
-/// a period '.' and the value is the string 
-/// '<counter_name> ::++<counter_name>'. As 
-/// counters are evaluated and substitued also
-/// inside of key-value pairs, adding this 
-/// key-value pair causes the counter <counter_name>
-/// to increment at each occurrence of a node
-/// of tag 'tag'. Also assigns unassigned 
-/// handles of the attribute list of node 'tag'
-/// to the first counter being incremented in
-/// this fashion, by this desugarer.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

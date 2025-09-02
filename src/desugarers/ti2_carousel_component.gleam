@@ -70,10 +70,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(Nil)),
     option.None,
-    "
-/// converts Bootstrap carousel components to custom
-/// Carousel components
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

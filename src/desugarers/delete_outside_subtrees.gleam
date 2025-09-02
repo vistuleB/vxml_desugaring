@@ -44,10 +44,10 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = fn(VXML) -> Bool
-//             ↖               
-//             a node is saved 
-//             iff one of its  
-//             ancestors fulfills     
+//             ↖
+//             a node is saved
+//             iff one of its
+//             ancestors fulfills
 //             this condition
 type InnerParam = Param
 
@@ -64,10 +64,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// removes nodes that are outside subtrees matching
-/// the predicate function
-    ",
     case param_to_inner_param(param) {
       Ok(inner) -> transform_factory(inner)
       Error(error) -> fn(_) { Error(error) }

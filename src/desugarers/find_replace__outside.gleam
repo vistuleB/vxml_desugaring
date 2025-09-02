@@ -19,8 +19,8 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = #(String, String)
-//             ↖       ↖     
-//             from    to    
+//             ↖       ↖
+//             from    to
 type InnerParam = Param
 
 pub const name = "find_replace__outside"
@@ -38,12 +38,6 @@ pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// find-and-replace a string with another string
-/// in text nodes, while avoiding subtrees rooted at
-/// tags appearing in the third argument to the
-/// desugarer
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

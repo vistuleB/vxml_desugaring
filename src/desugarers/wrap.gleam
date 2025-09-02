@@ -53,15 +53,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// For a specified target tag, wraps the entire tag
-/// inside a given wrapper tag.
-///
-/// Will create a wrapper around the target tag,
-/// with the target tag as its only child.
-///
-/// Processes all matching nodes depth-first.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

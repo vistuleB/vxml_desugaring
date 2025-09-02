@@ -207,7 +207,7 @@ fn process_lines(
 
   let #(list_list_vxml, list_list_warnings) = big_list |> list.unzip
 
-  let vxmls = 
+  let vxmls =
     list_list_vxml
     |> list.flatten                          // you now have a list of t-nodes and of hyperlinks
     |> infra.plain_concatenation_in_list     // adjacent t-nodes are wrapped into single t-node, with 1 line per old t-node (pre-concatenation)
@@ -380,44 +380,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// Expects a document with root 'GrandWrapper'
-/// whose attributes comprise of key-value pairs of
-/// the form handle=handle_name|value|id|path
-/// and with a unique child being the root of the
-/// original document.
-///
-/// Replaces >>handle_name occurrences by links,
-/// using two different kinds of tags for links
-/// that point to elements in the same page versus
-/// links that point element in a different page.
-///
-/// More specifically, given an occurrence
-/// >>handle_name where handle_name points to an
-/// element of path 'path' as given by one of the
-/// key-value pairs in GrandWrapper, determines if
-/// 'path' is in another page of the final set of
-/// pages with respect to the current page of the
-/// document by trying to look up the latter on the
-/// latest (closest) ancestor of the element whose
-/// tag is an element of the first list in the
-/// desugarer's Param argument, looking at the
-/// attribute value of the attribute whose key is
-/// the second argument of Param. The third and
-/// fourth arguments of Param specify which tags
-/// and classes to use for the in- and out- page
-/// links respectively. If the class list is empty
-/// no 'class' attribute will be added at all to
-/// that type of link element.
-///
-/// Destroys the GrandWrapper root note on exit,
-/// returning its unique child.
-///
-/// Throws a DesugaringError if a given handle name
-/// is not found in the list of GrandWrapper
-/// 'handle' attributes values, or if unable to
-/// locate a local page path for a given handle.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)

@@ -77,17 +77,6 @@ pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.Some(ins(outside)),
-    "
-/// For all nodes with a given 'parent_tag',
-/// removes all attributes of a given key. If the 
-/// list of removed attributes is nonempty, pastes
-/// the first element of the list to all children
-/// of the `parent_tag` node that have a given 
-/// `child_tag` tag.
-/// 
-/// Returns early after encountering a node of tag
-/// 'parent_tag'.
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)

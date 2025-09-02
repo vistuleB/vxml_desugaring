@@ -77,11 +77,6 @@ pub fn constructor(param: Param) -> Desugarer {
     name,
     option.Some(ins(param)),
     option.None,
-    "
-/// appends a class to children with a specific tag
-/// when they are children of a specified parent tag.
-/// takes tuples of (parent_tag, list_of_tag_class_mappings).
-    ",
     case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
