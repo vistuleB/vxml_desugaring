@@ -233,7 +233,7 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
     }
   )
   V(..root, children: children)
-  |> n2t.add_warnings
+  |> n2t.add_no_warnings
   |> Ok
 }
 

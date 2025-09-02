@@ -166,7 +166,7 @@ fn at_root(
     root,
     V(desugarer_blame(169), table_of_contents_tag, [], [chapters_div]),
   )
-  |> n2t.add_warnings
+  |> n2t.add_no_warnings
   |> Ok
 }
 

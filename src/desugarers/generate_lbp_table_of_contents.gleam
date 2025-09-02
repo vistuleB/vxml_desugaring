@@ -131,7 +131,7 @@ fn at_root(root: VXML, param: InnerParam) -> Result(#(VXML, List(DesugaringWarni
   ])
 
   infra.v_prepend_child(root, V(desugarer_blame(132), table_of_contents_tag, [], children))
-  |> n2t.add_warnings
+  |> n2t.add_no_warnings
   |> Ok
 }
 

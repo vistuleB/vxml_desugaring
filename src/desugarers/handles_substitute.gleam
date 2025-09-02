@@ -33,12 +33,12 @@ fn hyperlink_constructor(
     state: State,
     inner: InnerParam,
 ) -> Result(VXML, DesugaringError) {
-  use path <- on.lazy_none_some(
+  use our_path <- on.lazy_none_some(
     state.path,
-    fn(){Error(DesugaringError(blame, "handle occurrence when local path is not defined"))},
+    fn(){ Error(DesugaringError(blame, "handle occurrence when local path is not defined")) },
   )
   let #(value, id, target_path) = handle
-  let #(tag, attrs) = case target_path == path {
+  let #(tag, attrs) = case target_path == our_path {
     True -> #(inner.1, inner.3)
     False -> #(inner.2, inner.4)
   }

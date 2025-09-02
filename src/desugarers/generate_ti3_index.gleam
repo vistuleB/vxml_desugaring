@@ -275,7 +275,7 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
   )
 
   infra.v_prepend_child(root, index_node)
-  |> n2t.add_warnings
+  |> n2t.add_no_warnings
   |> Ok
 }
 

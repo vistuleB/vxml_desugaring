@@ -5,7 +5,7 @@ import infrastructure.{type DesugarerTransform, type DesugaringError, Desugaring
 import blame as bl
 import on
 
-pub fn add_warnings(vxml: VXML) {
+pub fn add_no_warnings(vxml: VXML) {
   #(vxml, [])
 }
 
@@ -40,7 +40,10 @@ fn one_to_one_no_error_nodemap_recursive_application(
     T(_, _) -> nodemap(node)
     V(_, _, _, children) -> nodemap(V(
       ..node,
-      children: list.map(children, one_to_one_no_error_nodemap_recursive_application(_, nodemap))
+      children: list.map(
+        children,
+        one_to_one_no_error_nodemap_recursive_application(_, nodemap),
+      ),
     ))
   }
 }
@@ -50,7 +53,7 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform(
 ) -> DesugarerTransform {
   fn (vxml) {
     one_to_one_no_error_nodemap_recursive_application(vxml, nodemap)
-    |> add_warnings
+    |> add_no_warnings
     |> Ok
   }
 }
@@ -87,7 +90,7 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden(
 
   fn(vxml) {
     one_to_one_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
-    |> add_warnings
+    |> add_no_warnings
     |> Ok
   }
 }
@@ -123,7 +126,7 @@ pub fn one_to_one_no_error_nodemap_2_desugarer_transform_with_forbidden_self_fir
 
   fn (vxml) {
     one_to_one_no_error_nodemap_recursive_application_with_forbidden_self_first(vxml, nodemap, forbidden)
-    |> add_warnings
+    |> add_no_warnings
     |> Ok
   }
 }
@@ -145,10 +148,9 @@ fn one_to_one_nodemap_recursive_application(
     T(_, _) -> nodemap(node)
     V(_, _, _, children) -> {
       use children <- result.try(
-        children
-        |> list.map(one_to_one_nodemap_recursive_application(_, nodemap))
-        |> result.all
+        children |> list.try_map(one_to_one_nodemap_recursive_application(_, nodemap))
       )
+
       nodemap(V(..node, children: children))
     }
   }
@@ -159,7 +161,7 @@ pub fn one_to_one_nodemap_2_desugarer_transform(
 ) -> DesugarerTransform {
   fn (vxml) {
     one_to_one_nodemap_recursive_application(vxml, nodemap)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -177,8 +179,7 @@ fn one_to_one_nodemap_recursive_application_with_forbidden(
       False -> {
         use children <- result.try(
           children
-          |> list.map(one_to_one_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
-          |> result.all
+          |> list.try_map(one_to_one_nodemap_recursive_application_with_forbidden(_, nodemap, forbidden))
         )
         nodemap(V(..node, children: children))
       }
@@ -194,7 +195,7 @@ pub fn one_to_one_nodemap_2_desugarer_transform_with_forbidden(
 
   fn (vxml) {
     one_to_one_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -229,7 +230,7 @@ pub fn one_to_many_no_error_nodemap_2_desugarer_transform(
   fn (vxml) {
     one_to_many_no_error_nodemap_recursive_application(vxml, nodemap)
     |> infra.get_root_with_desugaring_error
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -264,7 +265,7 @@ pub fn one_to_many_no_error_nodemap_2_desugarer_transform_with_forbidden(
   fn (vxml) {
     one_to_many_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> infra.get_root_with_desugaring_error
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -300,7 +301,7 @@ pub fn one_to_many_nodemap_2_desugarer_transform(
   fn (vxml) {
     one_to_many_nodemap_recursive_application(vxml, nodemap)
     |> result.try(infra.get_root_with_desugaring_error)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -336,7 +337,7 @@ pub fn one_to_many_nodemap_2_desugarer_transform_with_forbidden(
   fn (vxml) {
     one_to_many_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> result.try(infra.get_root_with_desugaring_error)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -397,7 +398,7 @@ pub fn fancy_one_to_one_no_error_nodemap_2_desugarer_transform(
 ) -> DesugarerTransform {
   fn (vxml) {
     fancy_one_to_one_no_error_nodemap_recursive_application(vxml, [], [], [], [], nodemap)
-    |> add_warnings
+    |> add_no_warnings
     |> Ok
   }
 }
@@ -464,7 +465,7 @@ pub fn fancy_one_to_one_nodemap_2_desugarer_transform(
 ) -> DesugarerTransform {
   fn (vxml) {
     fancy_one_to_one_nodemap_recursive_application(vxml, [], [], [], [], nodemap)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -541,7 +542,7 @@ pub fn fancy_one_to_many_no_error_nodemap_2_desugarer_transform(
       nodemap
     )
     |> infra.get_root_with_desugaring_error
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -622,7 +623,7 @@ pub fn fancy_one_to_many_nodemap_2_desugarer_transform(
       nodemap
     )
     |> result.try(infra.get_root_with_desugaring_error)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -1045,7 +1046,7 @@ pub fn one_to_many_before_and_after_stateful_nodemap_2_desufarer_transform(
     one_to_many_before_and_after_stateful_nodemap_recursive_application(initial_state, vxml, nodemap)
     |> result.map(fn(pair){pair.0})
     |> result.try(infra.get_root_with_desugaring_error)
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -1171,7 +1172,7 @@ pub fn early_return_one_to_one_no_error_nodemap_2_desugarer_transform(
 ) -> DesugarerTransform {
   fn (vxml) {
     early_return_one_to_one_no_error_nodemap_recursive_application(vxml, nodemap)
-    |> add_warnings
+    |> add_no_warnings
     |> Ok
   }
 }
@@ -1209,7 +1210,7 @@ pub fn early_return_one_to_one_no_error_nodemap_2_desugarer_transform_with_forbi
 
   fn (vxml) {
     early_return_one_to_one_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
-    |> add_warnings
+    |> add_no_warnings
     |> Ok
   }
 }
@@ -1254,7 +1255,7 @@ pub fn early_return_one_to_many_no_error_nodemap_2_desugarer_transform(
   fn (vxml) {
     early_return_one_to_many_no_error_nodemap_recursive_application(vxml, nodemap)
     |> infra.get_root_with_desugaring_error
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }
 
@@ -1299,6 +1300,6 @@ pub fn early_return_one_to_many_no_error_nodemap_2_desugarer_transform_with_forb
   fn (vxml) {
     early_return_one_to_many_no_error_nodemap_recursive_application_with_forbidden(vxml, nodemap, forbidden)
     |> infra.get_root_with_desugaring_error
-    |> result.map(add_warnings)
+    |> result.map(add_no_warnings)
   }
 }

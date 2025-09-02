@@ -8,23 +8,23 @@ import vxml.{type VXML, V}
 fn nodemap(
   vxml: VXML,
   inner: InnerParam,
-) -> Result(List(VXML), DesugaringError) {
+) -> List(VXML) {
   case vxml {
     V(_, tag, _, _) ->
       case list.contains(inner, tag) {
-        True -> Ok([])
-        False -> Ok([vxml])
+        True -> []
+        False -> [vxml]
       }
-    _ -> Ok([vxml])
+    _ -> [vxml]
   }
 }
 
-fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNodeMap {
+fn nodemap_factory(inner: InnerParam) -> n2t.OneToManyNoErrorNodeMap {
   nodemap(_, inner)
 }
 
 fn transform_factory(inner: InnerParam) -> DesugarerTransform {
-  n2t.one_to_many_nodemap_2_desugarer_transform(nodemap_factory(inner))
+  n2t.one_to_many_no_error_nodemap_2_desugarer_transform(nodemap_factory(inner))
 }
 
 fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
@@ -32,7 +32,6 @@ fn param_to_inner_param(param: Param) -> Result(InnerParam, DesugaringError) {
 }
 
 type Param = List(String)
-
 type InnerParam = Param
 
 pub const name = "delete"
@@ -41,7 +40,7 @@ pub const name = "delete"
 // 🏖️🏖️ Desugarer 🏖️🏖️
 // 🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️🏖️
 //------------------------------------------------53
-/// removes tags entirely (tag and children)
+/// removes V-nodes based on their tag
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
     name: name,

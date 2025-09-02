@@ -145,7 +145,7 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
 
   root
   |> infra.v_replace_children_with(updated_children)
-  |> n2t.add_warnings
+  |> n2t.add_no_warnings
   |> Ok
 }
 

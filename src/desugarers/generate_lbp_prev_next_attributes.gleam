@@ -70,7 +70,7 @@ fn at_root(root: VXML) -> Result(#(VXML, List(DesugaringWarning)), DesugaringErr
   let toc = add_links_to_toc(toc, num_bootcamps, num_chapters)
   let other_children = list.filter(children, fn(c) { !infra.is_v_and_tag_is_one_of(c, ["TOC", "Chapter", "Bootcamp"]) })
   V(..root, children: list.flatten([other_children, [toc], chapters, bootcamps]))
-  |> n2t.add_warnings
+  |> n2t.add_no_warnings
   |> Ok
 }
 
