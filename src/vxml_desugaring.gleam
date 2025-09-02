@@ -13,7 +13,10 @@ fn test_pipeline() -> List(Pipe) {
     dl.identity(),
     dl.rearrange_links(#("Theorem <a href=1>_1_</a>", "<a href=1>Theorem _1_</a>")),
   ]
-  |> infra.wrap_desugarers(infra.TrackingOff, sl.all())
+  |> infra.desugarers_2_pipeline(
+    sl.all(),
+    infra.TrackingOff,
+  )
 }
 
 fn test_renderer() {

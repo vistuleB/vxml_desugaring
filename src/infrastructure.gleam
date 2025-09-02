@@ -2671,8 +2671,13 @@ pub type TrackingMode {
   TrackingForced
 }
 
-pub type Pipe =
-  #(TrackingMode, Selector, Desugarer)
+pub type Pipe {
+  Pipe(
+    desugarer: Desugarer,
+    selector: Selector,
+    tracking_mode: TrackingMode,
+  )
+}
 
 pub type Pipeline =
   List(Pipe)
@@ -2680,15 +2685,20 @@ pub type Pipeline =
 pub fn pipeline_desugarers(
   pipeline: Pipeline
 ) -> List(Desugarer) {
-  pipeline
-  |> list.map(fn(x) { x.2 })
+  pipeline |> list.map(fn(x) { x.desugarer })
 }
 
-pub fn wrap_desugarers(
+pub fn desugarers_2_pipeline(
   desugarers: List(Desugarer),
-  echo_mode: TrackingMode,
   selector: Selector,
+  tracking_mode: TrackingMode,
 ) -> Pipeline {
   desugarers
-  |> list.map(fn (d) {#(echo_mode, selector, d)})
+  |> list.map(fn (d) {
+    Pipe(
+      desugarer: d,
+      selector: selector,
+      tracking_mode: tracking_mode,
+    )
+  })
 }

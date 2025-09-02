@@ -11,7 +11,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import gleam/time/duration
 import gleam/time/timestamp.{type Timestamp}
-import infrastructure.{type Desugarer, type Pipeline, TrackingOff, TrackingForced, TrackingOnChange} as infra
+import infrastructure.{type Desugarer, Pipe, type Pipeline, TrackingOff, TrackingForced, TrackingOnChange} as infra
 import selector_library as sl
 import shellout
 import simplifile
@@ -1150,29 +1150,37 @@ pub fn apply_pipeline_tracking_modifier(
       False -> x
     }
   }
-  let restrict = list.map(mod.steps_with_tracking_on_change, wraparound)
+  let on_change_steps = list.map(mod.steps_with_tracking_on_change, wraparound)
   let force = list.map(mod.steps_with_tracking_forced, wraparound)
-  let apply_to_all = restrict == [] && force == []
+  let apply_to_all = on_change_steps == [] && force == []
   case apply_to_all {
     True -> {
       list.map(
         pipeline,
         fn(pipe) {
-          #(TrackingOnChange, option.unwrap(mod.selector, pipe.1), pipe.2)
+          Pipe(
+            desugarer: pipe.desugarer,
+            selector: option.unwrap(mod.selector, pipe.selector),
+            tracking_mode: TrackingOnChange,
+          )
         }
       )
     }
     False -> {
       list.index_map(pipeline, fn(pipe, i) {
         let step_no = i + 1
-        let on_change = list.contains(restrict, step_no)
-        let on = list.contains(force, step_no)
-        let mode = case on_change, on {
+        let on_change = list.contains(on_change_steps, step_no)
+        let forced = list.contains(force, step_no)
+        let mode = case on_change, forced {
           _, True -> TrackingForced
           True, _ -> TrackingOnChange
           _, _ -> TrackingOff
         }
-        #(mode, option.unwrap(mod.selector, pipe.1), pipe.2)
+        Pipe(
+          desugarer: pipe.desugarer,
+          selector: option.unwrap(mod.selector, pipe.selector),
+          tracking_mode: mode,
+        )
       })
     }
   }
@@ -1204,7 +1212,7 @@ fn run_pipeline(
   vxml: VXML,
   pipeline: Pipeline,
 ) -> Result(#(VXML, List(InSituDesugaringWarning), List(#(Int, Timestamp))), InSituDesugaringError) {
-  let track_any = list.any(pipeline, fn(p){p.0 != TrackingOff})
+  let track_any = list.any(pipeline, fn(p) { p.tracking_mode != TrackingOff })
   let last_step = list.length(pipeline)
 
   pipeline
@@ -1212,7 +1220,7 @@ fn run_pipeline(
     #(vxml, 1, "", [], [], False),
     fn(acc, pipe) {
       let #(vxml, step_no, last_tracking_output, times, warnings, got_arrow) = acc
-      let #(mode, selector, desugarer) = pipe
+      let Pipe(desugarer, selector, mode) = pipe
       let times = case desugarer.name == "timer" {
         True -> [#(step_no, timestamp.system_time()), ..times]
         False -> times
