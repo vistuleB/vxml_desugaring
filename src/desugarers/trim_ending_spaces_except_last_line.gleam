@@ -41,10 +41,10 @@ pub const name = "trim_ending_spaces_except_last_line"
 /// param argument
 pub fn constructor() -> Desugarer {
   Desugarer(
-    name,
-    option.None,
-    option.None,
-    case param_to_inner_param(Nil) {
+    name: name,
+    stringified_param: option.None,
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> transform_factory()
     }

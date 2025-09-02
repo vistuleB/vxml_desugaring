@@ -120,13 +120,13 @@ pub const name = "detokenize_href_surroundings"
 ///
 pub fn constructor() -> Desugarer {
   Desugarer(
-    name,
-    option.None,
-    option.None,
-    case param_to_inner_param(Nil) {
+    name: name,
+    stringified_param: option.None,
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 

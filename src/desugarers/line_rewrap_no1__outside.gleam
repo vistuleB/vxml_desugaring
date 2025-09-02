@@ -104,13 +104,13 @@ pub const name = "line_rewrap_no1__outside"
 /// be counted as a deficit toward the next T-node
 pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(ins(param)),
-    option.Some(ins(outside)),
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(ins(param)),
+    stringified_outside: option.Some(ins(outside)),
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)
-    }
+    },
   )
 }
 

@@ -42,10 +42,10 @@ pub const name = "trim_spaces_around_newlines__outside"
 /// param argument
 pub fn constructor(outside: List(String)) -> Desugarer {
   Desugarer(
-    name,
-    option.None,
-    option.None,
-    case param_to_inner_param(Nil) {
+    name: name,
+    stringified_param: option.None,
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(Nil) {
       Error(error) -> fn(_) { Error(error) }
       Ok(_) -> transform_factory(outside)
     }

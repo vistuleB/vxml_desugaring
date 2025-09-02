@@ -67,13 +67,13 @@ pub const name = "ti2_carousel_component"
 /// Carousel components
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(ins(Nil)),
-    option.None,
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(ins(Nil)),
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 

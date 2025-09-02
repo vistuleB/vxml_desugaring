@@ -87,13 +87,13 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// argument given to function.
 pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(ins(param)),
-    option.Some(ins(outside)),
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(ins(param)),
+    stringified_outside: option.Some(ins(outside)),
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)
-    }
+    },
   )
 }
 

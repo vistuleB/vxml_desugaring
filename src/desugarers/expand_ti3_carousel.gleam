@@ -130,10 +130,10 @@ type InnerParam = Nil
 /// - At least one src attribute
 pub fn constructor() -> Desugarer {
   Desugarer(
-    name,
-    None,
-    None,
-    case param_to_inner_param(Nil) {
+    name: name,
+    stringified_param: None,
+    stringified_outside: None,
+    transform: case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }
       Ok(_) -> transform_factory()
     }

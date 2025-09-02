@@ -61,13 +61,13 @@ pub const name = "unwrap_tag_when_parent_of_tag"
 /// unwraps parent tag when it contains specified child tag
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(ins(param)),
-    option.None,
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(ins(param)),
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 

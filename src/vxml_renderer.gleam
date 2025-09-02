@@ -82,7 +82,7 @@ pub fn default_writerly_parser(
 
     use vxml <- on.error_ok(
       writerlys |> wp.writerlys_to_vxmls |> infra.get_root,
-      fn(e) { Error(#(bl.no_blame, ins(e)))},
+      fn(e) { Error(#(bl.no_blame, ins(e))) },
     )
 
     use #(filtered_vxml, _) <- on.error_ok(

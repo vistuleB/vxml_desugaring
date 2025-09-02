@@ -127,7 +127,7 @@ pub fn constructor() -> Desugarer {
     case param_to_inner_param(Nil) {
       Error(e) -> fn(_) { Error(e) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 

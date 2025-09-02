@@ -75,13 +75,13 @@ pub const name = "append_class_to_children_with_class"
 /// takes tuples of (parent_tag, list_of_class_mappings).
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(ins(param)),
-    option.None,
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(ins(param)),
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 

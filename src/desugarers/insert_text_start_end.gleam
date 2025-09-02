@@ -48,10 +48,10 @@ pub const name = "insert_text_start_end"
 pub fn constructor(param: Param) -> Desugarer {
   let assert Ok(inner) = param_to_inner_param(param)
   Desugarer(
-    name,
-    option.Some(ins(inner)),
-    option.None,
-    transform_factory(inner)
+    name: name,
+    stringified_param: option.Some(ins(inner)),
+    stringified_outside: option.None,
+    transform: transform_factory(inner),
   )
 }
 

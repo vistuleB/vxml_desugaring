@@ -76,13 +76,13 @@ fn desugarer_blame(line_no: Int) {bl.Des([], name, line_no)}
 /// attributes for that tag will be added.
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(param |> infra.list_param_stringifier),
-    option.None,
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(param |> infra.list_param_stringifier),
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 

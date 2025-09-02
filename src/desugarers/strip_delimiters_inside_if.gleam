@@ -114,10 +114,10 @@ pub fn constructor(param: Param) -> Desugarer {
   let #(opening, closing) = infra.left_right_delim_strings(param.1)
   let inner = #(param.0, opening, closing, param.2)
   Desugarer(
-    name,
-    option.Some(ins(inner)),
-    option.None,
-    transform_factory(inner),
+    name: name,
+    stringified_param: option.Some(ins(inner)),
+    stringified_outside: option.None,
+    transform: transform_factory(inner),
   )
 }
 

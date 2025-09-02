@@ -33,13 +33,13 @@ pub const name = "regex_split_and_replace__outside"
 /// rooted at tags given by its second argument
 pub fn constructor(param: Param, outside: List(String)) -> Desugarer {
   Desugarer(
-    name,
-    option.Some(grs.human_inspect(param)),
-    option.Some(ins(outside)),
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.Some(grs.human_inspect(param)),
+    stringified_outside: option.Some(ins(outside)),
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner, outside)
-    }
+    },
   )
 }
 

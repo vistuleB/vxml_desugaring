@@ -91,13 +91,13 @@ pub const name = "compute_max_element_width"
 /// compute max element width
 pub fn constructor(param: Param) -> Desugarer {
   Desugarer(
-    name,
-    option.None,
-    option.None,
-    case param_to_inner_param(param) {
+    name: name,
+    stringified_param: option.None,
+    stringified_outside: option.None,
+    transform: case param_to_inner_param(param) {
       Error(error) -> fn(_) { Error(error) }
       Ok(inner) -> transform_factory(inner)
-    }
+    },
   )
 }
 
