@@ -11,7 +11,7 @@ import gleam/result
 import gleam/string.{inspect as ins}
 import gleam/time/duration
 import gleam/time/timestamp.{type Timestamp}
-import infrastructure.{type Desugarer, type Pipe, type Pipeline, TrackingOff, TrackingForced, TrackingOnChange} as infra
+import infrastructure.{type Desugarer, type Pipeline, TrackingOff, TrackingForced, TrackingOnChange} as infra
 import selector_library as sl
 import shellout
 import simplifile
@@ -20,26 +20,8 @@ import vxml.{type VXML, V} as vp
 import writerly as wp
 import on
 
-pub type InSituDesugaringError {
-  InSituDesugaringError(
-    desugarer: Desugarer,
-    step_no: Int,
-    message: String,
-    blame: Blame,
-  )
-}
-
-pub type InSituDesugaringWarning {
-  InSituDesugaringWarning(
-    desugarer: Desugarer,
-    step_no: Int,
-    message: String,
-    blame: Blame,
-  )
-}
-
 // ************************************************************
-// Assembler(a)                                    // 'a' is assembler error type; "assembler" = "source assembler"
+// Assembler(a)                                                // 'a' is assembler error type; "assembler" = "source assembler"
 // file/directory -> List(InputLine)
 // ************************************************************
 
@@ -73,10 +55,10 @@ pub fn default_assembler(
   }
 }
 
-// *************
-// PARSER(c)                                       // 'c' is parser error type
+// ************************************************************
+// Paser(c)                                                    // 'c' is parser error type
 // List(InputLine) -> VXML
-// *************
+// ************************************************************
 
 pub type Parser(c) =
   fn(List(InputLine)) -> Result(VXML, #(Blame, c))
@@ -85,9 +67,9 @@ pub type ParserDebugOptions {
   ParserDebugOptions(echo_: Bool)
 }
 
-// ******************************
-// default parsers
-// ******************************
+// ************************************************************
+// default writerly parser
+// ************************************************************
 
 pub fn default_writerly_parser(
   only_args: List(#(String, String, String)),
@@ -111,6 +93,10 @@ pub fn default_writerly_parser(
     Ok(filtered_vxml)
   }
 }
+
+// ************************************************************
+// default html parser
+// ************************************************************
 
 pub fn default_html_parser(
   only_args: List(#(String, String, String)),
@@ -149,10 +135,10 @@ pub fn default_html_parser(
   }
 }
 
-// *************
-// SPLITTER(d, e)                                // 'd' is fragment classifier type, 'e' is splitter error type
-// VXML -> List(OutputFragment)                  // #(local_path, vxml, fragment_type)
-// *************
+// ************************************************************
+// Splitter(d, e)                                              // 'd' is fragment classifier type, 'e' is splitter error type
+// VXML -> List(OutputFragment)
+// ************************************************************
 
 pub type OutputFragment(d, z) {                  // 'd' is fragment classifier type, 'z' is payload type (VXML or List(OutputLine))
   OutputFragment(classifier: d, path: String, payload: z)
@@ -165,9 +151,9 @@ pub type SplitterDebugOptions(d) {
   SplitterDebugOptions(echo_: fn(OutputFragment(d, VXML)) -> Bool)
 }
 
-// ************************
+// ************************************************************
 // stub splitter
-// ************************
+// ************************************************************
 
 /// emits 1 fragment whose 'path' is the tag
 /// of the VXML root concatenated with a provided
@@ -179,10 +165,10 @@ pub fn stub_splitter(suffix: String) -> Splitter(Nil, Nil) {
   }
 }
 
-// *************
-// EMITTER(d, f)                                        // where 'd' is fragment type & 'f' is emitter error type
-// OutputFragment(d) -> #(String, List(OutputLine), d)  // #(local_path, output_lines, fragment_type)
-// *************
+// ************************************************************
+// Emitter(d, f)                                               // where 'd' is fragment type & 'f' is emitter error type
+// OutputFragment(d) -> #(String, List(OutputLine), d)         // #(local_path, output_lines, fragment_type)
+// ************************************************************
 
 pub type Emitter(d, f) =
   fn(OutputFragment(d, VXML)) -> Result(OutputFragment(d, List(OutputLine)), f)
@@ -193,9 +179,9 @@ pub type EmitterDebugOptions(d) {
   )
 }
 
-// *****************
+// ************************************************************
 // stub writerly emitter
-// *****************
+// ************************************************************
 
 pub fn stub_writerly_emitter(
   fragment: OutputFragment(d, VXML),
@@ -209,9 +195,9 @@ pub fn stub_writerly_emitter(
   Ok(OutputFragment(..fragment, payload: lines))
 }
 
-// *****************
+// ************************************************************
 // stub html emitter
-// *****************
+// ************************************************************
 
 pub fn stub_html_emitter(
   fragment: OutputFragment(d, VXML),
@@ -242,9 +228,9 @@ pub fn stub_html_emitter(
   Ok(OutputFragment(..fragment, payload: lines))
 }
 
-// *****************
+// ************************************************************
 // stub jsx emitter
-// *****************
+// ************************************************************
 
 pub fn stub_jsx_emitter(
   fragment: OutputFragment(d, VXML),
@@ -270,18 +256,22 @@ pub fn stub_jsx_emitter(
   Ok(OutputFragment(..fragment, payload: lines))
 }
 
-// *************
-// WRITER (the thing that prints to files; no function supplied; only a debug option)
-// *************
+// ************************************************************
+// Writer (the thing that prints to files; no type or function supplied; only a debug option)
+// ************************************************************
 
 pub type WriterDebugOptions(d) {
   WriterDebugOptions(echo_: fn(OutputFragment(d, String)) -> Bool)
 }
 
-// *************
-// PRETTIFIER(d, h)                                          // where 'd' is fragment classifier, 'h' is prettifier error type
-// String, GhostOfOutputFragment(d) -> Result(String, h)     // output_dir, ghost_of_output_fragment
-// *************
+// ************************************************************
+// Prettifier(d, h)                                            // 'd' is fragment classifier, 'h' is prettifier error type
+// String, GhostOfOutputFragment(d), Option(String) -> Result(String, h)
+// ☝                                 ☝                        ☝
+// output_dir                        optional                 on_success
+//                                   'prettified dir'         report-back message
+//                                   (else use output_dir)
+// ************************************************************
 
 pub type GhostOfOutputFragment(d) {
   GhostOfOutputFragment(classifier: d, path: String)
@@ -294,9 +284,9 @@ pub type PrettifierDebugOptions(d) {
   PrettifierDebugOptions(echo_: fn(GhostOfOutputFragment(d)) -> Bool)
 }
 
-//********************
-// the standard prettifier (for jsx)
-//********************
+// ************************************************************
+// default & empty prettifier
+// ************************************************************
 
 pub fn run_prettier(in: String, path: String, check: Bool) -> Result(String, #(Int, String)) {
   shellout.command(
@@ -353,9 +343,9 @@ pub fn empty_prettifier(
   Ok("")
 }
 
-// *************
-// RENDERER(a, b, c, d, e, f, g, h)
-// *************
+// ************************************************************
+// Renderer(a, c, d, e, f, g, h)
+// ************************************************************
 
 pub type Renderer(
   a, // SourceAssembler error type
@@ -366,33 +356,18 @@ pub type Renderer(
   h, // Prettifier error type
 ) {
   Renderer(
-    assembler: Assembler(a),             // file/directory -> List(InputLine)                      Result w/ error type a
-    parser: Parser(c),                   // List(InputLine) -> VXML                                Result w/ error type c
-    pipeline: List(Pipe),                // VXML -> ... -> VXML                                    Result w/ error type DesugaringError
-    splitter: Splitter(d, e),            // VXML -> List(#(String, VXML, d))                       Result w/ error type e
-    emitter: Emitter(d, f),              // #(String, VXML, d) -> #(String, List(OutputLine), d)   Result w/ error type f
-    prettifier: Prettifier(d, h),        // String, #(String, d) -> Nil                            Result w/ error type h
+    assembler: Assembler(a),             // file/directory -> List(InputLine)                                    Result w/ error type a
+    parser: Parser(c),                   // List(InputLine) -> VXML                                              Result w/ error type c
+    pipeline: Pipeline,                  // VXML -> ... -> VXML                                                  Result w/ error type InSituDesugaringError
+    splitter: Splitter(d, e),            // VXML -> List(OutputFragment(d, VXML))                                Result w/ error type e
+    emitter: Emitter(d, f),              // OutputFragment(d, VXML) -> OutputFragment(d, String)                 Result w/ error type f
+    prettifier: Prettifier(d, h),        // output_dir, GhostOfOutputFragment(d), Option(prettifier_dir) -> Nil  Result w/ error type h
   )
 }
 
-// *************
-// RENDERER DEBUG OPTIONS(d)
-// *************
-
-pub type RendererDebugOptions(d) {
-  RendererDebugOptions(
-    assembler_debug_options: AssemblerDebugOptions,
-    parser_debug_options: ParserDebugOptions,
-    splitter_debug_options: SplitterDebugOptions(d),
-    emitter_debug_options: EmitterDebugOptions(d),
-    writer_debug_options: WriterDebugOptions(d),
-    prettifier_debug_options: PrettifierDebugOptions(d),
-  )
-}
-
-// *************
-// RENDERER PARAMETERS(g)
-// *************
+// ************************************************************
+// RendererParameters
+// ************************************************************
 
 pub type PrettifierMode {
   PrettifierOff
@@ -409,560 +384,71 @@ pub type RendererParameters {
   )
 }
 
-// *************
-// RENDERER IN-HOUSE HELPER FUNCTIONS
-// *************
+// ************************************************************
+// RendererDebugOptions(d)                                     // 'd' is fragment classifier type
+// ************************************************************
 
-fn run_pipeline(
-  vxml: VXML,
-  pipeline: Pipeline,
-) -> Result(#(VXML, List(InSituDesugaringWarning), List(#(Int, Timestamp))), InSituDesugaringError) {
-  let track_any = list.any(pipeline, fn(p){p.0 != TrackingOff})
-  let last_step = list.length(pipeline)
-
-  pipeline
-  |> list.try_fold(
-    #(vxml, 1, "", [], [], False),
-    fn(acc, pipe) {
-      let #(vxml, step_no, last_tracking_output, times, warnings, got_arrow) = acc
-      let #(mode, selector, desugarer) = pipe
-      let times = case desugarer.name == "timer" {
-        True -> [#(step_no, timestamp.system_time()), ..times]
-        False -> times
-      }
-      let printed_arrow = case track_any && !got_arrow {
-        True -> {
-          io.println("    💠")
-          True
-        }
-        False -> False
-      }
-      use #(vxml, new_warnings) <- on.error_ok(desugarer.transform(vxml), fn(error) {
-        Error(InSituDesugaringError(
-          desugarer: desugarer,
-          step_no: step_no,
-          blame: error.blame,
-          message: error.message,
-        ))
-      })
-      let new_warnings = list.map(new_warnings, fn(warning) {
-        InSituDesugaringWarning(
-          desugarer: desugarer,
-          step_no: step_no,
-          blame: warning.blame,
-          message: warning.message,
-        )
-      })
-      let #(selected, next_tracking_output) = case mode == TrackingOff {
-        True -> #([], last_tracking_output)
-        False -> {
-          let selected = vxml |> infra.vxml_to_s_lines |> selector
-          #(selected, selected |> infra.s_lines_annotated_table("", True, 0))
-        }
-      }
-      let must_print = mode == TrackingForced || { mode == TrackingOnChange && next_tracking_output != last_tracking_output }
-      let got_arrow = case must_print {
-        True -> {
-          io.println("    " <> pr.name_and_param_string(desugarer, step_no))
-          io.println("    💠")
-          selected
-          |> infra.s_lines_annotated_table("", False, 2)
-          |> io.println
-          False
-        }
-        False -> case printed_arrow && step_no < last_step {
-          True -> {
-            io.println("    ⋮")
-            True
-          }
-          False -> True
-        }
-      }
-      #(vxml, step_no + 1, next_tracking_output, times, list.append(warnings, new_warnings), got_arrow)
-      |> Ok
-    }
+pub type RendererDebugOptions(d) {
+  RendererDebugOptions(
+    assembler_debug_options: AssemblerDebugOptions,
+    parser_debug_options: ParserDebugOptions,
+    splitter_debug_options: SplitterDebugOptions(d),
+    emitter_debug_options: EmitterDebugOptions(d),
+    writer_debug_options: WriterDebugOptions(d),
+    prettifier_debug_options: PrettifierDebugOptions(d),
   )
-  |> result.map(fn(acc) { #(acc.0, acc.4, acc.3) })
-}
-
-fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
-  RendererParameters(
-    ..parameters,
-    output_dir: infra.drop_ending_slash(parameters.output_dir),
-  )
-}
-
-fn create_dirs_on_path_to_file(path_to_file: String) -> Result(Nil, simplifile.FileError) {
-  let pieces = path_to_file |> string.split("/")
-  let pieces = infra.drop_last(pieces)
-  list.try_fold(pieces, ".", fn(acc, piece) {
-    let acc = acc <> "/" <> piece
-    use exists <- result.try(simplifile.is_directory(acc))
-    use _ <- result.try(
-      case exists {
-        True  -> Ok(Nil)
-        False -> simplifile.create_directory(acc)
-      }
-    )
-    Ok(acc)
-  })
-  |> result.map(fn(_) { Nil })
-}
-
-fn output_dir_local_path_printer(
-  output_dir: String,
-  local_path: String,
-  content: String,
-) -> Result(Nil, simplifile.FileError) {
-  let assert False = string.starts_with(local_path, "/")
-  let assert False = string.ends_with(output_dir, "/")
-  let path = output_dir <> "/" <> local_path
-  use _ <- result.try(create_dirs_on_path_to_file(path))
-  simplifile.write(path, content)
-}
-
-// *************
-// RENDERER ERROR(a, c, e, f, h)
-// *************
-
-pub type ThreePossibilities(f, g, h) {
-  C1(f)
-  C2(g)
-  C3(h)
-}
-
-pub type RendererError(a, c, e, f, h) {
-  FileOrParseError(a)
-  SourceParserError(Blame, c)
-  PipelineError(InSituDesugaringError)
-  SplitterError(e)
-  EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
 }
 
 // ************************************************************
-// run_renderer
+// empty (default) RendererDebugOptions
 // ************************************************************
 
-pub fn run_renderer(
-  renderer: Renderer(a, c, d, e, f, h),
-  parameters: RendererParameters,
-  debug_options: RendererDebugOptions(d),
-) -> Result(Nil, RendererError(a, c, e, f, h)) {
-  io.println("")
-
-  let parameters = sanitize_output_dir(parameters)
-  let RendererParameters(
-    table,
-    input_dir,
-    output_dir,
-    prettifier_mode,
-  ) = parameters
-
-  case table {
-    True -> pr.print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
-    False -> Nil
-  }
-
-  // ASSEMBLING
-
-  io.print("• assembling ")
-
-  use assembled <- on.error_ok(
-    renderer.assembler(input_dir),
-    fn(error_a) {
-      io.println("\n  ...assembler error on input_dir " <> input_dir <> ":")
-      [
-        "",
-        "  " <> ins(error_a),
-        "",
-      ]
-      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
-      Error(FileOrParseError(error_a))
-    },
-  )
-
-  case debug_options.assembler_debug_options.echo_ {
-    False -> Nil
-    True -> {
-      io_l.input_lines_annotated_table_at_indent(assembled, "",  2)
-      |> string.join("\n")
-      |> io.println
-      Nil
-    }
-  }
-
-  // PARSING
-
-  io.println("• parsing input lines to VXML")
-
-  use parsed: VXML <- on.error_ok(
-    renderer.parser(assembled),
-    on_error: fn(error) {
-      let #(blame, c) = error
-      let assert [first, ..rest] =
-        pr.padded_error_paragraph(ins(c) |> pr.strip_quotes, 70, "            ")
-
-      io.println("\n  ...parser error:")
-      [
-        [
-          "            ",
-          "  blame:    " <> pr.our_blame_digest(blame),
-          "  message:  " <> first,
-        ],
-        rest,
-        [
-          "",
-        ]
-      ]
-      |> list.flatten
-      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
-      Error(SourceParserError(blame, c))
-    },
-  )
-
-  // PIPELINE
-
-  io.println("• starting pipeline...")
-  let t0 = timestamp.system_time()
-
-  use #(desugared, warnings, times) <- on.error_ok(
-    run_pipeline(parsed, renderer.pipeline),
-    on_error: fn(e: InSituDesugaringError) {
-      let assert [first, ..rest] =
-        pr.padded_error_paragraph(e.message, 80, "                  ")
-
-      io.println("\n  DesugaringError:")
-      [
-        [
-          "                  ",
-          "  thrown by:      " <> e.desugarer.name,
-          "  pipeline step:  " <> ins(e.step_no),
-          "  blame:          " <> pr.our_blame_digest(e.blame),
-          "  message:        " <> first,
-        ],
-        rest,
-        [
-          ""
-        ],
-      ]
-      |> list.flatten
-      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
-      Error(PipelineError(e))
-    },
-  )
-
-  let t1 = timestamp.system_time()
-  let seconds =
-    timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
-
-  io.println("  ...ended pipeline (" <> ins(seconds) <> "s);")
-
-  case list.length(times) > 0 {
-    False -> Nil
-    True -> {
-      let times = [#(list.length(renderer.pipeline), t1), ..times]
-      list.fold(times |> list.reverse, #(0, t0), fn(acc, next) {
-        let #(step0, t0) = acc
-        let #(step1, t1) = next
-        let seconds =
-          timestamp.difference(t0, t1)
-          |> duration.to_seconds
-          |> float.to_precision(3)
-        io.println("  steps " <> ins(step0) <> " to " <> ins(step1) <> ": " <> ins(seconds) <> "s")
-        next
-      })
-      Nil
-    }
-  }
-
-  // SPLITTING
-
-  io.println("• splitting the vxml...")
-
-  use fragments <- on.error_ok(
-    renderer.splitter(desugared),
-    on_error: fn(error: e) {
-      io.println("\n  ...splitter error:")
-      pr.boxed_error_announcer(
-        [
-          "",
-          "  " <> ins(error),
-          "",
-        ],
-        "💥",
-        2,
-        #(1, 1)
-      )
-      Error(SplitterError(error))
-    },
-  )
-
-  let prefix = "[" <> output_dir <> "/]"
-  let fragments_types_and_paths_4_table =
-    list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
-
-  io.println("  -> obtained " <> pr.how_many("fragment", "fragments", list.length(fragments)) <> ":")
-  
-  [#("classifier", "path"), ..fragments_types_and_paths_4_table]
-  |> pr.two_column_table
-  |> pr.print_lines_at_indent(2)
-
-  fragments
-  |> list.each(fn(fr) {
-    case debug_options.splitter_debug_options.echo_(fr) {
-      False -> Nil
-      True -> {
-        fr.payload
-        |> vp.vxml_to_output_lines
-        |> io_l.echo_output_lines("fr:" <> fr.path)
-        Nil
-      }
-    }
-  })
-
-  // EMITTING
-
-  io.print("• converting fragments to output line fragments")
-
-  let fragments =
-    fragments
-    |> list.map(renderer.emitter)
-
-  io.println("")
-
-  fragments
-  |> list.each(fn(result) {
-    case result {
-      Error(_) -> Nil
-      Ok(fr) -> {
-        case debug_options.emitter_debug_options.echo_(fr) {
-          False -> Nil
-          True -> {
-            fr.payload
-            |> io_l.echo_output_lines("fr-ol:" <> fr.path)
-            Nil
-          }
-        }
-      }
-    }
-  })
-
-  let num_emitter_errors = list.fold(fragments, 0, fn(acc, fr) {
-    case fr {
-      Ok(_) -> acc
-      _ -> acc + 1
-    }
-  })
-
-  list.each(
-    fragments,
-    fn (fr) {
-      use error <- on.ok_error(fr, fn(_){Nil})
-      io.println("\n  emitter error:")
-      pr.boxed_error_announcer(
-        [
-          "",
-          "  " <> ins(error),
-          "",
-        ],
-        "💥",
-        2,
-        #(1, 0)
-      )
-    }
-  )
-
-  case num_emitter_errors {
-    0 -> Nil
-    _ -> io.println("")
-  }
-
-  // WRITING
-
-  io.println("• converting output line fragments to string fragments")
-
-  let fragments = {
-    fragments
-    |> list.map(
-      on.error_ok(
-        _,
-        fn(error) {
-          Error(C1(error))
-        },
-        fn(fr) {
-          Ok(OutputFragment(..fr, payload: io_l.output_lines_to_string(fr.payload)))
-        },
-      )
-    )
-  }
-
-  fragments
-  |> list.each(fn(result) {
-    case result {
-      Error(_) -> Nil
-      Ok(fr) -> {
-        case debug_options.writer_debug_options.echo_(fr) {
-          False -> Nil
-          True -> {
-            let header = "────────────────── writer echo: " <> fr.path <> " ──────────────────"
-            io.println(header)
-            io.println(fr.payload)
-            io.println(pr.dashes(string.length(header)))
-            io.println("")
-
-          }
-        }
-      }
-    }
-  })
-
-  io.println("• writing string fragments to files")
-
-  let fragments =
-    fragments
-    |> list.map(fn(result) {
-      use fr <- result.try(result)
-      let brackets = "[" <> output_dir <> "/]"
-      case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
-        Ok(Nil) -> {
-          io.println("  wrote " <> brackets <> fr.path)
-          Ok(GhostOfOutputFragment(fr.classifier, fr.path))
-        }
-        Error(file_error) ->
-          Error(C2(
-            { file_error |> ins } <> " on path " <> output_dir <> "/" <> fr.path,
-          ))
-      }
-    })
-
-  // PRETTIFYING
-
-  case prettifier_mode != PrettifierOff {
-    True -> io.println("• prettifying")
-    False -> Nil
-  }
-  let fragments =
-    fragments
-    |> list.map(fn(result) {
-      use fr <- result.try(result)
-      use <- on.true_false(prettifier_mode == PrettifierOff, result)
-      let dest_dir = case prettifier_mode {
-        PrettifierOff -> panic as "bug"
-        PrettifierOverwriteOutputDir -> Some(output_dir)
-        PrettifierToBespokeDir(dir) -> Some(dir)
-      }
-      case renderer.prettifier(output_dir, fr, dest_dir) {
-        Error(e) -> {
-          io.println("  prettifying error: " <> ins(e))
-          Error(C3(e))
-        }
-        Ok(message) -> {
-          io.println("  " <> message)
-          result
-        }
-      }
-    })
-
-  fragments
-  |> list.each(fn(result) {
-    use fr <- on.error_ok(result, fn(_) { Nil })
-    case debug_options.prettifier_debug_options.echo_(fr) {
-      False -> Nil
-      True -> {
-        let path = output_dir <> "/" <> fr.path
-        use file_contents <- on.error_ok(
-          simplifile.read(path),
-          fn(error) {
-            io.println("")
-            io.println(
-              "could not read back printed file " <> path <> ":" <> ins(error),
-            )
-          },
-        )
-        io.println("")
-        let header = "───────────── prettifier echo: " <> fr.path <> " ──────────────────"
-        io.println(header)
-        io.println(file_contents)
-        io.println(pr.dashes(string.length(header)))
-        io.println("")
-      }
-    }
-  })
-
-  case list.length(warnings) {
-    0 -> Nil
-    _ -> {
-      io.println("\n👉 " <> pr.how_many("warning", "warnings", list.length(warnings)) <> ":")
-    }
-  }
-
-  list.each(
-    warnings,
-    fn (w) {
-      [
-        "",
-        "  from:           " <> w.desugarer.name <> " (desugarer)",
-        "  pipeline step:  " <> ins(w.step_no),
-        "  blame:          " <> bl.blame_digest(w.blame),
-        "  message:        " <> w.message,
-        "",
-      ]
-      |> pr.boxed_error_announcer("🚨", 2, #(1, 0))
-    }
-  )
-
-  let #(_, errors) = result.partition(fragments)
-
-  case list.length(errors) > 0 {
-    True -> {
-      Error(EmittingOrPrintingOrPrettifyingErrors(errors))
-    }
-    False -> Ok(Nil)
-  }
+pub fn empty_assembler_debug_options() -> AssemblerDebugOptions {
+  AssemblerDebugOptions(echo_: False)
 }
 
-//********************
-// COMMAND-LINE PROCESSING (generic --key val1 val2 ... functions)
-//********************
-
-fn take_strings_while_not_key(
-  upcoming: List(String),
-  bundled: List(String),
-) -> #(List(String), List(String)) {
-  case upcoming {
-    [] -> #(bundled |> list.reverse, upcoming)
-    [first, ..rest] -> {
-      case string.starts_with(first, "--") {
-        True -> #(bundled |> list.reverse, upcoming)
-        False -> take_strings_while_not_key(rest, [first, ..bundled])
-      }
-    }
-  }
+pub fn empty_parser_debug_options() -> ParserDebugOptions {
+  ParserDebugOptions(echo_: False)
 }
 
-fn double_dash_keys(
-  arguments: List(String),
-) -> Result(List(#(String, List(String))), String) {
-  case arguments {
-    [] -> Ok([])
-    [first, ..rest] -> {
-      case string.starts_with(first, "--") {
-        False -> Error(first)
-        True -> {
-          let #(arg_values, rest) = take_strings_while_not_key(rest, [])
-          case double_dash_keys(rest) {
-            Error(e) -> Error(e)
-            Ok(parsed) -> Ok([#(first, arg_values), ..parsed])
-          }
-        }
-      }
-    }
-  }
+pub fn empty_splitter_debug_options() -> SplitterDebugOptions(d) {
+  SplitterDebugOptions(echo_: fn(_fr) { False })
 }
 
-//********************
-// COMMAND LINE AMENDMENTS
-//********************
+pub fn empty_emitter_debug_options() -> EmitterDebugOptions(d) {
+  EmitterDebugOptions(echo_: fn(_fr) { False })
+}
+
+pub fn empty_writer_debug_options() -> WriterDebugOptions(d) {
+  WriterDebugOptions(echo_: fn(_fr) { False })
+}
+
+pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
+  PrettifierDebugOptions(echo_: fn(_fr) { False })
+}
+
+pub fn default_renderer_debug_options() -> RendererDebugOptions(d) {
+  RendererDebugOptions(
+    assembler_debug_options: empty_assembler_debug_options(),
+    parser_debug_options: empty_parser_debug_options(),
+    splitter_debug_options: empty_splitter_debug_options(),
+    emitter_debug_options: empty_emitter_debug_options(),
+    writer_debug_options: empty_writer_debug_options(),
+    prettifier_debug_options: empty_prettifier_debug_options(),
+  )
+}
+
+// ************************************************************
+// CommandLineAmendments
+// ************************************************************
+
+pub type PipelineTrackingModifier {
+  PipelineTrackingModifier(
+    selector: Option(infra.Selector),
+    steps_with_tracking_on_change: List(Int),
+    steps_with_tracking_forced: List(Int),
+  )
+}
 
 pub type CommandLineAmendments {
   CommandLineAmendments(
@@ -983,9 +469,9 @@ pub type CommandLineAmendments {
   )
 }
 
-//********************
-// BUILDING COMMAND LINE AMENDMENTS FROM COMMAND LINE ARGS
-//********************
+// ************************************************************
+// empty (default) CommandLineAmendments
+// ************************************************************
 
 pub fn empty_command_line_amendments() -> CommandLineAmendments {
   CommandLineAmendments(
@@ -1006,73 +492,9 @@ pub fn empty_command_line_amendments() -> CommandLineAmendments {
   )
 }
 
-fn amend_debug_assembled_input(
-  amendments: CommandLineAmendments,
-  val: Bool,
-) -> CommandLineAmendments {
-  CommandLineAmendments(..amendments, echo_assembled: val)
-}
-
-fn amend_user_args(
-  amendments: CommandLineAmendments,
-  key: String,
-  values: List(String),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    user_args: dict.insert(amendments.user_args, key, values),
-  )
-}
-
-fn amend_spotlight_args(
-  amendments: CommandLineAmendments,
-  args: List(#(String, String, String)),
-) -> CommandLineAmendments {
-  CommandLineAmendments(
-    ..amendments,
-    only_key_values: list.append(amendments.only_key_values, args),
-    only_paths: list.append(
-      amendments.only_paths,
-      args
-        |> list.map(fn(a) {
-          let #(path, _, _) = a
-          path
-        }),
-    ),
-  )
-}
-
-pub fn extended_cli_usage() {
-  let margin = "   "
-  io.println("")
-  io.println("Esoteric renderer options:")
-  io.println("")
-  io.println(margin <> "--track-steps")
-  io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
-  io.println(margin <> "     --track, with the same semantics (to edit the tracking steps", )
-  io.println(margin <> "     of a tracker set up code-side)", )
-  io.println("")
-  io.println(margin <> "--echo-assembled")
-  io.println(margin <> "  -> print the assembled input lines of source")
-  io.println("")
-  io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     before conversion to output lines, list none to match all", )
-  io.println("")
-  io.println(margin <> "--echo-fragments-ol <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     after conversion to output lines, list none to match all", )
-  io.println("")
-  io.println(margin <> "--echo-fragments-printed <subpath1> <subpath2> ...")
-  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     in string form before prettifying, list none to match all", )
-  io.println("")
-  io.println(margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...", )
-  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
-  io.println(margin <> "     in string form after prettifying, list none to match all", )
-  io.println("")
-
-}
+// ************************************************************
+// cli_usage
+// ************************************************************
 
 pub fn basic_cli_usage() {
   let margin = "   "
@@ -1120,55 +542,265 @@ pub fn basic_cli_usage() {
   io.println("")
 }
 
-pub fn apply_pipeline_tracking_modifier(
-  pipeline: Pipeline,
-  mod: PipelineTrackingModifier,
-) -> Pipeline {
-  let num_steps = list.length(pipeline)
-  let wraparound = fn(x: Int) {
-    case x < 0 {
-      True -> num_steps + x + 1
-      False -> x
-    }
-  }
-  let restrict = list.map(mod.restrict_on_change_check_to_steps, wraparound)
-  let force = list.map(mod.force_output_at_steps, wraparound)
-  let apply_to_all = restrict == [] && force == []
-  case apply_to_all {
-    True -> {
-      list.map(
-        pipeline,
-        fn(pipe) {
-          #(TrackingOnChange, option.unwrap(mod.selector, pipe.1), pipe.2)
+pub fn extended_cli_usage() {
+  let margin = "   "
+  io.println("")
+  io.println("Esoteric renderer options:")
+  io.println("")
+  io.println(margin <> "--track-steps")
+  io.println(margin <> "  -> takes arguments in the same form as <step numbers> option of")
+  io.println(margin <> "     --track, with the same semantics (to edit the tracking steps", )
+  io.println(margin <> "     of a tracker set up code-side)", )
+  io.println("")
+  io.println(margin <> "--echo-assembled")
+  io.println(margin <> "  -> print the assembled input lines of source")
+  io.println("")
+  io.println(margin <> "--echo-fragments <subpath1> <subpath2> ...")
+  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     before conversion to output lines, list none to match all", )
+  io.println("")
+  io.println(margin <> "--echo-fragments-ol <subpath1> <subpath2> ...")
+  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     after conversion to output lines, list none to match all", )
+  io.println("")
+  io.println(margin <> "--echo-fragments-printed <subpath1> <subpath2> ...")
+  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     in string form before prettifying, list none to match all", )
+  io.println("")
+  io.println(margin <> "--echo-fragments-prettified <local_path1> <local_path2> ...", )
+  io.println(margin <> "  -> echo fragments whose paths contain one of the given subpaths")
+  io.println(margin <> "     in string form after prettifying, list none to match all", )
+  io.println("")
+}
+
+// ************************************************************
+// process_command_line_arguments
+// ************************************************************
+
+pub type CommandLineError {
+  ExpectedDoubleDashString(String)
+  UnwantedOptionArgument(String)
+  UnexpectedArgumentsToOption(String)
+  SelectorValues(String)
+  StepNoValues(String)
+}
+
+pub fn process_command_line_arguments(
+  arguments: List(String),
+  user_keys: List(String),
+) -> Result(CommandLineAmendments, CommandLineError) {
+  use list_key_values <- on.error_ok(
+    double_dash_keys(arguments),
+    fn(bad_key) { Error(ExpectedDoubleDashString(bad_key)) },
+  )
+
+  list_key_values
+  |> list.fold(
+    Ok(empty_command_line_amendments()),
+    fn(
+      result: Result(CommandLineAmendments, CommandLineError),
+      pair: #(String, List(String)),
+    ) {
+      use amendments <- result.try(result)
+      let #(option, values) = pair
+      case option {
+        "--help" -> {
+          basic_cli_usage()
+          io.println("")
+          case list.is_empty(values) {
+            True -> Ok(CommandLineAmendments(..amendments, help: True))
+            False -> Error(UnexpectedArgumentsToOption("option"))
+          }
         }
-      )
-    }
-    False -> {
-      list.index_map(pipeline, fn(pipe, i) {
-        let step_no = i + 1
-        let on_change = list.contains(restrict, step_no)
-        let on = list.contains(force, step_no)
-        let mode = case on_change, on {
-          _, True -> TrackingForced
-          True, _ -> TrackingOnChange
-          _, _ -> TrackingOff
+
+        "--only" -> {
+          let args =
+            values
+            |> list.map(parse_attribute_value_args_in_filename)
+            |> list.flatten()
+          Ok(amendments |> amend_only_args(args))
         }
-        #(mode, option.unwrap(mod.selector, pipe.1), pipe.2)
-      })
+
+        "--table" ->
+          case list.is_empty(values) {
+            True -> Ok(CommandLineAmendments(..amendments, table: Some(True)))
+            False -> Error(UnexpectedArgumentsToOption("--table"))
+          }
+
+        "--prettier" ->
+          case values {
+            [dir] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierToBespokeDir(dir))))
+            [] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierOverwriteOutputDir)))
+            _ -> Error(UnexpectedArgumentsToOption("--prettier2"))
+          }
+
+        "--track" -> {
+          use pipeline_mod <- result.try(parse_track_args(values))
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              track: Some(join_pipeline_modifiers(
+                amendments.track,
+                pipeline_mod,
+              )),
+            ),
+          )
+        }
+
+        "--track-steps" -> {
+          use pipeline_mod <- result.try(parse_show_change_at_steps_args(values))
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              track: Some(join_pipeline_modifiers(
+                amendments.track,
+                pipeline_mod,
+              )),
+            ),
+          )
+        }
+
+        "--echo-assembled" ->
+          case list.is_empty(values) {
+            True -> Ok(CommandLineAmendments(..amendments, echo_assembled: True))
+            False -> Error(UnexpectedArgumentsToOption(option))
+          }
+
+        "--echo-fragments" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              vxml_fragments_local_paths_to_echo: Some(values),
+            ),
+          )
+
+        "--echo-fragments-ol" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              output_lines_fragments_local_paths_to_echo: Some(values),
+            ),
+          )
+
+        "--echo-fragments-printed" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              printed_string_fragments_local_paths_to_echo: Some(values),
+            ),
+          )
+
+        "--echo-fragments-prettified" ->
+          Ok(
+            CommandLineAmendments(
+              ..amendments,
+              prettified_string_fragments_local_paths_to_echo: Some(values),
+            ),
+          )
+
+        _ -> {
+          case list.contains(user_keys, option) {
+            True -> Ok(CommandLineAmendments(..amendments, user_args: dict.insert(amendments.user_args, option, values)))
+            False -> Error(UnwantedOptionArgument(option))
+          }
+        }
+      }
+    },
+  )
+}
+
+// 🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠
+// process_command_line_arguments HELPERS no 1:
+// getting the --keys & value lists 👇👇👇👇👇👇
+// 🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠
+
+fn take_strings_while_not_key(
+  upcoming: List(String),
+  bundled: List(String),
+) -> #(List(String), List(String)) {
+  case upcoming {
+    [] -> #(bundled |> list.reverse, upcoming)
+    [first, ..rest] -> {
+      case string.starts_with(first, "--") {
+        True -> #(bundled |> list.reverse, upcoming)
+        False -> take_strings_while_not_key(rest, [first, ..bundled])
+      }
     }
   }
 }
+
+fn double_dash_keys(
+  arguments: List(String),
+) -> Result(List(#(String, List(String))), String) {
+  case arguments {
+    [] -> Ok([])
+    [first, ..rest] -> {
+      case string.starts_with(first, "--") {
+        False -> Error(first)
+        True -> {
+          let #(arg_values, rest) = take_strings_while_not_key(rest, [])
+          case double_dash_keys(rest) {
+            Error(e) -> Error(e)
+            Ok(parsed) -> Ok([#(first, arg_values), ..parsed])
+          }
+        }
+      }
+    }
+  }
+}
+
+// 🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠
+// process_command_line_arguments HELPERS no 2:
+// for --only 👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇👇
+// 🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠
+
+fn amend_only_args(
+  amendments: CommandLineAmendments,
+  args: List(#(String, String, String)),
+) -> CommandLineAmendments {
+  CommandLineAmendments(
+    ..amendments,
+    only_key_values: list.append(amendments.only_key_values, args),
+    only_paths: list.append(
+      amendments.only_paths,
+      args
+        |> list.map(fn(a) {
+          let #(path, _, _) = a
+          path
+        }),
+    ),
+  )
+}
+
+fn parse_attribute_value_args_in_filename(
+  path: String,
+) -> List(#(String, String, String)) {
+  let assert [path, ..args] = string.split(path, "&")
+  case args {
+    // did not contain '&':
+    [] -> {
+      case string.split_once(path, "=") {
+        Ok(#(key, value)) -> [#("", key, value)]
+        Error(Nil) -> [#(path, "", "")]
+      }
+    }
+    // did contain '&'
+    _ ->
+      list.map(args, fn(arg) {
+        let assert [key, value] = string.split(arg, "=")
+        // <- this should be generating a CommandLineError instead of asserting
+        #(path, key, value)
+      })
+  }
+}
+
+// 🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠
+// process_command_line_arguments HELPERS no 3:
+// for --track (& --track-steps) 👇👇👇👇👇👇👇👇
+// 🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠🐠
 
 pub type PlusMinusRange {
   PlusMinusRange(plus: Int, minus: Int)
-}
-
-pub type PipelineTrackingModifier {
-  PipelineTrackingModifier(
-    selector: Option(infra.Selector),
-    restrict_on_change_check_to_steps: List(Int),
-    force_output_at_steps: List(Int),
-  )
 }
 
 fn parse_plus_minus(s: String) -> Result(PlusMinusRange, Nil) {
@@ -1290,7 +922,6 @@ fn parse_track_args(
   )
 
   let assert True = first_payload != ""
-
   let selector = sl.verbatim(first_payload)
 
   use second_payload, values <- on.empty_nonempty(
@@ -1298,8 +929,8 @@ fn parse_track_args(
     Ok(
       PipelineTrackingModifier(
         selector: Some(selector),
-        restrict_on_change_check_to_steps: [],
-        force_output_at_steps: [],
+        steps_with_tracking_on_change: [],
+        steps_with_tracking_forced: [],
       ),
     ),
   )
@@ -1318,23 +949,28 @@ fn parse_track_args(
     |> infra.extend_selector_up(plus_minus.minus)
     |> infra.extend_selector_down(plus_minus.plus)
 
-  use #(restrict, force) <- result.try(parse_step_numbers(values))
+  use #(restrict, force) <- result.try(
+    parse_step_numbers(values)
+  )
 
   Ok(PipelineTrackingModifier(
     selector: Some(selector),
-    restrict_on_change_check_to_steps: restrict,
-    force_output_at_steps: force,
+    steps_with_tracking_on_change: restrict,
+    steps_with_tracking_forced: force,
   ))
 }
 
 fn parse_show_change_at_steps_args(
   values: List(String),
 ) -> Result(PipelineTrackingModifier, CommandLineError) {
-  use #(restrict, force) <- result.try(parse_step_numbers(values))
+  use #(restrict, force) <- result.try(
+    parse_step_numbers(values)
+  )
+
   Ok(PipelineTrackingModifier(
     selector: None,
-    restrict_on_change_check_to_steps: restrict,
-    force_output_at_steps: force,
+    steps_with_tracking_on_change: restrict,
+    steps_with_tracking_forced: force,
   ))
 }
 
@@ -1345,10 +981,10 @@ fn join_pipeline_modifiers(
   use pm1 <- on.none_some(pm1, pm2)
   let #(restrict, force) =
     cleanup_step_numbers(
-      list.append(pm1.force_output_at_steps, pm2.force_output_at_steps),
+      list.append(pm1.steps_with_tracking_forced, pm2.steps_with_tracking_forced),
       list.append(
-        pm1.restrict_on_change_check_to_steps,
-        pm2.restrict_on_change_check_to_steps,
+        pm1.steps_with_tracking_on_change,
+        pm2.steps_with_tracking_on_change,
       ),
     )
   PipelineTrackingModifier(
@@ -1356,168 +992,14 @@ fn join_pipeline_modifiers(
       Some(s1), Some(s2) -> Some(infra.or_selectors(s1, s2))
       _, _ -> option.or(pm1.selector, pm2.selector)
     },
-    restrict_on_change_check_to_steps: restrict,
-    force_output_at_steps: force,
+    steps_with_tracking_on_change: restrict,
+    steps_with_tracking_forced: force,
   )
 }
 
-pub type CommandLineError {
-  ExpectedDoubleDashString(String)
-  UnwantedOptionArgument(String)
-  UnexpectedArgumentsToOption(String)
-  SelectorValues(String)
-  StepNoValues(String)
-}
-
-fn parse_attribute_value_args_in_filename(
-  path: String,
-) -> List(#(String, String, String)) {
-  let assert [path, ..args] = string.split(path, "&")
-  case args {
-    // did not contain '&':
-    [] -> {
-      case string.split_once(path, "=") {
-        Ok(#(key, value)) -> [#("", key, value)]
-        Error(Nil) -> [#(path, "", "")]
-      }
-    }
-    // did contain '&'
-    _ ->
-      list.map(args, fn(arg) {
-        let assert [key, value] = string.split(arg, "=")
-        // <- this should be generating a CommandLineError instead of asserting
-        #(path, key, value)
-      })
-  }
-}
-
-pub fn process_command_line_arguments(
-  arguments: List(String),
-  xtra_keys: List(String),
-) -> Result(CommandLineAmendments, CommandLineError) {
-  use list_key_values <- on.error_ok(
-    double_dash_keys(arguments),
-    fn(bad_key) { Error(ExpectedDoubleDashString(bad_key)) },
-  )
-
-  list_key_values
-  |> list.fold(
-    Ok(empty_command_line_amendments()),
-    fn(
-      result: Result(CommandLineAmendments, CommandLineError),
-      pair: #(String, List(String)),
-    ) {
-      use amendments <- result.try(result)
-      let #(option, values) = pair
-      case option {
-        "--help" -> {
-          basic_cli_usage()
-          io.println("")
-          case list.is_empty(values) {
-            True -> Ok(CommandLineAmendments(..amendments, help: True))
-            False -> Error(UnexpectedArgumentsToOption("option"))
-          }
-        }
-
-        "--only" -> {
-          let args =
-            values
-            |> list.map(parse_attribute_value_args_in_filename)
-            |> list.flatten()
-          Ok(amendments |> amend_spotlight_args(args))
-        }
-
-        "--table" ->
-          case list.is_empty(values) {
-            True -> Ok(CommandLineAmendments(..amendments, table: Some(True)))
-            False -> Error(UnexpectedArgumentsToOption("--table"))
-          }
-
-        "--prettier" ->
-          case values {
-            [dir] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierToBespokeDir(dir))))
-            [] -> Ok(CommandLineAmendments(..amendments, prettier: Some(PrettifierOverwriteOutputDir)))
-            _ -> Error(UnexpectedArgumentsToOption("--prettier2"))
-          }
-
-        "--echo-assembled" ->
-          case list.is_empty(values) {
-            True -> Ok(amendments |> amend_debug_assembled_input(True))
-            False -> Error(UnexpectedArgumentsToOption(option))
-          }
-
-        "--echo-fragments" ->
-          Ok(
-            CommandLineAmendments(
-              ..amendments,
-              vxml_fragments_local_paths_to_echo: Some(values),
-            ),
-          )
-
-        "--echo-fragments-ol" ->
-          Ok(
-            CommandLineAmendments(
-              ..amendments,
-              output_lines_fragments_local_paths_to_echo: Some(values),
-            ),
-          )
-
-        "--echo-fragments-printed" ->
-          Ok(
-            CommandLineAmendments(
-              ..amendments,
-              printed_string_fragments_local_paths_to_echo: Some(values),
-            ),
-          )
-
-        "--echo-fragments-prettified" ->
-          Ok(
-            CommandLineAmendments(
-              ..amendments,
-              prettified_string_fragments_local_paths_to_echo: Some(values),
-            ),
-          )
-
-        "--track-steps" -> {
-          use pipeline_mod <- result.try(parse_show_change_at_steps_args(values))
-          Ok(
-            CommandLineAmendments(
-              ..amendments,
-              track: Some(join_pipeline_modifiers(
-                amendments.track,
-                pipeline_mod,
-              )),
-            ),
-          )
-        }
-
-        "--track" -> {
-          use pipeline_mod <- result.try(parse_track_args(values))
-          Ok(
-            CommandLineAmendments(
-              ..amendments,
-              track: Some(join_pipeline_modifiers(
-                amendments.track,
-                pipeline_mod,
-              )),
-            ),
-          )
-        }
-
-        _ -> {
-          case list.contains(xtra_keys, option) {
-            True -> Ok(amendments |> amend_user_args(option, values))
-            False -> Error(UnwantedOptionArgument(option))
-          }
-        }
-      }
-    },
-  )
-}
-
-//********************
-// AMENDING RENDERER PARAMETERS BY COMMAND LINE AMENDMENTS
-//********************
+// ************************************************************
+// RendererParameters + CommandLineAmendments -> RendererParameters
+// ************************************************************
 
 pub fn amend_renderer_paramaters_by_command_line_amendments(
   parameters: RendererParameters,
@@ -1531,11 +1013,14 @@ pub fn amend_renderer_paramaters_by_command_line_amendments(
   )
 }
 
-//********************
-// AMENDING RENDERER DEBUG OPTIONS BY COMMAND LINE AMENDMENTS
-//********************
+// ************************************************************
+// RendererDebugOptions + CommandLineAmendments -> RendererDebugOptions
+// ************************************************************
 
-fn is_some_and_any_or_is_empty(z: Option(List(a)), f: fn(a) -> Bool) -> Bool {
+fn exists_match(
+  z: Option(List(a)), // List(a) = list of things that might cause a match, left empty if we always want a match
+  f: fn(a) -> Bool,   // match tester
+) -> Bool {
   case z {
     None -> False
     Some([]) -> True
@@ -1557,8 +1042,8 @@ pub fn db_amend_splitter_debug_options(
   amendments: CommandLineAmendments,
 ) -> SplitterDebugOptions(d) {
   SplitterDebugOptions(echo_: fn(fr: OutputFragment(d, VXML)) {
-    previous.echo_(fr)
-    || is_some_and_any_or_is_empty(
+    previous.echo_(fr) ||
+    exists_match(
       amendments.vxml_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
@@ -1570,8 +1055,8 @@ pub fn db_amend_emitter_debug_options(
   amendments: CommandLineAmendments,
 ) -> EmitterDebugOptions(d) {
   EmitterDebugOptions(echo_: fn(fr: OutputFragment(d, List(OutputLine))) {
-    previous.echo_(fr)
-    || is_some_and_any_or_is_empty(
+    previous.echo_(fr) ||
+    exists_match(
       amendments.output_lines_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
@@ -1583,8 +1068,8 @@ pub fn db_amend_printed_debug_options(
   amendments: CommandLineAmendments,
 ) -> WriterDebugOptions(d) {
   WriterDebugOptions(fn(fr: OutputFragment(d, String)) {
-    previous.echo_(fr)
-    || is_some_and_any_or_is_empty(
+    previous.echo_(fr) ||
+    exists_match(
       amendments.printed_string_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
@@ -1596,7 +1081,8 @@ pub fn db_amend_prettifier_debug_options(
   amendments: CommandLineAmendments,
 ) -> PrettifierDebugOptions(d) {
   PrettifierDebugOptions(fn(fr: GhostOfOutputFragment(d)) {
-    previous.echo_(fr) || is_some_and_any_or_is_empty(
+    previous.echo_(fr) ||
+    exists_match(
       amendments.prettified_string_fragments_local_paths_to_echo,
       string.contains(fr.path, _),
     )
@@ -1649,41 +1135,597 @@ pub fn amend_renderer_debug_options_by_command_line_amendments(
   )
 }
 
-//********************
-// EMPTY RENDERER DEBUG OPTIONS
-//********************
+// ************************************************************
+// Pipeline + PipelineTrackingModifier -> Pipeline (used by above)
+// ************************************************************
 
-pub fn empty_assembler_debug_options() -> AssemblerDebugOptions {
-  AssemblerDebugOptions(echo_: False)
+pub fn apply_pipeline_tracking_modifier(
+  pipeline: Pipeline,
+  mod: PipelineTrackingModifier,
+) -> Pipeline {
+  let num_steps = list.length(pipeline)
+  let wraparound = fn(x: Int) {
+    case x < 0 {
+      True -> num_steps + x + 1
+      False -> x
+    }
+  }
+  let restrict = list.map(mod.steps_with_tracking_on_change, wraparound)
+  let force = list.map(mod.steps_with_tracking_forced, wraparound)
+  let apply_to_all = restrict == [] && force == []
+  case apply_to_all {
+    True -> {
+      list.map(
+        pipeline,
+        fn(pipe) {
+          #(TrackingOnChange, option.unwrap(mod.selector, pipe.1), pipe.2)
+        }
+      )
+    }
+    False -> {
+      list.index_map(pipeline, fn(pipe, i) {
+        let step_no = i + 1
+        let on_change = list.contains(restrict, step_no)
+        let on = list.contains(force, step_no)
+        let mode = case on_change, on {
+          _, True -> TrackingForced
+          True, _ -> TrackingOnChange
+          _, _ -> TrackingOff
+        }
+        #(mode, option.unwrap(mod.selector, pipe.1), pipe.2)
+      })
+    }
+  }
 }
 
-pub fn empty_parser_debug_options() -> ParserDebugOptions {
-  ParserDebugOptions(echo_: False)
-}
+// ************************************************************
+// run_pipeline
+// ************************************************************
 
-pub fn empty_splitter_debug_options() -> SplitterDebugOptions(d) {
-  SplitterDebugOptions(echo_: fn(_fr) { False })
-}
-
-pub fn empty_emitter_debug_options() -> EmitterDebugOptions(d) {
-  EmitterDebugOptions(echo_: fn(_fr) { False })
-}
-
-pub fn empty_writer_debug_options() -> WriterDebugOptions(d) {
-  WriterDebugOptions(echo_: fn(_fr) { False })
-}
-
-pub fn empty_prettifier_debug_options() -> PrettifierDebugOptions(d) {
-  PrettifierDebugOptions(echo_: fn(_fr) { False })
-}
-
-pub fn default_renderer_debug_options() -> RendererDebugOptions(d) {
-  RendererDebugOptions(
-    assembler_debug_options: empty_assembler_debug_options(),
-    parser_debug_options: empty_parser_debug_options(),
-    splitter_debug_options: empty_splitter_debug_options(),
-    emitter_debug_options: empty_emitter_debug_options(),
-    writer_debug_options: empty_writer_debug_options(),
-    prettifier_debug_options: empty_prettifier_debug_options(),
+pub type InSituDesugaringError {
+  InSituDesugaringError(
+    desugarer: Desugarer,
+    step_no: Int,
+    message: String,
+    blame: Blame,
   )
+}
+
+pub type InSituDesugaringWarning {
+  InSituDesugaringWarning(
+    desugarer: Desugarer,
+    step_no: Int,
+    message: String,
+    blame: Blame,
+  )
+}
+
+fn run_pipeline(
+  vxml: VXML,
+  pipeline: Pipeline,
+) -> Result(#(VXML, List(InSituDesugaringWarning), List(#(Int, Timestamp))), InSituDesugaringError) {
+  let track_any = list.any(pipeline, fn(p){p.0 != TrackingOff})
+  let last_step = list.length(pipeline)
+
+  pipeline
+  |> list.try_fold(
+    #(vxml, 1, "", [], [], False),
+    fn(acc, pipe) {
+      let #(vxml, step_no, last_tracking_output, times, warnings, got_arrow) = acc
+      let #(mode, selector, desugarer) = pipe
+      let times = case desugarer.name == "timer" {
+        True -> [#(step_no, timestamp.system_time()), ..times]
+        False -> times
+      }
+      let printed_arrow = case track_any && !got_arrow {
+        True -> {
+          io.println("    💠")
+          True
+        }
+        False -> False
+      }
+      use #(vxml, new_warnings) <- on.error_ok(desugarer.transform(vxml), fn(error) {
+        Error(InSituDesugaringError(
+          desugarer: desugarer,
+          step_no: step_no,
+          blame: error.blame,
+          message: error.message,
+        ))
+      })
+      let new_warnings = list.map(new_warnings, fn(warning) {
+        InSituDesugaringWarning(
+          desugarer: desugarer,
+          step_no: step_no,
+          blame: warning.blame,
+          message: warning.message,
+        )
+      })
+      let #(selected, next_tracking_output) = case mode == TrackingOff {
+        True -> #([], last_tracking_output)
+        False -> {
+          let selected = vxml |> infra.vxml_to_s_lines |> selector
+          #(selected, selected |> infra.s_lines_annotated_table("", True, 0))
+        }
+      }
+      let must_print = mode == TrackingForced || { mode == TrackingOnChange && next_tracking_output != last_tracking_output }
+      let got_arrow = case must_print {
+        True -> {
+          io.println("    " <> pr.name_and_param_string(desugarer, step_no))
+          io.println("    💠")
+          selected
+          |> infra.s_lines_annotated_table("", False, 2)
+          |> io.println
+          False
+        }
+        False -> case printed_arrow && step_no < last_step {
+          True -> {
+            io.println("    ⋮")
+            True
+          }
+          False -> True
+        }
+      }
+      #(vxml, step_no + 1, next_tracking_output, times, list.append(warnings, new_warnings), got_arrow)
+      |> Ok
+    }
+  )
+  |> result.map(fn(acc) { #(acc.0, acc.4, acc.3) })
+}
+
+// ************************************************************
+// other run_renderer helpers
+// ************************************************************
+
+fn sanitize_output_dir(parameters: RendererParameters) -> RendererParameters {
+  RendererParameters(
+    ..parameters,
+    output_dir: infra.drop_ending_slash(parameters.output_dir),
+  )
+}
+
+fn create_dirs_on_path_to_file(path_to_file: String) -> Result(Nil, simplifile.FileError) {
+  let pieces = path_to_file |> string.split("/")
+  let pieces = infra.drop_last(pieces)
+  list.try_fold(pieces, ".", fn(acc, piece) {
+    let acc = acc <> "/" <> piece
+    use exists <- result.try(simplifile.is_directory(acc))
+    use _ <- result.try(
+      case exists {
+        True  -> Ok(Nil)
+        False -> simplifile.create_directory(acc)
+      }
+    )
+    Ok(acc)
+  })
+  |> result.map(fn(_) { Nil })
+}
+
+fn output_dir_local_path_printer(
+  output_dir: String,
+  local_path: String,
+  content: String,
+) -> Result(Nil, simplifile.FileError) {
+  let assert False = string.starts_with(local_path, "/")
+  let assert False = string.ends_with(output_dir, "/")
+  let path = output_dir <> "/" <> local_path
+  use _ <- result.try(create_dirs_on_path_to_file(path))
+  simplifile.write(path, content)
+}
+
+// ************************************************************
+// run_renderer return type(s)
+// ************************************************************
+
+pub type ThreePossibilities(f, g, h) {
+  P1(f)
+  P2(g)
+  P3(h)
+}
+
+pub type RendererError(a, c, e, f, h) {
+  FileOrParseError(a)
+  SourceParserError(Blame, c)
+  PipelineError(InSituDesugaringError)
+  SplitterError(e)
+  EmittingOrPrintingOrPrettifyingErrors(List(ThreePossibilities(f, String, h)))
+}
+
+// ************************************************************
+// run_renderer
+// ************************************************************
+
+pub fn run_renderer(
+  renderer: Renderer(a, c, d, e, f, h),
+  parameters: RendererParameters,
+  debug_options: RendererDebugOptions(d),
+) -> Result(Nil, RendererError(a, c, e, f, h)) {
+  io.println("")
+
+  let parameters = sanitize_output_dir(parameters)
+  let RendererParameters(
+    table,
+    input_dir,
+    output_dir,
+    prettifier_mode,
+  ) = parameters
+
+  case table {
+    True -> pr.print_pipeline(renderer.pipeline |> infra.pipeline_desugarers)
+    False -> Nil
+  }
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 assembling~ 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  io.print("• assembling ")
+
+  use assembled <- on.error_ok(
+    renderer.assembler(input_dir),
+    fn(error_a) {
+      io.println("\n  ...assembler error on input_dir " <> input_dir <> ":")
+      [
+        "",
+        "  " <> ins(error_a),
+        "",
+      ]
+      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
+      Error(FileOrParseError(error_a))
+    },
+  )
+
+  case debug_options.assembler_debug_options.echo_ {
+    False -> Nil
+    True -> {
+      io_l.input_lines_annotated_table_at_indent(assembled, "",  2)
+      |> string.join("\n")
+      |> io.println
+      Nil
+    }
+  }
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 parsing~~~~ 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  io.println("• parsing input lines to VXML")
+
+  use parsed: VXML <- on.error_ok(
+    renderer.parser(assembled),
+    on_error: fn(error) {
+      let #(blame, c) = error
+      let assert [first, ..rest] =
+        pr.padded_error_paragraph(ins(c) |> pr.strip_quotes, 70, "            ")
+
+      io.println("\n  ...parser error:")
+      [
+        [
+          "            ",
+          "  blame:    " <> pr.our_blame_digest(blame),
+          "  message:  " <> first,
+        ],
+        rest,
+        [
+          "",
+        ]
+      ]
+      |> list.flatten
+      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
+      Error(SourceParserError(blame, c))
+    },
+  )
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 running pipeline~~~ 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  io.println("• starting pipeline...")
+  let t0 = timestamp.system_time()
+
+  use #(desugared, warnings, times) <- on.error_ok(
+    run_pipeline(parsed, renderer.pipeline),
+    on_error: fn(e: InSituDesugaringError) {
+      let assert [first, ..rest] =
+        pr.padded_error_paragraph(e.message, 80, "                  ")
+
+      io.println("\n  DesugaringError:")
+      [
+        [
+          "                  ",
+          "  thrown by:      " <> e.desugarer.name,
+          "  pipeline step:  " <> ins(e.step_no),
+          "  blame:          " <> pr.our_blame_digest(e.blame),
+          "  message:        " <> first,
+        ],
+        rest,
+        [
+          ""
+        ],
+      ]
+      |> list.flatten
+      |> pr.boxed_error_announcer("💥", 2, #(1, 0))
+      Error(PipelineError(e))
+    },
+  )
+
+  let t1 = timestamp.system_time()
+  let seconds =
+    timestamp.difference(t0, t1) |> duration.to_seconds |> float.to_precision(2)
+
+  io.println("  ...ended pipeline (" <> ins(seconds) <> "s);")
+
+  case list.length(times) > 0 {
+    False -> Nil
+    True -> {
+      let times = [#(list.length(renderer.pipeline), t1), ..times]
+      list.fold(times |> list.reverse, #(0, t0), fn(acc, next) {
+        let #(step0, t0) = acc
+        let #(step1, t1) = next
+        let seconds =
+          timestamp.difference(t0, t1)
+          |> duration.to_seconds
+          |> float.to_precision(3)
+        io.println("  steps " <> ins(step0) <> " to " <> ins(step1) <> ": " <> ins(seconds) <> "s")
+        next
+      })
+      Nil
+    }
+  }
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 splitting~~ 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  io.println("• splitting the vxml...")
+
+  use fragments <- on.error_ok(
+    renderer.splitter(desugared),
+    on_error: fn(error: e) {
+      io.println("\n  ...splitter error:")
+      pr.boxed_error_announcer(
+        [
+          "",
+          "  " <> ins(error),
+          "",
+        ],
+        "💥",
+        2,
+        #(1, 1)
+      )
+      Error(SplitterError(error))
+    },
+  )
+
+  let prefix = "[" <> output_dir <> "/]"
+  let fragments_types_and_paths_4_table =
+    list.map(fragments, fn(fr) { #(ins(fr.classifier), prefix <> fr.path) })
+
+  io.println("  -> obtained " <> pr.how_many("fragment", "fragments", list.length(fragments)) <> ":")
+  
+  [#("classifier", "path"), ..fragments_types_and_paths_4_table]
+  |> pr.two_column_table
+  |> pr.print_lines_at_indent(2)
+
+  fragments
+  |> list.each(fn(fr) {
+    case debug_options.splitter_debug_options.echo_(fr) {
+      False -> Nil
+      True -> {
+        fr.payload
+        |> vp.vxml_to_output_lines
+        |> io_l.echo_output_lines("fr:" <> fr.path)
+        Nil
+      }
+    }
+  })
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 emitting~~~ 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  io.print("• converting fragments to output line fragments")
+
+  let fragments =
+    fragments
+    |> list.map(renderer.emitter)
+
+  io.println("")
+
+  fragments
+  |> list.each(fn(result) {
+    case result {
+      Error(_) -> Nil
+      Ok(fr) -> {
+        case debug_options.emitter_debug_options.echo_(fr) {
+          False -> Nil
+          True -> {
+            fr.payload
+            |> io_l.echo_output_lines("fr-ol:" <> fr.path)
+            Nil
+          }
+        }
+      }
+    }
+  })
+
+  let num_emitter_errors = list.fold(fragments, 0, fn(acc, fr) {
+    case fr {
+      Ok(_) -> acc
+      _ -> acc + 1
+    }
+  })
+
+  list.each(
+    fragments,
+    fn (fr) {
+      use error <- on.ok_error(fr, fn(_){Nil})
+      io.println("\n  emitter error:")
+      pr.boxed_error_announcer(
+        [
+          "",
+          "  " <> ins(error),
+          "",
+        ],
+        "💥",
+        2,
+        #(1, 0)
+      )
+    }
+  )
+
+  case num_emitter_errors {
+    0 -> Nil
+    _ -> io.println("")
+  }
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 writing (to file)~~ 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  io.println("• converting output line fragments to string fragments")
+
+  let fragments = {
+    fragments
+    |> list.map(
+      on.error_ok(
+        _,
+        fn(error) {
+          Error(P1(error))
+        },
+        fn(fr) {
+          Ok(OutputFragment(..fr, payload: io_l.output_lines_to_string(fr.payload)))
+        },
+      )
+    )
+  }
+
+  fragments
+  |> list.each(fn(result) {
+    case result {
+      Error(_) -> Nil
+      Ok(fr) -> {
+        case debug_options.writer_debug_options.echo_(fr) {
+          False -> Nil
+          True -> {
+            let header = "────────────────── writer echo: " <> fr.path <> " ──────────────────"
+            io.println(header)
+            io.println(fr.payload)
+            io.println(pr.dashes(string.length(header)))
+            io.println("")
+
+          }
+        }
+      }
+    }
+  })
+
+  io.println("• writing string fragments to files")
+
+  let fragments =
+    fragments
+    |> list.map(fn(result) {
+      use fr <- result.try(result)
+      let brackets = "[" <> output_dir <> "/]"
+      case output_dir_local_path_printer(output_dir, fr.path, fr.payload) {
+        Ok(Nil) -> {
+          io.println("  wrote " <> brackets <> fr.path)
+          Ok(GhostOfOutputFragment(fr.classifier, fr.path))
+        }
+        Error(file_error) ->
+          Error(P2(
+            { file_error |> ins } <> " on path " <> output_dir <> "/" <> fr.path,
+          ))
+      }
+    })
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 prettifying 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  case prettifier_mode != PrettifierOff {
+    True -> io.println("• prettifying")
+    False -> Nil
+  }
+  let fragments =
+    fragments
+    |> list.map(fn(result) {
+      use fr <- result.try(result)
+      use <- on.true_false(prettifier_mode == PrettifierOff, result)
+      let dest_dir = case prettifier_mode {
+        PrettifierOff -> panic as "bug"
+        PrettifierOverwriteOutputDir -> Some(output_dir)
+        PrettifierToBespokeDir(dir) -> Some(dir)
+      }
+      case renderer.prettifier(output_dir, fr, dest_dir) {
+        Error(e) -> {
+          io.println("  prettifying error: " <> ins(e))
+          Error(P3(e))
+        }
+        Ok(message) -> {
+          io.println("  " <> message)
+          result
+        }
+      }
+    })
+
+  fragments
+  |> list.each(fn(result) {
+    use fr <- on.error_ok(result, fn(_) { Nil })
+    case debug_options.prettifier_debug_options.echo_(fr) {
+      False -> Nil
+      True -> {
+        let path = output_dir <> "/" <> fr.path
+        use file_contents <- on.error_ok(
+          simplifile.read(path),
+          fn(error) {
+            io.println("")
+            io.println(
+              "could not read back printed file " <> path <> ":" <> ins(error),
+            )
+          },
+        )
+        io.println("")
+        let header = "───────────── prettifier echo: " <> fr.path <> " ──────────────────"
+        io.println(header)
+        io.println(file_contents)
+        io.println(pr.dashes(string.length(header)))
+        io.println("")
+      }
+    }
+  })
+
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+  // 🌸 reporting pipeline warnings 🌸
+  // 🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸🌸
+
+  case list.length(warnings) {
+    0 -> Nil
+    _ -> {
+      io.println("\n👉 " <> pr.how_many("warning", "warnings", list.length(warnings)) <> ":")
+    }
+  }
+
+  list.each(
+    warnings,
+    fn (w) {
+      [
+        "",
+        "  from:           " <> w.desugarer.name <> " (desugarer)",
+        "  pipeline step:  " <> ins(w.step_no),
+        "  blame:          " <> bl.blame_digest(w.blame),
+        "  message:        " <> w.message,
+        "",
+      ]
+      |> pr.boxed_error_announcer("🚨", 2, #(1, 0))
+    }
+  )
+
+  let #(_, errors) = result.partition(fragments)
+
+  case list.length(errors) > 0 {
+    True -> {
+      Error(EmittingOrPrintingOrPrettifyingErrors(errors))
+    }
+    False -> Ok(Nil)
+  }
 }

@@ -2671,7 +2671,7 @@ pub type TrackingMode {
   TrackingForced
 }
 
-pub type Pipe = 
+pub type Pipe =
   #(TrackingMode, Selector, Desugarer)
 
 pub type Pipeline =
